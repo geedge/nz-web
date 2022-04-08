@@ -1,20 +1,16 @@
 package com.nis.modules.sys.controller;
 
+import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.Tool;
+import com.nis.modules.sys.service.SysBackupService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 import java.util.Map;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.nis.common.utils.R;
-import com.nis.modules.sys.service.SysBackupService;
 
 /**
  * 系统备份
@@ -55,4 +51,37 @@ public class SysBackupController {
 	public void backupData() {
 		sysBackupService.backupData();
 	}
+
+
+	/**
+	 * 系统备份恢复接口
+	 *
+	 * @param params
+	 * @return
+	 */
+	@PutMapping("/restore")
+	public R restore(@RequestBody(required = false) Map<String, Object> params) {
+		ValidateUtils.is(params).notNull(RCode.SYS_BACKUP_FILENAME_ISNULL);
+		String filename = (String) params.get("filename");
+		if (Tool.StrUtil.isEmpty(filename)) throw new NZException(RCode.SYS_BACKUP_FILENAME_ISNULL);
+
+		// TODO
+		return R.ok();
+	}
+
+
+	/**
+	 * 系统备份删除接口
+	 *
+	 * @param filename
+	 * @return
+	 */
+	@DeleteMapping
+	public R delete(String filename) {
+		if (Tool.StrUtil.isEmpty(filename)) throw new NZException(RCode.SYS_BACKUP_FILENAME_ISNULL);
+
+		sysBackupService.removeBackFileByFilename(filename);
+		return R.ok();
+	}
+
 }

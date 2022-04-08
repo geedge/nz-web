@@ -5365,6 +5365,35 @@ INSERT INTO `sys_i18n` VALUES (5936, '416007', 'en', 'ALERTMSG_NOT_EXITS', 'Aler
 INSERT INTO `sys_i18n` VALUES (5937, '416007', 'zh', 'ALERTMSG_NOT_EXITS', '告警消息不能为空', '', '2022-03-30 06:46:32', 1);
 INSERT INTO `sys_i18n` VALUES (5938, 'project.topology.font', 'en', 'project.topology.font', 'Font', '', '2022-03-30 07:59:26', 1);
 INSERT INTO `sys_i18n` VALUES (5939, 'project.topology.font', 'zh', 'project.topology.font', '字体', '', '2022-03-30 07:59:39', 1);
+INSERT INTO `sys_i18n` VALUES (5940, 'ping.timeout', 'en', 'ping.timeout', 'Timeout', '', '2022-04-08 03:34:58', 407);
+INSERT INTO `sys_i18n` VALUES (5941, 'ping.timeout', 'zh', 'ping.timeout', '超时', '', '2022-04-08 03:16:26', 407);
+INSERT INTO `sys_i18n` VALUES (5942, 'ping.filter', 'en', 'ping.filter', 'Filter relevant content', '', '2022-04-08 03:17:18', 407);
+INSERT INTO `sys_i18n` VALUES (5943, 'ping.filter', 'zh', 'ping.filter', '筛选相关内容', '', '2022-04-08 03:17:37', 407);
+INSERT INTO `sys_i18n` VALUES (5944, 'ping.sourceIp', 'en', 'ping.sourceIp', 'Source IP', '', '2022-04-08 03:21:15', 407);
+INSERT INTO `sys_i18n` VALUES (5945, 'ping.sourceIp', 'zh', 'ping.sourceIp', '来源IP', '', '2022-04-08 03:22:29', 407);
+INSERT INTO `sys_i18n` VALUES (5946, 'ping.targetIp', 'en', 'ping.targetIp', 'Target IP', '', '2022-04-08 03:23:53', 407);
+INSERT INTO `sys_i18n` VALUES (5947, 'ping.targetIp', 'zh', 'ping.targetIp', '目标IP', '', '2022-04-08 03:24:04', 407);
+INSERT INTO `sys_i18n` VALUES (5948, 'ping.packetLossRate', 'en', 'ping.packetLossRate', 'Packet loss rate', '', '2022-04-08 03:25:03', 407);
+INSERT INTO `sys_i18n` VALUES (5949, 'ping.packetLossRate', 'zh', 'ping.packetLossRate', '丢包率', '', '2022-04-08 03:25:12', 407);
+INSERT INTO `sys_i18n` VALUES (5950, 'ping.rttAverage', 'en', 'ping.rttAverage', 'RTT average', '', '2022-04-08 03:25:44', 407);
+INSERT INTO `sys_i18n` VALUES (5951, 'ping.rttAverage', 'zh', 'ping.rttAverage', '平均响应时间', '', '2022-04-08 03:33:50', 407);
+INSERT INTO `sys_i18n` VALUES (5952, 'ping.rttMinimum', 'en', 'ping.rttMinimum', 'RTT minimum', '', '2022-04-08 03:29:00', 407);
+INSERT INTO `sys_i18n` VALUES (5953, 'ping.rttMinimum', 'zh', 'ping.rttMinimum', '最小响应时间', '', '2022-04-08 03:29:08', 407);
+INSERT INTO `sys_i18n` VALUES (5954, 'ping.rttMaximum', 'en', 'ping.rttMaximum', 'RTT maximum', '', '2022-04-08 03:29:14', 407);
+INSERT INTO `sys_i18n` VALUES (5955, 'ping.rttMaximum', 'zh', 'ping.rttMaximum', '最大响应时间', '', '2022-04-08 03:29:19', 407);
+INSERT INTO `sys_i18n` VALUES (5956, 'ping.total', 'en', 'ping.total', 'total', '', '2022-04-08 03:30:52', 407);
+INSERT INTO `sys_i18n` VALUES (5957, 'ping.total', 'zh', 'ping.total', '总数', '', '2022-04-08 03:31:18', 407);
+INSERT INTO `sys_i18n` VALUES (5958, 'ping.done', 'en', 'ping.done', 'Done', '', '2022-04-08 03:31:54', 407);
+INSERT INTO `sys_i18n` VALUES (5959, 'ping.done', 'zh', 'ping.done', '已完成', '', '2022-04-08 03:32:06', 407);
+INSERT INTO `sys_i18n` VALUES (5960, 'ping.progress', 'en', 'ping.progress', 'Progress', '', '2022-04-08 03:32:20', 407);
+INSERT INTO `sys_i18n` VALUES (5961, 'ping.progress', 'zh', 'ping.progress', '进度', '', '2022-04-08 03:32:31', 407);
+INSERT INTO `sys_i18n` VALUES (5962, 'ping.dcs', 'en', 'ping.dcs', 'Data centers', '', '2022-04-08 03:37:37', 407);
+INSERT INTO `sys_i18n` VALUES (5963, 'ping.dcs', 'zh', 'ping.dcs', '数据中心', '', '2022-04-08 03:37:34', 407);
+INSERT INTO `sys_i18n` VALUES (5964, '601000', 'en', 'SYS_BACKUP_FILENAME_ISNULL', 'System backup file name cannot be empty', '', '2022-04-08 13:57:05', 1);
+INSERT INTO `sys_i18n` VALUES (5965, '601000', 'zh', 'SYS_BACKUP_FILENAME_ISNULL', '系统备份文件名不能为空', '', '2022-04-08 13:57:09', 1);
+INSERT INTO `sys_i18n` VALUES (5966, '601001', 'en', 'SYS_BACKUP_FILENAME_NOTEXIST', 'System backup file does not exist', '', '2022-04-08 13:57:38', 1);
+INSERT INTO `sys_i18n` VALUES (5967, '601001', 'zh', 'SYS_BACKUP_FILENAME_NOTEXIST', '系统备份文件不存在', '', '2022-04-08 13:57:59', 1);
+
 
 
 SET FOREIGN_KEY_CHECKS = 1;

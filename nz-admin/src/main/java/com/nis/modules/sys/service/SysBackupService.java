@@ -12,4 +12,7 @@ public interface SysBackupService {
 	List<Object> queryBackupList();
 	
 	void backupData();
+
+	void removeBackFileByFilename(String filename);
+
 }

@@ -816,6 +816,14 @@ public enum RCode {
 	SNMP_CREDENTIAL_NOT_FOUND(596007,"Snmp credential not found"),
 	SNMP_CREDENTIAL_NAME_DUPLICATE(596008,"Snmp credential name duplicate"),
 	SNMP_CREDENTIAL_ASSETS_EXISTS(596009,"These Snmp credential contain assets and cannot be deleted"),
+
+
+    /**
+     * sys_backup 相关
+     */
+    SYS_BACKUP_FILENAME_ISNULL(601000, "System backup file name cannot be empty"),
+    SYS_BACKUP_FILENAME_NOTEXIST(601001, "System backup file does not exist"),
+
     /**
      * webshell相关
      */

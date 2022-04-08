@@ -1,45 +1,29 @@
 package com.nis.modules.sys.service.impl;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.SQLXML;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import javax.sql.DataSource;
-
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IORuntimeException;
+import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.toolkit.StringPool;
+import com.nis.common.exception.NZException;
+import com.nis.common.utils.*;
+import com.nis.modules.sys.dao.SysConfigDao;
+import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.service.SysBackupService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.toolkit.StringPool;
-import com.nis.common.config.DataSourceConfig;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.StringUtils;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
-import com.nis.modules.sys.dao.SysConfigDao;
-import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.service.SysBackupService;
-
-import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.log.Log;
+import javax.sql.DataSource;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.sql.*;
+import java.util.Date;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service("sysBackupService")
 public class SysBackupServiceImpl implements SysBackupService {
@@ -220,7 +204,36 @@ public class SysBackupServiceImpl implements SysBackupService {
     	
     	this.removeBackupFile();
     }
-    
+
+    @Override
+    public void removeBackFileByFilename(String filename) {
+        SysConfigEntity config = sysConfigDao.queryByKey("backup_file_path");
+        String path = Constant.BACKUP_ROOT_PATH;
+
+        if (Optional.ofNullable(config).map(SysConfigEntity::getParamValue).isPresent()) {
+            path = config.getParamValue();
+        }
+
+        String sqlFilePath = Tool.StrUtil.concat(true, path, File.separator, filename);
+        boolean exist = FileUtil.exist(sqlFilePath);
+        if (exist) {
+            boolean isFile = FileUtil.isFile(sqlFilePath);
+            if (isFile) {
+                try {
+                    // 是文件 则删除
+                    boolean del = FileUtil.del(sqlFilePath);
+                    log.info(String.format("System backup file delete, filename :%s, result : %s", filename, del));
+                } catch (IORuntimeException e) {
+                    log.error(e);
+                    log.info("System backup file delete error, filename {}", filename);
+                }
+            }
+        } else {
+            // 文件不存在
+            throw new NZException(RCode.SYS_BACKUP_FILENAME_NOTEXIST);
+        }
+    }
+
     /**
      * 根据数据库配置 判断保存文件数量是否超标
      */
