@@ -5363,6 +5363,10 @@ INSERT INTO `sys_i18n` VALUES (5934, '715010', 'en', 'LICENSE_TYPE_ISNULL', 'Lic
 INSERT INTO `sys_i18n` VALUES (5935, '715010', 'zh', 'LICENSE_TYPE_ISNULL', '许可证类型参数不能为空', '', '2022-03-30 06:46:32', 1);
 INSERT INTO `sys_i18n` VALUES (5936, 'project.topology.font', 'en', 'project.topology.font', 'Font', '', '2022-03-30 07:59:26', 1);
 INSERT INTO `sys_i18n` VALUES (5937, 'project.topology.font', 'zh', 'project.topology.font', '字体', '', '2022-03-30 07:59:39', 1);
+INSERT INTO `sys_i18n` VALUES (5938, 'overall.downloadProgress', 'en', 'overall.downloadProgress', 'Download is in progress', '', '2022-04-08 07:59:39', 1);
+INSERT INTO `sys_i18n` VALUES (5939, 'overall.downloadProgress', 'zh', 'overall.downloadProgress', '正在下载', '', '2022-04-08 07:59:39', 1);
+INSERT INTO `sys_i18n` VALUES (5940, 'overall.downloadToPdf', 'en', 'overall.downloadToPdf', 'Download for PDF', '', '2022-04-08 07:59:39', 1);
+INSERT INTO `sys_i18n` VALUES (5941, 'overall.downloadToPdf', 'zh', 'overall.downloadToPdf', '导出PDF', '', '2022-04-08 07:59:39', 1);
 
 
 SET FOREIGN_KEY_CHECKS = 1;
