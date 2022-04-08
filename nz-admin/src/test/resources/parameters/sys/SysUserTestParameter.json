@@ -146,5 +146,18 @@
   },
   "deleteUser_adminNotDel": {
     "ids": "1,200"
+  },
+  "------------------ PUT  /sys/user/profile data---------------------": "note",
+  "updateUserProfile_success": {
+    "id": 4,
+    "name": "zhang",
+    "username": "zhang",
+    "email": "zhang@zdjizhi.com",
+    "mobile": "13010000000",
+    "lang": "en",
+    "status": "1",
+    "pin": "zhang",
+    "roleIds": "1,2",
+    "mfaLevel": 1
   }
 }

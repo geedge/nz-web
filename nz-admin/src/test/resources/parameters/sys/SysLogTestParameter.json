@@ -1,0 +1,15 @@
+{
+  "------------------ GET  /sys/log data---------------------": "note",
+  "queryUserLogs_exist": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "userId": "1"
+  },
+  "queryUserLogs_notexist": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "userId": "10"
+  }
+}

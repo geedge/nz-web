@@ -14,6 +14,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.io.UnsupportedEncodingException;
 import java.util.Map;
 
 /**
@@ -285,4 +286,30 @@ public class SysUserTest extends BaseTest<SysUserEntity> {
         UTUtil.assertEqualsRCode(result, RCode.SYS_USER_DELADMIN);
     }
 
+    /**
+     * GET /sys/user/profile success
+     */
+    @Test
+    public void queryUserProfile_success() throws UnsupportedEncodingException {
+        MvcResult result = UTUtil.performGet("/sys/user/profile", null);
+
+        UTUtil.assertEqualsRCode(result, RCode.SUCCESS);
+
+        String contentAsString = result.getResponse().getContentAsString();
+        Map<String,Object> resultMap = JSONObject.parseObject(contentAsString, Map.class);
+        Object data = resultMap.get("user");
+        Assert.assertNotNull(data);
+    }
+
+    /**
+     * PUT /sys/user/profile success
+     */
+    @Test
+    public void updateUserProfile_success(){
+        SysUserEntity userEntity = jsonToInParameter(testName.getMethodName(), SysUserEntity.class);
+        MvcResult result = UTUtil.performPut("/sys/user/profile", userEntity);
+
+        UTUtil.assertEqualsRCode(result, RCode.SUCCESS);
+
+    }
 }
