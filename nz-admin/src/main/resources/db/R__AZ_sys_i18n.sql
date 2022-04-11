@@ -3569,7 +3569,7 @@ INSERT INTO `sys_i18n` VALUES (3574, '523013', 'en', 'PROMSERVER_HOST_ERROR', 'P
 INSERT INTO `sys_i18n` VALUES (3575, '526014', 'en', 'PROMSERVER_NOTEXSITS', 'PromServer is not exsits', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3576, '526015', 'en', 'PROMSERVER_EXIST_ERROR', 'PromServer is exists : host,type,port repeat', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3577, '523016', 'en', 'PROMSERVER_TYPE_INVALIDE', 'PromServer type is incorrect', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (3578, '526017', 'en', 'PROMSERVER_UNAVAILABLE', 'No agent available', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (3578, '526017', 'en', 'PROMSERVER_UNAVAILABLE', 'No PromServer available', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3579, '521018', 'en', 'PROMSERVER_TOKEN_ISNULL', 'PromServer token info can not be empty', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3580, '531000', 'en', 'DC_NAME_ISNULL', 'Dc name can not be empty', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3581, '531001', 'en', 'DC_ID_ISNULL', 'Dc id can not be empty', '', '2021-11-02 00:00:00', 1);
@@ -4292,7 +4292,7 @@ INSERT INTO `sys_i18n` VALUES (4310, '523013', 'zh', 'PROMSERVER_HOST_ERROR', 'p
 INSERT INTO `sys_i18n` VALUES (4311, '526014', 'zh', 'PROMSERVER_NOTEXSITS', 'prometheus 不存在', '', '2021-11-03 16:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (4312, '526015', 'zh', 'PROMSERVER_EXIST_ERROR', 'prometheus已存在，类型 端口或ip重复', '', '2021-11-03 16:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (4313, '523016', 'zh', 'PROMSERVER_TYPE_INVALIDE', 'prometheus类型错误', '', '2021-11-03 16:28:05', 1);
-INSERT INTO `sys_i18n` VALUES (4314, '526017', 'zh', 'PROMSERVER_UNAVAILABLE', '没有可用客户端', '', '2021-11-03 16:28:05', 1);
+INSERT INTO `sys_i18n` VALUES (4314, '526017', 'zh', 'PROMSERVER_UNAVAILABLE', 'prometheus不可用', '', '2021-11-03 16:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (4315, '521018', 'zh', 'PROMSERVER_TOKEN_ISNULL', 'prometheus token不能为空', '', '2021-11-03 16:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (4316, '531000', 'zh', 'DC_NAME_ISNULL', '数据中心名称不能为空', '', '2021-11-03 16:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (4317, '531001', 'zh', 'DC_ID_ISNULL', '数据中心id不能为空', '', '2021-11-03 16:28:05', 1);
@@ -5453,7 +5453,12 @@ INSERT INTO `sys_i18n` VALUES (6024, 'config.backup.backup', 'en', 'config.backu
 INSERT INTO `sys_i18n` VALUES (6025, 'config.backup.backup', 'zh', 'config.backup.backup', '备份与恢复', '', '2022-04-08 10:01:04', 1);
 INSERT INTO `sys_i18n` VALUES (6026, 'trace.maximumHops', 'en', 'trace.maxHops', 'Maximum Hops', '', '2022-04-11 01:34:14', 407);
 INSERT INTO `sys_i18n` VALUES (6027, 'trace.maximumHops', 'zh', 'trace.maxHops', '最大跃点数', '', '2022-04-11 01:34:09', 407);
-
+INSERT INTO `sys_i18n` VALUES (6028, 'project.topology.font', 'en', 'project.topology.font', 'Font', '', '2022-03-30 07:59:26', 1);
+INSERT INTO `sys_i18n` VALUES (6029, 'project.topology.font', 'zh', 'project.topology.font', '字体', '', '2022-03-30 07:59:39', 1);
+INSERT INTO `sys_i18n` VALUES (6030, 'overall.downloadProgress', 'en', 'overall.downloadProgress', 'Download is in progress', '', '2022-04-08 07:59:39', 1);
+INSERT INTO `sys_i18n` VALUES (6031, 'overall.downloadProgress', 'zh', 'overall.downloadProgress', '正在下载', '', '2022-04-08 07:59:39', 1);
+INSERT INTO `sys_i18n` VALUES (6032, 'overall.downloadToPdf', 'en', 'overall.downloadToPdf', 'Download for PDF', '', '2022-04-08 07:59:39', 1);
+INSERT INTO `sys_i18n` VALUES (6033, 'overall.downloadToPdf', 'zh', 'overall.downloadToPdf', '导出PDF', '', '2022-04-08 07:59:39', 1);
 
 
 SET FOREIGN_KEY_CHECKS = 1;
