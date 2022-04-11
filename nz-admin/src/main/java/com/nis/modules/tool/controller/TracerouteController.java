@@ -228,7 +228,7 @@ public class TracerouteController {
                         Map timeout = Tool.MapUtil.of(
                                 Pair.of("ip", ip),
                                 Pair.of("state", 2),
-                                Pair.of("time", 0),
+                                Pair.of("time", null),
                                 Pair.of("source", promserver.getHost()),
                                 Pair.of("raw", "Timeout"),
                                 Pair.of("agent", agent),
@@ -250,12 +250,9 @@ public class TracerouteController {
                     Map noAgentInfo = Tool.MapUtil.of(
                             Pair.of("ip", ip),
                             Pair.of("state", 2),
-                            Pair.of("rate", 0),
-                            Pair.of("min", 0),
-                            Pair.of("avg", 0),
-                            Pair.of("max", 0),
+                            Pair.of("time", null),
                             Pair.of("source", ""),
-                            Pair.of("raw", "No PromServer available"),
+                            Pair.of("raw", "No agent available"),
                             Pair.of("agent", Tool.MapUtil.empty()),
                             Pair.of("dc", dcMap)
                     );

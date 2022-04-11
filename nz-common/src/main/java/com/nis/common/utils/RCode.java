@@ -611,7 +611,7 @@ public enum RCode {
     PROMSERVER_NOTEXSITS(526014, "PromServer is not exsits"),    // PromServer 不存在
     PROMSERVER_EXIST_ERROR(526015, "PromServer is exists : host,type,port repeat"),
     PROMSERVER_TYPE_INVALIDE(523016,"PromServer type is incorrect"),
-    PROMSERVER_UNAVAILABLE(526017,"No PromServer available"),
+    PROMSERVER_UNAVAILABLE(526017,"No agent available"),
     PROMSERVER_TOKEN_ISNULL(521018, "PromServer token info can not be empty"),
     PROMSERVER_NAME_ISNULL(521019, "Agent name can not be empty"),
     PROMSERVER_NAME_EXISTED(521020, "Agent name existed"),
