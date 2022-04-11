@@ -26,7 +26,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/tool")
@@ -51,26 +50,32 @@ public class PingController {
         String dcIds = (String) params.get("dcIds");
         String timeout = Tool.ObjectUtil.defaultIfEmpty((String) params.get("timeout"), "30");
 
+        List<Dc> dcList = dcService.list(new LambdaQueryWrapper<Dc>().in(Tool.StrUtil.isNotEmpty(dcIds), Dc::getId, Tool.StrUtil.split(dcIds, ',')));
+
         // 根据 dcids 获取当前 state = up 的所有 agent
         List<Promserver> promserverList = agentService.list(new LambdaQueryWrapper<Promserver>()
                 .in(Tool.StrUtil.isNotEmpty(dcIds), Promserver::getDcId, Tool.StrUtil.split(dcIds, ','))
                 .eq(Promserver::getStatus, 1));
 
+        List<Dc> futureDcList = Tool.ListUtil.list(false);
+        for (Dc dc : dcList) {
+            Promserver agentByDc = promserverList.stream().filter(p -> dc.getId().equals(p.getDcId())).findFirst().orElse(null);
+            dc.setAgent(agentByDc);
+            futureDcList.add(dc);
+        }
+
         String tid = UUID.randomUUID().toString();
 
-        List<Dc> dcList = dcService.list();
-        Map<Integer, String> dcIdAndNameMap = dcList.stream().collect(Collectors.toMap(Dc::getId, Dc::getName));
-
-        for (Promserver promserver : promserverList) {
-            PingRunnable pingRunnable = new PingRunnable(promserver, ip, tid, Long.valueOf(timeout), TimeUnit.SECONDS, dcIdAndNameMap);
-            pingRunnable.setName(Tool.StrUtil.concat(true, tid, "-", promserver.getName()));
+        for (Dc dc : futureDcList) {
+            PingRunnable pingRunnable = new PingRunnable(dc, ip, tid, Long.valueOf(timeout), TimeUnit.SECONDS);
+            pingRunnable.setName(Tool.StrUtil.concat(true, tid, "-", dc.getName()));
             ThreadUtil.execAsync(pingRunnable);
         }
 
         Map m = Tool.MapUtil.newHashMap();
         m.put("tid", tid);
         Map task = Tool.MapUtil.newHashMap();
-        task.put("total", promserverList.size());
+        task.put("total", futureDcList.size());
         task.put("done", 0);
         task.put("process", 0);
         m.put("task", task);
@@ -141,91 +146,120 @@ public class PingController {
     }
 
     public class PingRunnable extends Thread {
-        private Promserver promserver;
+        private Dc dc;
         private String ip;
         private String tid;
         private long timeout;
         private TimeUnit timeUnit;
-        private Map<Integer, String> dcIdAndNameMap;
 
         private volatile boolean isWrite = true;
-        private volatile boolean timeoutToWrite = true;
+        // 任务运行状态，调用 interrupt() 后，该值为 false
+        private volatile boolean isRun = true;
 
-        public PingRunnable(Promserver promserver, String ip, String tid, long timeout, TimeUnit timeUnit, Map<Integer, String> dcIdAndNameMap) {
-            this.promserver = promserver;
+        public PingRunnable(Dc dc, String ip, String tid, long timeout, TimeUnit timeUnit) {
+            this.dc = dc;
             this.ip = ip;
             this.tid = tid;
             this.timeout = timeout;
             this.timeUnit = timeUnit;
-            this.dcIdAndNameMap = dcIdAndNameMap;
         }
 
         @Override
         public void run() {
             ACTIVE_TASKS.add(this);
-            CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
-                String path = "/cmd/ping";
-                Map<String, List<String>> body = Tool.MapUtil.of(Pair.of("ips", Tool.ListUtil.of(ip)));
-                String resultJsonStr = AgentUtil.request(promserver, HttpMethod.POST, path, null, body, String.class);
-                Object list = JSONPath.read(resultJsonStr, "data.list");
-                log.info("host: {}, path: {}, result: {}", promserver.getHost(), path, resultJsonStr);
-                // 由于 future.cancel 在任务已经运行状态下，不一定能取消，所以在写 redis 前增加判断
-                if (isWrite) {
-                    List<Map> mapList = JSONArray.parseArray(JSONArray.toJSONString(list), Map.class);
-                    for (Map map : mapList) {
-                        Map dc = Tool.MapUtil.newHashMap(4);
-                        dc.put("id", promserver.getDcId());
-                        dc.put("name", dcIdAndNameMap.get(promserver.getDcId()));
+            // agent 存在，向 agent 发起请求获取数据
+            if (Optional.ofNullable(dc).map(Dc::getAgent).isPresent()) {
+                Promserver promserver = dc.getAgent();
+                CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
+                    String path = "/cmd/ping";
+                    Map<String, List<String>> body = Tool.MapUtil.of(Pair.of("ips", Tool.ListUtil.of(ip)));
+                    String resultJsonStr = AgentUtil.request(promserver, HttpMethod.POST, path, null, body, String.class);
+                    Object list = JSONPath.read(resultJsonStr, "data.list");
+                    log.info("host: {}, path: {}, result: {}", promserver.getHost(), path, resultJsonStr);
+                    // 由于 future.cancel 在任务已经运行状态下，不一定能取消，所以在写 redis 前增加判断
+                    if (isWrite) {
+                        List<Map> mapList = JSONArray.parseArray(JSONArray.toJSONString(list), Map.class);
+                        for (Map map : mapList) {
+                            Map dcMap = Tool.MapUtil.newHashMap(4);
+                            dcMap.put("id", dc.getId());
+                            dcMap.put("name", dc.getName());
 
+                            Map agent = Tool.MapUtil.newHashMap(4);
+                            agent.put("id", promserver.getId());
+                            agent.put("name", promserver.getName());
+
+                            map.put("dc", dcMap);
+                            map.put("agent", agent);
+                            // source 赋值为 agent ip
+                            map.put("source", promserver.getHost());
+                        }
+                        redisTemplate.opsForList().leftPush(Tool.StrUtil.concat(true, "test_ping_result_", tid), JSONArray.toJSONString(mapList));
+                    } else {
+                        log.info(String.format("Ping thread: %s has been canceled, Do not write data to Redis", this.getName()));
+                    }
+                    return Tool.StrUtil.EMPTY;
+                });
+
+                try {
+                    future.get(timeout, timeUnit);
+                } catch (InterruptedException | ExecutionException e) {
+                    log.error(e);
+                } catch (TimeoutException e) {
+                    boolean cancel = future.cancel(true);
+                    isWrite = false;
+                    log.error(String.format("%s agent ping %s timeout, Task cancel status: %s", promserver.getName(), ip, cancel));
+
+                    if (isRun) {
+                        log.info(String.format("%s agent ping %s timeout, Timeout data write to redis", promserver.getName(), ip));
+                        // 超时也需要向 redis 中写入 timeout 消息
                         Map agent = Tool.MapUtil.newHashMap(4);
                         agent.put("id", promserver.getId());
                         agent.put("name", promserver.getName());
 
-                        map.put("dc", dc);
-                        map.put("agent", agent);
+                        Map dcMap = Tool.MapUtil.newHashMap(4);
+                        dcMap.put("id", dc.getId());
+                        dcMap.put("name", dc.getName());
+                        Map timeout = Tool.MapUtil.of(
+                                Pair.of("ip", ip),
+                                Pair.of("state", 2),
+                                Pair.of("rate", 0),
+                                Pair.of("min", 0),
+                                Pair.of("avg", 0),
+                                Pair.of("max", 0),
+                                Pair.of("source", promserver.getHost()),
+                                Pair.of("raw", "Timeout"),
+                                Pair.of("agent", agent),
+                                Pair.of("dc", dcMap)
+                        );
+                        List<Map> list = Tool.ListUtil.of(timeout);
+                        redisTemplate.opsForList().leftPush(Tool.StrUtil.concat(true, "test_ping_result_", tid), JSONObject.toJSONString(list));
+                    } else {
+                        log.info(String.format("%s agent ping %s timeout, But the thread is interrupted, and the timeout data is not write to redis.", promserver.getName(), ip));
                     }
-                    redisTemplate.opsForList().leftPush(Tool.StrUtil.concat(true, "test_ping_result_", tid), JSONArray.toJSONString(mapList));
-                } else {
-                    log.info(String.format("Ping thread: %s has been canceled, Do not write data to Redis", this.getName()));
                 }
-                return Tool.StrUtil.EMPTY;
-            });
-
-            try {
-                future.get(timeout, timeUnit);
-            } catch (InterruptedException | ExecutionException e) {
-                log.error(e);
-            } catch (TimeoutException e) {
-                boolean cancel = future.cancel(true);
-                isWrite = false;
-                log.error(String.format("%s agent ping %s timeout, Task cancel status: %s", promserver.getName(), ip, cancel));
-
-                if (timeoutToWrite) {
-                    log.info(String.format("%s agent ping %s timeout, Timeout data write to redis", promserver.getName(), ip));
-                    // 超时也需要向 redis 中写入 timeout 消息
-                    Map agent = Tool.MapUtil.newHashMap(4);
-                    agent.put("id", promserver.getId());
-                    agent.put("name", promserver.getName());
-
-                    Map dc = Tool.MapUtil.newHashMap(4);
-                    dc.put("id", promserver.getDcId());
-                    dc.put("name", dcIdAndNameMap.get(promserver.getDcId()));
-                    Map timeout = Tool.MapUtil.of(
+            } else {
+                // agent 不存在（DC 下没有可用 agent,记录错误数据至 REDIS 中）
+                if (isRun) {
+                    log.info(String.format("Dc info : %s , No PromServer available", JSONObject.toJSONString(dc)));
+                    Map dcMap = Tool.MapUtil.newHashMap(4);
+                    dcMap.put("id", dc.getId());
+                    dcMap.put("name", dc.getName());
+                    Map noAgentInfo = Tool.MapUtil.of(
                             Pair.of("ip", ip),
                             Pair.of("state", 2),
                             Pair.of("rate", 0),
                             Pair.of("min", 0),
                             Pair.of("avg", 0),
                             Pair.of("max", 0),
-                            Pair.of("source", promserver.getHost()),
-                            Pair.of("raw", "Timeout"),
-                            Pair.of("agent", agent),
-                            Pair.of("dc", dc)
+                            Pair.of("source", ""),
+                            Pair.of("raw", "No PromServer available"),
+                            Pair.of("agent", Tool.MapUtil.empty()),
+                            Pair.of("dc", dcMap)
                     );
-                    List<Map> list = Tool.ListUtil.of(timeout);
+                    List<Map> list = Tool.ListUtil.of(noAgentInfo);
                     redisTemplate.opsForList().leftPush(Tool.StrUtil.concat(true, "test_ping_result_", tid), JSONObject.toJSONString(list));
                 } else {
-                    log.info(String.format("%s agent ping %s timeout, But the thread is interrupted, and the timeout data is not write to redis.", promserver.getName(), ip));
+                    log.info(String.format("Dc info : %s , No PromServer available, But the thread is interrupted, not write to redis.", JSONObject.toJSONString(dc)));
                 }
             }
             ACTIVE_TASKS.remove(this);
@@ -235,7 +269,7 @@ public class PingController {
         public void interrupt() {
             super.interrupt();
             isWrite = false;
-            timeoutToWrite = false;
+            isRun = false;
         }
     }
 
