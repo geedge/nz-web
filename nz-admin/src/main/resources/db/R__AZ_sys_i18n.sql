@@ -5453,12 +5453,8 @@ INSERT INTO `sys_i18n` VALUES (6024, 'config.backup.backup', 'en', 'config.backu
 INSERT INTO `sys_i18n` VALUES (6025, 'config.backup.backup', 'zh', 'config.backup.backup', '备份与恢复', '', '2022-04-08 10:01:04', 1);
 INSERT INTO `sys_i18n` VALUES (6026, 'trace.maximumHops', 'en', 'trace.maxHops', 'Maximum Hops', '', '2022-04-11 01:34:14', 407);
 INSERT INTO `sys_i18n` VALUES (6027, 'trace.maximumHops', 'zh', 'trace.maxHops', '最大跃点数', '', '2022-04-11 01:34:09', 407);
-INSERT INTO `sys_i18n` VALUES (6028, 'project.topology.font', 'en', 'project.topology.font', 'Font', '', '2022-03-30 07:59:26', 1);
-INSERT INTO `sys_i18n` VALUES (6029, 'project.topology.font', 'zh', 'project.topology.font', '字体', '', '2022-03-30 07:59:39', 1);
-INSERT INTO `sys_i18n` VALUES (6030, 'overall.downloadProgress', 'en', 'overall.downloadProgress', 'Download is in progress', '', '2022-04-08 07:59:39', 1);
-INSERT INTO `sys_i18n` VALUES (6031, 'overall.downloadProgress', 'zh', 'overall.downloadProgress', '正在下载', '', '2022-04-08 07:59:39', 1);
-INSERT INTO `sys_i18n` VALUES (6032, 'overall.downloadToPdf', 'en', 'overall.downloadToPdf', 'Download for PDF', '', '2022-04-08 07:59:39', 1);
-INSERT INTO `sys_i18n` VALUES (6033, 'overall.downloadToPdf', 'zh', 'overall.downloadToPdf', '导出PDF', '', '2022-04-08 07:59:39', 1);
+INSERT INTO `sys_i18n` VALUES (6028, 'trace.totalTime', 'en', 'trace.totalTime', 'Total time', '', '2022-04-12 01:46:55', 407);
+INSERT INTO `sys_i18n` VALUES (6029, 'trace.totalTime', 'zh', 'trace.totalTime', '总时间', '', '2022-04-12 01:47:21', 407);
 
 
 SET FOREIGN_KEY_CHECKS = 1;
