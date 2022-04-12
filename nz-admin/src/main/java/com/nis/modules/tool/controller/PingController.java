@@ -46,7 +46,7 @@ public class PingController {
 
     @GetMapping("/ping")
     public R ping(@RequestParam Map<String, Object> params) {
-        String ip = (String) params.get("ip");
+        String ips = (String) params.get("ips");
         String dcIds = (String) params.get("dcIds");
         String timeout = Tool.ObjectUtil.defaultIfEmpty((String) params.get("timeout"), "30");
 
@@ -67,7 +67,7 @@ public class PingController {
         String tid = UUID.randomUUID().toString();
 
         for (Dc dc : futureDcList) {
-            PingRunnable pingRunnable = new PingRunnable(dc, ip, tid, Long.valueOf(timeout), TimeUnit.SECONDS);
+            PingRunnable pingRunnable = new PingRunnable(dc, ips, tid, Long.valueOf(timeout), TimeUnit.SECONDS);
             pingRunnable.setName(Tool.StrUtil.concat(true, tid, "-", dc.getName()));
             ThreadUtil.execAsync(pingRunnable);
         }
@@ -147,7 +147,7 @@ public class PingController {
 
     public class PingRunnable extends Thread {
         private Dc dc;
-        private String ip;
+        private String ips;
         private String tid;
         private long timeout;
         private TimeUnit timeUnit;
@@ -156,9 +156,9 @@ public class PingController {
         // 任务运行状态，调用 interrupt() 后，该值为 false
         private volatile boolean isRun = true;
 
-        public PingRunnable(Dc dc, String ip, String tid, long timeout, TimeUnit timeUnit) {
+        public PingRunnable(Dc dc, String ips, String tid, long timeout, TimeUnit timeUnit) {
             this.dc = dc;
-            this.ip = ip;
+            this.ips = ips;
             this.tid = tid;
             this.timeout = timeout;
             this.timeUnit = timeUnit;
@@ -172,7 +172,9 @@ public class PingController {
                 Promserver promserver = dc.getAgent();
                 CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
                     String path = "/cmd/ping";
-                    Map<String, List<String>> body = Tool.MapUtil.of(Pair.of("ips", Tool.ListUtil.of(ip)));
+                    Map<String, List<String>> body = Tool.MapUtil.of(
+                            Pair.of("ips", Tool.StrUtil.split(ips, ','))
+                    );
                     String resultJsonStr = AgentUtil.request(promserver, HttpMethod.POST, path, null, body, String.class);
                     Object list = JSONPath.read(resultJsonStr, "data.list");
                     log.info("host: {}, path: {}, result: {}", promserver.getHost(), path, resultJsonStr);
@@ -207,10 +209,10 @@ public class PingController {
                 } catch (TimeoutException e) {
                     boolean cancel = future.cancel(true);
                     isWrite = false;
-                    log.error(String.format("%s agent ping %s timeout, Task cancel status: %s", promserver.getName(), ip, cancel));
+                    log.error(String.format("%s agent ping %s timeout, Task cancel status: %s", promserver.getName(), ips, cancel));
 
                     if (isRun) {
-                        log.info(String.format("%s agent ping %s timeout, Timeout data write to redis", promserver.getName(), ip));
+                        log.info(String.format("%s agent ping %s timeout, Timeout data write to redis", promserver.getName(), ips));
                         // 超时也需要向 redis 中写入 timeout 消息
                         Map agent = Tool.MapUtil.newHashMap(4);
                         agent.put("id", promserver.getId());
@@ -219,22 +221,26 @@ public class PingController {
                         Map dcMap = Tool.MapUtil.newHashMap(4);
                         dcMap.put("id", dc.getId());
                         dcMap.put("name", dc.getName());
-                        Map timeout = Tool.MapUtil.of(
-                                Pair.of("ip", ip),
-                                Pair.of("state", 2),
-                                Pair.of("rate", null),
-                                Pair.of("min", null),
-                                Pair.of("avg", null),
-                                Pair.of("max", null),
-                                Pair.of("source", promserver.getHost()),
-                                Pair.of("raw", "Timeout"),
-                                Pair.of("agent", agent),
-                                Pair.of("dc", dcMap)
-                        );
-                        List<Map> list = Tool.ListUtil.of(timeout);
+                        List<String> timeOutIpList = Tool.StrUtil.split(ips, ',');
+                        List<Map> list = Tool.ListUtil.list(false);
+                        for (String timeOutIp : timeOutIpList) {
+                            Map timeoutInfoMap = Tool.MapUtil.of(
+                                    Pair.of("ip", timeOutIp),
+                                    Pair.of("state", 2),
+                                    Pair.of("rate", null),
+                                    Pair.of("min", null),
+                                    Pair.of("avg", null),
+                                    Pair.of("max", null),
+                                    Pair.of("source", promserver.getHost()),
+                                    Pair.of("raw", "Timeout"),
+                                    Pair.of("agent", agent),
+                                    Pair.of("dc", dcMap)
+                            );
+                            list.add(timeoutInfoMap);
+                        }
                         redisTemplate.opsForList().leftPush(Tool.StrUtil.concat(true, "test_ping_result_", tid), JSONObject.toJSONString(list));
                     } else {
-                        log.info(String.format("%s agent ping %s timeout, But the thread is interrupted, and the timeout data is not write to redis.", promserver.getName(), ip));
+                        log.info(String.format("%s agent ping %s timeout, But the thread is interrupted, and the timeout data is not write to redis.", promserver.getName(), ips));
                     }
                 }
             } else {
@@ -244,19 +250,23 @@ public class PingController {
                     Map dcMap = Tool.MapUtil.newHashMap(4);
                     dcMap.put("id", dc.getId());
                     dcMap.put("name", dc.getName());
-                    Map noAgentInfo = Tool.MapUtil.of(
-                            Pair.of("ip", ip),
-                            Pair.of("state", 2),
-                            Pair.of("rate", null),
-                            Pair.of("min", null),
-                            Pair.of("avg", null),
-                            Pair.of("max", null),
-                            Pair.of("source", ""),
-                            Pair.of("raw", "No agent available"),
-                            Pair.of("agent", Tool.MapUtil.empty()),
-                            Pair.of("dc", dcMap)
-                    );
-                    List<Map> list = Tool.ListUtil.of(noAgentInfo);
+                    List<String> ipList = Tool.StrUtil.split(ips, ',');
+                    List<Map> list = Tool.ListUtil.list(false);
+                    for (String ip : ipList) {
+                        Map noAgentInfo = Tool.MapUtil.of(
+                                Pair.of("ip", ip),
+                                Pair.of("state", 2),
+                                Pair.of("rate", null),
+                                Pair.of("min", null),
+                                Pair.of("avg", null),
+                                Pair.of("max", null),
+                                Pair.of("source", ""),
+                                Pair.of("raw", "No agent available"),
+                                Pair.of("agent", Tool.MapUtil.empty()),
+                                Pair.of("dc", dcMap)
+                        );
+                        list.add(noAgentInfo);
+                    }
                     redisTemplate.opsForList().leftPush(Tool.StrUtil.concat(true, "test_ping_result_", tid), JSONObject.toJSONString(list));
                 } else {
                     log.info(String.format("Dc info : %s , No PromServer available, But the thread is interrupted, not write to redis.", JSONObject.toJSONString(dc)));
