@@ -1,0 +1,76 @@
+{
+  "------------------ GET  /sys/role data---------------------": "note",
+  "queryRole_exist": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "name": "ceshi"
+  },
+  "queryRole_notexist": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "name": "kaifa"
+  },
+  "------------------ POST  /sys/role data---------------------": "note",
+  "addRole_success": {
+    "name": "ceshi4",
+    "remark": "测试用户",
+    "menuIds": [1, 4, 5]
+  },
+  "addRole_nameIsNull": {
+    "name": null,
+    "remark": "测试用户",
+    "menuIds": [1, 4, 5]
+  },
+  "addRole_nameDuplicate": {
+    "name": "ceshi1",
+    "remark": "测试用户",
+    "menuIds": [1, 4, 5]
+  },
+  "addRole_menuIdsIsNull": {
+    "name": "ceshi5",
+    "remark": "测试用户",
+    "menuIds": null
+  },
+  "addRole_menuIsNull": {
+    "name": "ceshi5",
+    "remark": "测试用户",
+    "menuIds": [5000,6000]
+  },
+  "------------------ PUT  /sys/role data---------------------": "note",
+  "updateRole_success": {
+    "id": 3,
+    "name": "zhangSan",
+    "remark": "zhangSan",
+    "menuIds": [1, 4, 5]
+  },
+  "updateRole_idIsNull": {
+    "id": null,
+    "name": "liSi",
+    "remark": "liSi",
+    "menuIds": [1, 4, 5]
+  },
+  "updateRole_roleNotExist": {
+    "id": 1000,
+    "name": "liSi",
+    "remark": "liSi",
+    "menuIds": [1, 4, 5]
+  },
+  "updateRole_builtIn": {
+    "id": 4,
+    "name": "liSi",
+    "remark": "liSi",
+    "menuIds": [1, 4, 5]
+  },
+  "------------------ DELETE  /sys/role data---------------------": "note",
+  "deleteRole_success": {
+    "ids": "5"
+  },
+  "deleteRole_idIsNull": {
+    "ids": ""
+  },
+  "deleteRole_builtIn": {
+    "ids": "6"
+  }
+}

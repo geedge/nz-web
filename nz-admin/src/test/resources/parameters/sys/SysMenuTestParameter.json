@@ -1,0 +1,169 @@
+{
+  "------------------ GET  /sys/menu data---------------------": "note",
+  "queryMenuList_exist": {
+    "id": 1
+  },
+  "queryMenuListByIdIsNull_exist": {
+    "id": null
+  },
+  "queryMenuList_notexist": {
+    "id": 9999
+  },
+  "------------------ POST  /sys/menu data---------------------": "note",
+  "addMenu_success": {
+    "name": "zhangSan",
+    "code": "zhangSan",
+    "i18n": "zhangSan",
+    "parentId": 0,
+    "type": "1",
+    "route": "/zhangSan",
+    "icon": "zhangSan",
+    "orderNum": 1,
+    "perms": ""
+  },
+  "addMenu_nameIsNull": {
+    "name": null,
+    "code": "liSi",
+    "i18n": "liSi",
+    "parentId": 0,
+    "type": "1",
+    "route": "/liSi",
+    "icon": "liSi",
+    "orderNum": 1,
+    "perms": ""
+  },
+  "addMenu_codeIsNull": {
+    "name": "liSi",
+    "code": null,
+    "i18n": "liSi",
+    "parentId": 0,
+    "type": "1",
+    "route": "/liSi",
+    "icon": "liSi",
+    "orderNum": 1,
+    "perms": ""
+  },
+  "addMenu_i18nIsNull": {
+    "name": "liSi",
+    "code": "liSi",
+    "i18n": null,
+    "parentId": 0,
+    "type": "1",
+    "route": "/liSi",
+    "icon": "liSi",
+    "orderNum": 1,
+    "perms": ""
+  },
+  "addMenu_typeIsNull": {
+    "name": "liSi",
+    "code": "liSi",
+    "i18n": "liSi",
+    "parentId": 0,
+    "type": null,
+    "route": "/liSi",
+    "icon": "liSi",
+    "orderNum": 1,
+    "perms": ""
+  },
+  "addMenu_orderNumeIsNull": {
+    "name": "liSi",
+    "code": "liSi",
+    "i18n": "liSi",
+    "parentId": 0,
+    "type": "1",
+    "route": "/liSi",
+    "icon": "liSi",
+    "orderNum": null,
+    "perms": ""
+  },
+  "addMenu_codeDuplicate": {
+    "name": "liSi",
+    "code": "copy1",
+    "i18n": "liSi",
+    "parentId": 0,
+    "type": "1",
+    "route": "/liSi",
+    "icon": "liSi",
+    "orderNum": 1,
+    "perms": ""
+  },
+  "addMenu_typeError": {
+    "name": "liSi",
+    "code": "liSi",
+    "i18n": "liSi",
+    "parentId": 0,
+    "type": "4",
+    "route": "/liSi",
+    "icon": "liSi",
+    "orderNum": 1,
+    "perms": ""
+  },
+  "addMenu_menuIsNull": {
+    "name": "liSi",
+    "code": "liSi",
+    "i18n": "liSi",
+    "parentId": 99999,
+    "type": "1",
+    "route": "/liSi",
+    "icon": "liSi",
+    "orderNum": 1,
+    "perms": ""
+  },
+  "addMenu_menuTypeIsButton": {
+    "name": "liSi",
+    "code": "liSi",
+    "i18n": "liSi",
+    "parentId": 5,
+    "type": "1",
+    "route": "/liSi",
+    "icon": "liSi",
+    "orderNum": 1,
+    "perms": ""
+  },
+  "addMenu_menuTypeIsTable": {
+    "name": "liSi",
+    "code": "liSi",
+    "i18n": "liSi",
+    "parentId": 7,
+    "type": "1",
+    "route": "/liSi",
+    "icon": "liSi",
+    "orderNum": 1,
+    "perms": ""
+  },
+  "------------------ UPDATE  /sys/menu data---------------------": "note",
+  "updateMenu_success": {
+    "id": 2,
+    "name": "wangWu",
+    "code": "wangWu",
+    "i18n": "wangWu",
+    "parentId": 0,
+    "type": "1",
+    "route": "/wangWu",
+    "icon": "wangWu",
+    "orderNum": 1,
+    "perms": ""
+  },
+  "updateMenu_idIsNull": {
+    "id": null,
+    "name": "wangWu",
+    "code": "wangWu",
+    "i18n": "wangWu",
+    "parentId": 0,
+    "type": "1",
+    "route": "/wangWu",
+    "icon": "wangWu",
+    "orderNum": 1,
+    "perms": ""
+  },
+  "------------------ DELETE  /sys/menu data---------------------": "note",
+  "deleteMenu_success": {
+    "ids": "3"
+  },
+  "deleteMenu_idIsNull": {
+    "ids": ""
+  },
+  "deleteMenu_menuDisable": {
+    "ids": "4"
+  }
+}
