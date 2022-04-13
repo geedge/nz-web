@@ -42,13 +42,6 @@ build_rpm:
     - mc alias set nz $MINIO_HOST $MINIO_USER $MINIO_PWD
     - mc cp $FILE_NAME nz/release/nz-web/$FILE_NAME
     - cd ../../
-  artifacts:
-    name: "$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA"
-    when: on_success
-    paths:
-      - ./nz-admin/target/*.xjar
-      - ./nz-admin/target/xjar
-    expire_in: 1 week
   # 在哪个分支上可用
   only:
     - /^rel-.*$/i
@@ -74,13 +67,6 @@ dev_build:
     - mc cp $FILE_NAME nz/ci-cd/nz-web/$FILE_NAME
     - mc cp $FILE_NAME nz/ci-cd/nz-web/$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-latest.tar.gz
     - cd ../../
-  artifacts:
-    name: "$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA"
-    when: on_success
-    paths:
-      - ./nz-admin/target/*.xjar
-      - ./nz-admin/target/xjar
-    expire_in: 1 week
   # 在哪个分支上可用
   only:
     - /^dev-.*$/i
