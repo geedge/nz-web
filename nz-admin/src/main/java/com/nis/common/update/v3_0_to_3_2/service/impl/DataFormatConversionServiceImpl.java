@@ -313,7 +313,7 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
                     // chart-bar bar
                     case "bar": {
                         // none/null 赋默认值 last
-                        params.put("statistics", Tool.StrUtil.equals(statisticsStrVal, "null") ? "last" : statisticsStrVal);
+                        params.put("statistics", Tool.StrUtil.equals(statisticsStrVal, "null") || Tool.StrUtil.equals(statisticsStrVal, "") ? "last" : statisticsStrVal);
                         params.put("nullType", oldParamMap.get("nullType"));
                         params.put("display", "value");
                         params.put("valueMapping", valueMappingList);
@@ -337,7 +337,7 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
                     case "singleStat": {
                         visualChart.setType("stat");
                         // none/null 赋默认值 last
-                        params.put("statistics", Tool.StrUtil.equals(statisticsStrVal, "null") ? "last" : statisticsStrVal);
+                        params.put("statistics", Tool.StrUtil.equals(statisticsStrVal, "null") || Tool.StrUtil.equals(statisticsStrVal, "") ? "last" : statisticsStrVal);
                         params.put("nullType", oldParamMap.get("nullType"));
                         if (oldParamMap.get("valueMapping") != null) {
                             Map valueMappingMap = JSONObject.parseObject(oldParamMap.get("valueMapping").toString(), Map.class);
@@ -360,7 +360,7 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
                     // chart-pie pie
                     case "pie": {
                         // none/null 赋默认值 last
-                        params.put("statistics", Tool.StrUtil.equals(statisticsStrVal, "null") ? "last" : statisticsStrVal);
+                        params.put("statistics", Tool.StrUtil.equals(statisticsStrVal, "null") || Tool.StrUtil.equals(statisticsStrVal, "") ? "last" : statisticsStrVal);
                         params.put("nullType", oldParamMap.get("nullType"));
                         params.put("display", "value");
                         params.put("valueMapping", valueMappingList);
@@ -371,7 +371,7 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
                     // chart-table table  TODO
                     case "table": {
                         // none/null 赋默认值 last
-                        params.put("statistics", Tool.StrUtil.equals(statisticsStrVal, "null") ? "last" : statisticsStrVal);
+                        params.put("statistics", Tool.StrUtil.equals(statisticsStrVal, "null") || Tool.StrUtil.equals(statisticsStrVal, "") ? "last" : statisticsStrVal);
                         params.put("nullType", oldParamMap.get("nullType"));
                         params.put("enable", enableMap);
                         params.put("indexs", "");
