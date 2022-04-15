@@ -5339,7 +5339,7 @@ INSERT INTO `sys_i18n` VALUES (5910, '513028', 'en', 'SYS_USER_PIN_NOT_CONTAIN_S
 INSERT INTO `sys_i18n` VALUES (5911, '513028', 'zh', 'SYS_USER_PIN_NOT_CONTAIN_SPECIAL_LETTERS', '系统用户密码必须包含特殊字母', '', '2022-03-30 06:20:58', 1);
 INSERT INTO `sys_i18n` VALUES (5912, '513029', 'en', 'SYS_USER_PIN_LONGTIME_NO_MODIFY', 'System user password has not been modified for a long time more than valid value', '', '2022-03-30 06:22:37', 1);
 INSERT INTO `sys_i18n` VALUES (5913, '513029', 'zh', 'SYS_USER_PIN_LONGTIME_NO_MODIFY', '系统用户密码尚未多次修改超过有效值', '', '2022-03-30 06:22:52', 1);
-INSERT INTO `sys_i18n` VALUES (5914, '513030', 'en', 'SYS_USER_PIN_RETRY_ERROR', 'System user password exceeded too many retries errors, please try again later', '', '2022-03-30 06:26:49', 1);
+INSERT INTO `sys_i18n` VALUES (5914, '513030', 'en', 'SYS_USER_PIN_RETRY_ERROR', 'System user pin too many errors more than {0} , please try again after {1} minutes', '', '2022-03-30 06:26:49', 1);
 INSERT INTO `sys_i18n` VALUES (5915, '513030', 'zh', 'SYS_USER_PIN_RETRY_ERROR', '系统用户密码超过重试太多错误，请稍后再试', '', '2022-03-30 06:27:03', 1);
 INSERT INTO `sys_i18n` VALUES (5916, '521019', 'en', 'PROMSERVER_NAME_ISNULL', 'Agent name can not be empty', '', '2022-03-30 06:29:30', 1);
 INSERT INTO `sys_i18n` VALUES (5917, '521019', 'zh', 'PROMSERVER_NAME_ISNULL', '客户端名称不能为空', '', '2022-03-30 06:29:19', 1);
