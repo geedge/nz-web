@@ -1,0 +1,67 @@
+{
+  "------------------ GET  /mibl data---------------------": "note",
+  "querySnmpMiblList_exist": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "id": "1"
+  },
+  "querySnmpMiblList_notexist": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "id": "10000"
+  },
+  "------------------ POST  /mibl data---------------------": "note",
+  "addSnmpMibl_success": {
+    "name": "tsg",
+    "remark": "192.168.10.14",
+    "models": "1,2,3"
+  },
+
+  "------------------ PUT  /mibl data---------------------": "note",
+  "updateSnmpMibl_success": {
+    "id": 2,
+    "name": "BRIDGE-MIB",
+    "remark": "192.168.10.14",
+    "models": "1"
+  },
+  "updateSnmpMibl_idIsNull": {
+    "id": null,
+    "name": "BRIDGE-MIB",
+    "remark": "192.168.10.14",
+    "models": "1"
+  },
+  "------------------ DELETE  /mibl data---------------------": "note",
+  "deleteSnmpMibl_success": {
+    "ids": "4,5"
+  },
+  "deleteSnmpMibl_idIsNull": {
+    "ids": ""
+  },
+  "------------------ GET  /mibl/download data---------------------": "note",
+  "getSnmpMibl_text": {
+    "id": "1"
+  },
+  "getSnmpMibl_idIsNull": {
+    "id": null
+  },
+  "getSnmpMibl_mibNotExist": {
+    "id": "10000"
+  },
+  "------------------ GET  /mibl/tree data---------------------": "note",
+  "getSnmpMiblTree_success": {
+    "ids": "1,2",
+    "models": "1,2"
+  },
+  "------------------ POST  /mibl/browser data---------------------": "note",
+  "getSnmpMiblBrowser_success": {
+    "community": "public",
+    "host": "192.168.40.41",
+    "oid": "1.3.6.1.2.1.74.1.1.1",
+    "operation": "get",
+    "port": 161,
+    "snmpCredentialId": 1,
+    "version": 2
+  }
+}
