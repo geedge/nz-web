@@ -5327,8 +5327,8 @@ INSERT INTO `sys_i18n` VALUES (5898, 'overall.topology', 'zh', 'overall.topology
 INSERT INTO `sys_i18n` VALUES (5899, 'overall.topology', 'en', 'overall.topology', 'English', '', '2022-03-28 03:11:47', 1);
 INSERT INTO `sys_i18n` VALUES (5900, '372010', 'en', 'ASSET_FIELD_META_KEY_NAME_DUPLICATE', 'Asset field key value or name duplicate', '', '2022-03-30 06:11:23', 1);
 INSERT INTO `sys_i18n` VALUES (5901, '372010', 'zh', 'ASSET_FIELD_META_KEY_NAME_DUPLICATE', '资产字段键值或名称重复', '', '2022-03-30 06:12:13', 1);
-INSERT INTO `sys_i18n` VALUES (5902, '513024', 'en', 'SYS_USER_PIN_TOO_SHORT', 'The System user password must contain at least 1 characters', '', '2022-03-30 06:16:24', 1);
-INSERT INTO `sys_i18n` VALUES (5903, '513024', 'zh', 'SYS_USER_PIN_TOO_SHORT', '系统用户密码必须包含至少1个字符', '', '2022-03-30 06:16:46', 1);
+INSERT INTO `sys_i18n` VALUES (5902, '513024', 'en', 'SYS_USER_PIN_TOO_SHORT', 'The System user password minimum length is {0}', '', '2022-03-30 06:16:24', 1);
+INSERT INTO `sys_i18n` VALUES (5903, '513024', 'zh', 'SYS_USER_PIN_TOO_SHORT', '系统用户密码长度不符', '', '2022-03-30 06:16:46', 1);
 INSERT INTO `sys_i18n` VALUES (5904, '513025', 'en', 'SYS_USER_PIN_NOT_CONTAIN_NUMBER', 'System user pin must contain number', '', '2022-03-30 06:17:22', 1);
 INSERT INTO `sys_i18n` VALUES (5905, '513025', 'zh', 'SYS_USER_PIN_NOT_CONTAIN_NUMBER', '系统用户密码必须包含数字', '', '2022-03-30 06:17:50', 1);
 INSERT INTO `sys_i18n` VALUES (5906, '513026', 'en', 'SYS_USER_PIN_NOT_CONTAIN_LOWERCASE_LETTERS', 'System user pin must contain lowercase letters', '', '2022-03-30 06:19:02', 1);
