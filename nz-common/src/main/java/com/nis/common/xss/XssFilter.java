@@ -10,13 +10,14 @@ package com.nis.common.xss;
 
 import cn.hutool.log.Log;
 
+import java.io.IOException;
+
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 
 /**
  * XSS过滤
  *
- * @author Mark sunlightcs@gmail.com
  */
 public class XssFilter implements Filter {
 
@@ -27,14 +28,10 @@ public class XssFilter implements Filter {
 	}
 
 	@Override
-	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain){
+	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException{
 		XssHttpServletRequestWrapper xssRequest = new XssHttpServletRequestWrapper(
 				(HttpServletRequest) request);
-		try {
-			chain.doFilter(xssRequest, response);
-		} catch (Exception e) {
-			logger.error(e);
-		}
+		chain.doFilter(xssRequest, response);
 	}
 
 	@Override

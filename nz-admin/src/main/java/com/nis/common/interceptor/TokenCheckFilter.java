@@ -7,6 +7,7 @@ import com.nis.common.utils.DateUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.SpringContextUtils;
+import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.sys.dao.SysApiKeyDao;
 import com.nis.modules.sys.dao.SysUserDao;
@@ -105,7 +106,10 @@ public class TokenCheckFilter extends AccessControlFilter {
         Boolean exist = redisTemplate.hasKey(ShiroUtils.REDIS_KEYPREFIX + requestToken);
         if (exist) {
         	SysUserEntity userEntity = ShiroUtils.getUserEntity();
-        	if(ToolUtil.equals(ShiroUtils.getUserEntity().getId(), 0L)) {
+        	if(Tool.ObjectUtil.isNull(userEntity) ) {
+        		return false;
+        	}
+        	if(ToolUtil.equals(userEntity.getId(), 0L)) {
         		// 第三方api key登录
         		return true;
         	}

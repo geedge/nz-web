@@ -13,6 +13,8 @@ server:
     max-threads: 1000
     min-spare-threads: 30
     basedir: /opt/nezha/nz-web/tmp
+    connection-timeout: 60000
+    keep-alive-timeout: 600000
   compression:
     enabled: true
 #  port: 8088

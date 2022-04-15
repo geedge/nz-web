@@ -9,6 +9,8 @@
 package com.nis.common.exception;
 
 import com.nis.common.utils.Tool;
+
+import org.apache.catalina.connector.ClientAbortException;
 import org.apache.shiro.authz.AuthorizationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
@@ -77,6 +79,9 @@ public class NZExceptionHandler {
 	@ExceptionHandler(Exception.class)
 	@ResponseStatus(value=HttpStatus.INTERNAL_SERVER_ERROR)
 	public R handleException(Exception e){
+		if(e instanceof ClientAbortException) {
+			return null;
+		}
 		logger.error(e);
 		return R.error().put("msg", e.getMessage());
 	}
