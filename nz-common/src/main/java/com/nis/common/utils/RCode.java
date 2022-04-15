@@ -557,7 +557,7 @@ public enum RCode {
     SYS_USER_STATUS_INVALIDE(514021, "System user status must be 0 or 1"),
     SYS_USER_EMAIL_FORMAT(513022, "System user email format is incorrect"),
     SYS_USER_DISABLE_MFA_ERROR(513023, "Forced on, unable to close by itself"),
-    SYS_USER_PIN_TOO_SHORT(513024,"The System user password must contain at least {0} characters"),
+    SYS_USER_PIN_TOO_SHORT(513024,"The System user password minimum length is {0}"),
     SYS_USER_PIN_NOT_CONTAIN_NUMBER(513025,"System user pin must contain number"),
     SYS_USER_PIN_NOT_CONTAIN_LOWERCASE_LETTERS(513026,"System user pin must contain lowercase letters"),
     SYS_USER_PIN_NOT_CONTAIN_UPPERCASE_LETTERS(513027,"System user pin must contain uppercase letters"),
