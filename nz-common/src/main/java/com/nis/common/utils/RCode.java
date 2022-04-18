@@ -950,6 +950,12 @@ public enum RCode {
     IPAM_IP_MAC_ADDR_ERROR(731011,"Ipamip mac and addr exist"),
 
 
+    /**
+     * Tool
+     */
+    TOOL_PING_IP_ISNULL(741000, "Ping ip can not be empty"),
+    TOOL_TRACEROUTE_IP_ISNULL(741001, "Traceroute ip can not be empty"),
+
     ERROR(999, "error"); //通用错误/未知错误
 	
 	

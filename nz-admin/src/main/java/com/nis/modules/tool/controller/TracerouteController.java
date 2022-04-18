@@ -9,7 +9,9 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nis.common.exception.NZException;
 import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
 import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.asset.entity.Dc;
@@ -47,6 +49,8 @@ public class TracerouteController {
     @GetMapping("/traceroute")
     public R traceroute(@RequestParam Map<String, Object> params) {
         String ips = (String) params.get("ips");
+        if (Tool.StrUtil.isEmpty(ips)) throw new NZException(RCode.TOOL_TRACEROUTE_IP_ISNULL);
+
         String dcIds = (String) params.get("dcIds");
         String timeout = Tool.ObjectUtil.defaultIfEmpty((String) params.get("timeout"), "30");
         String maxHops = Tool.ObjectUtil.defaultIfEmpty((String) params.get("maxHops"), "30");
@@ -76,7 +80,7 @@ public class TracerouteController {
         Map m = Tool.MapUtil.newHashMap();
         m.put("tid", tid);
         Map task = Tool.MapUtil.newHashMap();
-        task.put("total", futureDcList.size());
+        task.put("total", (int) Tool.NumberUtil.mul(futureDcList.size(), Tool.StrUtil.split(ips, ',').size()));
         task.put("done", 0);
         task.put("process", 0);
         m.put("task", task);
@@ -111,7 +115,12 @@ public class TracerouteController {
         Integer total = (Integer) tracerouteStatMap.get("total");
         Integer done = (Integer) tracerouteStatMap.get("done");
 
-        done = done + tracerouteResultList.size();
+        List list = Tool.ListUtil.list(false);
+        for (String jsonStr : tracerouteResultList) {
+            JSONArray jsonArray = JSONArray.parseArray(jsonStr);
+            list.addAll(jsonArray);
+        }
+        done = done + list.size();
         tracerouteStatMap.put("done", done);
         String percent = NumberUtil.formatPercent((double) done / total, 2);
         tracerouteStatMap.put("process", percent.replace("%", ""));
@@ -121,11 +130,6 @@ public class TracerouteController {
 
         Map result = Tool.MapUtil.newHashMap();
         result.put("task", tracerouteStatMap);
-        List list = Tool.ListUtil.list(false);
-        tracerouteResultList.stream().forEach(jsonArrayStr -> {
-            JSONArray jsonArray = JSONArray.parseArray(jsonArrayStr);
-            list.addAll(jsonArray);
-        });
         result.put("list", list);
         return R.ok(result);
     }

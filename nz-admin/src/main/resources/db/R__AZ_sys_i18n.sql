@@ -5455,6 +5455,20 @@ INSERT INTO `sys_i18n` VALUES (6026, 'trace.maximumHops', 'en', 'trace.maxHops',
 INSERT INTO `sys_i18n` VALUES (6027, 'trace.maximumHops', 'zh', 'trace.maxHops', '最大跃点数', '', '2022-04-11 01:34:09', 407);
 INSERT INTO `sys_i18n` VALUES (6028, 'trace.totalTime', 'en', 'trace.totalTime', 'Total time', '', '2022-04-12 01:46:55', 407);
 INSERT INTO `sys_i18n` VALUES (6029, 'trace.totalTime', 'zh', 'trace.totalTime', '总时间', '', '2022-04-12 01:47:21', 407);
+INSERT INTO `sys_i18n` VALUES (6030, 'timepicker.timerange', 'en', 'timepicker.timerange', 'Absolute time range', '', '2022-04-13 10:32:09', 1);
+INSERT INTO `sys_i18n` VALUES (6031, 'timepicker.timerange', 'zh', 'timepicker.timerange', '绝对时间范围', '', '2022-04-13 10:32:21', 1);
+INSERT INTO `sys_i18n` VALUES (6032, 'timepicker.applytimerange', 'en', 'timepicker.applytimerange', 'Apply time range', '', '2022-04-13 10:33:15', 1);
+INSERT INTO `sys_i18n` VALUES (6033, 'timepicker.applytimerange', 'zh', 'timepicker.applytimerange', '应用时间范围', '', '2022-04-13 10:33:24', 1);
+INSERT INTO `sys_i18n` VALUES (6034, 'timepicker.recentlyUsed', 'en', 'timepicker.recentlyUsed', 'Recently used absolute ranges', '', '2022-04-13 10:34:18', 1);
+INSERT INTO `sys_i18n` VALUES (6035, 'timepicker.recentlyUsed', 'zh', 'timepicker.recentlyUsed', '最近使用的时间范围', '', '2022-04-13 10:34:30', 1);
+INSERT INTO `sys_i18n` VALUES (6036, 'timepicker.relatime', 'en', 'timepicker.relatime', 'Relatime time ranges', '', '2022-04-13 10:37:20', 1);
+INSERT INTO `sys_i18n` VALUES (6037, 'timepicker.relatime', 'zh', 'timepicker.relatime', '时间范围', '', '2022-04-13 10:37:29', 1);
+INSERT INTO `sys_i18n` VALUES (6038, 'ping.duplicate', 'en', 'ping.duplicate', 'Duplicate', '', '2022-04-14 05:10:24', 407);
+INSERT INTO `sys_i18n` VALUES (6039, 'ping.duplicate', 'zh', 'ping.duplicate', '重复的', '', '2022-04-14 05:10:40', 407);
+INSERT INTO `sys_i18n` VALUES (6040, '741000', 'en', 'TOOL_PING_IP_ISNULL', 'Ping ip can not be empty', '', '2022-04-17 14:34:22', 1);
+INSERT INTO `sys_i18n` VALUES (6041, '741000', 'zh', 'TOOL_PING_IP_ISNULL', 'Ping ip不能为空', '', '2022-04-17 14:35:05', 1);
+INSERT INTO `sys_i18n` VALUES (6042, '741001', 'en', 'TOOL_TRACEROUTE_IP_ISNULL', 'Traceroute ip can not be empty', '', '2022-04-17 14:35:18', 1);
+INSERT INTO `sys_i18n` VALUES (6043, '741001', 'zh', 'TOOL_TRACEROUTE_IP_ISNULL', 'Traceroute ip不能为空', '', '2022-04-17 14:35:46', 1);
 
 
 SET FOREIGN_KEY_CHECKS = 1;
