@@ -63,8 +63,13 @@ public class SetupRunner implements CommandLineRunner{
 			boolean lr = licenseService.installLicense();
 			log.info("license install {}", lr);
 		}
-		if( inited != 1) {
-			log.debug(" inited = {}	,skip init setup", inited);
+		log.info("Setup inited {}", inited);
+		if (inited == 2) {
+			log.info(" inited = {}	,skip init setup", inited);
+			return;
+		}
+		if (inited == 1) {
+			log.info(" inited = {}	, init system config license_token", inited);
 			// 创建设备16位数字的license token
 			String licenseToken = sysConfigService.getValue("license_token");
 			if(ToolUtil.isEmpty(licenseToken)|| ! licenseToken.startsWith("GDNT-")||licenseToken.length()!=21) {
@@ -78,8 +83,7 @@ public class SetupRunner implements CommandLineRunner{
 		        }
 		        licenseToken = StrUtil.concat(true, "GDNT-",valueOf,String.format("%015d", hashCode));
 		        sysConfigService.updateValueByKey("license_token",licenseToken);
-			}     
-			return ;
+			}
 		}
 		File file = Tool.FileUtil.file(tmpDir, Constant.SETUP_FILE_NAME);
 		log.debug("file path: {}",file.getAbsoluteFile());
