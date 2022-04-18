@@ -52,8 +52,9 @@ public class SysInfoServiceImpl implements SysInfoService {
         Map resultMap = new HashMap(4);
         // 1. nehza 系统版本
         SysConfigEntity sysVersion = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_SYSTEM_VERSION));
+        SysConfigEntity systemNameConfig = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, "system_name"));
         Map sysVersionMap = new HashMap(4);
-        sysVersionMap.put("name", "Nezha Monitoring System");
+        sysVersionMap.put("name", Tool.StrUtil.emptyToDefault(systemNameConfig.getParamValue(), "Network Zodiac"));
         sysVersionMap.put("version", sysVersion.getParamValue());
 
         resultMap.put("nezha", sysVersionMap);
