@@ -8,6 +8,7 @@ variables:
   MAVEN_REPO: "/etc/maven/repository/"
   MARIADB_DATABASE: "test"
   MARIADB_ROOT_HOST: '%'
+  MYSQL_ROOT_PASSWORD: '111111'
 # 依赖的docker服务
 services:
   - mariadb:10.2.14
@@ -33,14 +34,14 @@ cache:
 dev_build2:
   stage: test
   image: mariadb:10.2.14
-  environment:
-      MARIADB_ROOT_PASSWORD: abc
+  # environment:
+  #     MARIADB_ROOT_PASSWORD: abc
   # 所需执行的脚本
   script:
     # - env | sort
     # - pwd
     - echo "SELECT 'OK';" 
-    - mysql --user=root --password="$MARIADB_ROOT_PASSWORD" --host=$MARIADB_ROOT_HOST "$MARIADB_DATABASE" --ssl-mode=REQUIRED
+    - mysql --user=root --password="$MYSQL_ROOT_PASSWORD" --host=$MARIADB_ROOT_HOST "$MARIADB_DATABASE" --ssl-mode=REQUIRED
   # 在哪个分支上可用
   only:
     - /^dev-.*$/i
