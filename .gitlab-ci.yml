@@ -6,9 +6,9 @@ variables:
   MINIO_USER: 'admin'
   MINIO_PWD: "Nezha@02!"
   MAVEN_REPO: "/etc/maven/repository/"
-  MARIADB_DATABASE: "test"
-  MARIADB_USER: 'root'
-  MARIADB_PWD: "111111"
+  # MARIADB_DATABASE: "test"
+  # MARIADB_USER: 'root'
+  # MARIADB_PWD: "111111"
 # 依赖的docker服务
 services:
  - mariadb:10.2.14
@@ -19,9 +19,9 @@ before_script:
 # 脚本执行完后的钩子，执行所需脚本
 after_script:
   - echo "end ci"
-  - echo $MARIADB_DATABASE
-  - echo $MARIADB_USER
-  - echo $MARIADB_PWD
+  # - echo $MARIADB_DATABASE
+  # - echo $MARIADB_USER
+  # - echo $MARIADB_PWD
 # 该ci pipeline适合的场景
 stages:
   - build
