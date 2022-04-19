@@ -7,16 +7,11 @@ variables:
   MINIO_PWD: "Nezha@02!"
   MAVEN_REPO: "/etc/maven/repository/"
   MARIADB_DATABASE: "test"
-  MARIADB_USER: 'root'
-  MARIADB_PWD: "111111"
-  MYSQL_DATABASE: hello_world_test
-  MYSQL_ROOT_PASSWORD: mysql
-
+  MARIADB_ROOT_PASSWORD: "111111"
+  MARIADB_ROOT_HOST: '%'
 # 依赖的docker服务
 services:
   - mariadb:10.2.14
-#  - mysql:5.7
-#  - redis:5.0.14
 # 开始执行脚本前所需执行脚本
 before_script:
   - echo "begin ci"
@@ -24,8 +19,7 @@ before_script:
 after_script:
   - echo "end ci"
   - echo $MARIADB_DATABASE
-  - echo $MARIADB_USER
-  - echo $MARIADB_PWD
+  - echo $MARIADB_ROOT_PASSWORD
 # 该ci pipeline适合的场景
 stages:
   - build
@@ -34,30 +28,6 @@ stages:
 cache:
   paths:
     - $MAVEN_REPO
-
-# 定义的任务
-build_rpm:
-  stage: build
-  # 所需执行的脚本
-  script:
-    - env | sort
-    - pwd
-    - export FILE_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA.tar.gz
-    - mvn clean install -Dxjar.password=afdsafasfsag -Dxjar.excludes=/db/*,/static/**/*,/install/* -Dmaven.test.skip=true
-    - cd ./nz-admin/target
-    - go build xjar.go 
-    - chmod +x xjar 
-    - tar -zcvf $FILE_NAME xjar nz-admin.xjar
-    # 将 文件 上传到 minio 
-    - mc alias set nz $MINIO_HOST $MINIO_USER $MINIO_PWD
-    - mc cp $FILE_NAME nz/release/nz-web/$FILE_NAME
-    - cd ../../
-  # 在哪个分支上可用
-  only:
-    - /^rel-.*$/i
-  # 指定哪个ci runner跑该工作
-  tags:
-    - nezha
 
 # 定义的任务
 # dev_build:
@@ -97,7 +67,7 @@ dev_build2:
     # - env | sort
     # - pwd
     - echo "SELECT 'OK';" 
-    - mysql --user=root --password="$MARIADB_PWD" --host=172.17.0.6 "$MARIADB_DATABASE"
+    - mysql --user=root --password="$MARIADB_ROOT_PASSWORD" --host=$MARIADB_ROOT_HOST "$MARIADB_DATABASE"
     #| mysql --user=root --password="$MYSQL_ROOT_PASSWORD" --host=mysql "$MYSQL_DATABASE"
     # - echo "SELECT 'mariadb:10.2.14-OK';"
     # - mariadb --user=$MARIADB_USER --password=$MARIADB_PWD --host=127.0.0.1 $MARIADB_DATABASE --ssl-mode=REQUIRED
