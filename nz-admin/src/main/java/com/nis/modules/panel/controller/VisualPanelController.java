@@ -143,5 +143,18 @@ public class VisualPanelController {
         visualPanelService.cancelImport(seq);
         return R.ok();
     }
+
+	/**
+	 * 复制panel配置
+	 * @param id
+	 * @return
+	 */
+	@PostMapping("/duplicate/{id}")
+	@SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.VISUALPANEL)
+	public R duplicate(@PathVariable Integer id) {
+		ValidateUtils.is(id).notNull(RCode.PANEL_ID_ISNULL);
+		visualPanelService.duplicate(id);
+		return R.ok();
+	}
     
 }

@@ -120,6 +120,7 @@ public enum RCode {
     CHART_Y_ISNULL(121078, "Chart y can not be empty"),
     CHART_Y_FORMAT(123079, "Chart y format should be a integer"),
     CHART_X_WIDTH_INVALIDE(123080,"Chart x and width sum cannot be greater than 12 "),
+    PANEL_NAME_TOO_LONG(123081,"Panel name too long than 64"),
     
     EXPRETMPL_NOT_FOUND(136000, "Expression template not found"),
     EXPRETMPL_NAME_ISNULL(131001, "Expression template name is null"),

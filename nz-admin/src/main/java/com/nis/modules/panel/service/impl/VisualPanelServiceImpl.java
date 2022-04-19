@@ -446,8 +446,67 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
         return resultMap;
     }
-	
-	@Override
+
+    @Override
+    public void duplicate(Integer id) {
+        VisualPanel panel = this.getById(id);
+        if (panel == null) {
+            throw new NZException(RCode.CHART_PANEL_ISNULL);
+        }
+
+        panel.setName("copy from " + panel.getName());
+        if(panel.getName().length() > 64) {
+            throw new NZException(RCode.PANEL_NAME_TOO_LONG);
+        }
+        Long userId = ShiroUtils.getUserId();
+        panel.setCreateBy(userId.intValue());
+        panel.setId(null);
+
+        Integer pid = panel.getPid();
+        // 查询该父级节点下是否存在 Panel 节点
+        List<VisualPanel> list = this.list(new QueryWrapper<VisualPanel>().lambda().eq(VisualPanel::getType, panel.getType()).eq(VisualPanel::getPid, pid == null ? 0 : pid));
+        if (CollectionUtils.isEmpty(list)) {
+            // 父级节点下暂无其他节点，直接保存
+            this.save(panel);
+        } else {
+            // 找到当前末尾的 panel ， 加到其后
+            VisualPanel endPanel = list.stream().max(Comparator.comparingInt(VisualPanel::getWeight)).get();
+            Integer weight = endPanel.getWeight();
+            panel.setWeight(++weight);
+            this.save(panel);
+        }
+
+        //  复制panel 下的 charts
+        List<VisualChart> chartsGroupList = visualChartService.list(new QueryWrapper<VisualChart>().eq("panel_id", id).orderByDesc("FIELD(type,\"group\")"));
+        Map<Integer,Integer> chartsGroupMap = new HashMap<>();
+        Integer chartId;
+        if (!CollectionUtils.isEmpty(chartsGroupList)) {
+            for (VisualChart chart:chartsGroupList) {
+                chartId = chart.getId();
+                chart.setId(null);
+                chart.setUpdateAt(new Date());
+                chart.setUpdateBy(userId.intValue());
+                chart.setPanelId(panel.getId());
+                visualChartService.save(chart);
+                if(ToolUtil.equals(chart.getType(),"group")){
+                    chartsGroupMap.put(chartId,chart.getId());
+                }else{
+                    chart.setGroupId(chartsGroupMap.get(chart.getGroupId()));
+                }
+                // 查询当前chart下的chartElement
+                List<VisualChartElement> elementList = chartElementService.list(new QueryWrapper<VisualChartElement>().lambda().eq(VisualChartElement::getChartId, chartId));
+                if (!CollectionUtils.isEmpty(elementList)) {
+                    for (VisualChartElement element:elementList) {
+                        element.setId(null);
+                        element.setChartId(chart.getId());
+                    }
+                    chartElementService.saveOrUpdateElements(chart.getId(), elementList);
+                }
+            }
+        }
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public void cancelImport(String seq) {
         List<VisualPanel> panelList = this.list(new QueryWrapper<VisualPanel>().lambda().eq(VisualPanel::getType, Constant.PanelType.DASHBOARD.getValue()));

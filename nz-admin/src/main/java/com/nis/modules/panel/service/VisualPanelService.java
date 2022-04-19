@@ -39,4 +39,5 @@ public interface VisualPanelService extends IService<VisualPanel> {
 
     Map importChartData(MultipartFile excelFile, String type, Integer linkId, String language) throws IOException;
 
+    void duplicate(Integer id);
 }

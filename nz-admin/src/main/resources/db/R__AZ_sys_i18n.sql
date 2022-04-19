@@ -5469,6 +5469,7 @@ INSERT INTO `sys_i18n` VALUES (6040, '741000', 'en', 'TOOL_PING_IP_ISNULL', 'Pin
 INSERT INTO `sys_i18n` VALUES (6041, '741000', 'zh', 'TOOL_PING_IP_ISNULL', 'Ping ip不能为空', '', '2022-04-17 14:35:05', 1);
 INSERT INTO `sys_i18n` VALUES (6042, '741001', 'en', 'TOOL_TRACEROUTE_IP_ISNULL', 'Traceroute ip can not be empty', '', '2022-04-17 14:35:18', 1);
 INSERT INTO `sys_i18n` VALUES (6043, '741001', 'zh', 'TOOL_TRACEROUTE_IP_ISNULL', 'Traceroute ip不能为空', '', '2022-04-17 14:35:46', 1);
-
+INSERT INTO `sys_i18n` VALUES (5968, '123081', 'en', 'PANEL_NAME_TOO_LONG', 'Panel name too long than 64', '', '2022-04-15 16:40:06', 1);
+INSERT INTO `sys_i18n` VALUES (5969, '123081', 'zh', 'PANEL_NAME_TOO_LONG', '面板名称过长超过64', '', '2022-04-15 16:40:31', 1);
 
 SET FOREIGN_KEY_CHECKS = 1;
