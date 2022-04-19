@@ -63,7 +63,7 @@ dev_build:
   script:
     - env | sort
     - pwd
-    - redis-cli -h redis PING
+    # - redis-cli -h redis PING
     # - mariadb --user=$MARIADB_USER --password=$MARIADB_PWD --host=mariadb $MARIADB_DATABASE --ssl-mode=REQUIRED
     # - echo "SELECT 'dev_build-OK-mariadb';"
     - export FILE_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA.tar.gz
