@@ -40,7 +40,7 @@ dev_build2:
     # - env | sort
     # - pwd
     - echo "SELECT 'OK';" 
-    - mysql --user=root --password="$MYSQL_ROOT_PASSWORD" --host=mysql "$MYSQL_DATABASE"
+    - mysql --user=root --password="$MYSQL_ROOT_PASSWORD" --host=mariadb "$MYSQL_DATABASE"
   # 在哪个分支上可用
   only:
     - /^dev-.*$/i
