@@ -14,7 +14,8 @@ variables:
 
 # 依赖的docker服务
 services:
- - mysql:5.7
+  - mariadb:10.2.14
+#  - mysql:5.7
 #  - redis:5.0.14
 # 开始执行脚本前所需执行脚本
 before_script:
@@ -90,13 +91,13 @@ build_rpm:
 # 定义的任务
 dev_build2:
   stage: test
-  image: mysql:5.7
+  image: mariadb:10.2.14
   # 所需执行的脚本
   script:
     # - env | sort
     # - pwd
     - echo "SELECT 'OK';" 
-    - mysql --user=root --password="$MYSQL_ROOT_PASSWORD" --host=mysql "$MYSQL_DATABASE"
+    - mysql --user=root --password="$MARIADB_PWD" --host=mysql "$MARIADB_DATABASE"
     #| mysql --user=root --password="$MYSQL_ROOT_PASSWORD" --host=mysql "$MYSQL_DATABASE"
     # - echo "SELECT 'mariadb:10.2.14-OK';"
     # - mariadb --user=$MARIADB_USER --password=$MARIADB_PWD --host=127.0.0.1 $MARIADB_DATABASE --ssl-mode=REQUIRED
