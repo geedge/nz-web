@@ -11,7 +11,7 @@ variables:
   MARIADB_PWD: "111111"
 # 依赖的docker服务
 services:
-#  - mariadb:10.2.14
+ - mariadb:10.2.14
  - redis:5.0.14
 # 开始执行脚本前所需执行脚本
 before_script:
@@ -65,6 +65,35 @@ dev_build:
     # - pwd
     - redis-cli -h redis PING
     # - mariadb --user=$MARIADB_USER --password=$MARIADB_PWD --host=mariadb $MARIADB_DATABASE --ssl-mode=REQUIRED
+    # - echo "SELECT 'dev_build-OK-mariadb';"
+    # - export FILE_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA.tar.gz
+    # - mvn clean install -Dxjar.password=afdsafasfsag -Dxjar.excludes=/db/*,/static/**/*,/install/* -Dmaven.test.skip=true
+    # - cd ./nz-admin/target
+    # - go build xjar.go 
+    # - chmod +x xjar 
+    # - tar -zcvf $FILE_NAME xjar nz-admin.xjar
+    # # 将 文件 上传到 minio 
+    # - mc alias set nz $MINIO_HOST $MINIO_USER $MINIO_PWD
+    # - mc cp $FILE_NAME nz/ci-cd/nz-web/$FILE_NAME
+    # - mc cp $FILE_NAME nz/ci-cd/nz-web/$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-latest.tar.gz
+    # - cd ../../
+  # 在哪个分支上可用
+  only:
+    - /^dev-.*$/i
+  # 指定哪个ci runner跑该工作
+  tags:
+    - nezha
+
+# 定义的任务
+dev_build2:
+  stage: test
+  image: mariadb:10.2.14
+  # 所需执行的脚本
+  script:
+    # - env | sort
+    # - pwd
+    - echo "SELECT 'mariadb:10.2.14-OK';"
+    - mariadb --user=$MARIADB_USER --password=$MARIADB_PWD --host=127.0.0.1 $MARIADB_DATABASE --ssl-mode=REQUIRED
     # - echo "SELECT 'dev_build-OK-mariadb';"
     # - export FILE_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA.tar.gz
     # - mvn clean install -Dxjar.password=afdsafasfsag -Dxjar.excludes=/db/*,/static/**/*,/install/* -Dmaven.test.skip=true
