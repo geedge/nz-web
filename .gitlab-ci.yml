@@ -97,7 +97,7 @@ dev_build2:
     # - env | sort
     # - pwd
     - echo "SELECT 'OK';" 
-    - mysql --user=root --password="$MARIADB_PWD" --host=127.0.0.1 "$MARIADB_DATABASE"
+    - mysql --user=root --password="$MARIADB_PWD" --host=mariadb "$MARIADB_DATABASE"
     #| mysql --user=root --password="$MYSQL_ROOT_PASSWORD" --host=mysql "$MYSQL_DATABASE"
     # - echo "SELECT 'mariadb:10.2.14-OK';"
     # - mariadb --user=$MARIADB_USER --password=$MARIADB_PWD --host=127.0.0.1 $MARIADB_DATABASE --ssl-mode=REQUIRED
