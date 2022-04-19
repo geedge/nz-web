@@ -52,7 +52,7 @@ public class SysUserTest extends BaseTest<SysUserEntity> {
         SysUserEntity sysUserEntity = jsonToInParameter(testName.getMethodName(), SysUserEntity.class);
         MvcResult result = UTUtil.performPost("/sys/user", sysUserEntity);
         System.out.println("咄咄怪事");
-        System.out.println("咄咄怪事");
+        System.out.println("输出语句");
         UTUtil.assertEqualsRCode(result, RCode.SYS_USER_PASSWORD_ISNULL);
 
     }
