@@ -6,12 +6,12 @@ variables:
   MINIO_USER: 'admin'
   MINIO_PWD: "Nezha@02!"
   MAVEN_REPO: "/etc/maven/repository/"
-  MARIADB_DATABASE: "test"
-  MARIADB_USER: 'root'
-  MARIADB_PWD: "111111"
+  # MARIADB_DATABASE: "test"
+  # MARIADB_USER: 'root'
+  # MARIADB_PWD: "111111"
 # 依赖的docker服务
 services:
-#  - mariadb:10.2.14
+ - mariadb:10.2.14
  - redis:5.0.14
 # 开始执行脚本前所需执行脚本
 before_script:
@@ -19,6 +19,9 @@ before_script:
 # 脚本执行完后的钩子，执行所需脚本
 after_script:
   - echo "end ci"
+  # - echo $MARIADB_DATABASE
+  # - echo $MARIADB_USER
+  # - echo $MARIADB_PWD
 # 该ci pipeline适合的场景
 stages:
   - build
@@ -59,7 +62,6 @@ dev_build:
   script:
     - env | sort
     - pwd
-    # - echo "SELECT 'dev_build-OK';"
     # - mariadb --user=$MARIADB_USER --password=$MARIADB_PWD --host=mariadb $MARIADB_DATABASE --ssl-mode=REQUIRED
     # - echo "SELECT 'dev_build-OK-mariadb';"
     - export FILE_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA.tar.gz
