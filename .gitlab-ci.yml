@@ -58,7 +58,7 @@ dev_build:
   # 所需执行的脚本
   script:
     - echo "redis start ..."
-    - redis-cli -h redis ping
+    - redis-cli -h redis PING
     - echo "mariadb start ..."
     - mysql --user=root --password="$MYSQL_ROOT_PASSWORD" --host=mariadb "$MYSQL_DATABASE"
     - env | sort
