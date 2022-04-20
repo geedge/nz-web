@@ -22,9 +22,9 @@ after_script:
 stages:
   - test
 # maven setting /usr/share/maven/conf/settings.xml
-cache:
-  paths:
-    - $MAVEN_REPO
+# cache:
+#   paths:
+#     - $MAVEN_REPO
 
 # 定义的任务
 env_test:
@@ -32,9 +32,9 @@ env_test:
   # 所需执行的脚本
   script:
     - echo "redis start"
-    - redis-cli -h redis ping
-    - echo "mariadb start" 
-    - mysql --user=root --password="$MYSQL_ROOT_PASSWORD" --host=mariadb "$MYSQL_DATABASE"
+    # - redis-cli -h redis ping
+    # - echo "mariadb start" 
+    # - mysql --user=root --password="$MYSQL_ROOT_PASSWORD" --host=mariadb "$MYSQL_DATABASE"
   # 在哪个分支上可用
   only:
     - /^dev-.*$/i
