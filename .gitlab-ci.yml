@@ -57,12 +57,12 @@ dev_build:
   stage: test
   # 所需执行的脚本
   script:
-    - env | sort
-    - pwd
     - echo "redis start ..."
     - redis-cli -h redis ping
     - echo "mariadb start ..."
     - mysql --user=root --password="$MYSQL_ROOT_PASSWORD" --host=mariadb "$MYSQL_DATABASE"
+    - env | sort
+    - pwd
     - export FILE_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA.tar.gz
     - mvn clean install -Dxjar.password=afdsafasfsag -Dxjar.excludes=/db/*,/static/**/*,/install/* -Dmaven.test.skip=true
     - cd ./nz-admin/target
