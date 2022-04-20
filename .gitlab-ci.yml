@@ -6,8 +6,8 @@ variables:
   MINIO_USER: 'admin'
   MINIO_PWD: "Nezha@02!"
   MAVEN_REPO: "/etc/maven/repository/"
-  MYSQL_DATABASE: "test"
-  MYSQL_ROOT_PASSWORD: '111111'
+  # MYSQL_DATABASE: "test"
+  # MYSQL_ROOT_PASSWORD: '111111'
 # 依赖的docker服务
 services:
   - mariadb:10.2.14
@@ -22,9 +22,9 @@ after_script:
 stages:
   - test
 # maven setting /usr/share/maven/conf/settings.xml
-# cache:
-#   paths:
-#     - $MAVEN_REPO
+cache:
+  paths:
+    - $MAVEN_REPO
 
 # 定义的任务
 env_test:
