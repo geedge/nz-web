@@ -1,5 +1,6 @@
 package com.nis.modules.asset.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -52,7 +53,9 @@ public class AssetTypeConfServiceImpl extends ServiceImpl<AssetTypeConfDao, Asse
                 .eq(ToolUtil.isNotEmpty(params.get("vmh")), AssetTypeConf::getVmh, params.get("vmh"))
                 .eq(ToolUtil.isNotEmpty(params.get("authProtocol")), AssetTypeConf::getAuthProtocol, params.get("authProtocol"))
                 .eq(ToolUtil.isNotEmpty(params.get("snmpEnable")), AssetTypeConf::getSnmpEnable, params.get("snmpEnable"))
-                .eq(ToolUtil.isNotEmpty(params.get("clientEnable")), AssetTypeConf::getClientEnable, params.get("clientEnable"));
+                .eq(ToolUtil.isNotEmpty(params.get("clientEnable")), AssetTypeConf::getClientEnable, params.get("clientEnable"))
+                .in(ToolUtil.isNotEmpty(params.get("ids")), AssetTypeConf::getId, StrUtil.split(String.valueOf(params.get("ids")), StrUtil.COMMA));
+
 
         IPage page = this.page(new Query(AssetTypeConf.class).getPage(params), queryWrapper);
         List<AssetTypeConf> assetTypeConfs = page.getRecords();
@@ -89,11 +92,23 @@ public class AssetTypeConfServiceImpl extends ServiceImpl<AssetTypeConfDao, Asse
         if (!switchList.contains(conf.getVmh())) {
             throw new NZException(RCode.TYPECONF_VMH_INCORRECT);
         }
+        if (!Arrays.asList(new Integer[]{0, 1, 2}).contains(conf.getAuthProtocol())) {
+            throw new NZException(RCode.TYPECONF_AUTHPROTOCOL_INCORRECT);
+        }
+        if (!switchList.contains(conf.getSnmpEnable())) {
+            throw new NZException(RCode.TYPECONF_SNMPENABLE_INCORRECT);
+        }
         if (ToolUtil.isNotEmpty(conf.getBuildIn()) && !switchList.contains(conf.getBuildIn())) {
             throw new NZException(RCode.TYPECONF_BUILDIN_INCORRECT);
         }
         if (!switchList.contains(conf.getClientEnable())) {
             throw new NZException(RCode.TYPECONF_CLIENTENABLE_INCORRECT);
+        }
+        if (!switchList.contains(conf.getSnmpCollect())) {
+            throw new NZException(RCode.TYPECONF_SNMPCOLLECT_INCORRECT);
+        }
+        if (!switchList.contains(conf.getSshCollect())) {
+            throw new NZException(RCode.TYPECONF_SSHCOLLECT_INCORRECT);
         }
 
         // 3. pid 是否存在

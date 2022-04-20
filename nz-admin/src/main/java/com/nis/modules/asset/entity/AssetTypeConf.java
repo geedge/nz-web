@@ -89,6 +89,11 @@ public class AssetTypeConf implements Serializable {
     private String remark;
 
     /**
+     * 图标
+     */
+    private String icon;
+
+    /**
      * 是否内置 1:内置，0：非内置，默认：0 内置数据不允许删除
      */
     private Integer buildIn;

@@ -1,0 +1,246 @@
+{
+  "------------------ POST  /asset/typeConf data---------------------": "note",
+  "saveConf_success": {
+    "name": "1111",
+    "pid": 1,
+    "vm": 0,
+    "vmh": 0,
+    "authProtocol": 1,
+    "snmpEnable": 0,
+    "clientEnable": 0,
+    "snmpCollect": 0,
+    "sshCollect": 1,
+    "sshCollectScript": "http://wwwww.wwww.www",
+    "remark": "备注",
+    "icon": "1"
+  },
+  "saveConf_checkNameNotNull": {
+    "name": "",
+    "vm": 0,
+    "vmh": 0,
+    "authProtocol": 0,
+    "snmpEnable": 0,
+    "clientEnable": 0,
+    "snmpCollect": 0,
+    "sshCollect": 0
+  },
+ "saveConf_checkNameDuplicate": {
+   "name": "test2",
+   "vm": 0,
+   "vmh": 0,
+   "authProtocol": 0,
+   "snmpEnable": 0,
+   "clientEnable": 0,
+   "snmpCollect": 0,
+   "sshCollect": 0
+ },
+  "saveConf_checkVmNotNull": {
+    "name": "testVmNotNull",
+    "vm": "",
+    "vmh": 0,
+    "authProtocol": 0,
+    "snmpEnable": 0,
+    "clientEnable": 0,
+    "snmpCollect": 0,
+    "sshCollect": 0
+  },
+  "saveConf_checkVmIncorrect": {
+    "name": "testVmIncorrect",
+    "vm": 9,
+    "vmh": 0,
+    "authProtocol": 0,
+    "snmpEnable": 0,
+    "clientEnable": 0,
+    "snmpCollect": 0,
+    "sshCollect": 0
+  },
+  "saveConf_checkVmhNotNull": {
+    "name": "testVmhNotNull",
+    "vm": 0,
+    "vmh": "",
+    "authProtocol": 0,
+    "snmpEnable": 0,
+    "clientEnable": 0,
+    "snmpCollect": 0,
+    "sshCollect": 0
+  },
+  "saveConf_checkVmhIncorrect": {
+    "name": "testVmhIncorrect",
+    "vm": 0,
+    "vmh": 9,
+    "authProtocol": 0,
+    "snmpEnable": 0,
+    "clientEnable": 0,
+    "snmpCollect": 0,
+    "sshCollect": 0
+  },
+  "saveConf_checkAuthProtocolNotNull": {
+    "name": "testAuthProtocolNotNull",
+    "vm": 1,
+    "vmh": 0,
+    "authProtocol": "",
+    "snmpEnable": 0,
+    "clientEnable": 0,
+    "snmpCollect": 0,
+    "sshCollect": 0
+  },
+  "saveConf_checkAuthProtocolIncorrect": {
+    "name": "testAuthProtocolIncorrect",
+    "vm": 0,
+    "vmh": 1,
+    "authProtocol": 9,
+    "snmpEnable": 0,
+    "clientEnable": 0,
+    "snmpCollect": 0,
+    "sshCollect": 0
+  },
+  "saveConf_checkSnmpEnableNotNull": {
+    "name": "testSnmpEnableNotNull",
+    "vm": 1,
+    "vmh": 0,
+    "authProtocol": 1,
+    "snmpEnable": "",
+    "clientEnable": 0,
+    "snmpCollect": 0,
+    "sshCollect": 0
+  },
+  "saveConf_checkSnmpEnableIncorrect": {
+    "name": "testSnmpEnableIncorrect",
+    "vm": 0,
+    "vmh": 1,
+    "authProtocol": 2,
+    "snmpEnable": 6,
+    "clientEnable": 0,
+    "snmpCollect": 0,
+    "sshCollect": 0
+  },
+  "saveConf_checkClientEnableNotNull": {
+    "name": "testClientEnableNotNull",
+    "vm": 1,
+    "vmh": 0,
+    "authProtocol": 1,
+    "snmpEnable": 0,
+    "clientEnable": "",
+    "snmpCollect": 0,
+    "sshCollect": 0
+  },
+  "saveConf_checkClientEnableIncorrect": {
+    "name": "testClientEnableIncorrect",
+    "vm": 0,
+    "vmh": 1,
+    "authProtocol": 2,
+    "snmpEnable": 1,
+    "clientEnable": 7,
+    "snmpCollect": 0,
+    "sshCollect": 0
+  },
+  "saveConf_checkSnmpCollectNotNull": {
+    "name": "testVmIncorrect",
+    "vm": 1,
+    "vmh": 0,
+    "authProtocol": 1,
+    "snmpEnable": 0,
+    "clientEnable": 1,
+    "snmpCollect": "",
+    "sshCollect": 0
+  },
+  "saveConf_checkSnmpCollectIncorrect": {
+    "name": "testVmIncorrect",
+    "vm": 0,
+    "vmh": 1,
+    "authProtocol": 2,
+    "snmpEnable": 1,
+    "clientEnable": 1,
+    "snmpCollect": 8,
+    "sshCollect": 0
+  },
+  "saveConf_checkSshCollectNotNull": {
+    "name": "testVmIncorrect",
+    "vm": 1,
+    "vmh": 0,
+    "authProtocol": 1,
+    "snmpEnable": 0,
+    "clientEnable": 1,
+    "snmpCollect": 0,
+    "sshCollect": ""
+  },
+  "saveConf_checkSshCollectIncorrect": {
+    "name": "testVmIncorrect",
+    "vm": 0,
+    "vmh": 1,
+    "authProtocol": 0,
+    "snmpEnable": 1,
+    "clientEnable": 1,
+    "snmpCollect": 1,
+    "sshCollect": 9
+  },
+  "saveConf_checkSshCollectScriptNotNull": {
+    "name": "testVmIncorrect",
+    "vm": 1,
+    "vmh": 0,
+    "authProtocol": 1,
+    "snmpEnable": 0,
+    "clientEnable": 1,
+    "snmpCollect": 0,
+    "sshCollect": 1,
+    "sshCollectScript": ""
+  },
+  "------------------ PUT  /asset/typeConf data---------------------": "note",
+  "updateConf_success": {
+    "id": 1,
+    "name": "test_1",
+    "pid": 1,
+    "vm": 0,
+    "vmh": 0,
+    "authProtocol": 1,
+    "snmpEnable": 0,
+    "clientEnable": 0,
+    "snmpCollect": 0,
+    "sshCollect": 1,
+    "sshCollectScript": "http://wwwww.wwww.www",
+    "remark": "备注",
+    "icon": "1"
+  },
+  "updateConf_checkNameDuplicate": {
+    "id": 1,
+    "name": "test2",
+    "vm": 0,
+    "vmh": 0,
+    "authProtocol": 2,
+    "snmpEnable": 0,
+    "clientEnable": 0,
+    "snmpCollect": 0,
+    "sshCollect": 0
+  },
+  "------------------ GET  /asset/typeConf/{id} data---------------------": "note",
+  "queryConfInfo_notexist": {
+    "id": 999
+  },
+  "queryConfInfo_exist": {
+    "id": 1
+  },
+  "------------------ GET  /asset/typeConf data---------------------": "note",
+  "queryConfList_notexist": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "10,13",
+    "name": "",
+    "brandIds": "10",
+    "authProtocol": "0"
+  },
+  "queryConfList_exist": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "1,3,4",
+    "name": ""
+  },
+  "------------------ DELETE  /asset/typeConf data---------------------": "note",
+  "deleteConf_success": {
+    "ids": "6"
+  },
+  "deleteConf_buildIn": {
+    "ids": "5"
+  }
+}

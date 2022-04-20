@@ -389,6 +389,10 @@ public enum RCode {
     TYPECONF_SSHCOLLECTSCRIPT_ISNULL(351021, "Asset type config ssh collect script is null"),
     TYPECONF_CLIENTENABLE_ISNULL(351022, "Asset type config client enable is null"),
     TYPECONF_CLIENTENABLE_INCORRECT(354023, "Asset type config client enable must be 0 or 1"),
+    TYPECONF_AUTHPROTOCOL_INCORRECT(354024, "Asset type config auth protocol must be 0 ,1 or 2"),
+    TYPECONF_SNMPENABLE_INCORRECT(354025, "Asset type config snmp enable must be 0 or 1"),
+    TYPECONF_SNMPCOLLECT_INCORRECT(354026, "Asset type config snmp collect must be 0 or 1"),
+    TYPECONF_SSHCOLLECT_INCORRECT(354027, "Asset type config ssh collect must be 0 or 1"),
 
     ASSET_BRAND_NOT_FOUND(366000, "Asset brand not found"),
     ASSET_BRAND_NAME_ISNULL(361001, "Asset brand name is null"),

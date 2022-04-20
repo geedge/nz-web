@@ -4185,7 +4185,7 @@ INSERT INTO `sys_i18n` VALUES (4203, '423031', 'zh', 'ALERTRULE_IMPORT_ERROR', '
 INSERT INTO `sys_i18n` VALUES (4204, '421027', 'zh', 'ALERTRULE_METHOD_ISNULL', '告警规则通知方式不能为空', '', '2021-11-03 16:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (4205, '426028', 'zh', 'ALERTRULE_METHOD_NOTFOUND', '告警规则通知方式不存在', '', '2021-11-03 16:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (4206, '424029', 'zh', 'ALERTRULE_STATE_INCORRECT', '告警规则状态错误 值应为0或1', '', '2021-11-03 16:28:05', 1);
-INSERT INTO `sys_i18n` VALUES (4207, '424030', 'zh', 'ALERTRULE_TYPE_INCORRECT', '告警规则类型错误 值应为0或1', '', '2021-11-03 16:28:05', 1);
+INSERT INTO `sys_i18n` VALUES (4207, '424030', 'zh', 'ALERTRULE_TYPE_INCORRECT', '告警规则类型错误 值应为1,2或3', '', '2021-11-03 16:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (4208, '424031', 'zh', 'ALERTRULE_OIDFORMAT_ERROR', 'oid格式化错误', '', '2021-11-03 16:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (4209, '424032', 'zh', 'ALERTRULE_AUTOEXPIRED_INCORRECT', '告警规则自动过期参数错误 值应为0或1', '', '2021-11-03 16:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (4210, '424033', 'zh', 'ALERTRULE_SCHEDENABLE_INCORRECT', '告警规则定时启停参数错误 值应为0或1', '', '2021-11-03 16:28:05', 1);
@@ -5471,5 +5471,13 @@ INSERT INTO `sys_i18n` VALUES (6042, '741001', 'en', 'TOOL_TRACEROUTE_IP_ISNULL'
 INSERT INTO `sys_i18n` VALUES (6043, '741001', 'zh', 'TOOL_TRACEROUTE_IP_ISNULL', 'Traceroute ip不能为空', '', '2022-04-17 14:35:46', 1);
 INSERT INTO `sys_i18n` VALUES (6044, '123081', 'en', 'PANEL_NAME_TOO_LONG', 'Panel name too long than 64', '', '2022-04-15 16:40:06', 1);
 INSERT INTO `sys_i18n` VALUES (6045, '123081', 'zh', 'PANEL_NAME_TOO_LONG', '面板名称过长超过64', '', '2022-04-15 16:40:31', 1);
+INSERT INTO `sys_i18n` VALUES (6046, '354024', 'en', 'TYPECONF_AUTHPROTOCOL_INCORRECT', 'Asset type config auth protocol must be 0 ,1 or 2', '', '2022-04-20 11:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6047, '354025', 'en', 'TYPECONF_SNMPENABLE_INCORRECT', 'Asset type config snmp enable must be 0 or 1', '', '2022-04-20 11:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6048, '354026', 'en', 'TYPECONF_SNMPCOLLECT_INCORRECT', 'Asset type config snmp collect must be 0 or 1', '', '2022-04-20 11:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6049, '354027', 'en', 'TYPECONF_SSHCOLLECT_INCORRECT', 'Asset type config ssh collect must be 0 or 1', '', '2022-04-20 11:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6050, '354024', 'zh', 'TYPECONF_AUTHPROTOCOL_INCORRECT', '资产类型配置认证协错误 值应为0,1或2', '', '2022-04-20 11:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6051, '354025', 'zh', 'TYPECONF_SNMPENABLE_INCORRECT', '资产类型配置snmp是否支持必须为0或1', '', '2022-04-20 11:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6052, '354026', 'zh', 'TYPECONF_SNMPCOLLECT_INCORRECT', '资产类型配置snmp采集是否开启必须为0或1', '', '2022-04-20 11:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6053, '354027', 'zh', 'TYPECONF_SSHCOLLECT_INCORRECT', '资产类型配置ssh采集是否开启必须为0或1', '', '2022-04-20 11:00:00', 1);
 
 SET FOREIGN_KEY_CHECKS = 1;

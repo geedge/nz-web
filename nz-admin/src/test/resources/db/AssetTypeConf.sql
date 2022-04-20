@@ -1,0 +1,10 @@
+truncate asset_type_conf;
+
+INSERT INTO `asset_type_conf`(`id`, `pid`, `vm`, `vmh`, `name`, `remark`, `build_in`, `auth_protocol`, `snmp_enable`, `snmp_collect`, `ssh_collect`, `ssh_collect_script`, `client_enable`, `icon`) VALUES (1, 0, '0', '1', 'test1', 'test1', '1', 2, 1, 1, 1, '', 0, '');
+INSERT INTO `asset_type_conf`(`id`, `pid`, `vm`, `vmh`, `name`, `remark`, `build_in`, `auth_protocol`, `snmp_enable`, `snmp_collect`, `ssh_collect`, `ssh_collect_script`, `client_enable`, `icon`) VALUES (2, 0, '0', '0', 'test2', '', '1', 1, 1, 0, 0, '', 0, '');
+INSERT INTO `asset_type_conf`(`id`, `pid`, `vm`, `vmh`, `name`, `remark`, `build_in`, `auth_protocol`, `snmp_enable`, `snmp_collect`, `ssh_collect`, `ssh_collect_script`, `client_enable`, `icon`) VALUES (3, 0, '0', '0', 'test3', '', '1', 2, 1, 0, 0, '', 0, '');
+INSERT INTO `asset_type_conf`(`id`, `pid`, `vm`, `vmh`, `name`, `remark`, `build_in`, `auth_protocol`, `snmp_enable`, `snmp_collect`, `ssh_collect`, `ssh_collect_script`, `client_enable`, `icon`) VALUES (4, 0, '0', '0', 'test4', '', '1', 2, 1, 0, 0, '', 0, '');
+INSERT INTO `asset_type_conf`(`id`, `pid`, `vm`, `vmh`, `name`, `remark`, `build_in`, `auth_protocol`, `snmp_enable`, `snmp_collect`, `ssh_collect`, `ssh_collect_script`, `client_enable`, `icon`) VALUES (5, 0, '0', '1', 'test5', '', '1', 1, 0, 0, 0, '', 1, '');
+INSERT INTO `asset_type_conf`(`id`, `pid`, `vm`, `vmh`, `name`, `remark`, `build_in`, `auth_protocol`, `snmp_enable`, `snmp_collect`, `ssh_collect`, `ssh_collect_script`, `client_enable`, `icon`) VALUES (6, 0, '0', '1', 'test6', '', '0', 1, 0, 0, 0, '', 1, '');
+INSERT INTO `asset_type_conf`(`id`, `pid`, `vm`, `vmh`, `name`, `remark`, `build_in`, `auth_protocol`, `snmp_enable`, `snmp_collect`, `ssh_collect`, `ssh_collect_script`, `client_enable`, `icon`) VALUES (7, 0, '1', '0', 'test7', '', '1', 1, 0, 0, 0, '', 1, '');
+INSERT INTO `asset_type_conf`(`id`, `pid`, `vm`, `vmh`, `name`, `remark`, `build_in`, `auth_protocol`, `snmp_enable`, `snmp_collect`, `ssh_collect`, `ssh_collect_script`, `client_enable`, `icon`) VALUES (8, 0, '0', '0', 'test8', '', '1', 1, 1, 0, 0, '', 1, '');
