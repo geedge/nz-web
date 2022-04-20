@@ -59,17 +59,17 @@ dev_build:
   script:
     - env | sort
     - pwd
-    - export FILE_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA.tar.gz
-    - mvn clean install -Dxjar.password=afdsafasfsag -Dxjar.excludes=/db/*,/static/**/*,/install/* -Dmaven.test.skip=true
-    - cd ./nz-admin/target
-    - go build xjar.go 
-    - chmod +x xjar 
-    - tar -zcvf $FILE_NAME xjar nz-admin.xjar
-    # 将 文件 上传到 minio 
-    - mc alias set nz $MINIO_HOST $MINIO_USER $MINIO_PWD
-    - mc cp $FILE_NAME nz/ci-cd/nz-web/$FILE_NAME
-    - mc cp $FILE_NAME nz/ci-cd/nz-web/$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-latest.tar.gz
-    - cd ../../
+    # - export FILE_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA.tar.gz
+    # - mvn clean install -Dxjar.password=afdsafasfsag -Dxjar.excludes=/db/*,/static/**/*,/install/* -Dmaven.test.skip=true
+    # - cd ./nz-admin/target
+    # - go build xjar.go 
+    # - chmod +x xjar 
+    # - tar -zcvf $FILE_NAME xjar nz-admin.xjar
+    # # 将 文件 上传到 minio 
+    # - mc alias set nz $MINIO_HOST $MINIO_USER $MINIO_PWD
+    # - mc cp $FILE_NAME nz/ci-cd/nz-web/$FILE_NAME
+    # - mc cp $FILE_NAME nz/ci-cd/nz-web/$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-latest.tar.gz
+    # - cd ../../
   # 在哪个分支上可用
   only:
     - /^dev-.*$/i
