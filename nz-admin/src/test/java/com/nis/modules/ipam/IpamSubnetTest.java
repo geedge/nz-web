@@ -33,7 +33,7 @@ public class IpamSubnetTest extends BaseTest<IpamSubnet> {
     /**
      * POST  /ipam/subnet success
      */
-    @Test()
+//    @Test()
     public void saveIpamSubnet_success() {
         IpamSubnet ipamSubnet = jsonToInParameter(testName.getMethodName(), IpamSubnet.class);
         MvcResult result = UTUtil.performPost("/ipam/subnet", ipamSubnet);
