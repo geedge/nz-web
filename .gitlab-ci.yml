@@ -60,12 +60,12 @@ dev_build:
   # 所需执行的脚本
   script:
     - mysql --user=root --password="$MYSQL_ROOT_PASSWORD" --host=mariadb "$MYSQL_DATABASE"
-    - ifconfig -a
-    - ipconfig
-    - env | sort
-    - pwd
-    - export FILE_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA.tar.gz
-    - echo $JUNIT_FILE_NAME
+    # - ifconfig -a
+    # - ipconfig
+    # - env | sort
+    # - pwd
+    # - export FILE_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA.tar.gz
+    # - echo $JUNIT_FILE_NAME
     # -Dmaven.test.skip=true 表示跳过单元测试 , 这里其实在pom文件中设置跳过单元测试 一样会跳过单测的
 #    - mvn clean install -Dxjar.password=afdsafasfsag -Dxjar.excludes=/db/*,/static/**/*,/install/*
 #    - cd ./nz-admin/target
@@ -73,14 +73,14 @@ dev_build:
 #    - chmod +x xjar
 #    - tar -zcvf $FILE_NAME xjar nz-admin.xjar
     # 将 文件 上传到 minio 
-    - mc alias set nz $MINIO_HOST $MINIO_USER $MINIO_PWD
+    # - mc alias set nz $MINIO_HOST $MINIO_USER $MINIO_PWD
 #    - mc cp $FILE_NAME nz/ci-cd/nz-web/$FILE_NAME
 #    - mc cp $FILE_NAME nz/ci-cd/nz-web/$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-latest.tar.gz
 #    - cd ../../
 #    - pwd
-    - cd ./nz-admin/src/test/resources/docs
+    # - cd ./nz-admin/src/test/resources/docs
     # 使用双引号包裹含空格的文件名
-    - mc cp "$JUNIT_FILE_NAME".html nz/ci-cd/nz-web-junit-report/"$JUNIT_FILE_NAME"-$CI_COMMIT_SHORT_SHA.html
+    # - mc cp "$JUNIT_FILE_NAME".html nz/ci-cd/nz-web-junit-report/"$JUNIT_FILE_NAME"-$CI_COMMIT_SHORT_SHA.html
   # 在哪个分支上可用
   only:
     - /^dev-.*$/i
