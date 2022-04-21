@@ -1,4 +1,4 @@
-# 全局docker镜像
+# 定义全局docker镜像
 image: git.mesalab.cn:7443/nezha/nz-build-env:1.3
 # 定义全局变量
 variables:
@@ -7,12 +7,13 @@ variables:
   MINIO_PWD: "Nezha@02!"
   MAVEN_REPO: "/etc/maven/repository/"
   MYSQL_DATABASE: "test"
-  # mariadb 密码配置
+  # mariadb 密码配置，注意变量名是 MYSQL_ROOT_PASSWORD
   MYSQL_ROOT_PASSWORD: '111111'
   # 单测报告名
   JUNIT_FILE_NAME: "Network Zodiac API"
+  # redis 端口定义
   REDIS_PORT: 6379
-# 全局依赖的docker服务
+# 定义全局依赖的docker服务，即 这条流水线 pipeline 中的任务都用这里的服务
 services:
   - mariadb:10.2.14
   - redis:6.2.5
@@ -22,10 +23,11 @@ before_script:
 # 脚本执行完后的钩子，执行所需脚本
 after_script:
   - echo "end ci"
-# 该ci pipeline适合的场景
+# 该ci pipeline适合的场景，按照定义的顺序执行任务
 stages:
   - build
   - test
+# paths主要是来指定需要被缓存的文件路径，需要特别指出的是这里的 paths 是相对路径，是相对于gitlab中项目目录的路径，也就是说被缓存的文件都是在项目目录之内的
 # maven setting /usr/share/maven/conf/settings.xml
 cache:
   paths:
@@ -60,20 +62,16 @@ dev_build:
   stage: test
   # 所需执行的脚本
   script:
-#    - echo "mariadb services"
-#    - echo "redis services"
-#    - mysql --user=root --password="$MYSQL_ROOT_PASSWORD" --host=mariadb "$MYSQL_DATABASE"
-
-    # - ifconfig -a
-    # - ipconfig
     - env | sort
     - pwd
     - export FILE_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA.tar.gz
     - export NEW_JUNIT_FILE_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-Network_Zodiac_API-$CI_COMMIT_SHORT_SHA.tar.gz
     - echo $JUNIT_FILE_NAME
     - echo $NEW_JUNIT_FILE_NAME
-    # -Dmaven.test.skip=true 表示跳过单元测试 , 这里其实在pom文件中设置跳过单元测试 一样会跳过单测的
+    # -Dmaven.test.skip=true 表示跳过测试运行同时跳过测试代码的编译。 如果在 pom 文件中设置跳过单元测试 一样会跳过单测的
     - mvn clean install -Dxjar.password=afdsafasfsag -Dxjar.excludes=/db/*,/static/**/*,/install/*
+    # 执行单测
+    - mvn clean test -Dtest=*Test
     - cd ./nz-admin/target
     - go build xjar.go
     - chmod +x xjar
@@ -82,16 +80,16 @@ dev_build:
     - mc alias set nz $MINIO_HOST $MINIO_USER $MINIO_PWD
     - mc cp $FILE_NAME nz/ci-cd/nz-web/$FILE_NAME
     - mc cp $FILE_NAME nz/ci-cd/nz-web/$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-latest.tar.gz
-    - cd ../../
-#    - pwd
-    - cd ./nz-admin/src/test/resources/docs
+    - cd ../src/test/resources/docs
     - ls
-    - tar -zcvf $NEW_JUNIT_FILE_NAME "$JUNIT_FILE_NAME".html
     # 使用双引号包裹含空格的文件名
+    - tar -zcvf $NEW_JUNIT_FILE_NAME "$JUNIT_FILE_NAME".html
+    # 将 单测报告 上传到 minio 
     - mc cp $NEW_JUNIT_FILE_NAME nz/ci-cd/nz-web-junit-report/$NEW_JUNIT_FILE_NAME
   # 在哪个分支上可用
   only:
-    - /^dev-.*$/i
+    # - /^dev-.*$/i
+    # 定时任务设置
     - schedules
   # 指定哪个ci runner跑该工作
   tags:
