@@ -80,8 +80,7 @@ dev_build:
   # 在哪个分支上可用
   only:
     # - /^dev-.*$/i
-    - refs:
-      - schedules
+    - schedules
   # 指定哪个ci runner跑该工作
   tags:
     - nezha
