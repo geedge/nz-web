@@ -90,7 +90,7 @@ dev_build:
     - mc cp $NEW_JUNIT_FILE_NAME nz/ci-cd/nz-web-junit-report/$NEW_JUNIT_FILE_NAME
   # 在哪个分支上可用
   only:
-    # - /^dev-.*$/i
+    - /^dev-.*$/i
     # 定时任务设置
     - schedules
   # 指定哪个ci runner跑该工作
