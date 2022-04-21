@@ -83,7 +83,7 @@ dev_build:
     - cd ../../
 #    - pwd
     - cd ./nz-admin/src/test/resources/docs
-    - ll
+    - ls
     # 使用双引号包裹含空格的文件名
     # - mc cp "$JUNIT_FILE_NAME".html nz/ci-cd/nz-web-junit-report/"$JUNIT_FILE_NAME"-$CI_COMMIT_SHORT_SHA.html
   # 在哪个分支上可用
