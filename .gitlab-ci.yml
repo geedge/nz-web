@@ -79,7 +79,9 @@ dev_build:
     - mc cp $JUNIT_FILE_NAME.html nz/ci-cd/nz-web-junit-report/$JUNIT_FILE_NAME-$CI_COMMIT_SHORT_SHA.html
   # 在哪个分支上可用
   only:
-    - /^dev-.*$/i
+    # - /^dev-.*$/i
+    - refs:
+      - schedules
   # 指定哪个ci runner跑该工作
   tags:
     - nezha
