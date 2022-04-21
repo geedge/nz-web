@@ -12,7 +12,7 @@ variables:
   # 单测报告名
   JUNIT_FILE_NAME: "Network Zodiac API"
 # 全局依赖的docker服务
- services:
+services:
   - mariadb:10.2.14
   - redis:6.2.5
 # 开始执行脚本前所需执行脚本
@@ -65,10 +65,10 @@ dev_build:
 
     # - ifconfig -a
     # - ipconfig
-     - env | sort
-     - pwd
-     - export FILE_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA.tar.gz
-     - echo $JUNIT_FILE_NAME
+    - env | sort
+    - pwd
+    - export FILE_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA.tar.gz
+    - echo $JUNIT_FILE_NAME
     # -Dmaven.test.skip=true 表示跳过单元测试 , 这里其实在pom文件中设置跳过单元测试 一样会跳过单测的
     - mvn clean install -Dxjar.password=afdsafasfsag -Dxjar.excludes=/db/*,/static/**/*,/install/*
     - cd ./nz-admin/target
