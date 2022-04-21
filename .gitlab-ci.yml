@@ -59,7 +59,10 @@ dev_build:
   stage: test
   # 所需执行的脚本
   script:
-    - mysql --user=root --password="$MYSQL_ROOT_PASSWORD" --host=mariadb "$MYSQL_DATABASE"
+    - echo "mariadb services" 
+    - echo "redis services"
+    # - mysql --user=root --password="$MYSQL_ROOT_PASSWORD" --host=mariadb "$MYSQL_DATABASE"
+
     # - ifconfig -a
     # - ipconfig
     # - env | sort
