@@ -69,7 +69,9 @@ dev_build:
     - env | sort
     - pwd
     - export FILE_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA.tar.gz
+    - export NEW_JUNIT_FILE_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-Network_Zodiac_API-$CI_COMMIT_SHORT_SHA.tar.gz
     - echo $JUNIT_FILE_NAME
+    - echo $NEW_JUNIT_FILE_NAME
     # -Dmaven.test.skip=true 表示跳过单元测试 , 这里其实在pom文件中设置跳过单元测试 一样会跳过单测的
     - mvn clean install -Dxjar.password=afdsafasfsag -Dxjar.excludes=/db/*,/static/**/*,/install/*
     - cd ./nz-admin/target
@@ -84,8 +86,9 @@ dev_build:
 #    - pwd
     - cd ./nz-admin/src/test/resources/docs
     - ls
+    - tar -zcvf $NEW_JUNIT_FILE_NAME "$JUNIT_FILE_NAME".html
     # 使用双引号包裹含空格的文件名
-    - mc cp "$JUNIT_FILE_NAME".html nz/ci-cd/nz-web-junit-report/"$JUNIT_FILE_NAME"-$CI_COMMIT_SHORT_SHA.html
+    - mc cp $NEW_JUNIT_FILE_NAME nz/ci-cd/nz-web-junit-report/$NEW_JUNIT_FILE_NAME
   # 在哪个分支上可用
   only:
     - /^dev-.*$/i
