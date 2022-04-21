@@ -69,7 +69,7 @@ dev_build:
     - echo $JUNIT_FILE_NAME
     - echo $NEW_JUNIT_FILE_NAME
     # 执行单测
-    - mvn clean test -Dtest=*Test
+    # - mvn clean test -Dtest=*Test
     # -Dmaven.test.skip=true 表示跳过测试运行同时跳过测试代码的编译。 如果在 pom 文件中设置跳过单元测试 一样会跳过单测的
     - mvn clean install -Dxjar.password=afdsafasfsag -Dxjar.excludes=/db/*,/static/**/*,/install/*
     - cd ./nz-admin/target
