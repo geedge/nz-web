@@ -11,6 +11,7 @@ variables:
   MYSQL_ROOT_PASSWORD: '111111'
   # 单测报告名
   JUNIT_FILE_NAME: "Network Zodiac API"
+  REDIS_PORT: 6379
 # 全局依赖的docker服务
 services:
   - mariadb:10.2.14
