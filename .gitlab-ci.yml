@@ -9,6 +9,8 @@ variables:
   MYSQL_DATABASE: "test"
   # mariadb 密码配置
   MYSQL_ROOT_PASSWORD: '111111'
+  # 单测报告名
+  JUNIT_FILE_NAME: "Network Zodiac API"
 # 全局依赖的docker服务
 services:
  - mariadb:10.2.14
@@ -60,7 +62,6 @@ dev_build:
     - env | sort
     - pwd
     - export FILE_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA.tar.gz
-    - export JUNIT_FILE_NAME=Network_Zodiac_API
     - echo $JUNIT_FILE_NAME
     - echo $FILE_NAME
     # -Dmaven.test.skip=true 表示跳过单元测试 , 这里其实在pom文件中设置跳过单元测试 一样会跳过单测的
@@ -79,7 +80,7 @@ dev_build:
     - mc cp $JUNIT_FILE_NAME.html nz/ci-cd/nz-web-junit-report/$JUNIT_FILE_NAME-$CI_COMMIT_SHORT_SHA.html
   # 在哪个分支上可用
   only:
-    # - /^dev-.*$/i
+    - /^dev-.*$/i
     - schedules
   # 指定哪个ci runner跑该工作
   tags:
