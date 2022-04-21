@@ -68,7 +68,9 @@ dev_build:
     - export NEW_JUNIT_FILE_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-Network_Zodiac_API-$CI_COMMIT_SHORT_SHA.tar.gz
     - echo $JUNIT_FILE_NAME
     - echo $NEW_JUNIT_FILE_NAME
-    # 执行单测
+    # 执行单测，注意我们只对 nz-admin 模块下的应用做单测
+    # -DfailIfNoTests=false不会使整个过程失败，因为我们不打算在其他模块中运行测试。
+    # -am将制作所有其他子模块。
     - mvn clean test -DfailIfNoTests=false -Dtest=*Test -am
     # -Dmaven.test.skip=true 表示跳过测试运行同时跳过测试代码的编译。 如果在 pom 文件中设置跳过单元测试 一样会跳过单测的
     - mvn clean install -Dxjar.password=afdsafasfsag -Dxjar.excludes=/db/*,/static/**/*,/install/*
