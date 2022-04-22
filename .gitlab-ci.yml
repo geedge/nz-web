@@ -88,9 +88,9 @@ dev_build:
 junit_test:
   stage: junit_test
     # 所需执行的脚本
-    script:
+  script:
+    -pwd
 #      - env | sort
-      - pwd
 #      - export NEW_JUNIT_REPORT_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-Network_Zodiac_API-$CI_COMMIT_SHORT_SHA.tar.gz
 #      - echo $JUNIT_REPORT_NAME
 #      - echo $NEW_JUNIT_REPORT_NAME
@@ -111,9 +111,9 @@ junit_test:
 #      # 将 单测报告 上传到 minio
 #      - mc cp $NEW_JUNIT_REPORT_NAME nz/ci-cd/nz-web-junit-report/$NEW_JUNIT_REPORT_NAME
     # 在哪个分支上可用
-    only:
+  only:
       # 定时任务设置
-      - schedules
+   - schedules
     # 指定哪个ci runner跑该工作
-    tags:
+  tags:
       - nezha
