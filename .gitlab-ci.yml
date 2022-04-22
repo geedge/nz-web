@@ -96,8 +96,10 @@ junit_report:
     # -Dmaven.test.skip=true 表示跳过测试运行同时跳过测试代码的编译。 如果在 pom 文件中设置跳过单元测试 一样会跳过单测的
     - mvn clean package
     - ./nz-admin/target
+    - pwd
+    - ls
     # 使用双引号包裹含空格的文件名
-    - tar -zcvf -r $NEW_JUNIT_REPORT_NAME surefire-reports
+    - tar czvf $NEW_JUNIT_REPORT_NAME surefire-reports
     # 将 文件 上传到 minio
     - mc alias set nz $MINIO_HOST $MINIO_USER $MINIO_PWD
     # 将 单测报告 上传到 minio
