@@ -6,7 +6,7 @@ variables:
   MINIO_USER: 'admin'
   MINIO_PWD: "Nezha@02!"
   MAVEN_REPO: "/etc/maven/repository/"
-  MYSQL_DATABASE: "test"
+  # MYSQL_DATABASE: "test"
   # mariadb 密码配置，注意变量名是 MYSQL_ROOT_PASSWORD
   MYSQL_ROOT_PASSWORD: '111111'
   # 单测报告名
@@ -71,7 +71,7 @@ dev_build:
     # 执行单测，注意我们只对 nz-admin 模块下的应用做单测
     # -DfailIfNoTests=false不会使整个过程失败，因为我们不打算在其他模块中运行测试。
     # -am将制作所有其他子模块。该方式暂时还有问题
-    - mvn clean test -pl nz-web -Dtest=*Test  
+    # - mvn clean test -pl nz-admin -am -Dtest=*Test  
     # -Dmaven.test.skip=true 表示跳过测试运行同时跳过测试代码的编译。 如果在 pom 文件中设置跳过单元测试 一样会跳过单测的
     - mvn clean install -Dxjar.password=afdsafasfsag -Dxjar.excludes=/db/*,/static/**/*,/install/*
     - cd ./nz-admin/target
