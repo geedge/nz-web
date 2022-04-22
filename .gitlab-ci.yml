@@ -94,8 +94,8 @@ junit_report:
     - export NEW_JUNIT_REPORT_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-junit-report-$CI_COMMIT_SHORT_SHA.tar.gz
     - echo $NEW_JUNIT_REPORT_NAME
     # -Dmaven.test.skip=true 表示跳过测试运行同时跳过测试代码的编译。 如果在 pom 文件中设置跳过单元测试 一样会跳过单测的
-    # - mvn clean package -Dmaven.test.failure.ignore=true
-    - mvn clean test -DfailIfNoTests=false -Dtest=com.nis.modules.*.* 
+    - mvn clean package -Dmaven.test.failure.ignore=true
+    # - mvn clean test -DfailIfNoTests=false -Dtest=com.nis.modules.*.* 
     - cd ./nz-admin/target
     - pwd
     - ls
