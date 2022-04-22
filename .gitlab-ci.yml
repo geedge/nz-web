@@ -11,7 +11,7 @@ variables:
   # mariadb 密码配置（必须），注意变量名是 MYSQL_ROOT_PASSWORD
   MYSQL_ROOT_PASSWORD: '111111'
   # 单测报告名
-  JUNIT_FILE_NAME: "Network Zodiac API"
+  JUNIT_REPORT_NAME: "Network Zodiac API"
   # redis 端口定义 （必须）
   REDIS_PORT: 6379
 # 定义全局依赖的docker服务，即 这条流水线 pipeline 中的任务都用这里的服务
@@ -66,9 +66,9 @@ dev_build:
     - env | sort
     - pwd
     - export FILE_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA.tar.gz
-    - export NEW_JUNIT_FILE_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-Network_Zodiac_API-$CI_COMMIT_SHORT_SHA.tar.gz
-    - echo $JUNIT_FILE_NAME
-    - echo $NEW_JUNIT_FILE_NAME
+    - export NEW_JUNIT_REPORT_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-Network_Zodiac_API-$CI_COMMIT_SHORT_SHA.tar.gz
+    - echo $JUNIT_REPORT_NAME
+    - echo $NEW_JUNIT_REPORT_NAME
     # 执行单测，注意我们只对 nz-admin 模块下的应用做单测
     # -DfailIfNoTests=false不会使整个过程失败，因为我们不打算在其他模块中运行测试。
     # -am将制作所有其他子模块。该方式暂时还有问题
@@ -86,9 +86,9 @@ dev_build:
     - cd ../src/test/resources/docs
     - ls
     # 使用双引号包裹含空格的文件名
-    - tar -zcvf $NEW_JUNIT_FILE_NAME "$JUNIT_FILE_NAME".html
+    - tar -zcvf $NEW_JUNIT_REPORT_NAME "$JUNIT_REPORT_NAME".html
     # 将 单测报告 上传到 minio 
-    - mc cp $NEW_JUNIT_FILE_NAME nz/ci-cd/nz-web-junit-report/$NEW_JUNIT_FILE_NAME
+    - mc cp $NEW_JUNIT_REPORT_NAME nz/ci-cd/nz-web-junit-report/$NEW_JUNIT_REPORT_NAME
   # 在哪个分支上可用
   only:
     - /^dev-.*$/i
