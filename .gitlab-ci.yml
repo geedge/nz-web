@@ -1,4 +1,4 @@
-# docker镜像
+# 定义全局docker镜像
 image: git.mesalab.cn:7443/nezha/nz-build-env:1.3
 # 定义全局变量
 variables:
@@ -6,20 +6,29 @@ variables:
   MINIO_USER: 'admin'
   MINIO_PWD: "Nezha@02!"
   MAVEN_REPO: "/etc/maven/repository/"
-# 依赖的docker服务
+  # mariadb 数据库定义（非必须）
+  MYSQL_DATABASE: "test"
+  # mariadb 密码配置（必须），注意变量名是 MYSQL_ROOT_PASSWORD
+  MYSQL_ROOT_PASSWORD: '111111'
+  # 单测报告名
+  JUNIT_REPORT_NAME: "Network Zodiac API"
+  # redis 端口定义 （必须）
+  REDIS_PORT: 6379
+# 定义全局依赖的docker服务，即 这条流水线 pipeline 中的任务都用这里的服务
 services:
-#  - mariadb
-#  - redis
+  - mariadb:10.2.14
+  - redis:6.2.5
 # 开始执行脚本前所需执行脚本
 before_script:
   - echo "begin ci"
 # 脚本执行完后的钩子，执行所需脚本
 after_script:
   - echo "end ci"
-# 该ci pipeline适合的场景
+# 该ci pipeline适合的场景，按照定义的顺序执行任务
 stages:
   - build
   - test
+# paths主要是来指定需要被缓存的文件路径，需要特别指出的是这里的 paths 是相对路径，是相对于gitlab中项目目录的路径，也就是说被缓存的文件都是在项目目录之内的
 # maven setting /usr/share/maven/conf/settings.xml
 cache:
   paths:
@@ -35,10 +44,10 @@ build_rpm:
     - export FILE_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA.tar.gz
     - mvn clean install -Dxjar.password=afdsafasfsag -Dxjar.excludes=/db/*,/static/**/*,/install/* -Dmaven.test.skip=true
     - cd ./nz-admin/target
-    - go build xjar.go 
-    - chmod +x xjar 
+    - go build xjar.go
+    - chmod +x xjar
     - tar -zcvf $FILE_NAME xjar nz-admin.xjar
-    # 将 文件 上传到 minio 
+    # 将 文件 上传到 minio
     - mc alias set nz $MINIO_HOST $MINIO_USER $MINIO_PWD
     - mc cp $FILE_NAME nz/release/nz-web/$FILE_NAME
     - cd ../../
@@ -57,19 +66,30 @@ dev_build:
     - env | sort
     - pwd
     - export FILE_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA.tar.gz
-    - mvn clean install -Dxjar.password=afdsafasfsag -Dxjar.excludes=/db/*,/static/**/*,/install/* -Dmaven.test.skip=true
+    - export NEW_JUNIT_REPORT_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-Network_Zodiac_API-$CI_COMMIT_SHORT_SHA.tar.gz
+    - echo $JUNIT_REPORT_NAME
+    - echo $NEW_JUNIT_REPORT_NAME
+    # -Dmaven.test.skip=true 表示跳过测试运行同时跳过测试代码的编译。 如果在 pom 文件中设置跳过单元测试 一样会跳过单测的
+    - mvn clean install -Dxjar.password=afdsafasfsag -Dxjar.excludes=/db/*,/static/**/*,/install/*
     - cd ./nz-admin/target
-    - go build xjar.go 
-    - chmod +x xjar 
+    - go build xjar.go
+    - chmod +x xjar
     - tar -zcvf $FILE_NAME xjar nz-admin.xjar
-    # 将 文件 上传到 minio 
+    # 将 文件 上传到 minio
     - mc alias set nz $MINIO_HOST $MINIO_USER $MINIO_PWD
     - mc cp $FILE_NAME nz/ci-cd/nz-web/$FILE_NAME
     - mc cp $FILE_NAME nz/ci-cd/nz-web/$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-latest.tar.gz
-    - cd ../../
+    - cd ../src/test/resources/docs
+    - ls
+    # 使用双引号包裹含空格的文件名
+    - tar -zcvf $NEW_JUNIT_REPORT_NAME "$JUNIT_REPORT_NAME".html
+    # 将 单测报告 上传到 minio
+    - mc cp $NEW_JUNIT_REPORT_NAME nz/ci-cd/nz-web-junit-report/$NEW_JUNIT_REPORT_NAME
   # 在哪个分支上可用
   only:
     - /^dev-.*$/i
+    # 定时任务设置
+    - schedules
   # 指定哪个ci runner跑该工作
   tags:
     - nezha
