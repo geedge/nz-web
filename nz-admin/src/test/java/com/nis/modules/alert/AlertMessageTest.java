@@ -50,7 +50,7 @@ public class AlertMessageTest extends BaseTest<AlertMessageEntity> {
     /**
      * delete  /alert/message success
      */
-//    @Test()
+    @Test()
     public void deleteMessage_success() {
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
         MvcResult result = UTUtil.performDelete("/alert/message", map);
