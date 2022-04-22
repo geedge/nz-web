@@ -99,11 +99,11 @@ junit_report:
     - pwd
     - ls
     # 使用双引号包裹含空格的文件名
-    - tar czvf $NEW_JUNIT_REPORT_NAME surefire-reports
+    # - tar czvf $NEW_JUNIT_REPORT_NAME surefire-reports
     # 将 文件 上传到 minio
     - mc alias set nz $MINIO_HOST $MINIO_USER $MINIO_PWD
     # 将 单测报告 上传到 minio
-    - mc cp $NEW_JUNIT_REPORT_NAME nz/ci-cd/nz-web-junit-report/$NEW_JUNIT_REPORT_NAME
+    # - mc cp $NEW_JUNIT_REPORT_NAME nz/ci-cd/nz-web-junit-report/$NEW_JUNIT_REPORT_NAME
     - cd ../../
   # 在哪个分支上可用
   only:
