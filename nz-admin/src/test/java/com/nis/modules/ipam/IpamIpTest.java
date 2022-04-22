@@ -240,7 +240,7 @@ public class IpamIpTest extends BaseTest<IpamIp> {
     /**
      * put  /ipam/ip success
      */
-    @Test()
+//    @Test()
     public void updateIpamIp_success() {
         IpamIp ipamIp = jsonToInParameter(testName.getMethodName(), IpamIp.class);
         MvcResult result = UTUtil.performPut("/ipam/ip", ipamIp);
