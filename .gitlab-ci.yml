@@ -10,8 +10,6 @@ variables:
   MYSQL_DATABASE: "test"
   # mariadb 密码配置（必须），注意变量名是 MYSQL_ROOT_PASSWORD
   MYSQL_ROOT_PASSWORD: '111111'
-  # 单测报告名
-  JUNIT_REPORT_NAME: "Network Zodiac API"
   # redis 端口定义 （必须）
   REDIS_PORT: 6379
 # 定义全局依赖的docker服务，即 这条流水线 pipeline 中的任务都用这里的服务
@@ -28,6 +26,7 @@ after_script:
 stages:
   - build
   - test
+  - junit_report
 # paths主要是来指定需要被缓存的文件路径，需要特别指出的是这里的 paths 是相对路径，是相对于gitlab中项目目录的路径，也就是说被缓存的文件都是在项目目录之内的
 # maven setting /usr/share/maven/conf/settings.xml
 cache:
@@ -66,15 +65,7 @@ dev_build:
     - env | sort
     - pwd
     - export FILE_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA.tar.gz
-    - export NEW_JUNIT_REPORT_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-Network_Zodiac_API-$CI_COMMIT_SHORT_SHA.tar.gz
-    - echo $JUNIT_REPORT_NAME
-    - echo $NEW_JUNIT_REPORT_NAME
-    # 执行单测，注意我们只对 nz-admin 模块下的应用做单测
-    # -DfailIfNoTests=false不会使整个过程失败，因为我们不打算在其他模块中运行测试。
-    # -am将制作所有其他子模块。该方式暂时还有问题
-    # - mvn clean test -pl nz-admin -am -Dtest=*Test  
-    # -Dmaven.test.skip=true 表示跳过测试运行同时跳过测试代码的编译。 如果在 pom 文件中设置跳过单元测试 一样会跳过单测的
-    - mvn clean install -Dxjar.password=afdsafasfsag -Dxjar.excludes=/db/*,/static/**/*,/install/*
+    - mvn clean install -Dxjar.password=afdsafasfsag -Dxjar.excludes=/db/*,/static/**/*,/install/* -Dmaven.test.skip=true
     - cd ./nz-admin/target
     - go build xjar.go
     - chmod +x xjar
@@ -83,12 +74,35 @@ dev_build:
     - mc alias set nz $MINIO_HOST $MINIO_USER $MINIO_PWD
     - mc cp $FILE_NAME nz/ci-cd/nz-web/$FILE_NAME
     - mc cp $FILE_NAME nz/ci-cd/nz-web/$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-latest.tar.gz
-    - cd ../src/test/resources/docs
-    - ls
+    - cd ../../
+  # 在哪个分支上可用
+  only:
+    # - /^dev-.*$/i
+    # 定时任务设置
+    - schedules
+  # 指定哪个ci runner跑该工作
+  tags:
+    - nezha
+
+# 定义的任务
+junit_report:
+  stage: junit_report
+  # 所需执行的脚本
+  script:
+    - env | sort
+    - pwd
+    - export NEW_JUNIT_REPORT_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-junit-report-$CI_COMMIT_SHORT_SHA.tar.gz
+    - echo $NEW_JUNIT_REPORT_NAME
+    # -Dmaven.test.skip=true 表示跳过测试运行同时跳过测试代码的编译。 如果在 pom 文件中设置跳过单元测试 一样会跳过单测的
+    - mvn clean package
+    - ./nz-admin/target
     # 使用双引号包裹含空格的文件名
-    - tar -zcvf $NEW_JUNIT_REPORT_NAME "$JUNIT_REPORT_NAME".html
-    # 将 单测报告 上传到 minio 
+    - tar -zcvf -r $NEW_JUNIT_REPORT_NAME surefire-reports
+    # 将 文件 上传到 minio
+    - mc alias set nz $MINIO_HOST $MINIO_USER $MINIO_PWD
+    # 将 单测报告 上传到 minio
     - mc cp $NEW_JUNIT_REPORT_NAME nz/ci-cd/nz-web-junit-report/$NEW_JUNIT_REPORT_NAME
+    - cd ../../
   # 在哪个分支上可用
   only:
     - /^dev-.*$/i

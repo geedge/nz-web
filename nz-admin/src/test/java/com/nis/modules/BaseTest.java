@@ -12,6 +12,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
+import org.openqa.selenium.WebDriver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.restdocs.JUnitRestDocumentation;
@@ -26,6 +27,8 @@ import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+import org.testng.annotations.AfterTest;
+import org.testng.annotations.BeforeTest;
 
 import java.io.File;
 import java.io.IOException;
@@ -72,6 +75,24 @@ public abstract class BaseTest<T> {
 
     protected String jsonFile;
 
+    /**
+     * 生成单元测试报告
+     * https://blog.csdn.net/qq_34379928/article/details/124083432
+     */
+    protected WebDriver driver;
+    @BeforeTest
+    public void init() {
+        String url = "http://www.baidu.com";
+        //新建一个浏览器句柄
+        driver = new Browser().chrome();
+        //打开URL
+        driver.get(url);
+    }
+    @AfterTest
+    public void generateJUnitReport() {
+        driver.quit();
+    }
+
     @Before
     public void setUp() {
         jsonFile = "parameters/" + jsonIndex();
@@ -105,6 +126,11 @@ public abstract class BaseTest<T> {
         // 登录  默认 admin 用户
         SecurityUtils.setSecurityManager(securityManager);
         login("admin", "admin");
+
+        String url = "http://www.baidu.com";
+
+
+
     }
 
     /**

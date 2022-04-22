@@ -291,6 +291,34 @@
 			<artifactId>mariadb-java-client</artifactId>
 			<version>3.0.4</version>
 		</dependency>
+
+		<!-- 生成 junit report 相关依赖 start -->
+		<!-- 谷歌浏览器驱动 -->
+		<dependency>
+			<groupId>org.seleniumhq.selenium</groupId>
+			<artifactId>selenium-chrome-driver</artifactId>
+			<version>4.1.3</version>
+		</dependency>
+		<!-- selenium 核心包 -->
+		<dependency>
+			<groupId>org.seleniumhq.selenium</groupId>
+			<artifactId>selenium-java</artifactId>
+			<version>4.1.3</version>
+		</dependency>
+		<!-- testng 核心包 -->
+		<dependency>
+			<groupId>org.testng</groupId>
+			<artifactId>testng</artifactId>
+			<version>7.5</version>
+		</dependency>
+		<!-- maven引入驱动依赖包 -->
+		<dependency>
+			<groupId>io.github.bonigarcia</groupId>
+			<artifactId>webdrivermanager</artifactId>
+			<version>5.1.1</version>
+		</dependency>
+		<!-- 生成 junit report 相关依赖 end -->
+
 	</dependencies>
 
 	<build>
@@ -335,7 +363,7 @@
 				<configuration>
 					<skipTests>false</skipTests>
 					<includes>
-						<include>**/*Test.java</include>
+						<include>**/IpamIpTest.java</include>
 					</includes>
 				</configuration>
 			</plugin>
