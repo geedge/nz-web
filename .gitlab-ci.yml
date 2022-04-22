@@ -95,7 +95,7 @@ junit_report:
     - echo $NEW_JUNIT_REPORT_NAME
     # -Dmaven.test.skip=true 表示跳过测试运行同时跳过测试代码的编译。 如果在 pom 文件中设置跳过单元测试 一样会跳过单测的
     - mvn clean package
-    - ./nz-admin/target
+    - cd ./nz-admin/target
     - pwd
     - ls
     # 使用双引号包裹含空格的文件名
