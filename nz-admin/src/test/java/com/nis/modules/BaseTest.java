@@ -12,7 +12,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
-import org.openqa.selenium.WebDriver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.restdocs.JUnitRestDocumentation;
@@ -77,20 +76,16 @@ public abstract class BaseTest<T> {
 
     /**
      * 生成单元测试报告
+     *
      * https://blog.csdn.net/qq_34379928/article/details/124083432
      */
-    protected WebDriver driver;
     @BeforeTest
     public void init() {
-        String url = "http://www.baidu.com";
-        //新建一个浏览器句柄
-        driver = new Browser().chrome();
-        //打开URL
-        driver.get(url);
+        log.info("\njunit test report start\n");
     }
     @AfterTest
     public void generateJUnitReport() {
-        driver.quit();
+        log.info("\njunit test report end\n");
     }
 
     @Before

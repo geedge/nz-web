@@ -120,7 +120,7 @@ public class AlertMessageTest extends BaseTest<AlertMessageEntity> {
     /**
      * get  /alert/message not exist
      */
-//    @Test()
+    @Test()
     public void listMessageRel_notexist() {
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
         MvcResult result = UTUtil.performGet("/alert/message/rel", map);
