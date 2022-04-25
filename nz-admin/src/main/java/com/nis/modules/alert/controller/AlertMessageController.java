@@ -63,13 +63,13 @@ public class AlertMessageController {
     @RequestMapping( method = RequestMethod.DELETE)
 	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ALERTMESSAGE)
     @RequiresPermissions({"alert:message:delete"})
-    public R delete(Long[] ids,Integer state) {
+    public R delete(Long[] ids) {
     	ValidateUtils.is(ids).notNull();
-    	boolean containsstate = Constant.ALERT_MESSAGE_STATE_TABLE_MAPPING.containsKey(state);
-    	if(!containsstate) {
-    		throw new NZException(RCode.ERROR);
-    	}
-    	handlerService.removeMessageByIds(state,ids);
+//    	boolean containsstate = Constant.ALERT_MESSAGE_STATE_TABLE_MAPPING.containsKey(state);
+//    	if(!containsstate) {
+//    		throw new NZException(RCode.ERROR);
+//    	}
+    	handlerService.removeMessageByIds(ids);
         return R.ok();
     }
 
@@ -110,5 +110,15 @@ public class AlertMessageController {
 
 		PageUtils page = handlerService.queryAlertMessageRelList(params);
 		return R.ok(page);
+	}
+
+	/**
+	 * alert message告警信息确认
+	 */
+	@PutMapping("/ack")
+	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERTMESSAGE)
+	public R alertMessageAck(@RequestBody List<Map<String,Object>> mapList){
+		handlerService.alertMessageAck(mapList);
+		return R.ok();
 	}
 }

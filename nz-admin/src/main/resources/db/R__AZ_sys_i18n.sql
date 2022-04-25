@@ -5479,5 +5479,9 @@ INSERT INTO `sys_i18n` VALUES (6050, '354024', 'zh', 'TYPECONF_AUTHPROTOCOL_INCO
 INSERT INTO `sys_i18n` VALUES (6051, '354025', 'zh', 'TYPECONF_SNMPENABLE_INCORRECT', '资产类型配置snmp是否支持必须为0或1', '', '2022-04-20 11:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (6052, '354026', 'zh', 'TYPECONF_SNMPCOLLECT_INCORRECT', '资产类型配置snmp采集是否开启必须为0或1', '', '2022-04-20 11:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (6053, '354027', 'zh', 'TYPECONF_SSHCOLLECT_INCORRECT', '资产类型配置ssh采集是否开启必须为0或1', '', '2022-04-20 11:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6054, '411008', 'en', 'ALERTMSG_ACK_ISNULL', 'Alert message ack is required', '', '2022-04-22 13:43:00', 1);
+INSERT INTO `sys_i18n` VALUES (6055, '414009', 'en', 'ALERTMSG_ACK_INCORRECT', 'Alert message ack is incorrect', '', '2022-04-22 13:43:00', 1);
+INSERT INTO `sys_i18n` VALUES (6056, '411008', 'zh', 'ALERTMSG_ACK_ISNULL', '告警确认标识为null', '', '2022-04-22 13:43:00', 1);
+INSERT INTO `sys_i18n` VALUES (6057, '414009', 'zh', 'ALERTMSG_ACK_INCORRECT', '告警确认标识不合法', '', '2022-04-22 13:43:00', 1);
 
 SET FOREIGN_KEY_CHECKS = 1;

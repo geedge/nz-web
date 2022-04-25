@@ -87,7 +87,7 @@ public interface AlertHandlerService  {
 	 * @param state
 	 * @param ids
 	 */
-	void removeMessageByIds(Integer state, Long ...ids);
+	void removeMessageByIds(Long ...ids);
 
 	AlertMessageEntity getAlertMessageLinkObject(AlertMessageEntity message);
 
@@ -119,5 +119,7 @@ public interface AlertHandlerService  {
     AlertMessageEntity queryInfo(Long id);
 
 	PageUtils queryAlertMessageRelList(Map params);
+
+	void alertMessageAck(List<Map<String, Object>> mapList);
 }
 

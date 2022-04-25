@@ -167,4 +167,10 @@ public interface AlertHandlerDao {
 	AlertMessageEntity queryInfo(@Param("id") Long id);
 
 	List<AlertMessageEntity> queryAlertMessageRelList(IPage page, @Param("params") Map params);
+
+	/**
+	 * 更新 不同表中 message 的ack
+	 * @param message
+	 */
+    void updateMessageEndAck(AlertMessageEntity alertMessageEntity);
 }

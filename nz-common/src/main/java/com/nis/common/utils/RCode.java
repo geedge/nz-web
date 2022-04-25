@@ -433,6 +433,8 @@ public enum RCode {
     ALERTMSG_TOPN_ISNULL(411005, "TopN is required"),        //告警信息topn不能为空
     ALERTMSG_REMARK_ISNULL(411006, "Remark is required"),    //告警信息topn不能为空
     ALERTMSG_NOT_EXITS(416007, "Alert message not exits"),    //告警信息为null
+    ALERTMSG_ACK_ISNULL(411008, "Alert message ack is required"),    //告警确认标识为null
+    ALERTMSG_ACK_INCORRECT(414009, "Alert message ack is incorrect"),    //告警标识不合法
 
 
     ALERTRULE_ID_ISNULL(421000, "ID is required"), //告警规则ID不能为空

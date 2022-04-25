@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.dao.AlertHandlerDao;
 import com.nis.modules.alert.dao.AlertSilenceDao;
@@ -516,13 +517,13 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	 * 删除告警消息
 	 */
 	@Override
-	public void removeMessageByIds(Integer state, Long ... ids) {
+	public void removeMessageByIds(Long ... ids) {
 		if(Tool.ArrayUtil.isEmpty(ids)) {
 			return;
 		}
-		String tableName = Constant.ALERT_MESSAGE_STATE_TABLE_MAPPING.get(state);
-		msgHandlerDao.deleteMessageByIdsAndTableName(tableName, ids);
-		
+		for (String tableNam : Constant.ALERT_MESSAGE_STATE_TABLE_MAPPING.values()) {
+			msgHandlerDao.deleteMessageByIdsAndTableName(tableNam, ids);
+		}
 	}
 
 	@Override
@@ -927,5 +928,23 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		List<AlertMessageEntity> alertMessageEntityList = msgHandlerDao.queryAlertMessageRelList(page,params);
 		page.setRecords(alertMessageEntityList);
 		return new PageUtils(page);
+	}
+
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public void alertMessageAck(List<Map<String, Object>> mapList) {
+		for (Map<String,Object> params:mapList) {
+			ValidateUtils.is(params.get("id")).notNull(RCode.ALERTMSG_IDS_ISNULL);
+			ValidateUtils.is(params.get("ack")).notNull(RCode.ALERTMSG_ACK_ISNULL);
+			Long id = Long.valueOf(String.valueOf(params.get("id")));
+			Integer ack = (Integer) params.get("ack");
+			if (!Arrays.asList(new Integer[]{0, 1}).contains(ack)) {
+				throw new NZException(RCode.ALERTMSG_ACK_INCORRECT);
+			}
+			AlertMessageEntity alertMessageEntity = msgHandlerDao.queryInfo(id.longValue());
+			ValidateUtils.is(alertMessageEntity).notNull(RCode.ALERTMSG_NOT_EXITS);
+			alertMessageEntity.setAck(ack);
+			msgHandlerDao.updateMessageEndAck(alertMessageEntity);
+		}
 	}
 }

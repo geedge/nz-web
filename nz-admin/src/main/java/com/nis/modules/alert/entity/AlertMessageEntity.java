@@ -146,4 +146,10 @@ public class AlertMessageEntity implements Serializable {
 	
 	@TableField(exist = false)
 	private List<AlertSilenceConf> silenceList;
+
+	/**
+	 * 确认标识
+	 */
+	private  Integer ack;
+
 }

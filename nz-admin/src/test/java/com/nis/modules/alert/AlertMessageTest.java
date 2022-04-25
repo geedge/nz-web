@@ -14,6 +14,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 @RunWith(SpringRunner.class)
@@ -59,9 +60,9 @@ public class AlertMessageTest extends BaseTest<AlertMessageEntity> {
     }
 
     /**
-     * delete  /alert/message error
+     * delete  /alert/message error 接口取消state参数，错误状态无
      */
-    @Test()
+    //@Test()
     public void deleteMessage_error() {
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
         MvcResult result = UTUtil.performDelete("/alert/message", map);
@@ -125,7 +126,7 @@ public class AlertMessageTest extends BaseTest<AlertMessageEntity> {
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
         MvcResult result = UTUtil.performGet("/alert/message/rel", map);
 
-        UTUtil.assertToSizeByFlag(result, false);
+        UTUtil.assertEqualsRCode(result, RCode.ALERTMSG_NOT_EXITS);
     }
 
     /**
@@ -159,6 +160,56 @@ public class AlertMessageTest extends BaseTest<AlertMessageEntity> {
         MvcResult result = UTUtil.performGet("/alert/message/export", map);
 
         UTUtil.assertToExportFile(result, map,2);
+    }
+    /**
+     * put  /alert/message/ack
+     */
+    @Test()
+    public void putMessageAck_success() throws IOException {
+        List list = jsonToInParameter(testName.getMethodName(), List.class);
+        MvcResult result = UTUtil.performPut("/alert/message/ack", list);
+
+        UTUtil.assertEqualsRCode(result, RCode.SUCCESS);
+    }
+    /**
+     * put  /alert/message/ack
+     */
+    @Test()
+    public void putMessageAck_checkIdNotNull() throws IOException {
+        List list = jsonToInParameter(testName.getMethodName(), List.class);
+        MvcResult result = UTUtil.performPut("/alert/message/ack", list);
+
+        UTUtil.assertEqualsRCode(result, RCode.ALERTMSG_IDS_ISNULL);
+    }
+    /**
+     * put  /alert/message/ack
+     */
+    @Test()
+    public void putMessageAck_checkAckNotNull() throws IOException {
+        List list = jsonToInParameter(testName.getMethodName(), List.class);
+        MvcResult result = UTUtil.performPut("/alert/message/ack", list);
+
+        UTUtil.assertEqualsRCode(result, RCode.ALERTMSG_ACK_ISNULL);
+    }
+    /**
+     * put  /alert/message/ack
+     */
+    @Test()
+    public void putMessageAck_checkNotexist() throws IOException {
+        List list = jsonToInParameter(testName.getMethodName(), List.class);
+        MvcResult result = UTUtil.performPut("/alert/message/ack", list);
+
+        UTUtil.assertEqualsRCode(result, RCode.ALERTMSG_NOT_EXITS);
+    }
+    /**
+     * put  /alert/message/ack
+     */
+    @Test()
+    public void putMessageAck_checkAckIncorrect() throws IOException {
+        List list = jsonToInParameter(testName.getMethodName(), List.class);
+        MvcResult result = UTUtil.performPut("/alert/message/ack", list);
+
+        UTUtil.assertEqualsRCode(result, RCode.ALERTMSG_ACK_INCORRECT);
     }
 
 

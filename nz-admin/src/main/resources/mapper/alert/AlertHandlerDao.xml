@@ -20,6 +20,7 @@
         <result property="state" column="state"/>
 		<result property="hashKey" column="hash_key"/>
 		<result property="remark" column="remark"/>
+		<result property="tableName" column="tableName"/>
 		<association columnPrefix="r_" property="alertRule" javaType="com.nis.modules.alert.entity.AlertRuleEntity">
 			<id column="id" property="id"/>
 			<result column="name" property="name"/>
@@ -71,7 +72,7 @@
 	
 	<!-- 根据id批量删除 alert message -->
 	<delete id="deleteMessageByIdsAndTableName">
-		delete from ${tableName} where id in 
+		delete from ${tableName} where id in
 		<foreach collection="array" item="id" separator="," open="(" close=")">
 			#{id}
 		</foreach>
@@ -85,6 +86,11 @@
 	<!-- 更新 关闭 auto expired 功能的 告警消息 结束时间 -->
 	<update id="updateCloseExpiredMessageEndAt" >
 		update ${tableName} am left join alert_rule ar on am.rule_id = ar.id set end_at = #{endAt} where ar.auto_expired = 0
+	</update>
+
+	<!-- 更新 alert message ack -->
+	<update id="updateMessageEndAck" >
+		update ${tableName} set ack = #{ack} where id = #{id}
 	</update>
 	
 	<!-- 保存silence 与匹配的 告警消息的 关联关系 -->
@@ -473,11 +479,12 @@
 		alsc.name as alsc_name,
 		alsc.color as alsc_color,
 		dc.id as dc_id,
-		dc.name as dc_name
+		dc.name as dc_name,
+		am.tableName
 		from
-		(select * from alert_message_active union all
-		select * from alert_message_history union all
-		select * from alert_message_silence) am
+		(select *,'alert_message_active' tableName from alert_message_active union all
+		select *,'alert_message_historym' from alert_message_history union all
+		select *,'alert_message_silence' from alert_message_silence) am
 		LEFT JOIN alert_rule ar ON am.rule_id = ar.id
 		LEFT JOIN monitor_project p on am.project_id = p.id
 		LEFT JOIN monitor_module m on am.module_id = m.id
