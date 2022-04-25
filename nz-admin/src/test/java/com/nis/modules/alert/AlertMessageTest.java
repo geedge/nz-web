@@ -51,7 +51,7 @@ public class AlertMessageTest extends BaseTest<AlertMessageEntity> {
     /**
      * delete  /alert/message success
      */
-    // @Test()
+    @Test()
     public void deleteMessage_success() {
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
         MvcResult result = UTUtil.performDelete("/alert/message", map);
@@ -62,7 +62,7 @@ public class AlertMessageTest extends BaseTest<AlertMessageEntity> {
     /**
      * delete  /alert/message error 接口取消state参数，错误状态无
      */
-    //@Test()
+    @Test()
     public void deleteMessage_error() {
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
         MvcResult result = UTUtil.performDelete("/alert/message", map);
@@ -121,7 +121,7 @@ public class AlertMessageTest extends BaseTest<AlertMessageEntity> {
     /**
      * get  /alert/message not exist
      */
-    // @Test()
+    @Test()
     public void listMessageRel_notexist() {
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
         MvcResult result = UTUtil.performGet("/alert/message/rel", map);

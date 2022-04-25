@@ -152,7 +152,7 @@ public class IpamIpTest extends BaseTest<IpamIp> {
     /**
      * POST  /ipam/ip success
      */
-    // @Test()
+    @Test()
     public void saveIpamIp_success() {
         IpamIp ipamIp = jsonToInParameter(testName.getMethodName(), IpamIp.class);
         MvcResult result = UTUtil.performPost("/ipam/ip", ipamIp);
@@ -163,7 +163,7 @@ public class IpamIpTest extends BaseTest<IpamIp> {
     /**
      * POST  /ipam/ip name isnull
      */
-    // @Test()
+    @Test()
     public void saveIpamIp_nameisnull() {
         IpamIp ipamIp = jsonToInParameter(testName.getMethodName(), IpamIp.class);
         MvcResult result = UTUtil.performPost("/ipam/ip", ipamIp);
@@ -185,7 +185,7 @@ public class IpamIpTest extends BaseTest<IpamIp> {
     /**
      * POST  /ipam/ip mac isnull
      */
-    // @Test()
+    @Test()
     public void saveIpamIp_macisnull() {
         IpamIp ipamIp = jsonToInParameter(testName.getMethodName(), IpamIp.class);
         MvcResult result = UTUtil.performPost("/ipam/ip", ipamIp);
@@ -218,7 +218,7 @@ public class IpamIpTest extends BaseTest<IpamIp> {
     /**
      * POST  /ipam/ip mac error
      */
-    // @Test()
+    @Test()
     public void saveIpamIp_macerror() {
         IpamIp ipamIp = jsonToInParameter(testName.getMethodName(), IpamIp.class);
         MvcResult result = UTUtil.performPost("/ipam/ip", ipamIp);
@@ -229,7 +229,7 @@ public class IpamIpTest extends BaseTest<IpamIp> {
     /**
      * POST  /ipam/ip ip mac exists
      */
-    // @Test()
+    @Test()
     public void saveIpamIp_ipmacexists() {
         IpamIp ipamIp = jsonToInParameter(testName.getMethodName(), IpamIp.class);
         MvcResult result = UTUtil.performPost("/ipam/ip", ipamIp);
@@ -240,7 +240,7 @@ public class IpamIpTest extends BaseTest<IpamIp> {
     /**
      * put  /ipam/ip success
      */
-    // @Test()
+    @Test()
     public void updateIpamIp_success() {
         IpamIp ipamIp = jsonToInParameter(testName.getMethodName(), IpamIp.class);
         MvcResult result = UTUtil.performPut("/ipam/ip", ipamIp);

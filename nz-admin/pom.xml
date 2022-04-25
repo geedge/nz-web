@@ -291,6 +291,14 @@
 			<artifactId>mariadb-java-client</artifactId>
 			<version>3.0.4</version>
 		</dependency>
+
+		<!-- https://blog.csdn.net/qq_34379928/article/details/124083432 -->
+		<!-- 生成 junit report 相关依赖 -->
+		<dependency>
+			<groupId>org.testng</groupId>
+			<artifactId>testng</artifactId>
+			<version>7.5</version>
+		</dependency>
 	</dependencies>
 
 	<build>
