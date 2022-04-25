@@ -280,6 +280,8 @@ public class ShiroConfig {
 		MySessionManager mySessionManager = new MySessionManager();
 		mySessionManager.setGlobalSessionTimeout(loginExpiration * 60 * 1000);
 		mySessionManager.setSessionDAO(redisSessionDAO());
+		// Disable Session ID cookie
+		mySessionManager.setSessionIdCookieEnabled(false);
 		return mySessionManager;
 	}
 
