@@ -78,7 +78,7 @@ dev_build:
   # 在哪个分支上可用
   only:
     - /^dev-.*$/i
-  # 不执行的标签
+  # 指定不执行的标签
   except:
     - schedules
   # 指定哪个ci runner跑该工作
