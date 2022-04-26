@@ -114,7 +114,7 @@ junit_test:
     - /^dev-.*$/i
     # 定时任务设置
     - schedules
-  # allow_failure: true
+  allow_failure: true
   # 指定哪个ci runner跑该工作
   tags:
     - nezha
