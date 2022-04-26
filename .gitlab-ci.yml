@@ -77,7 +77,7 @@ dev_build:
     - cd ../../
   # 在哪个分支上可用
   only:
-    # - /^dev-.*$/i
+    - /^sssssssssdev-.*$/i
   # 不执行的标签
   except:
     - schedules
