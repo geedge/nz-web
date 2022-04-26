@@ -314,7 +314,7 @@
 					<exclude>**/application-*.yml</exclude>
 					<exclude>**/logback-spring.xml</exclude>
 					<exclude>**/swagger/**</exclude>
-<!--					<exclude>**/nezha.properties</exclude>-->
+					<exclude>**/nezha.properties</exclude>
 				</excludes>
 				<includes>
 					<!--包含文件夹以及子文件夹下所有资源 -->
