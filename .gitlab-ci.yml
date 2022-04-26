@@ -79,6 +79,8 @@ dev_build:
   only:
     - /^dev-.*$/i
   # 指定哪个ci runner跑该工作
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
   tags:
     - nezha
 
