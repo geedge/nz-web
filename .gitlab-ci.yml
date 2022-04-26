@@ -116,31 +116,6 @@ junit_test:
     - ls
     - cd ./nz-admin/target
     - ls
-  # 在哪个分支上可用
-  only:
-    - /^dev-.*$/i
-    # 定时任务设置
-    - schedules
-  allow_failure: true
-  # 指定哪个ci runner跑该工作
-  tags:
-    - nezha
-
-
-# 定义的任务
-new_junit_test:
-  stage: new_junit_test
-  # 所需执行的脚本
-  script:
-    - ls
-    - export NEW_JUNIT_REPORT_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-junit-report-$CI_COMMIT_SHORT_SHA.tar.gz
-    - echo $NEW_JUNIT_REPORT_NAME
-    # # -Dmaven.test.skip=true 表示跳过测试运行同时跳过测试代码的编译。 如果在 pom 文件中设置跳过单元测试 一样会跳过单测的
-    # # - mvn clean package -Dmaven.test.failure.ignore=true
-    # - mvn clean test
-    
-    - cd ./nz-admin/target
-    - ls
     # 使用双引号包裹含空格的文件名
     - tar -zcvf $NEW_JUNIT_REPORT_NAME surefire-reports
     # 将 文件 上传到 minio
@@ -148,7 +123,6 @@ new_junit_test:
     # 将 单测报告 上传到 minio
     - mc cp $NEW_JUNIT_REPORT_NAME nz/ci-cd/nz-web-junit-report/$NEW_JUNIT_REPORT_NAME
     - cd ../../
-
   # 在哪个分支上可用
   only:
     - /^dev-.*$/i
@@ -158,3 +132,36 @@ new_junit_test:
   # 指定哪个ci runner跑该工作
   tags:
     - nezha
+
+
+# # 定义的任务
+# new_junit_test:
+#   stage: new_junit_test
+#   # 所需执行的脚本
+#   script:
+#     - ls
+#     - export NEW_JUNIT_REPORT_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-junit-report-$CI_COMMIT_SHORT_SHA.tar.gz
+#     - echo $NEW_JUNIT_REPORT_NAME
+#     # # -Dmaven.test.skip=true 表示跳过测试运行同时跳过测试代码的编译。 如果在 pom 文件中设置跳过单元测试 一样会跳过单测的
+#     # # - mvn clean package -Dmaven.test.failure.ignore=true
+#     # - mvn clean test
+    
+#     - cd ./nz-admin/target
+#     - ls
+#     # 使用双引号包裹含空格的文件名
+#     - tar -zcvf $NEW_JUNIT_REPORT_NAME surefire-reports
+#     # 将 文件 上传到 minio
+#     - mc alias set nz $MINIO_HOST $MINIO_USER $MINIO_PWD
+#     # 将 单测报告 上传到 minio
+#     - mc cp $NEW_JUNIT_REPORT_NAME nz/ci-cd/nz-web-junit-report/$NEW_JUNIT_REPORT_NAME
+#     - cd ../../
+
+#   # 在哪个分支上可用
+#   only:
+#     - /^dev-.*$/i
+#     # 定时任务设置
+#     - schedules
+#   # allow_failure: true
+#   # 指定哪个ci runner跑该工作
+#   tags:
+#     - nezha
