@@ -105,6 +105,7 @@ junit_test:
     - cd ../../
   # 在哪个分支上可用
   only:
+    - /^dev-.*$/i
     # 定时任务设置
     - schedules
   # 指定哪个ci runner跑该工作
