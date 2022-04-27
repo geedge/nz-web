@@ -26,6 +26,8 @@ import com.nis.modules.sys.service.SysI18nService;
 
 import cn.hutool.log.Log;
 
+import javax.servlet.http.HttpServletRequest;
+
 /**
  * 异常处理器
  *
@@ -64,24 +66,27 @@ public class NZExceptionHandler {
 
 	@ExceptionHandler(DuplicateKeyException.class)
 	@ResponseStatus(value=HttpStatus.BAD_REQUEST)
-	public R handleDuplicateKeyException(DuplicateKeyException e){
+	public R handleDuplicateKeyException(DuplicateKeyException e, HttpServletRequest request){
+		logger.error("Request uri: " + request.getRequestURI());
 		logger.error(e);
 		return R.error(RCode.SYS_DB_DUPLICATERECORD);
 	}
 
 	@ExceptionHandler(AuthorizationException.class)
 	@ResponseStatus(value=HttpStatus.UNAUTHORIZED)
-	public R handleAuthorizationException(AuthorizationException e){
+	public R handleAuthorizationException(AuthorizationException e, HttpServletRequest request){
+		logger.error("Request uri: " + request.getRequestURI());
 		logger.error(e);
 		return R.error(RCode.SYS_DB_AUTH);
 	}
 
 	@ExceptionHandler(Exception.class)
 	@ResponseStatus(value=HttpStatus.INTERNAL_SERVER_ERROR)
-	public R handleException(Exception e){
+	public R handleException(Exception e, HttpServletRequest request){
 		if(e instanceof ClientAbortException) {
 			return null;
 		}
+		logger.error("Request uri: " + request.getRequestURI());
 		logger.error(e);
 		return R.error().put("msg", e.getMessage());
 	}
