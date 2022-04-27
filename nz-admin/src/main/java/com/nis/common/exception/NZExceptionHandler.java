@@ -67,16 +67,14 @@ public class NZExceptionHandler {
 	@ExceptionHandler(DuplicateKeyException.class)
 	@ResponseStatus(value=HttpStatus.BAD_REQUEST)
 	public R handleDuplicateKeyException(DuplicateKeyException e, HttpServletRequest request){
-		logger.error("Request uri: " + request.getRequestURI());
-		logger.error(e);
+		logger.error(e,"Request uri: {}", request.getRequestURI());
 		return R.error(RCode.SYS_DB_DUPLICATERECORD);
 	}
 
 	@ExceptionHandler(AuthorizationException.class)
 	@ResponseStatus(value=HttpStatus.UNAUTHORIZED)
 	public R handleAuthorizationException(AuthorizationException e, HttpServletRequest request){
-		logger.error("Request uri: " + request.getRequestURI());
-		logger.error(e);
+		logger.error(e,"Request uri: {}", request.getRequestURI());
 		return R.error(RCode.SYS_DB_AUTH);
 	}
 
@@ -86,8 +84,7 @@ public class NZExceptionHandler {
 		if(e instanceof ClientAbortException) {
 			return null;
 		}
-		logger.error("Request uri: " + request.getRequestURI());
-		logger.error(e);
+		logger.error(e,"Request uri: {}", request.getRequestURI());
 		return R.error().put("msg", e.getMessage());
 	}
 }
