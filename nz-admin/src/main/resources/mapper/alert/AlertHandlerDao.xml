@@ -298,6 +298,9 @@
 			<if test="params.asset != null and params.asset != ''">
 				AND locate(#{params.asset},ass.name)
 			</if>
+			<if test="params.ack != null and params.ack != ''">
+				AND am.ack=#{params.ack}
+			</if>
 		</where>
 		<if test="params.orderBy == null or params.orderBy == ''">
 			ORDER BY am.id
@@ -406,6 +409,9 @@
 			</if>
 			<if test="params.asset != null and params.asset != ''">
 				AND locate(#{params.asset},ass.name)
+			</if>
+			<if test="params.ack != null and params.ack != ''">
+				AND am.ack=#{params.ack}
 			</if>
 		</where>
 		GROUP BY ${columnId}
