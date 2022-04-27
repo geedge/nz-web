@@ -49,7 +49,7 @@
   "------------------ POST  /ipam/ip data---------------------": "note",
   "saveIpamIp_success": {
     "name": "node-6",
-    "addr": "192.168.66.1",
+    "addr": "192.168.66.25",
     "mac": "1f:1b:6b:1d:65:1d",
     "state": 1,
     "remark": ""

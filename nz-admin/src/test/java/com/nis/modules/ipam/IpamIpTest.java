@@ -161,17 +161,6 @@ public class IpamIpTest extends BaseTest<IpamIp> {
     }
 
     /**
-     * POST  /ipam/ip name isnull
-     */
-    @Test()
-    public void saveIpamIp_nameisnull() {
-        IpamIp ipamIp = jsonToInParameter(testName.getMethodName(), IpamIp.class);
-        MvcResult result = UTUtil.performPost("/ipam/ip", ipamIp);
-
-        UTUtil.assertEqualsRCode(result, RCode.IPAM_IP_NAME_ISNULL);
-    }
-
-    /**
      * POST  /ipam/ip addr isnull
      */
     @Test()
@@ -180,17 +169,6 @@ public class IpamIpTest extends BaseTest<IpamIp> {
         MvcResult result = UTUtil.performPost("/ipam/ip", ipamIp);
 
         UTUtil.assertEqualsRCode(result, RCode.IPAM_IP_ADDR_ISNULL);
-    }
-
-    /**
-     * POST  /ipam/ip mac isnull
-     */
-    @Test()
-    public void saveIpamIp_macisnull() {
-        IpamIp ipamIp = jsonToInParameter(testName.getMethodName(), IpamIp.class);
-        MvcResult result = UTUtil.performPost("/ipam/ip", ipamIp);
-
-        UTUtil.assertEqualsRCode(result, RCode.IPAM_IP_MAC_ISNULL);
     }
 
     /**
@@ -215,27 +193,6 @@ public class IpamIpTest extends BaseTest<IpamIp> {
         UTUtil.assertEqualsRCode(result, RCode.IPAM_IP_SUBNET_ISNULL);
     }
 
-    /**
-     * POST  /ipam/ip mac error
-     */
-    @Test()
-    public void saveIpamIp_macerror() {
-        IpamIp ipamIp = jsonToInParameter(testName.getMethodName(), IpamIp.class);
-        MvcResult result = UTUtil.performPost("/ipam/ip", ipamIp);
-
-        UTUtil.assertEqualsRCode(result, RCode.IPAM_IP_MAC_ERROR);
-    }
-
-    /**
-     * POST  /ipam/ip ip mac exists
-     */
-    @Test()
-    public void saveIpamIp_ipmacexists() {
-        IpamIp ipamIp = jsonToInParameter(testName.getMethodName(), IpamIp.class);
-        MvcResult result = UTUtil.performPost("/ipam/ip", ipamIp);
-
-        UTUtil.assertEqualsRCode(result, RCode.IPAM_IP_INTERVAL_ERROR);
-    }
 
     /**
      * put  /ipam/ip success

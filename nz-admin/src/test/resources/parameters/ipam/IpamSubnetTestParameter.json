@@ -4,7 +4,7 @@
     "name": "IpamSubnetTest",
     "type": 4,
     "dcId": 1,
-    "addr": "192.168.63.1",
+    "addr": "192.168.64.1",
     "mask": 24,
     "vlan": "vlanNameTest",
     "remark": "1",
