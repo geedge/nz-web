@@ -55,6 +55,12 @@ public class Promserver {
 	 */
 	private String token;
 
+	/**
+	 * nz-agent /healthy 接口返回请求时间戳
+	 */
+	@TableField(exist = false)
+	private Long ts;
+
 	@TableField(exist = false)
 	private Dc dc;
 

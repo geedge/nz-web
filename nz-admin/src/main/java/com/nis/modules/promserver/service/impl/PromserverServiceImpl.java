@@ -84,6 +84,7 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 				Object promCache = promserverCaches.get(prom.getId().toString());
 				if(ToolUtil.isNotEmpty(promCache)) {
 					prom.setCheckTime(JSON.parseObject((String)promCache, Promserver.class).getCheckTime());
+					prom.setTs(JSON.parseObject((String) promCache, Promserver.class).getTs());
 				}
 			}
 		}

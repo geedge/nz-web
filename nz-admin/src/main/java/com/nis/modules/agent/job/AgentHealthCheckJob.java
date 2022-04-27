@@ -157,6 +157,9 @@ public class AgentHealthCheckJob extends QuartzJobBean {
 								}
 								data.remove("auth");
 								promServer.setStatusInfo(JSONObject.toJSONString(data));
+								// 从 nz-agent /healthy 接口中获取返回得 ts 信息
+								Object tsObj = data.get("ts");
+								promServer.setTs(Tool.ObjectUtil.isNull(tsObj) ? null : Tool.NumberUtil.parseLong(tsObj.toString()));
 							} else {
 								promServer.setStatus(0);
 								promServer.setStatusInfo(getPromStatusInfoErrorMsg());
