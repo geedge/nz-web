@@ -4,7 +4,8 @@
     "pageNo": null,
     "pageSize": null,
     "orderBy": "",
-    "ids": "211210040800001,211210040800002"
+    "ids": "211210040800001,211210040800002",
+    "ack": 0
   },
   "listMessage_notexist": {
     "pageNo": null,
@@ -17,8 +18,7 @@
     "ids": "211210040800005,211210040800006"
   },
   "deleteMessage_error": {
-    "ids": "7,8",
-    "state": 4
+    "id": "211210040800005,211210040800006"
   },
   "------------------ GET  /alert/message data---------------------": "note",
   "queryInfoMessage_exist": {

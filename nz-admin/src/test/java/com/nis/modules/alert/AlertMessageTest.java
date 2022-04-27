@@ -60,14 +60,14 @@ public class AlertMessageTest extends BaseTest<AlertMessageEntity> {
     }
 
     /**
-     * delete  /alert/message error 接口取消state参数，错误状态无
+     * delete  /alert/message error 接口取消state参数
      */
     @Test()
     public void deleteMessage_error() {
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
         MvcResult result = UTUtil.performDelete("/alert/message", map);
 
-        UTUtil.assertEqualsRCode(result, RCode.ERROR);
+        UTUtil.assertEqualsRCode(result, RCode.NOT_NULL_ERROR);
     }
 
     /**
