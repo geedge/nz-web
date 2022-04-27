@@ -15,6 +15,7 @@ import com.nis.modules.sys.service.SysRoleMenuService;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -118,6 +119,7 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuDao, SysMenuEntity> i
 	}
 
 	@Override
+	@Transactional(rollbackFor = Exception.class)
 	public void delete(Integer[] ids) {
 		List<SysMenuEntity> menuList = this.list();
 		Set<Integer> parentIds = menuList.stream().map(SysMenuEntity::getParentId).collect(Collectors.toSet());

@@ -26,6 +26,7 @@ import com.nis.modules.sys.service.SysConfigService;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
@@ -211,6 +212,7 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteByIds(Integer... ids) {
         List<AssetAsset> assets = assetAssetService.list();
 

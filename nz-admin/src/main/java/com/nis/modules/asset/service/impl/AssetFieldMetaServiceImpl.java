@@ -29,6 +29,7 @@ import com.nis.modules.sys.entity.SysApiKey;
 
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service("assetFieldMetaService")
 public class AssetFieldMetaServiceImpl extends ServiceImpl<AssetFieldMetaDao,AssetFieldMeta> implements AssetFieldMetaService{
@@ -101,6 +102,7 @@ public class AssetFieldMetaServiceImpl extends ServiceImpl<AssetFieldMetaDao,Ass
 	}
 
 	@Override
+	@Transactional(rollbackFor = Exception.class)
 	public void removeAssetFieldMetas(List<String> assetFieldMetaIds) {
 		// 先删除关联关系 最后删除本身数据信息
 		assetFieldValueDao.delete(new QueryWrapper<AssetFieldValue>().lambda().in(AssetFieldValue::getMetaId, assetFieldMetaIds));

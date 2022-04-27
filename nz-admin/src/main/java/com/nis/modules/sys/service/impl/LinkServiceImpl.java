@@ -72,6 +72,7 @@ public class LinkServiceImpl extends ServiceImpl<LinkDao, Link> implements LinkS
 	}
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void saveWeights(List<Link> links) {
         Link link = links.stream().filter(t -> ToolUtil.isEmpty(t.getId()) || ToolUtil.isEmpty(t.getWeight())).findAny().orElse(null);
         if(ToolUtil.isNotEmpty(link)){

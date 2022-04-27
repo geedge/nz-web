@@ -25,6 +25,7 @@ import com.nis.modules.sys.entity.SnmpCredential;
 import com.nis.modules.sys.service.SnmpCredentialService;
 
 import cn.hutool.core.util.ObjectUtil;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class SnmpCredentialServiceImpl extends ServiceImpl<SnmpCredentialDao,SnmpCredential> implements SnmpCredentialService{
@@ -79,6 +80,7 @@ public class SnmpCredentialServiceImpl extends ServiceImpl<SnmpCredentialDao,Snm
 	}
 
 	@Override
+	@Transactional(rollbackFor = Exception.class)
 	public void removeSnmpCredential(List<String> ids) {
 		// 是否关联资产如果关联不允许删除
 		List<AssetAsset> assets = assetAssetService.list(new QueryWrapper<AssetAsset>().lambda().in(AssetAsset::getSnmpCredentialId, ids));

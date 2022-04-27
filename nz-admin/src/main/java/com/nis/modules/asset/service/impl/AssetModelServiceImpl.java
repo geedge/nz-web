@@ -224,6 +224,7 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void delete(Integer... ids) {
         // 1. 已被 asset 引用的型号信息不允许删除
         List<AssetAsset> assetList = assetAssetService.list();

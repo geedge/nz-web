@@ -24,6 +24,7 @@ import com.nis.modules.alert.service.AlertNotifyMethodService;
 import com.nis.modules.alert.service.AlertSeverityService;
 
 import cn.hutool.log.Log;
+import org.springframework.transaction.annotation.Transactional;
 
 
 @Service("alertSeverityService")
@@ -78,6 +79,7 @@ public class AlertSeverityServiceImpl extends ServiceImpl<AlertSeverityDao, Aler
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void saveWeights(List<AlertSeverityConf> alertSeverityConfs) {
         //校验传递的id weight是否为空
         AlertSeverityConf alertSeverityConf = alertSeverityConfs.stream().filter(item -> ToolUtil.isEmpty(item.getId()) || ToolUtil.isEmpty(item.getWeight())).findAny().orElse(null);

@@ -22,6 +22,7 @@ import com.nis.modules.stat.service.StatService;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.List;
@@ -130,6 +131,7 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void delete(Integer... ids) {
         List<MonitorProject> list = this.list();
 

@@ -119,6 +119,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
     private MonitorEventLogService eventLogService;
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void saveLdap(Map<String, String> params) {
         Map<String, String> result = this.validateKeys(LDAP_KEYS, params);
 
@@ -144,6 +145,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void saveTerminal(Map<String, String> params) {
         Map<String, String> result = this.validateKeys(TERMINAL_KEYS, params);
         this.validateRequired(result,TERMINAL_REQUIRED,null);
@@ -153,6 +155,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void saveEmail(Map<String, String> params) {
         Map<String, String> result = this.validateKeys(EMAIL_KEYS, params);
         this.validateRequired(result,EMAIL_REQUIRED,EMAIL_DEPEND);
@@ -187,6 +190,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
 
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void saveBasic(Map<String, String> params) {
         final String SNMP_TRAP_KEY = Constant.SYSCONFIG_SNMP_PORT_KEY;
         SysConfigEntity snmpTrapConf = this.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey,SNMP_TRAP_KEY));
@@ -535,6 +539,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void saveMonitor(Map<String, String> params) {
         // 过滤非法的key
         Map<String, String> result = this.validateKeys(MONITOR_KEYS, params);

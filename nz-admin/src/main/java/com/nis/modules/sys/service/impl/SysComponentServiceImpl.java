@@ -21,7 +21,7 @@ public class SysComponentServiceImpl extends ServiceImpl<SysComponentDao, SysCom
 	private SysComponentDao componentDao;
 
 	@Override
-	@Transactional
+	@Transactional(rollbackFor = Exception.class)
 	public void updateComponent(SysComponent component) {
 		// 先删除 后添加
  		componentDao.deleteById(component.getServerid());

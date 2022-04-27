@@ -189,7 +189,7 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	 * @param msgList
 	 */
 	@Override
-	@Transactional
+	@Transactional(rollbackFor = Exception.class)
 	public void handleMessageActiveBatch(List<AlertMessageEntity> msgList) {
 		if (Tool.CollUtil.isEmpty(msgList)) {
 			return;
@@ -215,8 +215,8 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	 * @param msgList
 	 */
 	@Override
-	@Transactional
-	public void handleMessageSilenceBatch(List<AlertMessageEntity> msgList) {
+    @Transactional(rollbackFor = Exception.class)
+    public void handleMessageSilenceBatch(List<AlertMessageEntity> msgList) {
 		if (Tool.CollUtil.isEmpty(msgList)) {
 			return;
 		}
@@ -251,8 +251,8 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	 * @param msgList
 	 */
 	@Override
-	@Transactional
-	public void handleMessageExpiredBatch(List<AlertMessageEntity> msgList,Integer fromState) {
+    @Transactional(rollbackFor = Exception.class)
+    public void handleMessageExpiredBatch(List<AlertMessageEntity> msgList,Integer fromState) {
 		if (Tool.CollUtil.isEmpty(msgList)) {
 			return;
 		}
@@ -394,8 +394,8 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		this.updateSilenceConfStateBatch(Constant.ALERT_SILENCE_STATE_EXPIRED, ids.toArray(new Integer[] {}));
 	}
 
-	@Transactional
-	@Override
+    @Transactional(rollbackFor = Exception.class)
+    @Override
 	public void handleSilenceConfPendingToActive(List<AlertSilenceConf> silenceList) {
 		if(Tool.CollUtil.isEmpty(silenceList)) {
 			return ;
@@ -517,6 +517,7 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	 * 删除告警消息
 	 */
 	@Override
+	@Transactional(rollbackFor = Exception.class)
 	public void removeMessageByIds(Long ... ids) {
 		if(Tool.ArrayUtil.isEmpty(ids)) {
 			return;

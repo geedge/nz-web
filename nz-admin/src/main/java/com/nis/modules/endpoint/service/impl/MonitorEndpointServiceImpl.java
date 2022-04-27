@@ -530,6 +530,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void cancelImport(String seq) {
         List<MonitorEndpoint> endpointList = this.list(new QueryWrapper<MonitorEndpoint>().lambda().eq(MonitorEndpoint::getSeq, seq));
         List<Integer> endpointIds = endpointList.stream().map(MonitorEndpoint::getId).collect(Collectors.toList());
@@ -1199,6 +1200,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Map saveBatchEndpoint(List<MonitorEndpoint> endpointList) {
         List<Map> failDetails = new ArrayList<>();
         String seqUUID = UUID.randomUUID().toString();

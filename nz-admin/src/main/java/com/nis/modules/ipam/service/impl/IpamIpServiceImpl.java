@@ -77,7 +77,7 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Integer saveOrModifyIpamSubnet(IpamIp ipamIp) {
         ValidateUtils.is(ipamIp.getAddr()).notNull(RCode.IPAM_IP_ADDR_ISNULL);
 
@@ -106,7 +106,7 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void delIpamIps(List<Integer> asList) {
         this.removeByIds(asList);
     }

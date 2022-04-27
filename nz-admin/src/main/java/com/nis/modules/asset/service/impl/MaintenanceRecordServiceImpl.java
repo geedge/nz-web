@@ -14,6 +14,7 @@ import com.nis.modules.asset.service.MaintenanceRecordService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -75,6 +76,7 @@ public class MaintenanceRecordServiceImpl extends ServiceImpl<MaintenanceRecordD
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void delete(String ids) {
         // 1.类型转换
         String[] idArr = ids.split(",");

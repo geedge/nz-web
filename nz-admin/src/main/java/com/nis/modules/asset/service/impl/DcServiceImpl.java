@@ -33,6 +33,7 @@ import com.nis.modules.sys.service.SysUserService;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
@@ -249,6 +250,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void delete(Integer... ids) {
         // 1. 校验是否包含 cabinet
         List<Cabinet> cabinets = cabinetDao.selectList(null);

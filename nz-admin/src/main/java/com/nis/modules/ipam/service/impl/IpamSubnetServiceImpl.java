@@ -14,6 +14,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -153,6 +154,7 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 	}
 
 	@Override
+	@Transactional(rollbackFor = Exception.class)
 	public void delIpamSubnets(List<Integer> ids) {
 		ipamSubnetDao.deleteBatchIds(ids);
 	}

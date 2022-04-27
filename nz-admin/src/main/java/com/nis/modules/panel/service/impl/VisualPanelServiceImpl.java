@@ -448,6 +448,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void duplicate(Integer id) {
         VisualPanel panel = this.getById(id);
         if (panel == null) {

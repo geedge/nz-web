@@ -17,6 +17,7 @@ import com.nis.common.utils.Tool;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.TransientDataAccessResourceException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.alibaba.fastjson.JSONObject;
@@ -88,6 +89,7 @@ public class TopoIconServiceImpl extends ServiceImpl<TopoIconDao, TopoIcon> impl
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void removeIcons(Integer[] ids) {
         List<Integer> idList = Arrays.asList(ids);
         this.removeByIds(idList);

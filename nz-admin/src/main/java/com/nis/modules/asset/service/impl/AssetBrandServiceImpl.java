@@ -15,6 +15,7 @@ import com.nis.modules.asset.service.AssetModelService;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.List;
@@ -86,6 +87,7 @@ public class AssetBrandServiceImpl extends ServiceImpl<AssetBrandDao, AssetBrand
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void delete(Integer... ids) {
         // 1. 已被 asset_model 引用的品牌信息不允许删除
         List<AssetModel> modelList = modelService.list();

@@ -601,6 +601,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
         this.baseMapper.updateSizeById(chart);
 	}
 
+	@Override
 	@Transactional(rollbackFor = Exception.class)
     public void weights(Integer panelId,List<VisualChart> chartList) {
        

@@ -1565,6 +1565,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void cancelImport(String seq) {
         List<AssetAsset> assets = this.list(new QueryWrapper<AssetAsset>().lambda().eq(AssetAsset::getSeq, seq));
         List<Integer> assetIds = assets.stream().map(AssetAsset::getId).collect(Collectors.toList());
@@ -2338,6 +2339,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     }
 
 	@Override
+    @Transactional(rollbackFor = Exception.class)
 	public void bulkEdit(Map<String, Object> params) {
 		
 		ValidateUtils.is(params.get("editType")).notNull(RCode.ASSET_EDITTYPE_ISNULL)

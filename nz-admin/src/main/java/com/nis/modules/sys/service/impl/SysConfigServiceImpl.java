@@ -95,7 +95,8 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
 	}
 	
 	@Override
-	public void saveConfig(SysConfigEntity config) {
+    @Transactional(rollbackFor = Exception.class)
+    public void saveConfig(SysConfigEntity config) {
 		this.save(config);
 		sysConfigRedis.saveOrUpdate(config);
 	}

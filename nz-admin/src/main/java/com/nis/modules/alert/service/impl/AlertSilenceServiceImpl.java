@@ -68,7 +68,7 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 	/**
 	 * 新增  silence conf 告警静默规则
 	 */
-	@Transactional
+	@Transactional(rollbackFor = Exception.class)
 	@Override
 	public void saveAlertSilenceConf(AlertSilenceConf conf) {
 		DateTime now = Tool.DateUtil.date();
@@ -100,6 +100,7 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 	 * @param conf
 	 */
 	@Override
+    @Transactional(rollbackFor = Exception.class)
 	public void updateAlertSilenceConf(AlertSilenceConf conf) {
 		DateTime now = Tool.DateUtil.date();
 		conf.setUtime(now);
@@ -141,7 +142,7 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 	 * 将 silence conf 状态改为  expired
 	 * @param conf
 	 */
-	@Transactional
+	@Transactional(rollbackFor = Exception.class)
 	@Override
 	public void updateAlertSilenceConfExpiredBatch(Integer ... ids) {
 		for(Integer id : ids) {

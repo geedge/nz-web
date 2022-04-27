@@ -23,6 +23,7 @@ import com.nis.modules.sys.shiro.ShiroUtils;
 
 import cn.hutool.core.lang.UUID;
 import cn.hutool.core.util.StrUtil;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class SysApiKeyServiceImpl extends ServiceImpl<SysApiKeyDao,SysApiKey> implements SysApiKeyService{
@@ -59,6 +60,7 @@ public class SysApiKeyServiceImpl extends ServiceImpl<SysApiKeyDao,SysApiKey> im
 	}
 
 	@Override
+	@Transactional(rollbackFor = Exception.class)
 	public void removeSysApiKeys(String ids) {
 		List<SysApiKey> sysApiKeys = this.list(new QueryWrapper<SysApiKey>().lambda().in(SysApiKey::getId, Arrays.asList(ids.split(","))));
 		List<String> tokens = new ArrayList<String>();

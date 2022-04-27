@@ -14,6 +14,7 @@ import com.nis.modules.asset.service.AssetTypeConfService;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -141,6 +142,7 @@ public class AssetTypeConfServiceImpl extends ServiceImpl<AssetTypeConfDao, Asse
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void delete(Integer... ids) {
         List<AssetTypeConf> list = this.list();
 
