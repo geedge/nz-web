@@ -28,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.UnknownHostException;
 import java.util.*;
 
 @Service
@@ -78,20 +79,27 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Integer saveOrModifyIpamSubnet(IpamIp ipamIp) {
+    public Integer saveOrModifyIpamSubnet(IpamIp ipamIp) throws UnknownHostException {
         ValidateUtils.is(ipamIp.getAddr()).notNull(RCode.IPAM_IP_ADDR_ISNULL);
 
         //校验ip
         if (!(CommonUtils.checkIpv4(ipamIp.getAddr()) || CommonUtils.checkIpv6(ipamIp.getAddr()))){
             throw new NZException(RCode.IPAM_IP_ADDR_ERROR);
         }
+        IpamIp one = this.getOne(new LambdaQueryWrapper<IpamIp>().eq(IpamIp::getAddr, ipamIp.getAddr()));
+        if (Tool.ObjectUtil.isNotEmpty(one)) {
+            throw new NZException(RCode.IPAM_IP_INTERVAL_ERROR);
+        }
         //判断ip属于那个子网
         boolean inRange = true;
         List<IpamSubnet> subnets = ipamSubnetService.list();
         for (IpamSubnet subnet : subnets) {
-            inRange = IPUtils.isInRange(ipamIp.getAddr(), StrUtil.builder(subnet.getAddr(), StrUtil.SLASH, subnet.getMask().toString()).toString());
+            String cidr = StrUtil.builder(subnet.getAddr(),StrUtil.SLASH,subnet.getMask().toString()).toString();
+            CIDRUtils cidrUtils = new CIDRUtils(cidr);
+            inRange = cidrUtils.isInRange(ipamIp.getAddr());
             if (inRange){
                 ipamIp.setSubnetId(subnet.getId());
+                break;
             }
         }
         if (!inRange){

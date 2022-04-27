@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -45,14 +46,14 @@ public class IpamIpController {
 
     @RequestMapping(method = { RequestMethod.POST })
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.IPAMIP)
-    public R ipamIpSave(@RequestBody IpamIp ipamIp) throws IncompatibleAddressException {
+    public R ipamIpSave(@RequestBody IpamIp ipamIp) throws IncompatibleAddressException, UnknownHostException {
         Integer id = ipamIpService.saveOrModifyIpamSubnet(ipamIp);
         return R.ok().putData("id", id);
     }
 
     @RequestMapping(method = { RequestMethod.PUT })
     @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.IPAMIP)
-    public R ipamIpModify(@RequestBody IpamIp ipamIp) throws IncompatibleAddressException {
+    public R ipamIpModify(@RequestBody IpamIp ipamIp) throws IncompatibleAddressException, UnknownHostException {
         ValidateUtils.is(ipamIp.getId()).notNull(RCode.IPAM_IP_ID_ISNULL);
         Integer id = ipamIpService.saveOrModifyIpamSubnet(ipamIp);
         return R.ok().putData("id", id);

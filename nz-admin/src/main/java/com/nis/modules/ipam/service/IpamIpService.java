@@ -8,6 +8,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Map;
 
@@ -17,7 +18,7 @@ public interface IpamIpService extends IService<IpamIp> {
 
     PageUtils ipamIpList(Map params);
 
-    Integer saveOrModifyIpamSubnet(IpamIp ipamIp);
+    Integer saveOrModifyIpamSubnet(IpamIp ipamIp) throws UnknownHostException;
 
     void delIpamIps(List<Integer> asList);
 
