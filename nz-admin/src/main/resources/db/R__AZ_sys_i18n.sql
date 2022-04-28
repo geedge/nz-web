@@ -5483,5 +5483,11 @@ INSERT INTO `sys_i18n` VALUES (6054, '411008', 'en', 'ALERTMSG_ACK_ISNULL', 'Ale
 INSERT INTO `sys_i18n` VALUES (6055, '414009', 'en', 'ALERTMSG_ACK_INCORRECT', 'Alert message ack is incorrect', '', '2022-04-22 13:43:00', 1);
 INSERT INTO `sys_i18n` VALUES (6056, '411008', 'zh', 'ALERTMSG_ACK_ISNULL', '告警确认标识为null', '', '2022-04-22 13:43:00', 1);
 INSERT INTO `sys_i18n` VALUES (6057, '414009', 'zh', 'ALERTMSG_ACK_INCORRECT', '告警确认标识不合法', '', '2022-04-22 13:43:00', 1);
+INSERT INTO `sys_i18n` VALUES (6058, 'asset.assetBox.message.type', 'en', 'asset.assetBox.message.type', 'Type  cannot be null', '', '2022-04-26 02:04:01', 1);
+INSERT INTO `sys_i18n` VALUES (6059, 'asset.assetBox.message.type', 'zh', 'asset.assetBox.message.type', '类型值不能为空', '', '2022-04-26 02:03:43', 1);
+INSERT INTO `sys_i18n` VALUES (6060, 'Ipam', 'en', 'overall.IPAM', 'IPAM', '', '2022-04-27 03:07:51', 1);
+INSERT INTO `sys_i18n` VALUES (6061, 'IPAM', 'zh', 'overall.IPAM', 'IPAM', '', '2022-04-27 03:08:09', 1);
+INSERT INTO `sys_i18n` VALUES (6062, 'overall.trace', 'en', 'overall.trace', 'Trace', '', '2022-04-27 11:39:54', 1);
+INSERT INTO `sys_i18n` VALUES (6063, 'overall.trace', 'zh', 'overall.trace', '路由跟踪', '', '2022-04-27 11:40:15', 1);
 
 SET FOREIGN_KEY_CHECKS = 1;
