@@ -25,6 +25,7 @@
 		<!-- 默认：release，可选：debug，release -->
 		<compileType>release</compileType>
 		<resource.delimiter>#</resource.delimiter>
+		<snippets>${project.build.directory}/generated-snippets</snippets>
 	</properties>
 
 	<dependencies>
@@ -458,7 +459,7 @@
 							<backend>html</backend>
 							<doctype>book</doctype>
 							<attributes>
-								<snippets>target/generated-snippets</snippets>
+								<snippets>${snippets}</snippets>
 							</attributes>
 							<sourceDirectory>src/test/resources/asciidoc</sourceDirectory>
 							<outputDirectory>src/test/resources/docs</outputDirectory>

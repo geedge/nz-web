@@ -195,7 +195,7 @@ public abstract class BaseTest<T> {
             content.append("| Internal Server Error\n");
             content.append("|===\n");
 
-            String include = "include::";
+            String include = "include::{snippets}";
             File apidirs = new File(appDir + "/target/generated-snippets");
             for (File classDir : apidirs.listFiles()) {
                 File[] methods = classDir.listFiles();
@@ -228,17 +228,18 @@ public abstract class BaseTest<T> {
                     content.append("=== " + "Query" + "\n\n");
                     for (File file : queryMethods) {
                         String mpath = file.getPath();
+                        String snippetsPath = mpath.split("generated-snippets")[1];
                         // 三级标题
                         content.append("==== " + restoreMethodName(file.getName()) + "\n");
 
                         content.append(".CURL-request" + "\n");
-                        content.append(String.format("%s%s%s", include, mpath + File.separator + "curl-request.adoc[]", "\n"));
+                        content.append(String.format("%s%s%s", include, snippetsPath + File.separator + "curl-request.adoc[]", "\n"));
 
                         content.append(".Request structure" + "\n");
-                        content.append(String.format("%s%s%s", include, mpath + File.separator + "http-request.adoc[]", "\n"));
+                        content.append(String.format("%s%s%s", include, snippetsPath + File.separator + "http-request.adoc[]", "\n"));
 
                         content.append(".Response structure" + "\n");
-                        content.append(String.format("%s%s%s", include, mpath + File.separator + "http-response.adoc[]", "\n"));
+                        content.append(String.format("%s%s%s", include, snippetsPath + File.separator + "http-response.adoc[]", "\n"));
                     }
                 }
                 if (Tool.CollUtil.isNotEmpty(saveMethods)) {
@@ -247,17 +248,18 @@ public abstract class BaseTest<T> {
                     content.append("=== " + "Save" + "\n\n");
                     for (File file : saveMethods) {
                         String mpath = file.getPath();
+                        String snippetsPath = mpath.split("generated-snippets")[1];
                         // 三级标题
                         content.append("==== " + restoreMethodName(file.getName()) + "\n");
 
                         content.append(".CURL-request" + "\n");
-                        content.append(String.format("%s%s%s", include, mpath + File.separator + "curl-request.adoc[]", "\n"));
+                        content.append(String.format("%s%s%s", include, snippetsPath + File.separator + "curl-request.adoc[]", "\n"));
 
                         content.append(".Request structure" + "\n");
-                        content.append(String.format("%s%s%s", include, mpath + File.separator + "http-request.adoc[]", "\n"));
+                        content.append(String.format("%s%s%s", include, snippetsPath + File.separator + "http-request.adoc[]", "\n"));
 
                         content.append(".Response structure" + "\n");
-                        content.append(String.format("%s%s%s", include, mpath + File.separator + "http-response.adoc[]", "\n"));
+                        content.append(String.format("%s%s%s", include, snippetsPath + File.separator + "http-response.adoc[]", "\n"));
                     }
                 }
                 if (Tool.CollUtil.isNotEmpty(updateMethods)) {
@@ -266,17 +268,18 @@ public abstract class BaseTest<T> {
                     content.append("=== " + "Update" + "\n\n");
                     for (File file : updateMethods) {
                         String mpath = file.getPath();
+                        String snippetsPath = mpath.split("generated-snippets")[1];
                         // 三级标题
                         content.append("==== " + restoreMethodName(file.getName()) + "\n");
 
                         content.append(".CURL-request" + "\n");
-                        content.append(String.format("%s%s%s", include, mpath + File.separator + "curl-request.adoc[]", "\n"));
+                        content.append(String.format("%s%s%s", include, snippetsPath + File.separator + "curl-request.adoc[]", "\n"));
 
                         content.append(".Request structure" + "\n");
-                        content.append(String.format("%s%s%s", include, mpath + File.separator + "http-request.adoc[]", "\n"));
+                        content.append(String.format("%s%s%s", include, snippetsPath + File.separator + "http-request.adoc[]", "\n"));
 
                         content.append(".Response structure" + "\n");
-                        content.append(String.format("%s%s%s", include, mpath + File.separator + "http-response.adoc[]", "\n"));
+                        content.append(String.format("%s%s%s", include, snippetsPath + File.separator + "http-response.adoc[]", "\n"));
                     }
                 }
                 if (Tool.CollUtil.isNotEmpty(deleteMethods)) {
@@ -285,34 +288,36 @@ public abstract class BaseTest<T> {
                     content.append("=== " + "Delete" + "\n\n");
                     for (File file : deleteMethods) {
                         String mpath = file.getPath();
+                        String snippetsPath = mpath.split("generated-snippets")[1];
                         // 三级标题
                         content.append("==== " + restoreMethodName(file.getName()) + "\n");
 
                         content.append(".CURL-request" + "\n");
-                        content.append(String.format("%s%s%s", include, mpath + File.separator + "curl-request.adoc[]", "\n"));
+                        content.append(String.format("%s%s%s", include, snippetsPath + File.separator + "curl-request.adoc[]", "\n"));
 
                         content.append(".Request structure" + "\n");
-                        content.append(String.format("%s%s%s", include, mpath + File.separator + "http-request.adoc[]", "\n"));
+                        content.append(String.format("%s%s%s", include, snippetsPath + File.separator + "http-request.adoc[]", "\n"));
 
                         content.append(".Response structure" + "\n");
-                        content.append(String.format("%s%s%s", include, mpath + File.separator + "http-response.adoc[]", "\n"));
+                        content.append(String.format("%s%s%s", include, snippetsPath + File.separator + "http-response.adoc[]", "\n"));
                     }
                 }
                 if (Tool.CollUtil.isNotEmpty(otherMethods)) {
                     content.append("\n\n");
                     for (File file : otherMethods) {
                         String mpath = file.getPath();
+                        String snippetsPath = mpath.split("generated-snippets")[1];
                         // 三级标题
                         content.append("=== " + restoreMethodName(file.getName()) + "\n");
 
                         content.append(".CURL-request" + "\n");
-                        content.append(String.format("%s%s%s", include, mpath + File.separator + "curl-request.adoc[]", "\n"));
+                        content.append(String.format("%s%s%s", include, snippetsPath + File.separator + "curl-request.adoc[]", "\n"));
 
                         content.append(".Request structure" + "\n");
-                        content.append(String.format("%s%s%s", include, mpath + File.separator + "http-request.adoc[]", "\n"));
+                        content.append(String.format("%s%s%s", include, snippetsPath + File.separator + "http-request.adoc[]", "\n"));
 
                         content.append(".Response structure" + "\n");
-                        content.append(String.format("%s%s%s", include, mpath + File.separator + "http-response.adoc[]", "\n"));
+                        content.append(String.format("%s%s%s", include, snippetsPath + File.separator + "http-response.adoc[]", "\n"));
                     }
                 }
             }
