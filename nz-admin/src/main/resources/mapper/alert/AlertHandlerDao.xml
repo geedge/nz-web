@@ -20,6 +20,7 @@
         <result property="state" column="state"/>
 		<result property="hashKey" column="hash_key"/>
 		<result property="remark" column="remark"/>
+		<result property="ack" column="ack"/>
 		<result property="tableName" column="tableName"/>
 		<association columnPrefix="r_" property="alertRule" javaType="com.nis.modules.alert.entity.AlertRuleEntity">
 			<id column="id" property="id"/>
@@ -485,8 +486,7 @@
 		alsc.name as alsc_name,
 		alsc.color as alsc_color,
 		dc.id as dc_id,
-		dc.name as dc_name,
-		am.tableName
+		dc.name as dc_name
 		from
 		(select *,'alert_message_active' tableName from alert_message_active union all
 		select *,'alert_message_historym' from alert_message_history union all
