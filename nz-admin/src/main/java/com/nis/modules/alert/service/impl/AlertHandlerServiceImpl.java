@@ -1,6 +1,7 @@
 package com.nis.modules.alert.service.impl;
 
 import cn.hutool.core.date.DateTime;
+import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
@@ -572,10 +573,35 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			tempList.add(alertMessage.getDescription());
 			tempList.add(getExportFormatTime(alertMessage.getStartAt(), dateformat));
 			tempList.add(getExportFormatTime(alertMessage.getEndAt(), dateformat));
+			tempList.add(getDuration(alertMessage.getStartAt(), alertMessage.getEndAt()));
 			tempList.add(Constant.ALERT_MESSAGE_STATE_NAME_MAPPING.get(alertMessage.getState()));
 			exportDataList.add(tempList);
 		}
 		return exportDataList;
+	}
+
+	/**
+	 * 通过 endAtstartAt 获取持续时间
+	 *
+	 * @param startAt
+	 * @param endAt
+	 * @return
+	 */
+	private String getDuration(Date startAt, Date endAt) {
+		if (Tool.ObjectUtil.isNull(endAt)) return Tool.StrUtil.DASHED;
+
+		long durationSecond = Tool.DateUtil.between(startAt, endAt, DateUnit.SECOND);
+		String result = Tool.StrUtil.concat(true, Tool.StrUtil.toString(durationSecond % 60), "s");
+		if (durationSecond >= 60 * 60 * 24) {
+			result = Tool.StrUtil.concat(true, Tool.StrUtil.toString(Math.floorDiv(durationSecond, 3600) % 24), "h");
+			result = Tool.StrUtil.concat(true, Tool.StrUtil.toString(Math.floorDiv(durationSecond, (60 * 60 * 24))), "d", result);
+		} else if (durationSecond >= 60 * 60) {
+			result = Tool.StrUtil.concat(true, Tool.StrUtil.toString(Math.floorDiv(durationSecond, 60) % 60), "m");
+			result = Tool.StrUtil.concat(true, Tool.StrUtil.toString(Math.floorDiv(durationSecond, (60 * 60))), "h", result);
+		} else if (durationSecond >= 60) {
+			result = Tool.StrUtil.concat(true, Tool.StrUtil.toString(Math.floorDiv(durationSecond, 60) % 60), "m", result);
+		}
+		return result;
 	}
 
 	/**
