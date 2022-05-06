@@ -489,7 +489,7 @@
 		dc.name as dc_name
 		from
 		(select *,'alert_message_active' tableName from alert_message_active union all
-		select *,'alert_message_historym' from alert_message_history union all
+		select *,'alert_message_history' from alert_message_history union all
 		select *,'alert_message_silence' from alert_message_silence) am
 		LEFT JOIN alert_rule ar ON am.rule_id = ar.id
 		LEFT JOIN monitor_project p on am.project_id = p.id
