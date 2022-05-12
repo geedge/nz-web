@@ -40,7 +40,7 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
             "U", "V", "W", "X", "Y", "Z"};
 
     @Override
-    public void visualChartDataFormatConversion() {
+    public void visualChartDataFormatConversion() throws Exception {
         // 1. 检查 visual_chart_V3_2 是否存在
         Map checkTableExists = v3_0VisualChartDao.checkTableExists("visual_chart_v3_2");
         if (Tool.CollectionUtil.isEmpty(checkTableExists)) {
@@ -83,8 +83,6 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
             logger.info("The visual_chart data format change processing done.");
             // 4. 删除 visual_chart_v3_2 表
             v3_0VisualChartDao.dropTable("visual_chart_v3_2");
-        } catch (Exception e) {
-            logger.error("visual_chart 数据转换有误", e);
         } finally {
             sw.stop();
         }

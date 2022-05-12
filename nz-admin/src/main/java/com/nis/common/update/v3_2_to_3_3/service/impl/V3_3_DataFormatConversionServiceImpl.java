@@ -36,7 +36,7 @@ public class V3_3_DataFormatConversionServiceImpl implements V3_3_DataFormatConv
     private AssetModelDao assetModelDao;
 
     @Override
-    public void assetModelDataFormatConversion() {
+    public void assetModelDataFormatConversion() throws Exception {
         // 1. 检查 asset_model_v3_2 是否存在
         Map checkTableExists = v3_2_assetModelDao.checkTableExists("asset_model_v3_2");
         if (Tool.CollectionUtil.isEmpty(checkTableExists)) {
@@ -103,8 +103,6 @@ public class V3_3_DataFormatConversionServiceImpl implements V3_3_DataFormatConv
             logger.info("The asset_model data format change processing done.");
             // 4. 删除 asset_model_v3_2 表
             v3_2_assetModelDao.dropTable("asset_model_v3_2");
-        } catch (Exception e) {
-            logger.error("asset_model 数据转换有误", e);
         } finally {
             sw.stop();
         }

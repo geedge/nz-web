@@ -25,7 +25,7 @@ public class V3_2Update implements VersionUpdateInterface {
 	}
 	
 	@Override
-	public void excute() {
+	public void excute() throws Exception {
 		service.visualChartDataFormatConversion();
 	}
 

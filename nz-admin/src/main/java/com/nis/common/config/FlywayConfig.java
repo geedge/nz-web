@@ -73,7 +73,9 @@ public class FlywayConfig implements ApplicationContextAware{
             flyway.migrate();
         } catch (FlywayException e) {
             flyway.repair();
-            log.error("flyway执行脚本失败", e);
+            log.error("Flyway migrate error,shutdown service{}", e);
+            // 停止项目运行
+            System.exit(1);
         }
         
         if(Tool.CollUtil.isNotEmpty(versionUpdateBeans)) {

@@ -38,7 +38,9 @@ public interface VersionUpdateInterface {
 	};
 
 	default void onException(Exception e) {
-		log.error(e,"version update error");
+		log.error(e, "version update error,shutdown service");
+		// 停止项目运行
+		System.exit(1);
 	}
 	
 	

@@ -18,7 +18,7 @@ public class V3_3Update implements VersionUpdateInterface {
 	}
 	
 	@Override
-	public void excute() {
+	public void excute() throws Exception {
 		service.assetModelDataFormatConversion();
 	}
 
