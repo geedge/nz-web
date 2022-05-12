@@ -156,5 +156,18 @@ public class VisualPanelController {
 		visualPanelService.duplicate(id);
 		return R.ok();
 	}
-    
+
+	/**
+	 * panel 快照
+	 * @param id
+	 * @return
+	 */
+	@GetMapping("/snapshot")
+	public void snapshot(HttpServletResponse response, HttpServletRequest request, String format, Integer panelId, Long start, Long end) {
+		ValidateUtils.is(panelId).notNull(RCode.PANEL_ID_ISNULL)
+				.and(start).notNull(RCode.PROMSERVER_PARAM_START_ISNULL)
+				.and(end).notNull(RCode.PROMSERVER_PARAM_END_ISNULL);
+		String language = request.getHeader(Constant.LANGUAGE);
+		visualPanelService.snapshot(request,response,format,panelId,start,end,language);
+	}
 }

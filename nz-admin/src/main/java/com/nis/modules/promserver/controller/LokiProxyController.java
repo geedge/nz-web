@@ -199,7 +199,7 @@ public class LokiProxyController {
     		if (("/loki/api/v1/query".equals(proxyPath) || "/loki/api/v1/query_range".equals(proxyPath)) && statusCode < 300) {
     			// 处理数据格式
     			bais = new ByteArrayInputStream(responseBody);
-                Map resultData = handleResultData(request, bais);
+                Map resultData = handleResultData(request, bais, null);
                 responseBody = JSONObject.toJSONString(resultData, SerializerFeature.DisableCircularReferenceDetect, SerializerFeature.MapSortField).getBytes();
 			} 
     		response.setContentLength(responseBody.length);
@@ -213,7 +213,7 @@ public class LokiProxyController {
     }
 
 
-    private Map handleResultData(HttpServletRequest request, InputStream connInputStream) {
+    public Map handleResultData(HttpServletRequest request, InputStream connInputStream, Map<String, String> paramData) {
         StringBuffer resultStr = new StringBuffer();
         InputStreamReader inputStreamReader = null;
         BufferReaderWrapper bufferedReader = null;
@@ -235,10 +235,13 @@ public class LokiProxyController {
 
         if (result != null && result.get("data") != null) {
             Integer format = request.getParameter("format") != null ? Integer.valueOf(request.getParameter("format")) : 0;
-
+            String filter = request.getParameter("filter");
+            if(paramData != null){
+                format = paramData.get("format") != null ? Integer.valueOf(paramData.get("format")) : 0;
+                filter = paramData.get("filter");
+            }
             Map<String, Object> data = (Map) result.get("data");
             String resultType = (String) data.get("resultType");
-            String filter = request.getParameter("filter");
             if(StrUtil.isNotBlank(filter)&& ToolUtil.isNotEmpty(data.get("result"))) {
 				filter = URLUtil.decode(filter);
 				JSONArray resultArray = (JSONArray) data.get("result");

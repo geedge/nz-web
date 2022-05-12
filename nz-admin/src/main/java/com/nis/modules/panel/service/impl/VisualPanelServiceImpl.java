@@ -1,17 +1,27 @@
 package com.nis.modules.panel.service.impl;
 
+import cn.hutool.core.net.url.UrlBuilder;
+import cn.hutool.core.net.url.UrlPath;
+import cn.hutool.core.net.url.UrlQuery;
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.URLUtil;
+import cn.hutool.http.Header;
+import cn.hutool.json.JSON;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
+import com.nis.common.xss.XssHttpServletRequestWrapper;
 import com.nis.modules.panel.dao.VisualPanelDao;
 import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.panel.entity.VisualChartElement;
@@ -19,23 +29,42 @@ import com.nis.modules.panel.entity.VisualPanel;
 import com.nis.modules.panel.service.VisualChartElementService;
 import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
+import com.nis.modules.promserver.controller.LokiProxyController;
+import com.nis.modules.promserver.controller.PromProxyController;
+import com.nis.modules.promserver.entity.Promserver;
+import com.nis.modules.promserver.service.PromserverService;
+import com.nis.modules.promserver.util.PromConstant;
+import com.nis.modules.stat.service.impl.StatServiceImpl;
+import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import net.sf.json.util.JSONUtils;
+import org.apache.catalina.util.ParameterMap;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
+import java.io.*;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -64,7 +93,25 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
     @Autowired
     private BasicImportAndExportServices basicImportAndExportServices;
-	
+
+    @Autowired
+    private StatServiceImpl statServiceImpl;
+
+    @Autowired
+    private PromserverService promserverService;
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Autowired
+    private PromProxyController promProxyController;
+
+    @Autowired
+    private LokiProxyController lokiProxyController;
+
+    @Autowired
+    private SysConfigDao sysConfigDao;
+
     @Override
     public VisualPanel queryInfo(Integer id) {
     	return this.baseMapper.queryInfo(id);
@@ -505,6 +552,255 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 }
             }
         }
+    }
+
+    @Override
+    public void snapshot(HttpServletRequest request, HttpServletResponse response, String format, Integer panelId, Long start, Long end, String language) {
+        VisualPanel panel = this.getById(panelId);
+        if (panel == null) {
+            throw new NZException(RCode.CHART_PANEL_ISNULL);
+        }
+        String step;
+        Long timeDiff = (end - start) / (24 * 60 * 60);
+        if(timeDiff < 1){
+            step = "15s";
+        }else if(timeDiff < 7){
+            step = "5m";
+        }else if(timeDiff < 30){
+            step = "10m";
+        }else{
+            step = "30m";
+        }
+        Map<String, Object> map = new HashMap();
+        map.put("language",language);
+        map.put("start",start);
+        map.put("end",end);
+        map.put("panel",R.ok(panel));
+        Map param = new HashMap<>();
+        param.put("pageSize", "-1");
+
+        param.put("panelId", panelId);
+        param.put("groupId", 0);
+        PageUtils chartPageUtils = visualChartService.queryPage(param);
+        List<VisualChart> chartsList = (List<VisualChart>) chartPageUtils.getList();
+        System.out.println(JSONObject.toJSONString(chartsList));
+        // 复制 body
+        byte[] body = new byte[0];
+        // 复制请求头
+        HttpHeaders headers = new HttpHeaders();
+        try {
+            body = Tool.IoUtil.readBytes(request.getInputStream());
+            Enumeration<String> headerNames = request.getHeaderNames();
+            while (headerNames.hasMoreElements()) {
+                String hn = headerNames.nextElement();
+                if(Constant.AUTH_TOKEN_CODE.equalsIgnoreCase(hn)){
+                    headers.add(hn, request.getHeader(hn));
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        Map querySourceMap = null,chartsDataMap = new HashMap();
+        if(Tool.CollUtil.isEmpty(chartsList)){
+            throw new NZException(RCode.CHART_SPAN_ISNULL);
+        }else{
+            recursionChartsData(request,body, headers,chartsList,start, end,step, querySourceMap,chartsDataMap);
+        }
+        map.put("chartsData",chartsDataMap);
+        map.put("charts",R.ok(chartPageUtils));
+        System.out.println(JSONObject.toJSONString(map));
+        // 读取模板，替换数据
+        BufferedReader reader = null;
+        try {
+            String path = sysConfigDao.queryByKey("snapshot_template_path").getParamValue();
+
+            reader = new BufferedReader(new FileReader(Tool.StrUtil.concat(true, path, File.separator, "snapshot_template.html")));
+            String line = null;
+            StringBuffer sbf=new StringBuffer();
+            while ((line = reader.readLine()) != null) {
+                if(Tool.StrUtil.startWith(line,"<script>window.dataJson"))
+                    line = "<script>window.dataJson=" + JSONUtil.toJsonStr(map) + "</script>";
+                sbf.append(line + "\n");
+            }
+            response.setCharacterEncoding("utf-8");
+            response.setContentType("multipart/form-data");
+            response.setHeader("Content-disposition", "attachment;filename=panel-" + panel.getName() + ".html;filename*=utf-8''" + URLEncoder.encode("panel-" + panel.getName()  + ".html", "UTF-8"));
+            response.setHeader("Access-Control-Expose-Headers","Content-Disposition");
+            response.getOutputStream().write(sbf.toString().getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }finally{
+            try {
+                if(reader!=null)
+                    reader.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * 遍历获取chartsData
+     * @return
+     */
+    private Map recursionChartsData(HttpServletRequest request,byte[] body,HttpHeaders headers,List<VisualChart> chartsList,Long start, Long end,String step, Map querySourceMap,Map chartsDataMap){
+        String queryString;
+        Integer eleIndex;
+        for (VisualChart chart:chartsList) {
+            eleIndex = 0;
+            Map chartParam = (HashMap) chart.getParam();
+            switch (chart.getDatasource()) {
+                case "metrics":
+                    queryString = "start=" + start + "&end=" + end + "&step=" + step + "&nullType=";
+                    for (VisualChartElement element : chart.getElements()) {
+                        querySourceMap = metricPromProxy(request, queryString + chartParam.get("nullType") + "&query=" + URLUtil.encode(element.getExpression()), headers, body, step);
+                        chartsDataMap.put(chart.getId() + "_" + eleIndex, querySourceMap);
+                        eleIndex++;
+                    }
+                    break;
+                case "logs":
+                    queryString = "start=" + start + "&end=" + end + "&step=" + step + "&format=1&direction=backward&query=";
+                    for (VisualChartElement element : chart.getElements()) {
+                        //  direction参数
+                        querySourceMap = logLokiProxy(request, queryString + URLUtil.encode(element.getExpression()), headers, body);
+                        chartsDataMap.put(chart.getId() + "_" + eleIndex, querySourceMap);
+                        eleIndex++;
+                    }
+                    break;
+                case "system":
+                    JSONObject datasource = JSONArray.parseArray(JSONObject.toJSONString(chartParam.get("datasource"))).getJSONObject(0);
+                    JSONArray selectAry = new JSONArray();
+                    selectAry.add(datasource.get("select"));
+                    datasource.put("select", selectAry);
+                    HashMap analyseMap = new HashMap();
+                    analyseMap.put("q", datasource.toJSONString());
+                    querySourceMap = statServiceImpl.queryAnalyse(analyseMap);
+                    chartsDataMap.put(chart.getId() + "_0", querySourceMap);
+                    break;
+                case "misc":
+                    break;
+                default:
+                    break;
+            }
+            if(Tool.CollUtil.isNotEmpty(chart.getChildren())){
+                recursionChartsData(request,body, headers,chart.getChildren(),start, end,step, querySourceMap,chartsDataMap);
+            }
+        }
+        return chartsDataMap;
+    }
+
+    public Map logLokiProxy(HttpServletRequest request,String queryString, HttpHeaders headers, byte[] body) {
+        // 随机 可用 loki
+        Promserver server = promserverService.getOneAvaPromServer(null, null, Constant.PromserverType.GLOBAL.getValue());
+        if (ToolUtil.isEmpty(server)) {
+            ValidateUtils.is(server).notNull(RCode.PROMSERVER_UNAVAILABLE);
+        }
+        log.debug("path:{},loki server:{}", "/visual/panel/snapshot", JSONUtils.valueToString(server));
+
+        ByteArrayInputStream bais = null;
+        try {
+            headers.add(Constant.AUTH_TOKEN_CODE, server.getToken());
+            // 重新构造请求参数内容
+            HttpEntity<byte[]> httpEntity = new HttpEntity<byte[]>(body, headers);
+            // 构造请求路径
+            // 请求 prometheus server
+            String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
+            String realPath = agentPath + "/loki/proxy/loki/api/v1/query_range";
+            String urlString = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
+                    .setPort(server.getPort()).setPath(UrlPath.of(realPath, Charset.forName("UTF-8")))
+                    .setQuery(UrlQuery.of(queryString, Charset.forName("UTF-8"))).toString();
+            String method = request.getMethod();
+
+            //发送 请求
+            ResponseEntity<byte[]> exchange = restTemplate.exchange(new URI(urlString), HttpMethod.resolve(method), httpEntity, byte[].class);
+            //响应头
+            byte[] responseBody = exchange.getBody();
+            if (exchange.getStatusCodeValue() < 300) {
+                Map<String, String> paramData = new HashMap();
+                for (String qustr:StringUtils.split(queryString,'&')) {
+                    String[] quarr = StringUtils.split(qustr,'=');
+                    if(Tool.StrUtil.equalsAny(quarr[0],"format","filter")) {
+                        paramData.put(quarr[0],quarr[1]);
+                    }
+                }
+                // 处理数据格式
+                bais = new ByteArrayInputStream(responseBody);
+                return lokiProxyController.handleResultData(request, new ByteArrayInputStream(responseBody), paramData);
+            }
+        } catch (Exception e) {
+            log.error(e, "loki proxy error,path : {}", "/visual/panel/snapshot");
+        } finally {
+            Tool.IoUtil.close(bais);
+        }
+        return null;
+    }
+    public Map metricPromProxy(HttpServletRequest request, String queryString, HttpHeaders headers, byte[] body, String step) {
+        Integer type = null;
+        Promserver server = promserverService.getOneAvaPromServer(null, null, null);
+        if (ToolUtil.isEmpty(server)) {
+            // type 其次使用 global
+            type = PromConstant.PROMSERVER_GLOBAL;
+            server = promserverService.getOneAvaPromServer(null, null, type);
+            ValidateUtils.is(server).notNull(RCode.PROMSERVER_UNAVAILABLE);
+        }
+        ByteArrayInputStream bais = null;
+        try {
+            headers.add(Constant.AUTH_TOKEN_CODE, server.getToken());
+            // 重新构造请求参数内容
+            HttpEntity<byte[]> httpEntity = new HttpEntity<byte[]>(body, headers);
+            if(ReUtil.contains("\\[\\s*\\$interval\\s*]", URLUtil.decode(queryString))) {
+                // 判断step是否小于两个周期的scrape interval
+                Integer defaultScrapeInterval = Integer.valueOf(sysConfigService.getValue(Constant.SYSCONFIG_KEY_SCRAPEINTERVAL));
+                if(StrUtil.isNotBlank(step)) {
+                    Integer stepVal = Integer.valueOf(StrUtil.sub(step, 0, step.length()-1));
+                    if(step.endsWith("s")) {
+                        if(stepVal < defaultScrapeInterval*2) {
+                            step = defaultScrapeInterval * 2 + "s";
+                        }
+                    }else if(step.endsWith("m")) {
+                        if(stepVal * 60 < defaultScrapeInterval*2) {
+                            step = defaultScrapeInterval * 2 + "s";
+                        }
+                    }else {
+                        if(stepVal * 60 * 60 < defaultScrapeInterval*2) {
+                            step = defaultScrapeInterval * 2 + "s";
+                        }
+                    }
+                }else {
+                    step = defaultScrapeInterval * 2 + "s";
+                }
+                // 正则替换 当查询语句中有[]时  将时间替换为step
+                queryString = URLUtil.encode(URLUtil.decode(queryString).replaceAll("\\[\\s*\\$interval\\s*]", "["+step+"]"));
+            }
+            // 构造请求路径
+            String promPathPrefix = promserverService.getPromPathPrefix();
+            String proxyPath = promPathPrefix + "/api/v1/query_range";
+            String urlStr = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
+                    .setPort(server.getPort()).setPath(UrlPath.of(proxyPath, Charset.forName("UTF-8")))
+                    .setQuery(UrlQuery.of(queryString, Charset.forName("UTF-8"))).toString();
+            String method = request.getMethod();
+            //发送 请求
+            ResponseEntity<byte[]> exchange = restTemplate.exchange(new URI(urlStr), HttpMethod.resolve(method), httpEntity, byte[].class);
+            //响应头
+            byte[] responseBody = exchange.getBody();
+            if (exchange.getStatusCodeValue() < 300) {
+                Map<String, String> paramData = new HashMap();
+                for (String qustr:StringUtils.split(queryString,'&')) {
+                    String[] quarr = StringUtils.split(qustr,'=');
+                    if(Tool.StrUtil.equalsAny(quarr[0],"start","end","nullType", "step", "filter")) {
+                        paramData.put(quarr[0],quarr[1]);
+                    }
+                }
+                // 处理缺失时间数据
+                bais = new ByteArrayInputStream(responseBody);
+                return promProxyController.handleResultData(request,bais,false,paramData);
+            }
+        } catch (Exception e) {
+            log.error(e, "prometheus proxy error,path : {}", "/visual/panel/snapshot");
+        } finally {
+            Tool.IoUtil.close(bais);
+        }
+        return null;
     }
 
     @Override

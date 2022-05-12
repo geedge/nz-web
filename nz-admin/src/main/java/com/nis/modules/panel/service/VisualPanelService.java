@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.web.multipart.MultipartFile;
@@ -40,4 +41,6 @@ public interface VisualPanelService extends IService<VisualPanel> {
     Map importChartData(MultipartFile excelFile, String type, Integer linkId, String language) throws IOException;
 
     void duplicate(Integer id);
+
+    void snapshot(HttpServletRequest request, HttpServletResponse response, String format, Integer panelId, Long start, Long end, String language);
 }

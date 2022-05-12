@@ -218,7 +218,7 @@ public class PromProxyController {
 				String contentEncoding = Tool.CollUtil.isNotEmpty(list)?list.get(0):"";
 				boolean isGzipStream = StrUtil.equalsIgnoreCase("gzip", contentEncoding);
 				bais = new ByteArrayInputStream(responseBody);
-				Map map = handleResultData(request,bais,isGzipStream);
+				Map map = handleResultData(request,bais,isGzipStream, null);
 				// 压缩
 				responseBody = isGzipStream ? compressedIntoGzipBytes(JSONObject.toJSONString(map), "UTF-8") : JSONObject.toJSONString(map).getBytes("UTF-8");
 			}
@@ -232,7 +232,7 @@ public class PromProxyController {
 		}
 	}
 
-	private Map handleResultData(HttpServletRequest request, InputStream connInputStream, Boolean isGzipStream) {
+	public Map handleResultData(HttpServletRequest request, InputStream connInputStream, Boolean isGzipStream,Map<String, String> paramData) {
 		StringBuffer resultStr = new StringBuffer();
 		InputStreamReader inputStreamReader = null;
 		BufferReaderWrapper bufferedReader = null;
@@ -262,6 +262,13 @@ public class PromProxyController {
 			Integer end = Integer.valueOf(request.getParameter("end"));
 			String step = request.getParameter("step");
 			String filter = request.getParameter("filter");
+			if(paramData != null){
+				nullType = paramData.get("nullType");
+				start = Integer.valueOf(paramData.get("start"));
+				end = Integer.valueOf(paramData.get("end"));
+				step = paramData.get("step");
+				filter = paramData.get("filter");
+			}
 			Map data = (Map) result.get("data");
 			JSONArray resultArray = (JSONArray) data.get("result");
 			// 去除prometheus返回结果中不符合条件的数据
