@@ -58,6 +58,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.yaml.snakeyaml.util.UriEncoder;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -653,7 +654,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                         paramData2.put("nullType",chartParam.get("nullType"));
                         paramData2.put("eleIndex",StrUtil.toString(eleIndex++));
                         paramData2.put("chartId",StrUtil.toString(chart.getId()));
-                        paramData2.put("queryString",StrUtil.toString(paramData2.get("queryString")) + "&nullType=" + chartParam.get("nullType") + "&query=" + URLUtil.encode(element.getExpression()));
+                        // URLUtil.encode 不转义 + 符号
+                        paramData2.put("queryString",StrUtil.toString(paramData2.get("queryString")) + "&nullType=" + chartParam.get("nullType") + "&query=" + UriEncoder.encode(element.getExpression()));
                         Callable<Map> task = new Callable<Map>() {
                             @Override
                             public Map call() throws Exception {
@@ -671,7 +673,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                         paramData2.put("eleIndex",StrUtil.toString(eleIndex++));
                         paramData2.put("format",1);
                         paramData2.put("chartId",StrUtil.toString(chart.getId()));
-                        paramData2.put("queryString",StrUtil.toString(paramData2.get("queryString")) + "&format=1&direction=backward&query=" + URLUtil.encode(element.getExpression()));
+                        paramData2.put("queryString",StrUtil.toString(paramData2.get("queryString")) + "&format=1&direction=backward&query=" + UriEncoder.encode(element.getExpression()));
                         Callable<Map> task = new Callable<Map>() {
                             @Override
                             public Map call() throws Exception {
