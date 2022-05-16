@@ -1,11 +1,14 @@
 package com.nis.modules.promserver.service;
 
-import java.util.Map;
-
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.promserver.entity.Promserver;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.util.Map;
 
 public interface PromserverService extends IService<Promserver> {
 
@@ -40,4 +43,8 @@ public interface PromserverService extends IService<Promserver> {
 	Promserver getOneAvaliableGlobalAgent();
 
 	String getPromPathPrefix();
+
+    Map promServerProxy(HttpServletRequest request, HttpServletResponse response, String promPath, Map<String, String> paramData);
+
+    JSONArray filterResult(JSONArray resultArray, String filter);
 }

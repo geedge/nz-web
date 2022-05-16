@@ -1,27 +1,18 @@
 package com.nis.modules.panel.service.impl;
 
-import cn.hutool.core.net.url.UrlBuilder;
-import cn.hutool.core.net.url.UrlPath;
-import cn.hutool.core.net.url.UrlQuery;
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.core.util.URLUtil;
-import cn.hutool.http.Header;
 import cn.hutool.log.Log;
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
-import com.nis.common.xss.XssHttpServletRequestWrapper;
 import com.nis.modules.panel.dao.VisualPanelDao;
 import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.panel.entity.VisualChartElement;
@@ -29,11 +20,8 @@ import com.nis.modules.panel.entity.VisualPanel;
 import com.nis.modules.panel.service.VisualChartElementService;
 import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
-import com.nis.modules.promserver.controller.LokiProxyController;
-import com.nis.modules.promserver.controller.PromProxyController;
-import com.nis.modules.promserver.entity.Promserver;
+import com.nis.modules.promserver.service.LokiserverService;
 import com.nis.modules.promserver.service.PromserverService;
-import com.nis.modules.promserver.util.PromConstant;
 import com.nis.modules.stat.service.impl.StatServiceImpl;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
@@ -42,30 +30,24 @@ import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-import net.sf.json.util.JSONUtils;
-import org.apache.catalina.util.ParameterMap;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.yaml.snakeyaml.util.UriEncoder;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.*;
-import java.net.URI;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -106,13 +88,11 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
     private RestTemplate restTemplate;
 
     @Autowired
-    private PromProxyController promProxyController;
-
-    @Autowired
-    private LokiProxyController lokiProxyController;
+    private LokiserverService lokiserverService;
 
     @Autowired
     private SysConfigDao sysConfigDao;
+
     private static ExecutorService executorService = Executors.newCachedThreadPool();
 
     @Override
@@ -563,24 +543,25 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         if (panel == null) {
             throw new NZException(RCode.CHART_PANEL_ISNULL);
         }
+        // 计算步长
         String step = getTimeStep(start, end);
-        Map<String, Object> map = new HashMap();
-        map.put("language",language);
-        map.put("start",start);
-        map.put("end",end);
-        map.put("panel",R.ok(panel));
+        // 封装返回结果
+        Map<String, Object> resultMap = new HashMap();
+        resultMap.put("language",language);
+        resultMap.put("start",start);
+        resultMap.put("end",end);
+        resultMap.put("panel",R.ok(panel));
+        // charts 查询
         Map param = new HashMap<>();
         param.put("pageSize", "-1");
-
         param.put("panelId", panelId);
         param.put("groupId", 0);
         PageUtils chartPageUtils = visualChartService.queryPage(param);
+        resultMap.put("charts",R.ok(chartPageUtils));
         List<VisualChart> chartsList = (List<VisualChart>) chartPageUtils.getList();
-        BufferedReader reader = null;
-        try {
-            Map chartsDataMap = new HashMap();
-            // loki、promethues多线程请求
-            List<Callable<Map>> tasks = new ArrayList<>();
+        if(Tool.CollUtil.isEmpty(chartsList)){
+            throw new NZException(RCode.CHART_SPAN_ISNULL);
+        }else{
             // 封装公共请求参数
             String queryString = "start=" + start + "&end=" + end + "&step=" + step;
             Map<String, String> paramData = new HashMap();
@@ -588,35 +569,34 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             paramData.put("end",StrUtil.toString(end));
             paramData.put("step",step);
             paramData.put("queryString", queryString);
-            if(Tool.CollUtil.isEmpty(chartsList)){
-                throw new NZException(RCode.CHART_SPAN_ISNULL);
-            }else{
-                recursionChartsData(request,response,tasks,chartsList,start, end, step, null, chartsDataMap, paramData);
-                try {
-                    List<Future<Map>> futures = executorService.invokeAll(tasks);
-                    for (Future<Map> future : futures) {
-                        if (!future.isCancelled()) {
-                            Map taskMap = future.get();
-                            if(Tool.CollUtil.isNotEmpty(taskMap) && Tool.StrUtil.equals("success",Tool.StrUtil.toString(taskMap.get("status")))) {
-                                chartsDataMap.put(StrUtil.concat(true, StrUtil.toString(taskMap.get("chartId")), "_", StrUtil.toString(taskMap.get("eleIndex"))), taskMap);
-                            }
+            // 用线程池获取chartsData
+            List<Callable<Map>> tasks = recursionChartsData(request,response,chartsList, paramData);
+            try {
+                Map chartsDataMap = new HashMap();
+                List<Future<Map>> futures = executorService.invokeAll(tasks);
+                for (Future<Map> future : futures) {
+                    if (!future.isCancelled()) {
+                        Map taskMap = future.get();
+                        if(Tool.CollUtil.isNotEmpty(taskMap) && Tool.StrUtil.equals("success",Tool.StrUtil.toString(taskMap.get("status")))) {
+                            chartsDataMap.put(StrUtil.concat(true, StrUtil.toString(taskMap.get("chartId")), "_", StrUtil.toString(taskMap.get("eleIndex"))), taskMap);
                         }
                     }
-                } catch (InterruptedException | ExecutionException e) {
-                    log.error(e);
                 }
+                resultMap.put("chartsData",chartsDataMap);
+            } catch (InterruptedException | ExecutionException e) {
+                log.error(e);
             }
-            map.put("chartsData",chartsDataMap);
-            map.put("charts",R.ok(chartPageUtils));
-
-            // 读取模板，替换数据
+        }
+        // 读取模板，替换数据
+        BufferedReader reader = null;
+        try {
             String path = sysConfigDao.queryByKey("snapshot_template_path").getParamValue();
             reader = new BufferedReader(new FileReader(Tool.StrUtil.concat(true, path, File.separator, "snapshot_template.html")));
             String line = null;
-            StringBuffer sbf=new StringBuffer();
+            StringBuffer sbf = new StringBuffer();
             while ((line = reader.readLine()) != null) {
                 if(Tool.StrUtil.startWith(line,"<script>window.dataJson"))
-                    line = "<script>window.dataJson=" + JSONUtil.toJsonStr(map) + "</script>";
+                    line = "<script>window.dataJson=" + JSONUtil.toJsonStr(resultMap) + "</script>";
                 sbf.append(line + "\n");
             }
             response.setCharacterEncoding("utf-8");
@@ -637,71 +617,73 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
     }
 
     /**
-     * 遍历获取chartsData
-     * @return
+     *  将chartsData装入tasks任务
      */
-    private Map recursionChartsData(HttpServletRequest request,HttpServletResponse response, List<Callable<Map>> tasks, List<VisualChart> chartsList, Long start, Long end, String step, byte[] body, Map chartsDataMap, Map paramData){
-        Integer eleIndex;
+    private List<Callable<Map>> recursionChartsData(HttpServletRequest request,HttpServletResponse response, List<VisualChart> chartsList, Map paramData){
+        List<Callable<Map>> tasks = new ArrayList<>();
+        Integer eleIndex;String datasource;
         for (VisualChart chart:chartsList) {
             eleIndex = 0;
+            datasource = chart.getDatasource();
             Map<String, String> chartParam = (HashMap) chart.getParam();
-            switch (chart.getDatasource()) {
-                case "metrics":
-                    for (VisualChartElement element : chart.getElements()) {
+            if(StrUtil.equals("system", datasource)) {
+                tasks.add(new Callable<Map>() {
+                    @Override
+                    public Map call() throws Exception {
+                        JSONObject datasource = JSONArray.parseArray(JSONObject.toJSONString(chartParam.get("datasource"))).getJSONObject(0);
+                        JSONArray selectAry = new JSONArray();
+                        selectAry.add(datasource.get("select"));
+                        datasource.put("select", selectAry);
+                        HashMap analyseMap = new HashMap();
+                        analyseMap.put("q", datasource.toJSONString());
                         Map paramData2 = new HashMap<>();
-                        paramData2.putAll(paramData);
-                        paramData2.put("promPath","/api/v1/query_range");
-                        paramData2.put("nullType",chartParam.get("nullType"));
-                        paramData2.put("eleIndex",StrUtil.toString(eleIndex++));
-                        paramData2.put("chartId",StrUtil.toString(chart.getId()));
-                        // URLUtil.encode 不转义 + 符号
-                        paramData2.put("queryString",StrUtil.toString(paramData2.get("queryString")) + "&nullType=" + chartParam.get("nullType") + "&query=" + UriEncoder.encode(element.getExpression()));
-                        Callable<Map> task = new Callable<Map>() {
-                            @Override
-                            public Map call() throws Exception {
-                                return promProxyController.promProxy(request, response, paramData2, body);
-                            }
-                        };
-                        tasks.add(task);
+                        paramData2.put("status", "success");
+                        paramData2.put("eleIndex", "0");
+                        paramData2.put("chartId", StrUtil.toString(chart.getId()));
+                        paramData2.putAll(statServiceImpl.queryAnalyse(analyseMap));
+                        return paramData2;
                     }
-                    break;
-                case "logs":
-                    for (VisualChartElement element : chart.getElements()) {
-                        Map paramData2 = new HashMap<>();
-                        paramData2.putAll(paramData);
-                        paramData2.put("proxyPath","/loki/api/v1/query_range");
-                        paramData2.put("eleIndex",StrUtil.toString(eleIndex++));
-                        paramData2.put("format",1);
-                        paramData2.put("chartId",StrUtil.toString(chart.getId()));
-                        paramData2.put("queryString",StrUtil.toString(paramData2.get("queryString")) + "&format=1&direction=backward&query=" + UriEncoder.encode(element.getExpression()));
-                        Callable<Map> task = new Callable<Map>() {
-                            @Override
-                            public Map call() throws Exception {
-                                return lokiProxyController.logLokiProxy(request, response, paramData2, body);
-                            }
-                        };
-                        tasks.add(task);
+                });
+            }else if(StrUtil.equals("misc", datasource)){
+
+            }else{
+                for (VisualChartElement element : chart.getElements()) {
+                    Map paramData2 = new HashMap<>();
+                    paramData2.putAll(paramData);
+                    paramData2.put("eleIndex",StrUtil.toString(eleIndex++));
+                    paramData2.put("chartId",StrUtil.toString(chart.getId()));
+                    switch (datasource) {
+                        case "metrics":
+                            paramData2.put("nullType",chartParam.get("nullType"));
+                            paramData2.put("queryString",StrUtil.toString(paramData2.get("queryString")) + "&nullType=" + chartParam.get("nullType") + "&query=" + UriEncoder.encode(element.getExpression()));
+                            tasks.add(new Callable<Map>() {
+                                @Override
+                                public Map call() throws Exception {
+                                    return promserverService.promServerProxy(request, response, "/api/v1/query_range", paramData2);
+                                }
+                            });
+                            break;
+                        case "logs":
+                            paramData2.put("format","1");
+                            paramData2.put("queryString",StrUtil.toString(paramData2.get("queryString")) + "&format=1&direction=backward&query=" + UriEncoder.encode(element.getExpression()));
+                            tasks.add(new Callable<Map>() {
+                                @Override
+                                public Map call() throws Exception {
+                                    return lokiserverService.lokiServerProxy(request, response, "/loki/api/v1/query_range", paramData2);
+                                }
+                            });
+                            break;
+                        default:break;
                     }
-                    break;
-                case "system":
-                    JSONObject datasource = JSONArray.parseArray(JSONObject.toJSONString(chartParam.get("datasource"))).getJSONObject(0);
-                    JSONArray selectAry = new JSONArray();
-                    selectAry.add(datasource.get("select"));
-                    datasource.put("select", selectAry);
-                    HashMap analyseMap = new HashMap();
-                    analyseMap.put("q", datasource.toJSONString());
-                    chartsDataMap.put(chart.getId() + "_0", statServiceImpl.queryAnalyse(analyseMap));
-                    break;
-                case "misc":
-                    break;
-                default:
-                    break;
+                }
             }
             if(Tool.CollUtil.isNotEmpty(chart.getChildren())){
-                recursionChartsData(request, response, tasks, chart.getChildren(), start, end, step, body, chartsDataMap, paramData);
+                List<Callable<Map>> callables = recursionChartsData(request, response, chart.getChildren(), paramData);
+                if(Tool.CollUtil.isNotEmpty(callables))
+                    tasks.addAll(callables);
             }
         }
-        return chartsDataMap;
+        return tasks;
     }
 
     /**
