@@ -1,6 +1,5 @@
 package com.nis.modules.panel.service.impl;
 
-import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
@@ -32,6 +31,8 @@ import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionDefinition;
@@ -43,13 +44,13 @@ import org.yaml.snakeyaml.util.UriEncoder;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.net.URLEncoder;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 
@@ -57,7 +58,9 @@ import java.util.stream.Collectors;
 public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPanel> implements VisualPanelService {
 
 	private Log log = Log.get();
-	
+    @Value("${connect.timeout:30000}")
+    private Integer connectTimeout;
+
     @Autowired
     private VisualChartService visualChartService;
     
@@ -69,6 +72,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
     
     @Autowired
     private DataSourceTransactionManager dataSourceTransactionManager;
+
 	@Autowired
     private TransactionDefinition transactionDefinition;
     
@@ -92,8 +96,6 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
     @Autowired
     private SysConfigDao sysConfigDao;
-
-    private static ExecutorService executorService = Executors.newCachedThreadPool();
 
     @Override
     public VisualPanel queryInfo(Integer id) {
@@ -569,21 +571,22 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             paramData.put("end",StrUtil.toString(end));
             paramData.put("step",step);
             paramData.put("queryString", queryString);
-            // 用线程池获取chartsData
-            List<Callable<Map>> tasks = recursionChartsData(request,response,chartsList, paramData);
+            // 将chartsData获取任务装入futureList
+            List<CompletableFuture<Map>> futureList = recursionChartsData(request,chartsList, paramData);
             try {
                 Map chartsDataMap = new HashMap();
-                List<Future<Map>> futures = executorService.invokeAll(tasks);
-                for (Future<Map> future : futures) {
-                    if (!future.isCancelled()) {
-                        Map taskMap = future.get();
-                        if(Tool.CollUtil.isNotEmpty(taskMap) && Tool.StrUtil.equals("success",Tool.StrUtil.toString(taskMap.get("status")))) {
-                            chartsDataMap.put(StrUtil.concat(true, StrUtil.toString(taskMap.get("chartId")), "_", StrUtil.toString(taskMap.get("eleIndex"))), taskMap);
+                CompletableFuture.allOf((CompletableFuture<?>[]) futureList.toArray(new CompletableFuture[0]))
+                        .get(connectTimeout, TimeUnit.MILLISECONDS);
+                futureList.forEach(future -> {
+                    Map<String, Object> result = future.getNow(null);
+                    if (Tool.MapUtil.isNotEmpty(result)) {
+                        if(Tool.MapUtil.isNotEmpty(result)) { //  && Tool.StrUtil.equals("success",Tool.StrUtil.toString(result.get("status")))
+                            chartsDataMap.put(StrUtil.concat(true, StrUtil.toString(result.get("chartId")), "_", StrUtil.toString(result.get("eleIndex"))), result);
                         }
                     }
-                }
+                });
                 resultMap.put("chartsData",chartsDataMap);
-            } catch (InterruptedException | ExecutionException e) {
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
                 log.error(e);
             }
         }
@@ -616,74 +619,73 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         }
     }
 
-    /**
-     *  将chartsData装入tasks任务
-     */
-    private List<Callable<Map>> recursionChartsData(HttpServletRequest request,HttpServletResponse response, List<VisualChart> chartsList, Map paramData){
-        List<Callable<Map>> tasks = new ArrayList<>();
+    private List<CompletableFuture<Map>> recursionChartsData(HttpServletRequest request,List<VisualChart> chartsList, Map paramData){
+        List<CompletableFuture<Map>> futureList = new ArrayList<>();
         Integer eleIndex;String datasource;
         for (VisualChart chart:chartsList) {
             eleIndex = 0;
             datasource = chart.getDatasource();
             Map<String, String> chartParam = (HashMap) chart.getParam();
             if(StrUtil.equals("system", datasource)) {
-                tasks.add(new Callable<Map>() {
-                    @Override
-                    public Map call() throws Exception {
-                        JSONObject datasource = JSONArray.parseArray(JSONObject.toJSONString(chartParam.get("datasource"))).getJSONObject(0);
-                        JSONArray selectAry = new JSONArray();
-                        selectAry.add(datasource.get("select"));
-                        datasource.put("select", selectAry);
-                        HashMap analyseMap = new HashMap();
-                        analyseMap.put("q", datasource.toJSONString());
-                        Map paramData2 = new HashMap<>();
-                        paramData2.put("status", "success");
-                        paramData2.put("eleIndex", "0");
-                        paramData2.put("chartId", StrUtil.toString(chart.getId()));
-                        paramData2.putAll(statServiceImpl.queryAnalyse(analyseMap));
-                        return paramData2;
-                    }
-                });
+                futureList.add(CompletableFuture.supplyAsync(() ->{
+                    JSONObject dataSource = JSONArray.parseArray(JSONObject.toJSONString(chartParam.get("datasource"))).getJSONObject(0);
+                    JSONArray selectAry = new JSONArray();
+                    selectAry.add(dataSource.get("select"));
+                    dataSource.put("select", selectAry);
+                    HashMap analyseMap = new HashMap();
+                    analyseMap.put("q", dataSource.toJSONString());
+                    Map paramData2 = new HashMap<>();
+                    paramData2.put("status", "success");
+                    paramData2.put("eleIndex", "0");
+                    paramData2.put("chartId", chart.getId());
+                    paramData2.putAll(statServiceImpl.queryAnalyse(analyseMap));
+                    return paramData2;
+                }));
             }else if(StrUtil.equals("misc", datasource)){
 
             }else{
                 for (VisualChartElement element : chart.getElements()) {
-                    Map paramData2 = new HashMap<>();
+                    Map<String, String> paramData2 = new HashMap<>();
                     paramData2.putAll(paramData);
                     paramData2.put("eleIndex",StrUtil.toString(eleIndex++));
-                    paramData2.put("chartId",StrUtil.toString(chart.getId()));
                     switch (datasource) {
                         case "metrics":
                             paramData2.put("nullType",chartParam.get("nullType"));
-                            paramData2.put("queryString",StrUtil.toString(paramData2.get("queryString")) + "&nullType=" + chartParam.get("nullType") + "&query=" + UriEncoder.encode(element.getExpression()));
-                            tasks.add(new Callable<Map>() {
-                                @Override
-                                public Map call() throws Exception {
-                                    return promserverService.promServerProxy(request, response, "/api/v1/query_range", paramData2);
-                                }
-                            });
+                            futureList.add(CompletableFuture.supplyAsync(() ->{
+                                // 请求数据
+                                ResponseEntity<byte[]> exchange = promserverService.promServerData(request,null,null,null,"/api/v1/query_range",paramData2.get("step"),null,paramData2.get("queryString") + "&nullType=" + chartParam.get("nullType") + "&query=" + UriEncoder.encode(element.getExpression()));
+                                // 处理返回数据
+                                ByteArrayInputStream bais = new ByteArrayInputStream(exchange.getBody());
+                                Map callMap = promserverService.handleResultData(bais, false, paramData2);
+                                callMap.put("eleIndex", paramData2.get("eleIndex"));
+                                callMap.put("chartId", chart.getId());
+                                Tool.IoUtil.close(bais);
+                                return callMap;
+                            }));
                             break;
                         case "logs":
                             paramData2.put("format","1");
-                            paramData2.put("queryString",StrUtil.toString(paramData2.get("queryString")) + "&format=1&direction=backward&query=" + UriEncoder.encode(element.getExpression()));
-                            tasks.add(new Callable<Map>() {
-                                @Override
-                                public Map call() throws Exception {
-                                    return lokiserverService.lokiServerProxy(request, response, "/loki/api/v1/query_range", paramData2);
-                                }
-                            });
+                            futureList.add(CompletableFuture.supplyAsync(() ->{
+                                ResponseEntity<byte[]> exchange = lokiserverService.lokiServerData(request,null,"/loki/api/v1/query_range",null,paramData2.get("queryString") + "&format=1&direction=backward&query=" + UriEncoder.encode(element.getExpression()));
+                                ByteArrayInputStream bais = new ByteArrayInputStream(exchange.getBody());
+                                Map callMap = lokiserverService.handleResultData(bais, paramData2);
+                                callMap.put("eleIndex", paramData2.get("eleIndex"));
+                                callMap.put("chartId", chart.getId());
+                                Tool.IoUtil.close(bais);
+                                return callMap;
+                            }));
                             break;
                         default:break;
                     }
                 }
             }
             if(Tool.CollUtil.isNotEmpty(chart.getChildren())){
-                List<Callable<Map>> callables = recursionChartsData(request, response, chart.getChildren(), paramData);
+                List<CompletableFuture<Map>> callables = recursionChartsData(request, chart.getChildren(), paramData);
                 if(Tool.CollUtil.isNotEmpty(callables))
-                    tasks.addAll(callables);
+                    futureList.addAll(callables);
             }
         }
-        return tasks;
+        return futureList;
     }
 
     /**

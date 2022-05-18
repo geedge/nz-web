@@ -33,7 +33,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.HttpEntity;
@@ -70,8 +69,6 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 	private RestTemplate restTemplate;
 	@Autowired
 	private RedisTemplate redisTemplate;
-	@Value("${connect.timeout:30000}")
-	private Integer connectTimeout;
 	@Autowired
 	private SysConfigDao sysConfigDao;
 	@Autowired
@@ -278,11 +275,57 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 	}
 
 	@Override
-	public Map promServerProxy(HttpServletRequest request, HttpServletResponse response, String promPath, Map<String, String> paramData){
+	public Map promServerProxy(HttpServletRequest request, HttpServletResponse response, String promPath){
 		Integer agentId = request.getParameter("agentId") != null ? Integer.valueOf(request.getParameter("agentId")):null;
 		Integer dcId = request.getParameter("dcId") != null ? Integer.valueOf(request.getParameter("dcId")):null;
 		Integer type = request.getParameter("type") != null ? Integer.valueOf(request.getParameter("type")):null;
+		String step = request.getParameter("step");
 
+		ByteArrayInputStream bais = null;
+		try {
+			// 复制 body
+			byte[] body = Tool.IoUtil.readBytes(request.getInputStream());
+			String queryString = request.getQueryString();
+			queryString = StrUtil.isNotBlank(queryString)?queryString:"";
+			queryString = URLUtil.decode(queryString);
+			//发送 请求
+			ResponseEntity<byte[]> exchange = promServerData(request,agentId,dcId,type,promPath,step,body,queryString);
+			//响应码
+			int statusCode = exchange.getStatusCodeValue();
+			//响应头
+			HttpHeaders httpHeaders = exchange.getHeaders();
+			byte[] responseBody = exchange.getBody();
+			/*
+			 * query_range 补零
+			 */
+			if ("/api/v1/query_range".equals(promPath) && statusCode < 300) {
+				// 处理缺失时间数据
+				List<String> list = httpHeaders.get(HttpHeaders.CONTENT_ENCODING);
+				String contentEncoding = Tool.CollUtil.isNotEmpty(list)?list.get(0):"";
+				boolean isGzipStream = StrUtil.equalsIgnoreCase("gzip", contentEncoding);
+				bais = new ByteArrayInputStream(responseBody);
+				// 封装格式化参数
+				Map<String, String> paramMap = new HashMap<>();
+				String nullType = request.getParameter("nullType");
+				paramMap.put("nullType", org.apache.commons.lang.StringUtils.isEmpty(nullType) ? "connected" : nullType);
+				paramMap.put("start",request.getParameter("start"));
+				paramMap.put("end",request.getParameter("end"));
+				paramMap.put("step",step);
+				paramMap.put("filter",request.getParameter("filter"));
+				Map map = handleResultData(bais,isGzipStream, paramMap);
+				// 压缩
+				responseBody = isGzipStream ? compressedIntoGzipBytes(JSONObject.toJSONString(map), "UTF-8") : JSONObject.toJSONString(map).getBytes("UTF-8");
+			}
+			responseWrite(response,httpHeaders,statusCode,responseBody);
+		} catch (Exception e) {
+			log.error(e, "prometheus proxy error,path : {}", promPath);
+		} finally {
+			Tool.IoUtil.close(bais);
+		}
+		return null;
+	}
+
+	public ResponseEntity<byte[]> promServerData(HttpServletRequest request,Integer agentId,Integer dcId,Integer type,String promPath,String step,byte[] body,String queryString){
 		Promserver server = getOneAvaPromServer(agentId, dcId, type);
 		if (ToolUtil.isEmpty(server)) {
 			// type 其次使用 global
@@ -290,32 +333,10 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 			server = getOneAvaPromServer(agentId, dcId, type);
 			ValidateUtils.is(server).notNull(RCode.PROMSERVER_UNAVAILABLE);
 		}
-		ByteArrayInputStream bais = null;
+		ResponseEntity<byte[]> exchange = null;
 		try {
-			// 复制请求头
-			HttpHeaders headers = new HttpHeaders();
-			Enumeration<String> headerNames = request.getHeaderNames();
-			while (headerNames.hasMoreElements()) {
-				String hn = headerNames.nextElement();
-				if(Constant.AUTH_TOKEN_CODE.equalsIgnoreCase(hn)){
-					headers.add(hn, request.getHeader(hn));
-				}
-			}
-			headers.add(Constant.AUTH_TOKEN_CODE, server.getToken());
-			// 复制 body
-			byte[] body = null;
-			String queryString = request.getQueryString();
-			queryString = StrUtil.isNotBlank(queryString)?queryString:"";
-			queryString = URLUtil.decode(queryString);
-			String step = request.getParameter("step");
-			if(ToolUtil.isNotEmpty(paramData)){
-				queryString = paramData.get("queryString");
-				step = paramData.get("step");
-			}else{
-				body = Tool.IoUtil.readBytes(request.getInputStream());
-			}
 			// 重新构造请求参数内容
-			HttpEntity<byte[]> httpEntity = new HttpEntity<byte[]>(body, headers);
+			HttpEntity<byte[]> httpEntity = buildHeader(request,server.getToken(),body);
 			if(StrUtil.equals(promPath, "/api/v1/query_range") || StrUtil.equals(promPath, "/api/v1/query")) {
 				if(ReUtil.contains("\\[\\s*\\$interval\\s*]", URLUtil.decode(queryString))) {
 					// 判断step是否小于两个周期的scrape interval
@@ -360,62 +381,61 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 					.setQuery(UrlQuery.of(queryString, Charset.forName("UTF-8"))).toString();
 			String method = request.getMethod();
 			//发送 请求
-			ResponseEntity<byte[]> exchange = restTemplate.exchange(new URI(urlStr), HttpMethod.resolve(method), httpEntity, byte[].class);
-			//响应码
-			int statusCode = exchange.getStatusCodeValue();
-			//响应头
-			HttpHeaders httpHeaders = exchange.getHeaders();
-			byte[] responseBody = exchange.getBody();
-			/*
-			 * query_range 补零
-			 */
-			if ("/api/v1/query_range".equals(promPath) && statusCode < 300) {
-				// 处理缺失时间数据
-				List<String> list = httpHeaders.get(HttpHeaders.CONTENT_ENCODING);
-				String contentEncoding = Tool.CollUtil.isNotEmpty(list)?list.get(0):"";
-				boolean isGzipStream = StrUtil.equalsIgnoreCase("gzip", contentEncoding);
-				bais = new ByteArrayInputStream(responseBody);
-				Map map = handleResultData(request,bais,isGzipStream, paramData);
-				if(ToolUtil.isNotEmpty(paramData)){
-					map.put("eleIndex",paramData.get("eleIndex"));
-					map.put("chartId",paramData.get("chartId"));
-					return map;
-				}
-				// 压缩
-				responseBody = isGzipStream ? compressedIntoGzipBytes(JSONObject.toJSONString(map), "UTF-8") : JSONObject.toJSONString(map).getBytes("UTF-8");
-			}else if(statusCode > 200 && ToolUtil.isNotEmpty(paramData)){
-				return null;
-			}
-			response.reset();
-			response.setStatus(statusCode);
-			Set<Map.Entry<String,List<String>>> entrySet = httpHeaders.entrySet();
-			//设置cors响应头
-			Constant.CORS_HEADER.forEach((k,v)->{
-				response.setHeader(k, v);
-			});
-			for(Map.Entry<String,List<String>> en : entrySet) {
-				String name = en.getKey();
-				List<String> value = en.getValue();
-				if(en.getKey().equalsIgnoreCase(Header.CONTENT_LENGTH.getValue())) {
-					continue;
-				}
-				if(en.getKey().equalsIgnoreCase(Header.TRANSFER_ENCODING.getValue())) {
-					continue;
-				}
-				response.setHeader(name, Tool.StrUtil.join(",", value.toArray()));
-			}
-			response.setContentLength(Tool.ArrayUtil.length(responseBody));
-			response.getOutputStream().write(responseBody);
-			response.flushBuffer();
+			exchange = restTemplate.exchange(new URI(urlStr), HttpMethod.resolve(method), httpEntity, byte[].class);
 		} catch (Exception e) {
 			log.error(e, "prometheus proxy error,path : {}", promPath);
-		} finally {
-			Tool.IoUtil.close(bais);
 		}
-		return null;
+		return exchange;
 	}
 
-	private Map handleResultData(HttpServletRequest request, InputStream connInputStream, Boolean isGzipStream, Map<String, String> paramData) {
+	/**
+	 * 构造请求参数
+	 */
+	public HttpEntity<byte[]> buildHeader(HttpServletRequest request,String token, byte[] body){
+		// 复制请求头
+		HttpHeaders headers = new HttpHeaders();
+		Enumeration<String> headerNames = request.getHeaderNames();
+		while (headerNames.hasMoreElements()) {
+			String hn = headerNames.nextElement();
+			if(Constant.AUTH_TOKEN_CODE.equalsIgnoreCase(hn)){
+				headers.add(hn, request.getHeader(hn));
+			}
+		}
+		headers.add(Constant.AUTH_TOKEN_CODE, token);
+		// 重新构造请求参数内容
+		return new HttpEntity<byte[]>(body, headers);
+	}
+	/**
+	 * 数据响应
+	 */
+	public void responseWrite(HttpServletResponse response,HttpHeaders httpHeaders,Integer statusCode,byte[] responseBody) throws Exception{
+		response.reset();
+		response.setStatus(statusCode);
+		Set<Map.Entry<String,List<String>>> entrySet = httpHeaders.entrySet();
+		//设置cors响应头
+		Constant.CORS_HEADER.forEach((k,v)->{
+			response.setHeader(k, v);
+		});
+		for(Map.Entry<String,List<String>> en : entrySet) {
+			String name = en.getKey();
+			List<String> value = en.getValue();
+			if(en.getKey().equalsIgnoreCase(Header.CONTENT_LENGTH.getValue())) {
+				continue;
+			}
+			if(en.getKey().equalsIgnoreCase(Header.TRANSFER_ENCODING.getValue())) {
+				continue;
+			}
+			response.setHeader(name, Tool.StrUtil.join(",", value.toArray()));
+		}
+		response.setContentLength(Tool.ArrayUtil.length(responseBody));
+		response.getOutputStream().write(responseBody);
+		response.flushBuffer();
+	}
+
+	/**
+	 * 数据格式化
+	 */
+	public Map handleResultData(InputStream connInputStream, Boolean isGzipStream, Map<String, String> paramMap) {
 		StringBuffer resultStr = new StringBuffer();
 		InputStreamReader inputStreamReader = null;
 		BufferReaderWrapper bufferedReader = null;
@@ -439,19 +459,11 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 		}
 
 		if (result != null && result.get("data") != null) {
-			String nullType = request.getParameter("nullType");
-			nullType = org.apache.commons.lang.StringUtils.isEmpty(nullType) ? "connected" : nullType;
-			Integer start = Integer.valueOf(request.getParameter("start"));
-			Integer end = Integer.valueOf(request.getParameter("end"));
-			String step = request.getParameter("step");
-			String filter = request.getParameter("filter");
-			if(ToolUtil.isNotEmpty(paramData)){
-				nullType = paramData.get("nullType");
-				start = Integer.valueOf(paramData.get("start"));
-				end = Integer.valueOf(paramData.get("end"));
-				step = paramData.get("step");
-				filter = paramData.get("filter");
-			}
+			String nullType = paramMap.get("nullType");
+			Integer start = Integer.valueOf(paramMap.get("start"));
+			Integer end = Integer.valueOf(paramMap.get("end"));
+			String step = paramMap.get("step");
+			String filter = paramMap.get("filter");
 			Map data = (Map) result.get("data");
 			JSONArray resultArray = (JSONArray) data.get("result");
 			// 去除prometheus返回结果中不符合条件的数据

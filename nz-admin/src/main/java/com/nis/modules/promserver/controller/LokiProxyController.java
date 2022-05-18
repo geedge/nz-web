@@ -37,6 +37,6 @@ public class LokiProxyController {
             default:
                 break;
         }
-        lokiserverService.lokiServerProxy(request, response, proxyPath, null);
+        lokiserverService.lokiServerProxy(request, response, proxyPath);
     }
 }

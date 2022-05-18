@@ -5,9 +5,13 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.promserver.entity.Promserver;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.InputStream;
 import java.util.Map;
 
 public interface PromserverService extends IService<Promserver> {
@@ -44,7 +48,15 @@ public interface PromserverService extends IService<Promserver> {
 
 	String getPromPathPrefix();
 
-    Map promServerProxy(HttpServletRequest request, HttpServletResponse response, String promPath, Map<String, String> paramData);
+    Map promServerProxy(HttpServletRequest request, HttpServletResponse response, String promPath);
 
-    JSONArray filterResult(JSONArray resultArray, String filter);
+	JSONArray filterResult(JSONArray resultArray, String filter);
+
+    void responseWrite(HttpServletResponse response, HttpHeaders httpHeaders, Integer statusCode, byte[] responseBody) throws Exception;
+
+    ResponseEntity<byte[]> promServerData(HttpServletRequest request, Integer agentId, Integer dcId, Integer type, String promPath, String step, byte[] body, String queryString);
+
+	Map handleResultData(InputStream connInputStream, Boolean isGzipStream, Map<String, String> paramData);
+
+    HttpEntity<byte[]> buildHeader(HttpServletRequest request, String token, byte[] body);
 }

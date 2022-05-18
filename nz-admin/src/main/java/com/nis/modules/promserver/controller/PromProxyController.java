@@ -43,7 +43,7 @@ public class PromProxyController {
 		default:
 			break;
 		}
-		promserverService.promServerProxy(request, response, promPath, null);
+		promserverService.promServerProxy(request, response, promPath);
 	}
 
 }

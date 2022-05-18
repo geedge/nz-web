@@ -7,7 +7,6 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.URLUtil;
 import cn.hutool.crypto.digest.MD5;
-import cn.hutool.http.Header;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -92,51 +91,17 @@ public class LokiserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 	}
 
 	@Override
-	public Map lokiServerProxy(HttpServletRequest request, HttpServletResponse response, String proxyPath, Map<String, String> paramData) {
+	public void lokiServerProxy(HttpServletRequest request, HttpServletResponse response, String proxyPath) {
 		Integer promId = request.getParameter("promId") != null ? Integer.valueOf(request.getParameter("promId")) : null;
-		// 随机 可用 loki
-		Promserver server = promserverService.getOneAvaPromServer(promId, null, Constant.PromserverType.GLOBAL.getValue());
-		if (ToolUtil.isEmpty(server)) {
-			ValidateUtils.is(server).notNull(RCode.PROMSERVER_UNAVAILABLE);
-		}
-		log.debug("path:{},loki server:{}", proxyPath, JSONUtils.valueToString(server));
-
 		ByteArrayInputStream bais = null;
 		try {
-			// 复制请求头
-			HttpHeaders headers = new HttpHeaders();
-			Enumeration<String> headerNames = request.getHeaderNames();
-			while (headerNames.hasMoreElements()) {
-				String hn = headerNames.nextElement();
-				if(Constant.AUTH_TOKEN_CODE.equalsIgnoreCase(hn)){
-					headers.add(hn, request.getHeader(hn));
-				}
-			}
-			headers.add(Constant.AUTH_TOKEN_CODE, server.getToken());
-			// 复制 body
-			byte[] body = null;
 			String queryString = request.getQueryString();
 			queryString = StrUtil.isNotBlank(queryString)?queryString:"";
 			queryString = URLUtil.decode(queryString);
-			if(ToolUtil.isNotEmpty(paramData)){
-				queryString = paramData.get("queryString");
-			}else{
-				// 复制 body
-				body = Tool.IoUtil.readBytes(request.getInputStream());
-			}
-			// 重新构造请求参数内容
-			HttpEntity<byte[]> httpEntity = new HttpEntity<byte[]>(body, headers);
-			// 构造请求路径
-			// 请求 prometheus server
-			String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
-			String realPath = agentPath + "/loki/proxy" + proxyPath;
-			String urlString = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
-					.setPort(server.getPort()).setPath(UrlPath.of(realPath, Charset.forName("UTF-8")))
-					.setQuery(UrlQuery.of(queryString, Charset.forName("UTF-8"))).toString();
-			String method = request.getMethod();
+			// 复制 body
+			byte[] body = Tool.IoUtil.readBytes(request.getInputStream());
 			//发送 请求
-			// ResponseEntity<byte[]> exchange = restTemplate.exchange(url, HttpMethod.resolve(method), httpEntity, byte[].class);
-			ResponseEntity<byte[]> exchange = restTemplate.exchange(new URI(urlString), HttpMethod.resolve(method), httpEntity, byte[].class);
+			ResponseEntity<byte[]> exchange = lokiServerData(request, promId, proxyPath, body, queryString);
 			//响应码
 			int statusCode = exchange.getStatusCodeValue();
 			//响应头
@@ -146,48 +111,66 @@ public class LokiserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 			 * query_range 补零
 			 */
 			if (("/loki/api/v1/query".equals(proxyPath) || "/loki/api/v1/query_range".equals(proxyPath)) && statusCode < 300) {
+				// 封装格式化参数
+				Map<String, String> paramMap = new HashMap<>();
+				String format = request.getParameter("format");
+				paramMap.put("format",StrUtil.isNotBlank(format) ? format : "0");
+				paramMap.put("filter",request.getParameter("filter"));
+				paramMap.put("direction",request.getParameter("direction"));
 				// 处理数据格式
 				bais = new ByteArrayInputStream(responseBody);
-				Map resultData = handleResultData(request, bais, paramData);
-				if(ToolUtil.isNotEmpty(paramData)){
-					resultData.put("eleIndex",paramData.get("eleIndex"));
-					resultData.put("chartId",paramData.get("chartId"));
-					return resultData;
-				}
+				Map resultData = handleResultData(bais, paramMap);
 				responseBody = JSONObject.toJSONString(resultData, SerializerFeature.DisableCircularReferenceDetect, SerializerFeature.MapSortField).getBytes();
-			}else if(statusCode > 200 && ToolUtil.isNotEmpty(paramData)){
-				return null;
 			}
-			response.reset();
-			response.setStatus(statusCode);
-			Set<Map.Entry<String,List<String>>> entrySet = httpHeaders.entrySet();
-			//设置cors响应头
-			Constant.CORS_HEADER.forEach((k,v)->{
-				response.setHeader(k, v);
-			});
-			for(Map.Entry<String,List<String>> en : entrySet) {
-				String name = en.getKey();
-				List<String> value = en.getValue();
-				if(en.getKey().equalsIgnoreCase(Header.CONTENT_LENGTH.getValue())) {
-					continue;
-				}
-				if(en.getKey().equalsIgnoreCase(Header.TRANSFER_ENCODING.getValue())) {
-					continue;
-				}
-				response.setHeader(name, Tool.StrUtil.join(",", value.toArray()));
-			}
-			response.setContentLength(responseBody.length);
-			response.getOutputStream().write(responseBody);
-			response.flushBuffer();
+			promserverService.responseWrite(response,httpHeaders,statusCode,responseBody);
 		} catch (Exception e) {
 			log.error(e, "loki proxy error,path : {}", proxyPath);
 		} finally {
 			Tool.IoUtil.close(bais);
 		}
-		return null;
 	}
 
-	private Map handleResultData(HttpServletRequest request, InputStream connInputStream, Map<String, String> paramData) {
+	/**
+	 * 构建路径 请求数据
+	 * @param request
+	 * @param promId
+	 * @param proxyPath
+	 * @param body
+	 * @param paramData
+	 * @return
+	 */
+	public ResponseEntity<byte[]> lokiServerData(HttpServletRequest request,Integer promId,String proxyPath,byte[] body,String queryString){
+		Promserver server = promserverService.getOneAvaPromServer(promId, null, Constant.PromserverType.GLOBAL.getValue());
+		if (ToolUtil.isEmpty(server)) {
+			ValidateUtils.is(server).notNull(RCode.PROMSERVER_UNAVAILABLE);
+		}
+		log.debug("path:{},loki server:{}", proxyPath, JSONUtils.valueToString(server));
+
+		ResponseEntity<byte[]> exchange = null;
+		try {
+			// 重新构造请求参数内容
+			HttpEntity<byte[]> httpEntity = promserverService.buildHeader(request,server.getToken(),body);
+			// 构造请求路径
+			// 请求 prometheus server
+			String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
+			String realPath = agentPath + "/loki/proxy" + proxyPath;
+			String urlString = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
+					.setPort(server.getPort()).setPath(UrlPath.of(realPath, Charset.forName("UTF-8")))
+					.setQuery(UrlQuery.of(queryString, Charset.forName("UTF-8"))).toString();
+			String method = request.getMethod();
+			//发送 请求
+			exchange = restTemplate.exchange(new URI(urlString), HttpMethod.resolve(method), httpEntity, byte[].class);
+		} catch (Exception e) {
+			log.error(e, "loki proxy error,path : {}", proxyPath);
+		}
+		return exchange;
+	}
+
+	/**
+	 * 数据格式化
+	 * @paramMap format = 1
+	 */
+	public Map handleResultData(InputStream connInputStream, Map<String, String> paramMap) {
 		StringBuffer resultStr = new StringBuffer();
 		InputStreamReader inputStreamReader = null;
 		BufferReaderWrapper bufferedReader = null;
@@ -208,12 +191,8 @@ public class LokiserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 		Map result = StrUtil.isNotEmpty(resultStr.toString()) ? JSONObject.parseObject(resultStr.toString(), Map.class) : new HashMap();
 
 		if (result != null && result.get("data") != null) {
-			Integer format = request.getParameter("format") != null ? Integer.valueOf(request.getParameter("format")) : 0;
-			String filter = request.getParameter("filter");
-			if(ToolUtil.isNotEmpty(paramData)){
-				format = paramData.get("format") != null ? Integer.valueOf(paramData.get("format")) : 0;
-				filter = paramData.get("filter");
-			}
+			Integer format = Integer.valueOf(paramMap.get("format"));
+			String filter = paramMap.get("filter");
 			Map<String, Object> data = (Map) result.get("data");
 			String resultType = (String) data.get("resultType");
 			if(StrUtil.isNotBlank(filter)&& ToolUtil.isNotEmpty(data.get("result"))) {
@@ -240,7 +219,7 @@ public class LokiserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 					result.put("message", String.format("Configure the maximum number of Series: %s, query the total number of Series: %s", queryMaxSeriesIntVal, valuesList.size()));
 				} else {
 					// labels series
-					handleDataStructure(data, resultArray, request);
+					handleDataStructure(data, resultArray, paramMap.get("direction"));
 					data.put("resultType", "streamsFormat");
 				}
 				result.put("data", data);
@@ -249,8 +228,8 @@ public class LokiserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 		return result;
 	}
 
-	private void handleDataStructure(Map data, List<Map> resultArray, HttpServletRequest request) {
-		String direction = request.getParameter("direction") != null ? request.getParameter("direction") : "backward";
+	private void handleDataStructure(Map data, List<Map> resultArray, String direction) {
+		direction = StrUtil.isNotBlank(direction) ? direction : "backward";
 		boolean directionFlag = "backward".equalsIgnoreCase(direction) ? true : false;
 
 		List<Map> mapList = new ArrayList<>();
