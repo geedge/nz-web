@@ -215,7 +215,10 @@ public class SnmpMibController extends AbstractController {
         }
 
         SnmpCredential snmpCredential = ToolUtil.isNotEmpty(snmpCredentialId) ? snmpCredentialService.getById(snmpCredentialId) : null;
-        authConfig = snmpCredential != null ? JSONObject.parseObject(snmpCredential.getConfig(), Map.class) : authConfig;
+        if(snmpCredential != null){
+            port = snmpCredential.getPort();
+            authConfig = JSONObject.parseObject(snmpCredential.getConfig(), Map.class);
+        }
 
         // v3时需要的用户信息
         if (Constant.SNMPV3.equals(version)) {
