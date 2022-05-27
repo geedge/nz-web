@@ -5489,5 +5489,26 @@ INSERT INTO `sys_i18n` VALUES (6060, 'Ipam', 'en', 'overall.IPAM', 'IPAM', '', '
 INSERT INTO `sys_i18n` VALUES (6061, 'IPAM', 'zh', 'overall.IPAM', 'IPAM', '', '2022-04-27 03:08:09', 1);
 INSERT INTO `sys_i18n` VALUES (6062, 'overall.trace', 'en', 'overall.trace', 'Trace', '', '2022-04-27 11:39:54', 1);
 INSERT INTO `sys_i18n` VALUES (6063, 'overall.trace', 'zh', 'overall.trace', '路由跟踪', '', '2022-04-27 11:40:15', 1);
+INSERT INTO `sys_i18n` VALUES (6064, 'overall.acknowledge', 'en', 'overall.acknowledge', 'Acknowledge', '', '2022-04-29 05:33:38', 1);
+INSERT INTO `sys_i18n` VALUES (6065, 'overall.acknowledge', 'zh', 'overall.acknowledge', '确认', '', '2022-04-29 05:37:01', 1);
+INSERT INTO `sys_i18n` VALUES (6066, 'overall.batchAck', 'en', 'overall.batchAck', 'Batches acknowledge', '', '2022-05-05 03:40:34', 1);
+INSERT INTO `sys_i18n` VALUES (6067, 'overall.batchAck', 'zh', 'overall.batchAck', '批量确认', '', '2022-05-05 03:40:59', 1);
+INSERT INTO `sys_i18n` VALUES (6068, 'tip.ackSuccess', 'en', 'tip.ackSuccess', 'Acknowledge Success', '', '2022-05-06 01:13:56', 1);
+INSERT INTO `sys_i18n` VALUES (6069, 'tip.ackSuccess', 'zh', 'tip.ackSuccess', '确认成功', '', '2022-05-06 01:15:25', 1);
+INSERT INTO `sys_i18n` VALUES (6070, 'tip.SelectAlertMessage', 'en', 'tip.SelectAlertMessage', 'Select Alert Message', '', '2022-05-06 01:36:08', 1);
+INSERT INTO `sys_i18n` VALUES (6071, 'tip.SelectAlertMessages', 'en', 'tip.SelectAlertMessages', 'Select Alert Messages', '', '2022-05-06 01:39:47', 1);
+INSERT INTO `sys_i18n` VALUES (6072, 'tip.SelectAlertMessages', 'zh', 'tip.SelectAlertMessages', '请选择相应的告警信息', '', '2022-05-06 01:40:53', 1);
+INSERT INTO `sys_i18n` VALUES (6073, 'tip.confirmBatchAck', 'en', 'tip.confirmBatchAck', 'Are you sure to acknowledge these {0} pieces of data', '', '2022-05-06 05:42:35', 1);
+INSERT INTO `sys_i18n` VALUES (6074, 'tip.confirmBatchAck', 'zh', 'tip.confirmBatchAck', '确定确认这{0}条数据吗？', '', '2022-05-06 05:43:38', 1);
+INSERT INTO `sys_i18n` VALUES (6075, 'tip.confirmAck', 'en', 'tip.confirmAck', 'Are you sure you want to acknowledge ?', '', '2022-05-06 09:27:04', 1);
+INSERT INTO `sys_i18n` VALUES (6076, 'tip.confirmAck', 'zh', 'tip.confirmAck', '确定确认吗？', '', '2022-05-06 09:29:13', 1);
+INSERT INTO `sys_i18n` VALUES (6077, 'date.formatError', 'en', 'date.formatError', 'Time format error', '', '2022-05-07 06:11:33', 1);
+INSERT INTO `sys_i18n` VALUES (6078, 'date.formatError', 'zh', 'date.formatError', '时间格式错误', '', '2022-05-07 06:11:46', 1);
+INSERT INTO `sys_i18n` VALUES (6079, 'date.fromGreaterTo', 'en', 'date.fromGreaterTo', 'StartTime is longer the endTime', '', '2022-05-07 06:14:27', 1);
+INSERT INTO `sys_i18n` VALUES (6080, 'date.fromGreaterTo', 'zh', 'date.fromGreaterTo', '开始时间大于结束', '', '2022-05-07 06:14:40', 1);
+INSERT INTO `sys_i18n` VALUES (6081, 'ping.trance', 'en', 'ping.trance', 'Trance', '', '2022-05-18 02:44:49', 1);
+INSERT INTO `sys_i18n` VALUES (6082, 'ping.trance', 'zh', 'ping.trance', 'Trance', '', '2022-05-18 02:45:00', 1);
+INSERT INTO `sys_i18n` VALUES (6083, 'overall.snapshoot', 'en', 'overall.snapshoot', 'Snapshoot', '', '2022-05-27 01:35:01', 1);
+INSERT INTO `sys_i18n` VALUES (6084, 'overall.snapshoot', 'zh', 'overall.snapshoot', '快照', '', '2022-05-27 01:35:11', 1);
 
 SET FOREIGN_KEY_CHECKS = 1;
