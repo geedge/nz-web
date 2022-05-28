@@ -1,0 +1,89 @@
+{
+  "------------------ POST  /terminal/* data---------------------": "note",
+  "resize_success": {
+    "cols": 210,
+    "height": 250,
+    "rows": 12,
+    "width": 1920
+  },
+  "resize_terminalParamIsnull": {
+    "cols": 210,
+    "height": 250,
+    "rows": 12
+  },
+ "upload_success": {
+   "uuid": "e51d37e0-dd8c-11ec-a50c-8bac997d8192-1653635775070-BBBB666ccAAAA",
+   "path": "/",
+   "assetId": "1"
+ },
+  "upload_terminalUuidIsnull": {
+    "uuid": "",
+    "path": "/",
+    "assetId": "1"
+  },
+  "upload_terminalPathIsnull": {
+    "uuid": "11111111111",
+    "path": "",
+    "assetId": "1"
+  },
+  "upload_terminalFileIsnull": {
+    "uuid": "11111111111",
+    "path": "/",
+    "assetId": "1"
+  },
+  "upload_terminalIsnull": {
+    "uuid": "11111111111",
+    "path": "/",
+    "assetId": "1"
+  },
+  "download_success": {
+    "uuid": "e51d37e0-dd8c-11ec-a50c-8bac997d8192-1653635775070-BBBB666ccAAAA",
+    "path": "/CESHI-MIB.txt"
+  },
+  "download_terminalUuidIsnull": {
+    "uuid": "",
+    "path": "/"
+  },
+  "download_terminalPathIsnull": {
+    "uuid": "11111111111",
+    "path": ""
+  },
+  "------------------ GET  /terminal/* data---------------------": "note",
+  "session_success": {
+
+  },
+  "cmd_success": {
+    "uuid": "1111111",
+    "size": 5
+  },
+  "cmd_terminalUuidIsnull": {
+    "uuid": "",
+    "size": 5
+  },
+  "cmd_terminalQuerysizeInvalided": {
+    "uuid": "1111111",
+    "size": 0
+  },
+  "record_success": {
+    "uuid": "1111111",
+    "time": 0,
+    "size": 1
+  },
+  "record_terminalUuidIsnull": {
+    "uuid": "",
+    "time": 0,
+    "size": 1
+  },
+  "record_terminalQuerysizeInvalided": {
+    "uuid": "1111111",
+    "time": 0,
+    "size": 0
+  },
+  "------------------ PUT  /terminal/kill data---------------------": "note",
+  "kill_success": {
+    "uuid": "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ"
+  },
+  "kill_terminalUuidIsnull": {
+    "uuid": ""
+  }
+}
