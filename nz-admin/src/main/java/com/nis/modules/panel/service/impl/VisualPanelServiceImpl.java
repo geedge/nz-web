@@ -602,9 +602,12 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     line = "<script>window.dataJson=" + JSONUtil.toJsonStr(resultMap) + "</script>";
                 sbf.append(line + "\n");
             }
+            if(StrUtil.isBlank(format)){
+                format = "html";
+            }
             response.setCharacterEncoding("utf-8");
             response.setContentType("multipart/form-data");
-            response.setHeader("Content-disposition", "attachment;filename=panel-" + panel.getName() + ".html;filename*=utf-8''" + URLEncoder.encode("panel-" + panel.getName()  + ".html", "UTF-8"));
+            response.setHeader("Content-disposition", "attachment;filename=panel-" + panel.getName() + "." + format + ";filename*=utf-8''" + URLEncoder.encode("panel-" + panel.getName()  + "." + format, "UTF-8"));
             response.setHeader("Access-Control-Expose-Headers","Content-Disposition");
             response.getOutputStream().write(sbf.toString().getBytes());
         } catch (IOException e) {
