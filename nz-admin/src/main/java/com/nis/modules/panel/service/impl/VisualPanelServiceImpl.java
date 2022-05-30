@@ -498,19 +498,14 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         Integer pid = panel.getPid();
         // 查询该父级节点下是否存在 Panel 节点
         List<VisualPanel> list = this.list(new QueryWrapper<VisualPanel>().lambda().eq(VisualPanel::getType, panel.getType()).eq(VisualPanel::getPid, pid == null ? 0 : pid));
-        if (CollectionUtils.isEmpty(list)) {
-            // 父级节点下暂无其他节点，直接保存
-            this.save(panel);
-        } else {
-            // 找到当前末尾的 panel ， 加到其后
-            VisualPanel endPanel = list.stream().max(Comparator.comparingInt(VisualPanel::getWeight)).get();
-            Integer weight = endPanel.getWeight();
-            panel.setWeight(++weight);
-            this.save(panel);
-        }
+        // 找到当前末尾的 panel ， 加到其后
+        VisualPanel endPanel = list.stream().max(Comparator.comparingInt(VisualPanel::getWeight)).get();
+        Integer weight = endPanel.getWeight();
+        panel.setWeight(++weight);
+        this.save(panel);
 
         //  复制panel 下的 charts
-        List<VisualChart> chartsGroupList = visualChartService.list(new QueryWrapper<VisualChart>().eq("panel_id", id).orderByDesc("FIELD(type,\"group\")"));
+        List<VisualChart> chartsGroupList = visualChartService.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getPanelId, id).orderByAsc(VisualChart::getGroupId));
         Map<Integer,Integer> chartsGroupMap = new HashMap<>();
         Integer chartId;
         if (!CollectionUtils.isEmpty(chartsGroupList)) {
@@ -520,11 +515,13 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 chart.setUpdateAt(new Date());
                 chart.setUpdateBy(userId.intValue());
                 chart.setPanelId(panel.getId());
-                visualChartService.save(chart);
                 if(ToolUtil.equals(chart.getType(),"group")){
+                    visualChartService.save(chart);
                     chartsGroupMap.put(chartId,chart.getId());
                 }else{
-                    chart.setGroupId(chartsGroupMap.get(chart.getGroupId()));
+                    if(!ToolUtil.equals(chart.getGroupId(),0))
+                        chart.setGroupId(chartsGroupMap.get(chart.getGroupId()));
+                    visualChartService.save(chart);
                 }
                 // 查询当前chart下的chartElement
                 List<VisualChartElement> elementList = chartElementService.list(new QueryWrapper<VisualChartElement>().lambda().eq(VisualChartElement::getChartId, chartId));
