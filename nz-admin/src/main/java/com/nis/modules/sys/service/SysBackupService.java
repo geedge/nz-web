@@ -10,8 +10,8 @@ public interface SysBackupService {
 	void save(Map<String, Object> params);
 
 	List<Object> queryBackupList();
-	
-	void backupData();
+
+	void backupData() throws Exception;
 
 	void removeBackFileByFilename(String filename);
 

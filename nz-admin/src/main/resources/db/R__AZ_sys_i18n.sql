@@ -5510,5 +5510,11 @@ INSERT INTO `sys_i18n` VALUES (6081, 'ping.trance', 'en', 'ping.trance', 'Trance
 INSERT INTO `sys_i18n` VALUES (6082, 'ping.trance', 'zh', 'ping.trance', 'Trance', '', '2022-05-18 02:45:00', 1);
 INSERT INTO `sys_i18n` VALUES (6083, 'overall.snapshoot', 'en', 'overall.snapshoot', 'Snapshoot', '', '2022-05-27 01:35:01', 1);
 INSERT INTO `sys_i18n` VALUES (6084, 'overall.snapshoot', 'zh', 'overall.snapshoot', '快照', '', '2022-05-27 01:35:11', 1);
+INSERT INTO `sys_i18n` VALUES (6085, 'tip.addFavorites', 'en', 'tip.addFavorites', 'Add to Favorites', '', '2022-05-27 02:28:36', 1);
+INSERT INTO `sys_i18n` VALUES (6086, 'tip.addFavorites', 'zh', 'tip.addFavorites', '添加到收藏夹', '', '2022-05-27 02:28:59', 1);
+INSERT INTO `sys_i18n` VALUES (6087, 'explore.graph', 'en', 'explore.graph', 'Graph', '', '2022-05-30 01:52:47', 1);
+INSERT INTO `sys_i18n` VALUES (6088, 'explore.graph', 'zh', 'explore.graph', '图表', '', '2022-05-30 01:53:42', 1);
+INSERT INTO `sys_i18n` VALUES (6089, '609002', 'en', 'SYS_BACKUP_ERROR', 'System data backup is abnormal', '', '2022-05-31 03:44:42', 1);
+INSERT INTO `sys_i18n` VALUES (6090, '609002', 'zh', 'SYS_BACKUP_ERROR', '系统数据备份异常', '', '2022-05-31 03:45:04', 1);
 
 SET FOREIGN_KEY_CHECKS = 1;

@@ -1,5 +1,6 @@
 package com.nis.modules.sys.controller;
 
+import cn.hutool.log.Log;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.R;
@@ -19,6 +20,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/sys/backup")
 public class SysBackupController {
+
+	Log log = Log.get();
 
     @Autowired
     private SysBackupService sysBackupService;
@@ -48,8 +51,14 @@ public class SysBackupController {
 	}
 	
 	@PostMapping
-	public void backupData() {
-		sysBackupService.backupData();
+	public R backupData() {
+		try {
+			sysBackupService.backupData();
+		} catch (Exception e) {
+			log.error("data backup error", e);
+			throw new NZException(RCode.SYS_BACKUP_ERROR);
+		}
+		return R.ok();
 	}
 
 

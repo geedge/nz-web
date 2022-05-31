@@ -3,6 +3,7 @@ package com.nis.modules.sys.service.impl;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IORuntimeException;
+import cn.hutool.core.io.IoUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -12,6 +13,7 @@ import com.nis.common.utils.*;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysBackupService;
+import org.mariadb.jdbc.MariaDbBlob;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,7 @@ import javax.sql.DataSource;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.sql.*;
 import java.util.Date;
 import java.util.*;
@@ -90,7 +93,8 @@ public class SysBackupServiceImpl implements SysBackupService {
 		return result;
 	}
 
-    public void backupData() {
+    @Override
+    public void backupData() throws Exception {
     	String sqlFilename = null;
     	Connection conn = null;
     	Statement stmtInfo = null, stmtData = null;
@@ -187,14 +191,7 @@ public class SysBackupServiceImpl implements SysBackupService {
 		        writer.flush();
 		        writer.close();
 		    }
-	        
-	    } catch (Exception e) {
-	    	e.printStackTrace();
-			log.error("nezha data backup error", e);
-			if(StringUtils.isNotEmpty(sqlFilename)) {
-				FileUtil.del(sqlFilename);
-			}
-		} finally {
+        } finally {
 			Tool.IoUtil.close(stmtData);
 			Tool.IoUtil.close(rsData);
 			Tool.IoUtil.close(stmtInfo);
@@ -307,7 +304,15 @@ public class SysBackupServiceImpl implements SysBackupService {
         writer.newLine();
         
         stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
-        stmt.setFetchSize(Integer.MIN_VALUE);
+        /**
+         * If the fetch size specified is zero, the JDBC driver ignores the value and is free to make its own best guess as to what the fetch size should be.
+         * The default value is set by the Statement object that created the result set.
+         * The fetch size may be changed at any time.
+         * @see #setFetchSize
+         * @link https://docs.oracle.com/javase/8/docs/api/java/sql/ResultSet.html#setFetchSize-int-
+         */
+        // stmt.setFetchSize(Integer.MIN_VALUE);
+        stmt.setFetchSize(0);
         stmt.setFetchDirection(ResultSet.FETCH_REVERSE);
         
         Integer start = 0;
@@ -337,8 +342,16 @@ public class SysBackupServiceImpl implements SysBackupService {
                             writer.write(',');    
                         }
                         colValue = rs.getObject(j + 1);
-                        if(null != colValue) {
-                            writer.write(String.format("'%s'", this.escapeString(colValue.toString())));
+                        if (null != colValue) {
+                            // MariaDbBlob 单独处理，解决 bolo 类型直接 toString 造成结果有误问题
+                            if (colValue instanceof MariaDbBlob) {
+                                InputStream binaryStream = ((MariaDbBlob) colValue).getBinaryStream();
+                                // 使用 0x 标识十六进制字符串，参照  ResultSet API ，binaryStream 转 十六进制 大写 字符串
+                                String blobHexStr = Tool.StrUtil.concat(true, "0x", Tool.HexUtil.encodeHexStr(IoUtil.readBytes(binaryStream), false));
+                                writer.write(blobHexStr);
+                            } else {
+                                writer.write(String.format("'%s'", escapeString(colValue.toString())));
+                            }
                         } else {
                             writer.write("NULL");
                         }
