@@ -23,8 +23,8 @@ public class SysUserStarredController {
 
     @GetMapping("/starred")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
-    public R queryStarred(String type,Integer uid) {
-        List<SysUserStarredEntity> sysUserStarredEntityList = sysUserStarredService.queryStarred(type, uid);
+    public R queryStarred(String type) {
+        List<SysUserStarredEntity> sysUserStarredEntityList = sysUserStarredService.queryStarred(type);
         Map<String, Object> starredMap = Tool.MapUtil.newConcurrentHashMap();
         starredMap.put("list",sysUserStarredEntityList);
         return R.ok(starredMap);

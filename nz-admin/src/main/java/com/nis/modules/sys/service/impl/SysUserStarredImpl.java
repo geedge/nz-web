@@ -58,10 +58,9 @@ public class SysUserStarredImpl extends ServiceImpl<SysUserStarredDao, SysUserSt
     private VisualChartService visualChartService;
 
     @Override
-    public List<SysUserStarredEntity> queryStarred(String type,Integer uid) {
-        if (Tool.ObjectUtil.isEmpty(uid)){
-            uid = ShiroUtils.getUserId().intValue();
-        }
+    public List<SysUserStarredEntity> queryStarred(String type) {
+        Long uid = ShiroUtils.getUserId();
+
         List<SysUserStarredEntity> sysUserStarredEntityList = null;
         if (StringUtils.isNotEmpty(type)) {
             sysUserStarredEntityList = this.list(new LambdaQueryWrapper<SysUserStarredEntity>()

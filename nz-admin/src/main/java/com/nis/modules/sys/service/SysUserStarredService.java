@@ -8,7 +8,7 @@ import java.util.Map;
 
 public interface SysUserStarredService extends IService<SysUserStarredEntity> {
 
-    List<SysUserStarredEntity> queryStarred(String type,Integer uid);
+    List<SysUserStarredEntity> queryStarred(String type);
 
     void addStarred(SysUserStarredEntity sysUserStarredEntity);
 
