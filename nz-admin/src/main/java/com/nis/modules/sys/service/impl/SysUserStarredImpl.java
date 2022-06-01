@@ -7,6 +7,14 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.StringUtils;
 import com.nis.common.utils.Tool;
+import com.nis.modules.alert.service.AlertRuleService;
+import com.nis.modules.asset.service.AssetAssetService;
+import com.nis.modules.asset.service.DcService;
+import com.nis.modules.endpoint.service.MonitorEndpointService;
+import com.nis.modules.module.service.MonitorModuleService;
+import com.nis.modules.panel.service.VisualChartService;
+import com.nis.modules.panel.service.VisualPanelService;
+import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.sys.dao.SysUserStarredDao;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.SysUserStarredService;
@@ -25,6 +33,30 @@ public class SysUserStarredImpl extends ServiceImpl<SysUserStarredDao, SysUserSt
     @Autowired
     private SysUserStarredDao sysUserStarredDao;
 
+    @Autowired
+    private DcService dc;
+
+    @Autowired
+    private MonitorProjectService monitorProjectService;
+
+    @Autowired
+    private MonitorModuleService monitorModuleService;
+
+    @Autowired
+    private MonitorEndpointService monitorEndpointService;
+
+    @Autowired
+    private AlertRuleService alertRuleService;
+
+    @Autowired
+    private AssetAssetService assetAssetService;
+
+    @Autowired
+    private VisualPanelService visualPanelService;
+
+    @Autowired
+    private VisualChartService visualChartService;
+
     @Override
     public List<SysUserStarredEntity> queryStarred(String type,Integer uid) {
         if (Tool.ObjectUtil.isEmpty(uid)){
@@ -36,11 +68,11 @@ public class SysUserStarredImpl extends ServiceImpl<SysUserStarredDao, SysUserSt
                     .eq(SysUserStarredEntity::getUid, uid)
                     .eq(SysUserStarredEntity::getType, type)
             );
-            return sysUserStarredEntityList;
+            return getStarredName(sysUserStarredEntityList);
         }
         sysUserStarredEntityList = this.list(new LambdaQueryWrapper<SysUserStarredEntity>().eq(SysUserStarredEntity::getUid, uid));
 
-        return sysUserStarredEntityList;
+        return getStarredName(sysUserStarredEntityList);
     }
 
     @Override
@@ -68,5 +100,42 @@ public class SysUserStarredImpl extends ServiceImpl<SysUserStarredDao, SysUserSt
             params.put("ids", params.get("ids").toString().split(","));
         }
         sysUserStarredDao.removeStarred(params);
+    }
+
+    public List<SysUserStarredEntity> getStarredName(List<SysUserStarredEntity> sysUserStarredEntityList){
+        if (Tool.ObjectUtil.isNotEmpty(sysUserStarredEntityList) && sysUserStarredEntityList.size() > 0){
+            for (SysUserStarredEntity sysUserStarredEntity : sysUserStarredEntityList) {
+                Integer tid = sysUserStarredEntity.getTid();
+                String type = sysUserStarredEntity.getType();
+                switch (type){
+                    case "datacenter":
+                        sysUserStarredEntity.setName(dc.getById(tid).getName());
+                        break;
+                    case "project":
+                        sysUserStarredEntity.setName(monitorProjectService.getById(tid).getName());
+                        break;
+                    case "module":
+                        sysUserStarredEntity.setName(monitorModuleService.getById(tid).getName());
+                        break;
+                    case "endpoint":
+                        sysUserStarredEntity.setName(monitorEndpointService.getById(tid).getName());
+                        break;
+                    case "alertRule":
+                        sysUserStarredEntity.setName(alertRuleService.getById(tid).getName());
+                        break;
+                    case "asset":
+                        sysUserStarredEntity.setName(assetAssetService.getById(tid).getName());
+                        break;
+                    case "panel":
+                        sysUserStarredEntity.setName(visualPanelService.getById(tid).getName());
+                        break;
+                    case "chart":
+                        sysUserStarredEntity.setName(visualChartService.getById(tid).getName());
+                        break;
+                }
+            }
+            return sysUserStarredEntityList;
+        }
+        return null;
     }
 }

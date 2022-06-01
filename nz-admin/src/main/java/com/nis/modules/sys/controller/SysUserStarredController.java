@@ -3,6 +3,7 @@ package com.nis.modules.sys.controller;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.utils.OperationEnum;
 import com.nis.common.utils.R;
+import com.nis.common.utils.Tool;
 import com.nis.common.utils.TypeEnum;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.SysUserStarredService;
@@ -10,6 +11,7 @@ import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -22,7 +24,10 @@ public class SysUserStarredController {
     @GetMapping("/starred")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
     public R queryStarred(String type,Integer uid) {
-        return R.ok(sysUserStarredService.queryStarred(type,uid));
+        List<SysUserStarredEntity> sysUserStarredEntityList = sysUserStarredService.queryStarred(type, uid);
+        Map<String, Object> starredMap = Tool.MapUtil.newConcurrentHashMap();
+        starredMap.put("list",sysUserStarredEntityList);
+        return R.ok(starredMap);
     }
 
     @PostMapping("/starred")

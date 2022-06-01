@@ -1,5 +1,6 @@
 package com.nis.modules.sys.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -21,5 +22,11 @@ public class SysUserStarredEntity implements Serializable {
     private Integer tid;
 
     private Long cts;
+
+    /**
+     * 收藏名称 例如: type = project , name =project.name
+     */
+    @TableField(exist = false)
+    private String name;
 
 }
