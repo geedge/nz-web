@@ -21,8 +21,8 @@ public class SysUserStarredController {
 
     @GetMapping("/starred")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
-    public R queryStarred(String type) {
-        return R.ok(sysUserStarredService.queryStarred(type));
+    public R queryStarred(String type,Integer uid) {
+        return R.ok(sysUserStarredService.queryStarred(type,uid));
     }
 
     @PostMapping("/starred")

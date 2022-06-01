@@ -26,17 +26,19 @@ public class SysUserStarredImpl extends ServiceImpl<SysUserStarredDao, SysUserSt
     private SysUserStarredDao sysUserStarredDao;
 
     @Override
-    public List<SysUserStarredEntity> queryStarred(String type) {
-        Long userId = ShiroUtils.getUserId();
+    public List<SysUserStarredEntity> queryStarred(String type,Integer uid) {
+        if (Tool.ObjectUtil.isEmpty(uid)){
+            uid = ShiroUtils.getUserId().intValue();
+        }
         List<SysUserStarredEntity> sysUserStarredEntityList = null;
         if (StringUtils.isNotEmpty(type)) {
             sysUserStarredEntityList = this.list(new LambdaQueryWrapper<SysUserStarredEntity>()
-                    .eq(SysUserStarredEntity::getUid, userId)
+                    .eq(SysUserStarredEntity::getUid, uid)
                     .eq(SysUserStarredEntity::getType, type)
             );
             return sysUserStarredEntityList;
         }
-        sysUserStarredEntityList = this.list(new LambdaQueryWrapper<SysUserStarredEntity>().eq(SysUserStarredEntity::getUid, userId));
+        sysUserStarredEntityList = this.list(new LambdaQueryWrapper<SysUserStarredEntity>().eq(SysUserStarredEntity::getUid, uid));
 
         return sysUserStarredEntityList;
     }
