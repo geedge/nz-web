@@ -341,7 +341,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
         // 3. endpointNameTmpl
         if (ToolUtil.isEmpty(module.getEndpointNameTmpl())) {
-            module.setEndpointNameTmpl("{{asse.manageIp}}-{{module.name}}");
+            module.setEndpointNameTmpl("{{module.name}}-{{asset.name}}");
         }
 
         // 保存
@@ -755,7 +755,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
                     module.setProjectId(project.getId());
                     module.setName(moduleName);
-                    endpointNameTmpl = StrUtil.isEmpty(endpointNameTmpl) ? "{{asse.host}}-{{module.name}}" : endpointNameTmpl;
+                    endpointNameTmpl = StrUtil.isEmpty(endpointNameTmpl) ? "{{module.name}}-{{asset.name}}" : endpointNameTmpl;
                     module.setEndpointNameTmpl(endpointNameTmpl);
                     module.setRemark(remark);
                     String chartIds = relChartTemplateIds.toString();

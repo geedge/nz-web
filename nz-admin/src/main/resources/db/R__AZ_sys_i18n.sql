@@ -5516,5 +5516,8 @@ INSERT INTO `sys_i18n` VALUES (6087, 'explore.graph', 'en', 'explore.graph', 'Gr
 INSERT INTO `sys_i18n` VALUES (6088, 'explore.graph', 'zh', 'explore.graph', '图表', '', '2022-05-30 01:53:42', 1);
 INSERT INTO `sys_i18n` VALUES (6089, '609002', 'en', 'SYS_BACKUP_ERROR', 'System data backup is abnormal', '', '2022-05-31 03:44:42', 1);
 INSERT INTO `sys_i18n` VALUES (6090, '609002', 'zh', 'SYS_BACKUP_ERROR', '系统数据备份异常', '', '2022-05-31 03:45:04', 1);
+INSERT INTO `sys_i18n` VALUES (6091, '231037', 'en', 'ENDPOINT_MODULE_ASSET_ID_ISALLNULL', 'Endpoint id, Module id and Asset id can not be all empty', '', '2022-05-30 16:47:06', 1);
+INSERT INTO `sys_i18n` VALUES (6092, '231037', 'zh', 'ENDPOINT_MODULE_ASSET_ID_ISALLNULL', '端点ID, 模块ID和资产ID不能全部为空', '', '2022-05-30 16:47:06', 1);
+
 
 SET FOREIGN_KEY_CHECKS = 1;

@@ -42,8 +42,8 @@ public class MonitorModule implements Serializable {
     /**
      * endpoint name模板
      * 支持 {{}} 变量替换，asset，module
-     * 例：{{asset.name}}-{{module.name}}
-     * 最终endpoint的name为： 192.168.40.1-mysql
+     * 例：{{module.name}}-{{asset.name}}
+     * 最终endpoint的name为： mysql-192.168.40.1
      */
     private String endpointNameTmpl;
 

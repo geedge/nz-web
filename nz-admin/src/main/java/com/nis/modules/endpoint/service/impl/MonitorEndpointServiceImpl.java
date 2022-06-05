@@ -18,6 +18,7 @@ import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.smartvalidate.utils.CommonUtil;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.dao.AlertMessageDao;
 import com.nis.modules.alert.entity.AlertMessageEntity;
@@ -282,6 +283,166 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     	result.put("state", stateList);
 		return result;
 	}
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void syncTmpl(List<Integer> moduleIds, List<Integer> endpointIds, List<Integer> assetIds) {
+        LambdaQueryWrapper<MonitorEndpoint> queryWrapper = new QueryWrapper<MonitorEndpoint>().lambda();
+        if(!CommonUtil.isNull(assetIds)){
+            queryWrapper.in(MonitorEndpoint::getAssetId, assetIds);
+        }
+        if(!CommonUtil.isNull(moduleIds)){
+            queryWrapper.in(MonitorEndpoint::getModuleId, moduleIds);
+        }
+        if(!CommonUtil.isNull(endpointIds)){
+            queryWrapper.in(MonitorEndpoint::getId, endpointIds);
+        }
+        List<MonitorEndpoint> endpointList = this.list(queryWrapper);
+        if(Tool.CollUtil.isEmpty(endpointList)){
+            throw new NZException(RCode.ENDPOINT_NOTFOUND);
+        }
+
+        endpointList.forEach(endpoint -> {
+            // 查询模板变量
+            MonitorEndpoint endpointInfo = this.queryEndpointEntity(endpoint.getId());
+            AssetAsset assetInfo = assetService.queryAssetInfo(endpoint.getAssetId());
+            MonitorModule module = endpointInfo.getModule();
+            // 以module模板生成config
+            List<Map> configMapList = JSONObject.parseArray(Tool.NzExpressionUtil.renderExpression(module.getConfigs(), endpointInfo, assetInfo), Map.class);
+            // 原endpointConfig
+            List<MonitorEndpointConfig> configList = (List<MonitorEndpointConfig>) endpointInfo.getConfigs();
+            // 对新生成的配置进行必填项的校验，空或表达式替换为原来的配置
+            configMapList.forEach(configMap -> {
+                String type = String.valueOf(configMap.get("type"));
+                MonitorEndpointConfig oldEndpointConfig = configList.stream().filter(endpointConfig -> {
+                    return StrUtil.equals(type, endpointConfig.getType());
+                }).findFirst().orElse(new MonitorEndpointConfig());
+                switch (type){
+                    case "logs":
+                        List<Map> logConfigMapList = JSONObject.parseArray(String.valueOf(configMap.get("config")), Map.class);
+                        List<Map> oldLogConfigList = JSONObject.parseArray(oldEndpointConfig.getConfig(), Map.class);
+                        for (Map logConfigMap : logConfigMapList) {
+                            String logType = String.valueOf(logConfigMap.get("type"));
+                            Map oldLogConfigMap = oldLogConfigList.stream().filter(oldLog -> {
+                                return StrUtil.equals(logType, String.valueOf(oldLog.get("type")));
+                            }).findFirst().orElse(null);
+                            // Basic
+                            if(StrUtil.equals("file", logType)){
+                                displaceVal(logConfigMap,oldLogConfigMap,"fileName");
+                            }else if(StrUtil.equals("journal", logType)){
+                                displaceVal(logConfigMap,oldLogConfigMap,"unit");
+                            }else if(StrUtil.equals("syslog", logType)){
+                                displaceVal(logConfigMap,oldLogConfigMap,"appName");
+                                displaceVal(logConfigMap,oldLogConfigMap,"listenAddress");
+                            }
+                            // Pipeline
+                            if(StrUtil.isNotBlank(String.valueOf(logConfigMap.get("pipeline")))){
+                                List<Map> pipelineList = JSONObject.parseArray(String.valueOf(logConfigMap.get("pipeline")), Map.class);
+                                List<Map> oldPipelineList = JSONObject.parseArray(String.valueOf(oldLogConfigMap.get("pipeline")), Map.class);
+                                List<Map> newpipelineList = new ArrayList<>();
+                                for (Map pipeline: pipelineList) {
+                                    String pipelType = String.valueOf(pipeline.get("type"));
+                                    Map oldPipelineMap = oldPipelineList.stream().filter(oldLog -> {
+                                        return StrUtil.equals(pipelType, String.valueOf(oldLog.get("type")));
+                                    }).findFirst().orElse(null);
+
+                                    if(StrUtil.equals("regex", pipelType)){
+                                        displaceVal(pipeline,oldPipelineMap,"expression");
+                                    }else if(StrUtil.equals("template", pipelType)){
+                                        displaceVal(pipeline,oldPipelineMap,"template");
+                                    }else if(StrUtil.equals("timestamp", pipelType)){
+                                        displaceVal(pipeline,oldPipelineMap,"format");
+                                    }
+                                    if(!StrUtil.equals("labels", pipelType)){
+                                        displaceVal(pipeline,oldPipelineMap,"source");
+                                    }
+                                    newpipelineList.add(pipeline);
+                                }
+                                logConfigMap.put("pipeline",newpipelineList);
+                            }
+                        }
+                        configMap.put("config",logConfigMapList);
+                        break;
+                    case "metrics":
+                        JSONObject metricsConfig = JSONObject.parseObject(String.valueOf(configMap.get("config")));
+                        JSONObject oldMetricsConfig = JSONObject.parseObject(oldEndpointConfig.getConfig());
+                        // Basic
+                        if(StrUtil.isBlank(metricsConfig.getString("port")) || correctVal(metricsConfig.getString("port"))){
+                            metricsConfig.put("port",oldMetricsConfig.getInteger("port"));
+                        }
+                        if(StrUtil.isBlank(metricsConfig.getString("host")) || correctVal(metricsConfig.getString("host"))){
+                            metricsConfig.put("host",oldMetricsConfig.getString("host"));
+                        }
+                        // Metric relabel
+                        if(StrUtil.isNotBlank(metricsConfig.getString("relabel_config"))){
+                            List<Map> relabelConfig = JSONObject.parseArray(metricsConfig.getString("relabel_config"), Map.class);
+                            List<Map> newRelabelConfig = new ArrayList<>();
+                            for (Map abelConfig: relabelConfig) {
+                                String action = String.valueOf(abelConfig.get("action"));
+                                if(StrUtil.isNotBlank(action)){
+                                    Map oldAbelConfigMap = null;
+                                    if(StrUtil.isNotBlank(String.valueOf(oldMetricsConfig.get("relabel_config")))){
+                                        List<Map> relabelConfigMapList = JSONObject.parseArray(String.valueOf(oldMetricsConfig.get("relabel_config")), Map.class);
+                                        oldAbelConfigMap = relabelConfigMapList.stream().filter(oldAbelConfig -> {
+                                            return StrUtil.equals(action, String.valueOf(oldAbelConfig.get("action")));
+                                        }).findFirst().orElse(null);
+                                    }
+                                    if(StrUtil.equals("replace",action) || StrUtil.equals("keep",action) || StrUtil.equals("drop",action)){
+                                        displaceVal(abelConfig,oldAbelConfigMap,"source_labels");
+                                    }
+                                    if(StrUtil.equals("replace",action)){
+                                        displaceVal(abelConfig,oldAbelConfigMap,"target_label");
+                                    }
+                                    displaceVal(abelConfig,oldAbelConfigMap,"regex");
+                                    if(StrUtil.equals("replace",action) || StrUtil.equals("labelmap",action)){
+                                        displaceVal(abelConfig,oldAbelConfigMap,"replacement");
+                                    }
+                                    newRelabelConfig.add(abelConfig);
+                                }
+                            }
+                            metricsConfig.put("relabel_config",newRelabelConfig);
+                        }
+                        // Authentication
+                        if(StrUtil.isNotBlank(metricsConfig.getString("basic_auth"))){
+                            Map basicAuth = JSONObject.parseObject(metricsConfig.getString("basic_auth"), Map.class);
+                            Map oldBasicAuth = JSONObject.parseObject(oldMetricsConfig.getString("basic_auth"), Map.class);
+                            displaceVal(basicAuth,oldBasicAuth,"username");
+                            displaceVal(basicAuth,oldBasicAuth,"pin");
+                            metricsConfig.put("basic_auth",basicAuth);
+                        }
+                        if(correctVal(metricsConfig.getString("bearer_token"))){
+                            metricsConfig.put("bearer_token",oldMetricsConfig.getString("bearer_token"));
+                        }
+                        configMap.put("config",metricsConfig);
+                        break;
+                    default:break;
+                }
+            });
+            endpoint.setConfigs(JSONObject.toJSONString(configMapList));
+            this.saveOrUpdateEndpointConfigs(endpoint,module);
+        });
+    }
+
+    /**
+     * 值是否为空或未被替换的表达式
+     */
+    private boolean correctVal(Object obj){
+        String str = String.valueOf(obj);
+        return (StrUtil.isBlank(str) || StrUtil.contains(str,"{{") || StrUtil.contains(str,"{}") || StrUtil.contains(str,"[]"));
+    }
+
+    /**
+     * 置换值为原配置
+     */
+    private boolean displaceVal(Map abelConfig,Map oldAbelConfigMap,String key){
+        if(correctVal(abelConfig.get(key))) {
+            if (oldAbelConfigMap == null) {
+                return true;
+            }
+            abelConfig.put(key, oldAbelConfigMap.get(key));
+        }
+        return false;
+    }
 
     private void assetGroupBysetNum(List<Map<String,Object>> allList,List<Map<String,Object>> groupList) {
     	if(Tool.CollUtil.isEmpty(groupList)) {
