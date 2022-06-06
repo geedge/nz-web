@@ -216,9 +216,9 @@ public class Constant {
 	/*
 	 * alert message 不同状态对应表
 	 */
-	public static final String ALERT_MESSAGE_ACTIVE_TABLE = "ALERT_MESSAGE_ACTIVE";
-	public static final String ALERT_MESSAGE_SILENCE_TABLE = "ALERT_MESSAGE_SILENCE";
-	public static final String ALERT_MESSAGE_HISTORY_TABLE = "ALERT_MESSAGE_HISTORY";
+	public static final String ALERT_MESSAGE_ACTIVE_TABLE = "alert_message_active";
+	public static final String ALERT_MESSAGE_SILENCE_TABLE = "alert_message_silence";
+	public static final String ALERT_MESSAGE_HISTORY_TABLE = "alert_message_history";
 	/*
 	 * alert message 不同状态
 	 */
