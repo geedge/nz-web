@@ -25,9 +25,11 @@ import com.nis.modules.stat.service.impl.StatServiceImpl;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysDictEntity;
+import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysDictService;
+import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,6 +98,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
     @Autowired
     private SysConfigDao sysConfigDao;
+
+    @Autowired
+    private SysUserStarredService starredService;
 
     @Override
     public VisualPanel queryInfo(Integer id) {
@@ -193,6 +198,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
         // 2. 删除 panel ,如果包含子节点，也一并删除
         this.removeByIds(allPanelIds);
+
+        //删除对应的收藏记录
+        starredService.remove(new LambdaQueryWrapper<SysUserStarredEntity>().eq(SysUserStarredEntity::getType,"panel").in(SysUserStarredEntity::getTid,allPanelIds));
 
         // 3. 删除关联的 chart chartElement
         Integer[] removePanelIds = allPanelIds.stream().toArray(n -> new Integer[n]);
