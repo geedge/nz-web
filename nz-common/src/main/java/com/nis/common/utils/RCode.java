@@ -235,6 +235,7 @@ public enum RCode {
     ENDPOINT_TYPE_ISNULL(231034, "Endpoint type can not be empty"),
     ENDPOINT_TYPE_INVALID(233035, "Endpoint type is invalid"),
     ENDPOINT_CONFIGS_TYPE_DUPLICATE(232036, "Endpoint config type is duplicate"),
+    ENDPOINT_MODULE_ASSET_ID_ISALLNULL(231037, "Endpoint id, Module id and Asset id can not be all empty"),
 
     /**
      * assets菜单项相关

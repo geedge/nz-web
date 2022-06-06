@@ -1,5 +1,6 @@
 package com.nis.common.smartvalidate;
 
+import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.utils.CommonUtil;
 import com.nis.common.smartvalidate.utils.ReflectUtils;
 import com.nis.common.utils.RCode;
@@ -8,7 +9,7 @@ import org.apache.commons.beanutils.PropertyUtils;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Set;
+import java.util.*;
 
 /**
  * ValidateUtils
@@ -404,6 +405,41 @@ public class ValidateUtils {
             }*/
         }
         return validateUtils;
+    }
+
+    /**
+     * 多参数校验，不能同时为空
+     * @param code
+     * @param validates
+     */
+    public static ValidateUtils notAllNull(RCode code, Object... validates) {
+        boolean allNull = true;
+        for (Object validate: validates) {
+            if(validate != null){
+                if (validate instanceof String) {
+                    if(CommonUtil.isNull((String) validate))
+                        continue;
+                }else if (validate instanceof Number) {
+                    if(((Number) validate) == null)
+                        continue;
+                }else if (validate instanceof Collection) {
+                    if(CommonUtil.isNull((Collection) validate))
+                        continue;
+                }else if (validate instanceof Map) {
+                    if(CommonUtil.isNull((Map) validate))
+                        continue;
+                }else if (validate instanceof Object[]) {
+                    if(CommonUtil.isNull((Object[]) validate))
+                        continue;
+                }
+                allNull = false;
+                break;
+            }
+        }
+        if(allNull){
+            throw new NZException(code);
+        }
+        return new ValidateUtils(validates);
     }
 
 }
