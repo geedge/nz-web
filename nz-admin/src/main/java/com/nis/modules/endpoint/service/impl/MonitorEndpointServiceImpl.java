@@ -24,6 +24,7 @@ import com.nis.modules.alert.dao.AlertMessageDao;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.asset.entity.AssetFieldValue;
 import com.nis.modules.asset.entity.AssetPing;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.endpoint.dao.MonitorEndpointDao;
@@ -421,6 +422,64 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             endpoint.setConfigs(JSONObject.toJSONString(configMapList));
             this.saveOrUpdateEndpointConfigs(endpoint,module);
         });
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void bulkEdit(Map<String, Object> params) {
+        Integer editType = (Integer) params.get("editType");
+        List<Integer> ids = (List<Integer>) params.get("ids");
+        List<MonitorEndpointConfig> endpointConfigList;
+        String editTypeStr = "logs";
+        switch(editType) {
+            // 1 metric label 2 metric enable 3 log enable
+            case 1:
+                ValidateUtils.is(params.get("labels")).notNull(RCode.ENDPOINT_LABELS_ISNULL);
+                List<Map<String,Object>> labels = (List<Map<String, Object>>) params.get("labels");
+                if(ToolUtil.isEmpty(labels)) {
+                    break;
+                }
+                endpointConfigList = endpointConfigService.list(new QueryWrapper<MonitorEndpointConfig>().lambda()
+                        .eq(MonitorEndpointConfig::getType, "metrics")
+                        .in(MonitorEndpointConfig::getEndpointId, ids));
+                for (MonitorEndpointConfig endpointConfig : endpointConfigList) {
+                    JSONObject config = JSONObject.parseObject(endpointConfig.getConfig());
+                    JSONObject configlabels = config.getJSONObject("labels");
+                    // 将标签操作区分 批量删除还是批量新增或者更新
+                    List<Integer> removeFieldIds = new ArrayList<Integer>();
+                    for(Map<String,Object> map : labels) {
+                        ValidateUtils.is(map.get("action")).notNull(RCode.ENDPOINT_LABELS_ACTION_ISNULL)
+                                .and(map.get("key")).notNull(RCode.ENDPOINT_LABELS_KEY_ISNULL);
+                        Integer action = (Integer) map.get("action");
+                        if (ToolUtil.equals(action, 1)) {
+                            configlabels.remove(map.get("key"));
+                        } else if (ToolUtil.equals(action, 0)) {
+                            configlabels.put(String.valueOf(map.get("key")), map.get("value"));
+                        } else {
+                            throw new NZException(RCode.ENDPOINT_LABELS_ACTION_INVALIDE);
+                        }
+                    }
+                    config.put("labels", configlabels);
+                    endpointConfig.setConfig(config.toJSONString());
+                }
+                endpointConfigService.updateBatchById(endpointConfigList);
+                break;
+            case 2:
+                editTypeStr = "metrics";
+            case 3:
+                if(!Arrays.asList(new Integer[]{0, 1}).contains(params.get("enable"))){
+                    throw new NZException(RCode.ENDPOINT_ENABLED_INVALIDE);
+                }
+                endpointConfigList = endpointConfigService.list(new QueryWrapper<MonitorEndpointConfig>().lambda()
+                        .eq(MonitorEndpointConfig::getType, editTypeStr)
+                        .in(MonitorEndpointConfig::getEndpointId, ids));
+                for (MonitorEndpointConfig endpointConfig : endpointConfigList) {
+                    endpointConfig.setEnable(Integer.parseInt(String.valueOf(params.get("enable"))));
+                }
+                endpointConfigService.updateBatchById(endpointConfigList);
+                break;
+            default:break;
+        }
     }
 
     /**

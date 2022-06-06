@@ -142,5 +142,106 @@
       "moduleId": 1,
       "assetId": 1
     }
-  ]
+  ],
+  "------------------ put  /monitor/endpoint/bulk---------------------": "note",
+  "putEndpointBulk1_success": {
+    "editType": 1,
+    "ids": [1, 12],
+    "labels": [
+      {
+        "key": "aaaa",
+        "value": "dadfadf",
+        "action": 0
+      },{
+        "key": "cccc",
+        "value": "dadfadf",
+        "action": 1
+      }
+    ]
+  },
+  "putEndpointBulk2_success": {
+    "editType": 2,
+    "ids": [1, 2],
+    "enable": 1
+  },
+  "putEndpointBulk3_success": {
+    "editType": 3,
+    "ids": [1, 2],
+    "enable": 0
+  },
+  "putEndpointBulk_endpointEdittypeIsnull": {
+    "editType": "",
+    "ids": [1, 2],
+    "labels": [
+      {
+        "key": "aaaa",
+        "value": "dadfadf",
+        "action": 0
+      }
+    ]
+  },
+  "putEndpointBulk_endpointIdIsnull": {
+    "editType": 1,
+    "labels": [
+      {
+        "key": "aaaa",
+        "value": "dadfadf",
+        "action": 0
+      }
+    ]
+  },
+  "putEndpointBulk_endpointLabelsIsnull": {
+    "editType": 1,
+    "ids": [1, 2],
+    "labels": ""
+  },
+  "putEndpointBulk_endpointLabelsActionIsnull": {
+    "editType": 1,
+    "ids": [1, 2],
+    "labels": [
+      {
+        "key": "aaaa",
+        "value": "dadfadf",
+        "action": 0
+      },{
+        "key": "bbbb",
+        "value": "dadfadf"
+      }
+    ]
+  },
+  "putEndpointBulk_endpointLabelsKeyIsnull": {
+    "editType": 1,
+    "ids": [1, 2],
+    "labels": [
+      {
+        "key": "aaaa",
+        "value": "dadfadf",
+        "action": 0
+      },{
+        "key": "",
+        "value": "dadfadf",
+        "action": 0
+      }
+    ]
+  },
+  "putEndpointBulk_endpointLabelsActionInvalide": {
+    "editType": 1,
+    "ids": [1, 2],
+    "labels": [
+      {
+        "key": "aaaa",
+        "value": "dadfadf",
+        "action": 0
+      },{
+        "key": "BBBB",
+        "value": "dadfadf",
+        "action": 2
+      }
+    ]
+  },
+  "putEndpointBulk_endpointEnabledInvalide": {
+    "editType": 2,
+    "ids": [1],
+    "enable": ""
+  }
 }

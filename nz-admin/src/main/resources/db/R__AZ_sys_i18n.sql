@@ -5516,8 +5516,16 @@ INSERT INTO `sys_i18n` VALUES (6087, 'explore.graph', 'en', 'explore.graph', 'Gr
 INSERT INTO `sys_i18n` VALUES (6088, 'explore.graph', 'zh', 'explore.graph', '图表', '', '2022-05-30 01:53:42', 1);
 INSERT INTO `sys_i18n` VALUES (6089, '609002', 'en', 'SYS_BACKUP_ERROR', 'System data backup is abnormal', '', '2022-05-31 03:44:42', 1);
 INSERT INTO `sys_i18n` VALUES (6090, '609002', 'zh', 'SYS_BACKUP_ERROR', '系统数据备份异常', '', '2022-05-31 03:45:04', 1);
-INSERT INTO `sys_i18n` VALUES (6091, '231037', 'en', 'ENDPOINT_MODULE_ASSET_ID_ISALLNULL', 'Endpoint id, Module id and Asset id can not be all empty', '', '2022-05-30 16:47:06', 1);
-INSERT INTO `sys_i18n` VALUES (6092, '231037', 'zh', 'ENDPOINT_MODULE_ASSET_ID_ISALLNULL', '端点ID, 模块ID和资产ID不能全部为空', '', '2022-05-30 16:47:06', 1);
+INSERT INTO `sys_i18n` VALUES (6091, '231038', 'en', 'ENDPOINT_EDITTYPE_ISNULL', 'Endpoint edit type can not be empty', '', '2022-06-06 16:47:06', 1);
+INSERT INTO `sys_i18n` VALUES (6092, '231038', 'zh', 'ENDPOINT_EDITTYPE_ISNULL', '端点修改类型不能为空', '', '2022-06-06 16:47:06', 1);
+INSERT INTO `sys_i18n` VALUES (6093, '231039', 'en', 'ENDPOINT_LABELS_ACTION_ISNULL', 'Endpoint labels action can not be empty', '', '2022-06-06 16:47:06', 1);
+INSERT INTO `sys_i18n` VALUES (6094, '231039', 'zh', 'ENDPOINT_LABELS_ACTION_ISNULL', '端点标签动作参数不能为空', '', '2022-06-06 16:47:06', 1);
+INSERT INTO `sys_i18n` VALUES (6095, '231040', 'en', 'ENDPOINT_LABELS_KEY_ISNULL', 'Endpoint labels key can not be empty', '', '2022-06-06 16:47:06', 1);
+INSERT INTO `sys_i18n` VALUES (6096, '231040', 'zh', 'ENDPOINT_LABELS_KEY_ISNULL', '端点标签键不能为空', '', '2022-06-06 16:47:06', 1);
+INSERT INTO `sys_i18n` VALUES (6097, '231041', 'en', 'ENDPOINT_LABELS_ISNULL', 'Endpoint labels can not be empty', '', '2022-06-06 16:47:06', 1);
+INSERT INTO `sys_i18n` VALUES (6098, '231041', 'zh', 'ENDPOINT_LABELS_ISNULL', '端点标签不能为空', '', '2022-06-06 16:47:06', 1);
+INSERT INTO `sys_i18n` VALUES (6099, '234042', 'en', 'ENDPOINT_LABELS_ACTION_INVALIDE', 'Endpoint labels action must be 0 or 1', '', '2022-06-06 16:47:06', 1);
+INSERT INTO `sys_i18n` VALUES (6100, '234042', 'zh', 'ENDPOINT_LABELS_ACTION_INVALIDE', '端点标签动作参数必须为0或1', '', '2022-06-06 16:47:06', 1);
 
 
 SET FOREIGN_KEY_CHECKS = 1;

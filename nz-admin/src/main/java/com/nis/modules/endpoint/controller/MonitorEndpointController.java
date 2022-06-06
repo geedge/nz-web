@@ -187,10 +187,27 @@ public class MonitorEndpointController {
         return R.ok().putData("list", monitorEndpointService.render(params));
     }
 
+    /**
+     * endpoint配置同步接口
+     */
     @PutMapping( "/endpoint/syncTmpl")
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ENDPOINT)
     public R syncTmpl(@RequestBody Map<String, List<Integer>> params) {
         ValidateUtils.notAllNull(RCode.ENDPOINT_MODULE_ASSET_ID_ISALLNULL, params.get("moduleIds"), params.get("endpointIds"), params.get("assetIds"));
         monitorEndpointService.syncTmpl(params.get("moduleIds"), params.get("endpointIds"), params.get("assetIds"));
+        return R.ok();
+    }
+
+    /**
+     * endpoint 批量修改
+     */
+    @PutMapping( "/endpoint/bulk")
+    @RequiresPermissions({"endpoint:update"})
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ENDPOINT)
+    public R bulk(@RequestBody Map<String, Object> params) {
+        ValidateUtils.is(params.get("editType")).notNull(RCode.ENDPOINT_EDITTYPE_ISNULL)
+                .and(params.get("ids")).notNull(RCode.ENDPOINT_ID_ISNULL);
+        monitorEndpointService.bulkEdit(params);
         return R.ok();
     }
 

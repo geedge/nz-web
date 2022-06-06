@@ -236,6 +236,11 @@ public enum RCode {
     ENDPOINT_TYPE_INVALID(233035, "Endpoint type is invalid"),
     ENDPOINT_CONFIGS_TYPE_DUPLICATE(232036, "Endpoint config type is duplicate"),
     ENDPOINT_MODULE_ASSET_ID_ISALLNULL(231037, "Endpoint id, Module id and Asset id can not be all empty"),
+    ENDPOINT_EDITTYPE_ISNULL(231038,"Endpoint edit type can not be empty"),
+    ENDPOINT_LABELS_ACTION_ISNULL(231039,"Endpoint labels action can not be empty"),
+    ENDPOINT_LABELS_KEY_ISNULL(231040,"Endpoint labels key can not be empty"),
+    ENDPOINT_LABELS_ISNULL(231041,"Endpoint labels can not be empty"),
+    ENDPOINT_LABELS_ACTION_INVALIDE(234042, "Endpoint labels action must be 0 or 1"),
 
     /**
      * assets菜单项相关
