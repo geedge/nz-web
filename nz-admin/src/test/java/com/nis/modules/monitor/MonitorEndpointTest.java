@@ -441,4 +441,117 @@ public class MonitorEndpointTest extends BaseTest<MonitorEndpoint> {
         UTUtil.assertEqualsRCode(result,RCode.SUCCESS);
     }
 
+    /**
+     * PUT /monitor/endpoint/bulk success
+     * editType 1
+     */
+    @Test
+    public void putEndpointBulk1_success(){
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performPut("/monitor/endpoint/bulk", map);
+
+        UTUtil.assertEqualsRCode(result,RCode.SUCCESS);
+    }
+
+    /**
+     * PUT /monitor/endpoint/bulk success
+     * editType 2
+     */
+    @Test
+    public void putEndpointBulk2_success(){
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performPut("/monitor/endpoint/bulk", map);
+
+        UTUtil.assertEqualsRCode(result,RCode.SUCCESS);
+    }
+
+    /**
+     * PUT /monitor/endpoint/bulk success
+     * editType 3
+     */
+    @Test
+    public void putEndpointBulk3_success(){
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performPut("/monitor/endpoint/bulk", map);
+
+        UTUtil.assertEqualsRCode(result,RCode.SUCCESS);
+    }
+
+    /**
+     * PUT /monitor/endpoint/bulk ENDPOINT_EDITTYPE_ISNULL
+     */
+    @Test
+    public void putEndpointBulk_endpointEdittypeIsnull(){
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performPut("/monitor/endpoint/bulk", map);
+
+        UTUtil.assertEqualsRCode(result,RCode.ENDPOINT_EDITTYPE_ISNULL);
+    }
+
+    /**
+     * PUT /monitor/endpoint/bulk ENDPOINT_ID_ISNULL
+     */
+    @Test
+    public void putEndpointBulk_endpointIdIsnull(){
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performPut("/monitor/endpoint/bulk", map);
+
+        UTUtil.assertEqualsRCode(result,RCode.ENDPOINT_ID_ISNULL);
+    }
+
+    /**
+     * PUT /monitor/endpoint/bulk ENDPOINT_LABELS_ISNULL
+     */
+    @Test
+    public void putEndpointBulk_endpointLabelsIsnull(){
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performPut("/monitor/endpoint/bulk", map);
+
+        UTUtil.assertEqualsRCode(result,RCode.ENDPOINT_LABELS_ISNULL);
+    }
+
+    /**
+     * PUT /monitor/endpoint/bulk ENDPOINT_LABELS_ACTION_ISNULL
+     */
+    @Test
+    public void putEndpointBulk_endpointLabelsActionIsnull(){
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performPut("/monitor/endpoint/bulk", map);
+
+        UTUtil.assertEqualsRCode(result,RCode.ENDPOINT_LABELS_ACTION_ISNULL);
+    }
+
+    /**
+     * PUT /monitor/endpoint/bulk ENDPOINT_LABELS_KEY_ISNULL
+     */
+    @Test
+    public void putEndpointBulk_endpointLabelsKeyIsnull(){
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performPut("/monitor/endpoint/bulk", map);
+
+        UTUtil.assertEqualsRCode(result,RCode.ENDPOINT_LABELS_KEY_ISNULL);
+    }
+
+    /**
+     * PUT /monitor/endpoint/bulk ENDPOINT_LABELS_ACTION_INVALIDE
+     */
+    @Test
+    public void putEndpointBulk_endpointLabelsActionInvalide(){
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performPut("/monitor/endpoint/bulk", map);
+
+        UTUtil.assertEqualsRCode(result,RCode.ENDPOINT_LABELS_ACTION_INVALIDE);
+    }
+
+    /**
+     * PUT /monitor/endpoint/bulk ENDPOINT_ENABLED_INVALIDE
+     */
+    @Test
+    public void putEndpointBulk_endpointEnabledInvalide(){
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performPut("/monitor/endpoint/bulk", map);
+
+        UTUtil.assertEqualsRCode(result,RCode.ENDPOINT_ENABLED_INVALIDE);
+    }
+
 }
