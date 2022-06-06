@@ -1,7 +1,6 @@
 package com.nis.modules.alert.service.impl;
 
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.map.MapBuilder;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
@@ -24,9 +23,12 @@ import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.alert.service.AlertSeverityService;
 import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
+import com.nis.modules.sys.service.SysUserStarredService;
+import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -72,6 +74,9 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     private StatService statService;
 
     @Autowired
+    private SysUserStarredService sysUserStarredService;
+
+    @Autowired
     private BasicImportAndExportServices basicImportAndExportServices;
 
     @Override
@@ -81,6 +86,9 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         if (StringUtils.isNotEmpty(receiverStr)) {
             receivers = Arrays.asList(receiverStr.split(","));
         }
+
+        // 当前登录用户
+        params.put("currentLoginUserID", ShiroUtils.getUserId().intValue());
 
         IPage page = new Query(AlertRuleEntity.class).getPage(params);
         List<AlertRuleEntity> ruleEntityList = alertRuleDao.queryList(page, params, receivers);
@@ -245,6 +253,13 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
         // 删除关联的告警消息
         alertMessageService.removeByRuleIds(Arrays.asList(ids));
+
+        // 删除用户收藏数据
+        sysUserStarredService.remove(
+                new LambdaQueryWrapper<SysUserStarredEntity>()
+                        .eq(SysUserStarredEntity::getType, "alertRule")
+                        .in(SysUserStarredEntity::getTid, idList)
+        );
     }
 
 
@@ -883,7 +898,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 			// 获取所有用户
 	        List<SysUserEntity> userList = sysUserService.list();
 	        Map<Long, String> userIdAndName = userList.stream().collect(Collectors.toMap(SysUserEntity::getId, SysUserEntity::getName));
-			
+
 	        String receiver = alertRule.getReceiver();
 	        if (StringUtils.isNotEmpty(receiver)) {
 	            List<SysUserEntity> list = new ArrayList<>();
@@ -895,8 +910,17 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 	            });
 	            alertRule.setReceivers(list);
 	        }
-		}
-		
+
+            // 当前用户收藏状态  1：收藏  0：未收藏
+            int ruleStarredCount = sysUserStarredService.count(
+                    new LambdaQueryWrapper<SysUserStarredEntity>()
+                            .eq(SysUserStarredEntity::getType, "alertRule")
+                            .eq(SysUserStarredEntity::getTid, alertRule.getId())
+                            .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId().intValue()));
+
+            alertRule.setStarred(ruleStarredCount == 0 ? 0 : 1);
+        }
+
 		return alertRule;
 	}
 

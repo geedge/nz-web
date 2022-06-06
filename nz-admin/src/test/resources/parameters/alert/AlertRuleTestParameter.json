@@ -1,4 +1,12 @@
 {
-  "------------------ get  /alert/rule data---------------------": "note"
-
+  "------------------ get  /alert/rule data---------------------": "note",
+  "queryRuleList_starred": {
+    "pageNo": null,
+    "pageSize": null,
+    "starred": 1
+  },
+  "------------------ DELETE  /alert/rule data---------------------": "note",
+  "DeleteRuleList_success": {
+    "ids": "6,7"
+  }
 }

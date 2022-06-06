@@ -1,15 +1,14 @@
 package com.nis.modules.alert.entity;
 
-import java.io.Serializable;
-import java.util.List;
-
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.common.utils.Tool;
 import com.nis.modules.sys.entity.SysUserEntity;
-
 import lombok.Data;
+
+import java.io.Serializable;
+import java.util.List;
 
 /**
  *
@@ -149,6 +148,12 @@ public class AlertRuleEntity implements Serializable {
 	private Integer timeout;
 
 	/**
+	 * 收藏标识： 1：收藏  0：未收藏
+	 */
+	@TableField(exist = false)
+	private Integer starred;
+
+	/**
 	 * 告警消息统计
 	 */
 	@TableField(exist = false)
@@ -172,7 +177,7 @@ public class AlertRuleEntity implements Serializable {
 	private List alert;
 	/**
 	 * 计算 alert rule hash id
-	 * 
+	 *
 	 * @param entity
 	 * @return
 	 */
@@ -188,7 +193,7 @@ public class AlertRuleEntity implements Serializable {
 
 	/**
 	 * 获取 完整表达式 内容
-	 * 
+	 *
 	 * @return
 	 */
 	public String getExpression() {
