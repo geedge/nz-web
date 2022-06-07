@@ -48,7 +48,6 @@ import com.nis.modules.sys.service.SnmpCredentialService;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-import com.sun.xml.internal.bind.v2.TODO;
 import org.apache.commons.collections.CollectionUtils;
 import org.snmp4j.smi.TimeTicks;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -1046,8 +1045,6 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         // 删除 asset
         this.removeByIds(idList);
-        // 如果删除的 asset 存在 宿主机 则删除关联的虚拟机
-        this.remove(new LambdaQueryWrapper<AssetAsset>().in(AssetAsset::getPid, idList));
 
         // 删除 endponiet
         List<MonitorEndpoint> endpoints = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().in(MonitorEndpoint::getAssetId, idList));
