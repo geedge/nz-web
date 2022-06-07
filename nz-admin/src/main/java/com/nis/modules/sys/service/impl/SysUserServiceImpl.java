@@ -1,17 +1,24 @@
 package com.nis.modules.sys.service.impl;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import javax.servlet.http.HttpServletRequest;
-
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.*;
+import com.nis.modules.sys.dao.SysRoleDao;
+import com.nis.modules.sys.dao.SysUserDao;
+import com.nis.modules.sys.entity.SysRoleEntity;
+import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.entity.SysUserRoleEntity;
+import com.nis.modules.sys.service.*;
+import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.RandomStringUtils;
@@ -22,7 +29,6 @@ import org.apache.shiro.subject.SimplePrincipalCollection;
 import org.apache.shiro.subject.support.DefaultSubjectContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
@@ -30,36 +36,10 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.alibaba.fastjson.JSON;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.nis.common.exception.NZException;
-import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.CommonUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
-import com.nis.modules.sys.dao.SysRoleDao;
-import com.nis.modules.sys.dao.SysUserDao;
-import com.nis.modules.sys.entity.SysRoleEntity;
-import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.entity.SysUserRoleEntity;
-import com.nis.modules.sys.service.SysConfigService;
-import com.nis.modules.sys.service.SysMenuService;
-import com.nis.modules.sys.service.SysRoleService;
-import com.nis.modules.sys.service.SysUserRoleService;
-import com.nis.modules.sys.service.SysUserService;
-import com.nis.modules.sys.shiro.ShiroUtils;
-
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import javax.servlet.http.HttpServletRequest;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service("sysUserService")
 public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> implements SysUserService {
@@ -83,9 +63,12 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 
 	@Autowired
 	private RedisConnectionFactory factory;
-	
+
 	@Autowired
 	private SysConfigService sysConfigService;
+
+	@Autowired
+	private SysApiKeyService sysApiKeyService;
 
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
@@ -135,7 +118,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
         if(ObjectUtil.isNotEmpty(list)) {
         	throw new NZException(RCode.SYS_USER_NAME_DUPLICATE);
         }
-        
+
 	    if(status != 0 && status != 1){
 	    	throw new NZException(RCode.SYS_USER_STATUS_INVALIDE);
 	    }
@@ -155,7 +138,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		    if (!roleIdList.contains(Integer.valueOf(roleId)))
 			    throw new NZException(RCode.SYS_ROLE_ISNULL);
 	    }
-	    
+
 	    if(ObjectUtil.isEmpty(user.getTheme())) {
         	user.setTheme(1);
         }
@@ -183,7 +166,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 
 		// 保存用户 和 角色 关联关系
 		sysUserRoleService.saveOrUpdate(user.getId(), user.getRoleIds());
-		
+
 		return user.getId().intValue();
 	}
 
@@ -214,7 +197,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 
 		// 处理用户角色关系
 		this.handleUserRoleRelation(user.getId(), user.getRoleIds());
-		
+
 		return user.getId().intValue();
 	}
 
@@ -241,6 +224,10 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 
 		// 通过 userId 删除 redis 中记录的 登录信息
 		this.removeUserInfoInRedis(userId);
+
+		// 变更 sys_api_key role_id  注：当前 用户只能关联一个角色
+		String updateRoleId = Arrays.asList(roleIds.split(",")).get(0);
+		sysApiKeyService.updateRoleIdByUser(userId.intValue(), Integer.valueOf(updateRoleId));
 	}
 
 	/**
@@ -426,7 +413,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 					}
 					// 校验密码是否包含小写字母
 					if(ToolUtil.isNotEmpty(lower)&&lower.equals(1)&&!CommonUtils.checkPinCorrect(pin,2)&&!isLogin) {
-						throw new NZException(RCode.SYS_USER_PIN_NOT_CONTAIN_LOWERCASE_LETTERS);		
+						throw new NZException(RCode.SYS_USER_PIN_NOT_CONTAIN_LOWERCASE_LETTERS);
 					}
 					// 校验密码是否包含大写字母
 					if(ToolUtil.isNotEmpty(upper)&&upper.equals(1)&&!CommonUtils.checkPinCorrect(pin,3)&&!isLogin) {
@@ -479,13 +466,13 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 			redisRetry+=1;
 			opsForValue.set(redisKey, redisRetry.toString());
 			if(retry.equals(redisRetry)) {
-				redisTemplate.expire(redisKey, lockTime, TimeUnit.MINUTES);	
+				redisTemplate.expire(redisKey, lockTime, TimeUnit.MINUTES);
 			}else{
-				redisTemplate.expire(redisKey, 5, TimeUnit.MINUTES);	
+				redisTemplate.expire(redisKey, 5, TimeUnit.MINUTES);
 			}
 		}else {
 			opsForValue.set(redisKey, "1");
-			redisTemplate.expire(redisKey, 5, TimeUnit.MINUTES);	
+			redisTemplate.expire(redisKey, 5, TimeUnit.MINUTES);
 		}
 	}
 }

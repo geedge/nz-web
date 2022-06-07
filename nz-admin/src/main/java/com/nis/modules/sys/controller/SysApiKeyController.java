@@ -14,36 +14,61 @@ import java.util.Map;
 @RestController
 @RequestMapping("/sys/apiKey")
 public class SysApiKeyController {
-	
+
 	@Autowired
 	private SysApiKeyService sysApiKeyService;
-	
+
 	@GetMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYSTEMAPIKEY)
 	public R queryCredentialList(@RequestParam Map<String,Object> params) {
 		PageUtils page = sysApiKeyService.queryPage(params);
 		return R.ok(page);
 	}
-	
+
 	@PostMapping
 	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.SYSTEMAPIKEY)
 	@RequiresPermissions({"sys:apiKey:save"})
 	public R addSysApiKey(@RequestBody SysApiKey sysApiKey) {
 		ValidateUtils.is(sysApiKey.getName()).notNull(RCode.SYSAPIKEY_NAME_ISNULL).maxLength(64)
 		.and(sysApiKey.getRoleId()).notNull(RCode.SYSAPIKEY_ROLEID_ISNULL);
-		
+
 		Integer id = sysApiKeyService.addSysApiKey(sysApiKey);
 		return R.ok().putData("id", id);
 	}
-	
+
 	@DeleteMapping
 	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.SYSTEMAPIKEY)
 	@RequiresPermissions({"sys:apiKey:delete"})
 	public R removeSysApiKey(@RequestParam String ids) {
 		ValidateUtils.is(ids).notNull(RCode.SYSAPIKEY_ID_ISNULL);
-		
+
 		sysApiKeyService.removeSysApiKeys(ids);
 		return R.ok();
 	}
-	
+
+	@GetMapping("/self")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEMAPIKEY)
+	public R querySelfApiKeys(@RequestParam Map<String, Object> params) {
+		PageUtils page = sysApiKeyService.querySelfApiKeys(params);
+		return R.ok(page);
+	}
+
+	@PostMapping("/self")
+	@RequiresPermissions({"sys:apiKey:save"})
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEMAPIKEY)
+	public R addSelfApiKey(@RequestBody SysApiKey sysApiKey) {
+		ValidateUtils.is(sysApiKey.getName()).notNull(RCode.SYSAPIKEY_NAME_ISNULL).maxLength(64);
+
+		return R.ok(sysApiKeyService.addSelfApiKey(sysApiKey));
+	}
+
+	@DeleteMapping("/self")
+	@SysLog(operation = OperationEnum.DELETE, type = TypeEnum.SYSTEMAPIKEY)
+	@RequiresPermissions({"sys:apiKey:delete"})
+	public R removeSelfApiKeys(@RequestParam String ids) {
+		ValidateUtils.is(ids).notNull(RCode.SYSAPIKEY_ID_ISNULL);
+
+		sysApiKeyService.removeSelfApiKeys(ids);
+		return R.ok();
+	}
 }

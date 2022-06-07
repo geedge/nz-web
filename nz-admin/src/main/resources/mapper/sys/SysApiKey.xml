@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding="UTF-8"?>  
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">    
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.nis.modules.sys.dao.SysApiKeyDao">
-	
+
 	<resultMap type="com.nis.modules.sys.entity.SysApiKey" id="sysApiKey">
         <result property="id" column="id"/>
         <result property="name" column="name"/>
@@ -10,19 +10,20 @@
         <result property="roleId" column="role_id"/>
         <result property="createAt" column="create_at"/>
         <result property="expireAt" column="expire_at"/>
-        
-        <association columnPrefix="u_" property="createUser" javaType="com.nis.modules.sys.entity.SysUserEntity">
+		<result property="remark" column="remark"/>
+
+		<association columnPrefix="u_" property="createUser" javaType="com.nis.modules.sys.entity.SysUserEntity">
 	    	<result column="id" property="id"/>
 	    	<result column="name" property="name"/>
 	    </association>
-	    
+
 	    <association columnPrefix="r_" property="role" javaType="com.nis.modules.sys.entity.SysRoleEntity">
 	    	<result column="id" property="id"/>
 	    	<result column="name" property="name"/>
 	    </association>
-	
+
     </resultMap>
-	
+
 	<select id="queryList" resultMap="sysApiKey">
       	select sak.*,
       	su.id as u_id,
@@ -31,9 +32,9 @@
       	sr.name as r_name
       	from sys_api_key sak left join sys_user su on sak.create_by = su.id
       	left join sys_role sr on sak.role_id = sr.id
-      	where 1=1 
+      	where 1=1
       	<if test="params.ids != null">
-      		and sak.id in 
+      		and sak.id in
       		<foreach item="id" collection="params.ids" separator="," open="(" close=")" index="">
 	       		#{id}
 		    </foreach>
@@ -42,5 +43,30 @@
 			and locate(#{params.name} , sak.name)
 		</if>
     </select>
+
+	<select id="querySelfApiKeys" resultMap="sysApiKey">
+		SELECT
+			sak.*,
+			su.id AS u_id,
+			su.name AS u_name,
+			sr.id AS r_id,
+			sr.name AS r_name
+		FROM
+			sys_api_key sak
+		LEFT JOIN sys_user su ON sak.create_by = su.id
+		LEFT JOIN sys_role sr ON sak.role_id = sr.id
+		<where>
+			sak.create_by = #{params.currentLoginUserID}
+			<if test="params.ids != null">
+				AND sak.id in
+				<foreach item="id" collection="params.ids" separator="," open="(" close=")" index="">
+					#{id}
+				</foreach>
+			</if>
+			<if test="params.name !=null and params.name != ''">
+				AND locate(#{params.name} , sak.name)
+			</if>
+		</where>
+	</select>
 
 </mapper>
