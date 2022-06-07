@@ -13,6 +13,7 @@
         <result property="sysObjectId" column="sys_object_id"/>
         <result property="chartIds" column="chart_ids"/>
         <result property="assetNum" column="assetNum"/>
+        <result property="starred" column="starred"/>
 
         <association property="brand" columnPrefix="b_" javaType="com.nis.modules.asset.entity.AssetBrand">
             <id property="id" column="id"/>
@@ -32,12 +33,14 @@
 			brand.NAME AS b_name,
             atc.id AS atc_id,
             atc.NAME AS atc_name,
-			IFNULL( asset.assetNum, 0 ) AS assetNum 
+			IFNULL( asset.assetNum, 0 ) AS assetNum ,
+            IFNULL( sta.starred, 0 ) AS starred
 		FROM
 			asset_model model
 			LEFT JOIN asset_brand brand ON model.brand_id = brand.id
             LEFT JOIN asset_type_conf atc on model.type_id = atc.id
 			LEFT JOIN ( SELECT model_id, count( 1 ) AS assetNum FROM asset_asset GROUP BY model_id ) asset ON model.id = asset.model_id
+            LEFT JOIN ( SELECT IF(COUNT(1) > 0, 1, 0) AS starred,tid FROM sys_user_starred WHERE TYPE = "assetModel" AND uid = #{params.userId} GROUP BY tid) sta ON model.id = sta.tid
         <where>
             <if test="params.name != null and params.name != ''">
                 and locate(#{params.name} , model.name)
@@ -66,7 +69,18 @@
 		       		#{id}
 			    </foreach>
             </if>
-		</where>
+
+            <if test="params.starred != null and params.starred != ''">
+                AND
+                <if test=' params.starred eq 1 '>
+                    starred = #{params.starred}
+                </if>
+                <if test=' params.starred eq 0 '>
+                    starred IS NULL
+                </if>
+            </if>
+
+        </where>
 		<if test="params.orderBy == null or params.orderBy == ''">
             ORDER BY model.id
         </if>

@@ -6,4 +6,7 @@ INSERT INTO `asset_model`(`id`, `brand_id`, `name`, `remark`, `seq`, `usize`, `c
 INSERT INTO `asset_model`(`id`, `brand_id`, `name`, `remark`, `seq`, `usize`, `chart_ids`, `type_id`, `sys_object_id`) VALUES (4, 2, 'OPD', '', NULL, 1, NULL, 1, '');
 INSERT INTO `asset_model`(`id`, `brand_id`, `name`, `remark`, `seq`, `usize`, `chart_ids`, `type_id`, `sys_object_id`) VALUES (5, 4, 'S5735', '', NULL, 1, NULL, 1, '');
 INSERT INTO `asset_model`(`id`, `brand_id`, `name`, `remark`, `seq`, `usize`, `chart_ids`, `type_id`, `sys_object_id`) VALUES (6, 3, 'NF55FC5CBF', '', NULL, 1, NULL, 1, '');
+INSERT INTO `asset_model`(`id`, `brand_id`, `name`, `remark`, `seq`, `usize`, `chart_ids`, `type_id`, `sys_object_id`) VALUES (7, 3, 'NF55FC5CBF', '', NULL, 1, NULL, 1, '');
+INSERT INTO `asset_model`(`id`, `brand_id`, `name`, `remark`, `seq`, `usize`, `chart_ids`, `type_id`, `sys_object_id`) VALUES (8, 3, 'NF55FC5CBF', '', NULL, 1, NULL, 1, '');
+INSERT INTO `asset_model`(`id`, `brand_id`, `name`, `remark`, `seq`, `usize`, `chart_ids`, `type_id`, `sys_object_id`) VALUES (9, 3, 'NF55FC5CBF', '', NULL, 1, NULL, 1, '');
 

@@ -79,4 +79,10 @@ public class AssetModel implements Serializable {
     
     @TableField(exist = false)
     private Integer assetNum;
+
+    /**
+     * 是否收藏 0:未收藏 1:已收藏
+     */
+    @TableField(exist = false)
+    private Integer starred;
 }

@@ -32,6 +32,7 @@
 		<result property="clientToken" column="client_token"/>
         <result property="clientEnable" column="client_enable"/>
 		<result property="clientState" column="talon_status"/>
+        <result property="starred" column="starred"/>
         <association property="dc" columnPrefix="d_" javaType="com.nis.modules.asset.entity.Dc">
             <id property="id" column="id"/>
             <result property="name" column="name"/>
@@ -105,7 +106,8 @@
 			assp.STATUS AS assp_status,
 			talon.STATUS AS talon_status,
 			IFNULL( me.endpointNum, 0 ) AS endpointNum,
-			IFNULL( msg.alertNum, 0 ) AS alertNum 
+			IFNULL( msg.alertNum, 0 ) AS alertNum ,
+            IFNULL( sus.starred, 0 ) AS starred
 		FROM
 			asset_asset asset
 			LEFT JOIN asset_state_conf state ON asset.state_id = state.id
@@ -118,6 +120,7 @@
 			LEFT JOIN asset_talon_status talon ON asset.id = talon.asset_id
 			LEFT JOIN ( SELECT asset_id, count( 1 ) AS endpointNum, GROUP_CONCAT(DISTINCT module_id ) module_ids FROM monitor_endpoint GROUP BY asset_id ) me ON asset.id = me.asset_id
 			LEFT JOIN ( SELECT asset_id, count( 1 ) AS alertNum FROM alert_message_active WHERE asset_id IS NOT NULL GROUP BY asset_id ) msg ON asset.id = msg.asset_id
+            LEFT JOIN ( SELECT IF(COUNT(1) > 0, 1, 0) AS starred,tid FROM sys_user_starred WHERE type = "asset" AND uid = #{params.userId} GROUP BY tid) sus ON asset.id = sus.tid
         <where>
 
              <if test="params.ids != null">
@@ -226,6 +229,16 @@
 
             <if test="params.vm != null and params.vm != ''">
                 AND type.vm = #{params.vm}
+            </if>
+
+            <if test="params.starred != null and params.starred != ''">
+                AND
+                <if test=' params.starred eq 1 '>
+                    sus.starred = #{params.starred}
+                </if>
+                <if test=' params.starred eq 0 '>
+                    sus.starred IS NULL
+                </if>
             </if>
 
          </where>

@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.nis.modules.sys.service.SysUserStarredService;
+import com.nis.modules.sys.shiro.ShiroUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.alibaba.fastjson.JSON;
@@ -38,11 +40,17 @@ public class AssetFieldMetaServiceImpl extends ServiceImpl<AssetFieldMetaDao,Ass
 	
 	@Autowired
 	private AssetFieldValueDao assetFieldValueDao;
+
+	@Autowired
+	private SysUserStarredService starredService;
 	
 	@Override
 	public AssetFieldMeta queryAssetFieldMeta(Integer id) {
-		
-		AssetFieldMeta assetFieldMeta = assetFieldMetaDao.selectAssetFieldMeta(id);
+
+		//当前用户id
+		Long uid = ShiroUtils.getUserId();
+
+		AssetFieldMeta assetFieldMeta = assetFieldMetaDao.selectAssetFieldMeta(id,uid);
 		
 		return assetFieldMeta;
 	}
@@ -58,6 +66,9 @@ public class AssetFieldMetaServiceImpl extends ServiceImpl<AssetFieldMetaDao,Ass
         if (ToolUtil.isNotEmpty(params.get("ids"))) {
             params.put("ids", Arrays.asList(String.valueOf(params.get("ids")).split(StringPool.COMMA)));
         }
+
+        //当前用户id
+		params.put("uid",ShiroUtils.getUserId());
 		List<AssetFieldMeta> assetFieldMetas =assetFieldMetaDao.selectAssetFieldMetaList(page,params);
 		page.setRecords(assetFieldMetas);
 		return new PageUtils(page);

@@ -42,10 +42,13 @@ import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.entity.SnmpCredential;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SnmpCredentialService;
 import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import com.sun.xml.internal.bind.v2.TODO;
 import org.apache.commons.collections.CollectionUtils;
 import org.snmp4j.smi.TimeTicks;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -167,6 +170,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     @Autowired
     private AssetTalonStatusService assetTalonStatusService;
 
+    @Autowired
+    private SysUserStarredService starredService;
+
     @SuppressWarnings("unchecked")
     @Override
     public AssetAsset queryAssetInfo(Integer id) {
@@ -246,6 +252,14 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         asset.setAuthPin(null);
         asset.setAuthPriKey(null);
         asset.setClientPin(null);
+
+        //收藏标识 0：未收藏 1：已收藏
+        int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
+                .eq(SysUserStarredEntity::getTid,asset.getId())
+                .eq(SysUserStarredEntity::getType,"asset")
+                .eq(SysUserStarredEntity::getUid,ShiroUtils.getUserId())
+        );
+        asset.setStarred(count == 0 ? 0 : 1);
         return asset;
     }
 
@@ -338,6 +352,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     public PageUtils queryAssetPage(Map<String, Object> params) {
         // 处理请求参数
         this.handleQueryAssetParam(params);
+
+        //当前用户id
+        params.put("userId",ShiroUtils.getUserId().intValue());
 
         IPage page = new Query(AssetAsset.class).getPage(params);
         List<AssetAsset> assetList = assetDao.queryAssetList(page, params);

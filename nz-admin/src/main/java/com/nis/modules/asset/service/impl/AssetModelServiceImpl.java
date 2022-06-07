@@ -23,8 +23,11 @@ import com.nis.modules.asset.service.AssetModelService;
 import com.nis.modules.asset.service.AssetTypeConfService;
 import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.panel.service.VisualChartService;
+import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysUserStarredService;
+import com.nis.modules.sys.shiro.ShiroUtils;
 import com.sun.jmx.snmp.SnmpOid;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,6 +81,9 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
     @Autowired
     private DataSourceTransactionManager dataSourceTransactionManager;
 
+    @Autowired
+    private SysUserStarredService starredService;
+
     @Override
     public AssetModel queryModelInfo(Integer id) {
         AssetModel model = this.getById(id);
@@ -100,6 +106,15 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
     	model.setAssetNum(list.size());
         model.setBrand(brand);
         model.setType(typeConf);
+
+        //收藏判断
+        int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
+                .eq(SysUserStarredEntity::getTid,model.getId())
+                .eq(SysUserStarredEntity::getType,"assetModel")
+                .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId())
+        );
+        model.setStarred(count == 0 ? 0 : 1);
+
         return model;
     }
 
@@ -121,6 +136,10 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
             List<String> typeListIds = Arrays.asList(typeIds.split(","));
             params.put("typeIds",typeListIds);
         }
+
+        // 当前登录用户
+        params.put("userId", ShiroUtils.getUserId().intValue());
+
         List<AssetModel> modelList = assetModelDao.queryList(page, params);
         for(AssetModel model : modelList) {
         	String chartIds = model.getChartIds();

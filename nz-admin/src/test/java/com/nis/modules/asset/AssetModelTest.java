@@ -224,6 +224,17 @@ public class AssetModelTest extends BaseTest<AssetModel> {
     }
 
     /**
+     * GET /asset/model  exist
+     */
+    @Test
+    public void queryModelList_starred() {
+        Map<String, Object> queryParam = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performGet("/asset/model", queryParam);
+
+        UTUtil.assertToSizeByFlag(result, true);
+    }
+
+    /**
      * DELEET /asset/model success
      */
     @Test

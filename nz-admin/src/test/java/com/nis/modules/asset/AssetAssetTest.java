@@ -89,5 +89,17 @@ public class AssetAssetTest extends BaseTest<AssetAsset> {
     }
 
 
+    /**
+     * GET /asset/asset/  收藏
+     *
+     * @throws Exception
+     */
+    @Test
+    public void queryAssetList_ID1(){
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performGet("/asset/asset", map);
+
+        UTUtil.assertToSizeByFlag(result, true);
+    }
 
 }

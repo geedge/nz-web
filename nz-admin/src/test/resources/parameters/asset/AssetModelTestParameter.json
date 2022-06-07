@@ -112,6 +112,11 @@
     "ids": "1,2,3,4",
     "name": ""
   },
+  "queryModelList_starred": {
+    "pageNo": null,
+    "pageSize": null,
+    "starred": 1
+  },
   "------------------ DELETE  /asset/model data---------------------": "note",
   "deleteModel_success": {
     "ids": "6"

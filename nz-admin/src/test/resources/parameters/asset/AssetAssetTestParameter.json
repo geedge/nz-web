@@ -1,0 +1,8 @@
+{
+  "------------------ GET  /asset/asset data---------------------": "note",
+  "queryAssetList_ID1": {
+    "pageNo": 1,
+    "pageSize": 10,
+    "starred": 1
+  }
+}

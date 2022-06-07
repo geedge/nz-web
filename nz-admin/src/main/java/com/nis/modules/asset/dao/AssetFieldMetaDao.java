@@ -15,7 +15,7 @@ import com.nis.modules.asset.entity.AssetFieldMeta;
 @Repository
 public interface AssetFieldMetaDao extends BaseMapper<AssetFieldMeta>{
 	
-	AssetFieldMeta selectAssetFieldMeta(Integer id);
+	AssetFieldMeta selectAssetFieldMeta(@Param("id") Integer id,@Param("uid")Long uid);
 	
 	List<AssetFieldMeta> selectAssetFieldMetaList(@Param("page")IPage page,@Param("params")Map<String,Object> params);
 
