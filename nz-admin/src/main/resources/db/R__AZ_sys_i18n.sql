@@ -772,7 +772,8 @@ INSERT INTO `sys_i18n` VALUES (737, 'asset.location', 'en', 'asset.location', 'L
 INSERT INTO `sys_i18n` VALUES (738, 'asset.asset', 'en', 'asset.asset', 'Asset ', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (739, 'asset.endpointNum', 'en', 'asset.endpointNum', 'Represents the total quantity', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (740, 'asset.cabinet', 'en', 'asset.cabinet', 'Cabinet', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (741, 'asset.username', 'en', 'asset.username', 'Username', '', '2022-02-17 09:16:52', 98);INSERT INTO `sys_i18n` VALUES (742, 'asset.dc', 'en', 'asset.dc', 'DataCenter', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (741, 'asset.username', 'en', 'asset.username', 'Username', '', '2022-02-17 09:16:52', 98);
+INSERT INTO `sys_i18n` VALUES (742, 'asset.dc', 'en', 'asset.dc', 'DataCenter', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (743, 'webshell.closeTip', 'en', 'webshell.closeTip', 'All connections will be closed, are you sure you want to close the window?', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (744, 'webshell.authUserTip', 'en', 'webshell.authUserTip', 'Username prompt', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (745, 'webshell.uploadButtonTitle', 'en', 'webshell.uploadButtonTitle', 'Upload', '', '2021-11-02 00:00:00', 1);
@@ -5273,7 +5274,7 @@ INSERT INTO `sys_i18n` VALUES (5844, 'ipam.edit', 'en', 'ipam.edit', 'Edit', '',
 INSERT INTO `sys_i18n` VALUES (5845, 'ipam.edit', 'zh', 'ipam.edit', '编辑', '', '2022-03-16 06:52:31', 382);
 INSERT INTO `sys_i18n` VALUES (5846, 'ipam.delete', 'en', 'ipam.delete', 'Delete', '', '2022-03-16 06:53:35', 382);
 INSERT INTO `sys_i18n` VALUES (5847, 'ipam.delete', 'zh', 'ipam.delete', '删除', '', '2022-03-16 06:53:48', 382);
-INSERT INTO `sys_i18n` VALUES (5848, 'overall.ipamIp.create', 'en', 'overall.ipamIp.create', 'New IP detail','', '2022-03-22 06:53:48', 1);
+INSERT INTO `sys_i18n` VALUES (5848, 'overall.ipamIp.create', 'en', 'overall.ipamIp.create', 'New IP detail', '', '2022-03-22 06:53:48', 1);
 INSERT INTO `sys_i18n` VALUES (5849, 'overall.ipamIp.create', 'zh', 'overall.ipamIp.create', '新增 IP 详情', '', '2022-03-22 06:53:48', 1);
 INSERT INTO `sys_i18n` VALUES (5850, 'overall.ipamIp.edit', 'en', 'overall.ipamIp.edit', 'Edit IP detail', '', '2022-03-22 06:53:48', 1);
 INSERT INTO `sys_i18n` VALUES (5851, 'overall.ipamIp.edit', 'zh', 'overall.ipamIp.edit', '编辑 IP 详情', '', '2022-03-22 06:53:48', 1);
@@ -5323,8 +5324,8 @@ INSERT INTO `sys_i18n` VALUES (5894, 'panel.assetOk', 'en', 'panel.assetOk', 'As
 INSERT INTO `sys_i18n` VALUES (5895, 'panel.assetOk', 'zh', 'panel.assetOk', '资产正常', '', '2022-03-28 03:10:32', 1);
 INSERT INTO `sys_i18n` VALUES (5896, 'panel.assetAlarm', 'en', 'panel.assetAlarm', 'Asset alarm', '', '2022-03-28 03:11:37', 1);
 INSERT INTO `sys_i18n` VALUES (5897, 'panel.assetAlarm', 'zh', 'panel.assetAlarm', '资产告警', '', '2022-03-28 03:11:47', 1);
-INSERT INTO `sys_i18n` VALUES (5898, 'overall.topology', 'zh', 'overall.topology', '简体中文', '', '2022-03-28 03:11:47', 1);
-INSERT INTO `sys_i18n` VALUES (5899, 'overall.topology', 'en', 'overall.topology', 'English', '', '2022-03-28 03:11:47', 1);
+INSERT INTO `sys_i18n` VALUES (5898, 'overall.topology', 'zh', 'overall.topology', '关系图', '', '2022-06-02 06:48:19', 1);
+INSERT INTO `sys_i18n` VALUES (5899, 'overall.topology', 'en', 'overall.topology', 'Graph', '', '2022-06-02 06:48:11', 1);
 INSERT INTO `sys_i18n` VALUES (5900, '372010', 'en', 'ASSET_FIELD_META_KEY_NAME_DUPLICATE', 'Asset field key value or name duplicate', '', '2022-03-30 06:11:23', 1);
 INSERT INTO `sys_i18n` VALUES (5901, '372010', 'zh', 'ASSET_FIELD_META_KEY_NAME_DUPLICATE', '资产字段键值或名称重复', '', '2022-03-30 06:12:13', 1);
 INSERT INTO `sys_i18n` VALUES (5902, '513024', 'en', 'SYS_USER_PIN_TOO_SHORT', 'The System user password minimum length is {0}', '', '2022-03-30 06:16:24', 1);
@@ -5419,10 +5420,10 @@ INSERT INTO `sys_i18n` VALUES (5990, 'backup.Description', 'en', 'backup.Descrip
 INSERT INTO `sys_i18n` VALUES (5991, 'backup.Description', 'zh', 'backup.Description', '描述', '', '2022-04-08 09:10:22', 1);
 INSERT INTO `sys_i18n` VALUES (5992, 'backup.edit', 'en', 'backup.edit', 'Edit backup configurations', '', '2022-04-08 09:11:19', 1);
 INSERT INTO `sys_i18n` VALUES (5993, 'backup.edit', 'zh', 'backup.edit', '编辑备份配置', '', '2022-04-08 09:11:30', 1);
-INSERT INTO `sys_i18n` VALUES (5994, 'backup.backupNow', 'en', 'backup.backupNow', 'Backup now', '', '2022-04-08 09:13:40', 1);
-INSERT INTO `sys_i18n` VALUES (5995, 'backup.backupNow', 'zh', 'backup.backupNow', '立即备份', '', '2022-04-08 09:13:51', 1);
-INSERT INTO `sys_i18n` VALUES (5996, 'backup.Restore', 'en', 'backup.Restore', 'Restore', '', '2022-04-08 09:14:33', 1);
-INSERT INTO `sys_i18n` VALUES (5997, 'backup.Restore', 'zh', 'backup.Restore', '恢复', '', '2022-04-08 09:14:41', 1);
+INSERT INTO `sys_i18n` VALUES (5994, 'backup.backupNow', 'en', 'backup.backupNow', 'Backup now success', '', '2022-05-30 08:52:56', 1);
+INSERT INTO `sys_i18n` VALUES (5995, 'backup.backupNow', 'zh', 'backup.backupNow', '立即备份成功', '', '2022-05-30 08:53:03', 1);
+INSERT INTO `sys_i18n` VALUES (5996, 'backup.Restore', 'en', 'backup.Restore', 'Restore success', '', '2022-05-30 08:50:12', 1);
+INSERT INTO `sys_i18n` VALUES (5997, 'backup.Restore', 'zh', 'backup.Restore', '恢复成功', '', '2022-05-30 08:50:23', 1);
 INSERT INTO `sys_i18n` VALUES (5998, 'backup.schedule', 'en', 'backup.schedule', 'Schedule', '', '2022-04-08 09:16:52', 1);
 INSERT INTO `sys_i18n` VALUES (5999, 'backup.schedule', 'zh', 'backup.schedule', '时间表', '', '2022-04-08 09:17:00', 1);
 INSERT INTO `sys_i18n` VALUES (6000, 'backup.only', 'en', 'backup.only', 'One time only', '', '2022-04-08 09:18:08', 1);
@@ -5506,8 +5507,8 @@ INSERT INTO `sys_i18n` VALUES (6077, 'date.formatError', 'en', 'date.formatError
 INSERT INTO `sys_i18n` VALUES (6078, 'date.formatError', 'zh', 'date.formatError', '时间格式错误', '', '2022-05-07 06:11:46', 1);
 INSERT INTO `sys_i18n` VALUES (6079, 'date.fromGreaterTo', 'en', 'date.fromGreaterTo', 'StartTime is longer the endTime', '', '2022-05-07 06:14:27', 1);
 INSERT INTO `sys_i18n` VALUES (6080, 'date.fromGreaterTo', 'zh', 'date.fromGreaterTo', '开始时间大于结束', '', '2022-05-07 06:14:40', 1);
-INSERT INTO `sys_i18n` VALUES (6081, 'ping.trance', 'en', 'ping.trance', 'Trance', '', '2022-05-18 02:44:49', 1);
-INSERT INTO `sys_i18n` VALUES (6082, 'ping.trance', 'zh', 'ping.trance', 'Trance', '', '2022-05-18 02:45:00', 1);
+INSERT INTO `sys_i18n` VALUES (6081, 'ping.trace', 'en', 'ping.trace', 'Trance', '', '2022-06-01 01:43:43', 381);
+INSERT INTO `sys_i18n` VALUES (6082, 'ping.trace', 'zh', 'ping.trace', 'Trace', '', '2022-06-01 01:43:57', 381);
 INSERT INTO `sys_i18n` VALUES (6083, 'overall.snapshoot', 'en', 'overall.snapshoot', 'Snapshoot', '', '2022-05-27 01:35:01', 1);
 INSERT INTO `sys_i18n` VALUES (6084, 'overall.snapshoot', 'zh', 'overall.snapshoot', '快照', '', '2022-05-27 01:35:11', 1);
 INSERT INTO `sys_i18n` VALUES (6085, 'tip.addFavorites', 'en', 'tip.addFavorites', 'Add to Favorites', '', '2022-05-27 02:28:36', 1);
@@ -5532,7 +5533,7 @@ INSERT INTO `sys_i18n` VALUES (6103, 'endpoint.labelKey', 'en', 'endpoint.labelK
 INSERT INTO `sys_i18n` VALUES (6104, 'endpoint.labelKey', 'zh', 'endpoint.labelKey', 'Llabel key', '', '2022-06-06 03:42:19', 1);
 INSERT INTO `sys_i18n` VALUES (6105, 'endpoint.labelValue', 'en', 'endpoint.labelValue', 'Label value', '', '2022-06-06 03:42:42', 1);
 INSERT INTO `sys_i18n` VALUES (6106, 'endpoint.labelValue', 'zh', 'endpoint.labelValue', 'Label value', '', '2022-06-06 03:43:00', 1);
-INSERT INTO `sys_i18n` VALUES (6107, 'profile.apiKey.Box.ExpiredAt', 'en', 'profile.apiKey.Box.ExpiredAt', 'Expired at', '', '2022-06-07 02:00:22', 1);
+INSERT INTO `sys_i18n` VALUES (6107, 'profile.apiKey.Box.ExpiredAt', 'en', 'profile.apiKey.Box.ExpiredAt', 'Expire at', '', '2022-06-07 06:28:35', 1);
 INSERT INTO `sys_i18n` VALUES (6108, 'profile.apiKey.Box.ExpiredAt', 'zh', 'profile.apiKey.Box.ExpiredAt', '失效日期', '', '2022-06-07 02:00:52', 1);
 INSERT INTO `sys_i18n` VALUES (6109, 'profile.box.NewApiKey', 'en', 'profile.box.NewApiKey', 'New api key', '', '2022-06-07 02:04:45', 1);
 INSERT INTO `sys_i18n` VALUES (6110, 'profile.box.NewApiKey', 'zh', 'profile.box.NewApiKey', '新增 api key', '', '2022-06-07 02:05:13', 1);
@@ -5546,6 +5547,14 @@ INSERT INTO `sys_i18n` VALUES (6117, '231041', 'en', 'ENDPOINT_LABELS_ISNULL', '
 INSERT INTO `sys_i18n` VALUES (6118, '231041', 'zh', 'ENDPOINT_LABELS_ISNULL', '端点标签不能为空', '', '2022-06-06 16:47:06', 1);
 INSERT INTO `sys_i18n` VALUES (6119, '234042', 'en', 'ENDPOINT_LABELS_ACTION_INVALIDE', 'Endpoint labels action must be 0 or 1', '', '2022-06-06 16:47:06', 1);
 INSERT INTO `sys_i18n` VALUES (6120, '234042', 'zh', 'ENDPOINT_LABELS_ACTION_INVALIDE', '端点标签动作参数必须为0或1', '', '2022-06-06 16:47:06', 1);
+INSERT INTO `sys_i18n` VALUES (6121, 'dashboard.allDashboards', 'en', 'dashboard.allDashboards', 'All dashboards', '', '2022-06-07 03:02:11', 407);
+INSERT INTO `sys_i18n` VALUES (6122, 'dashboard.allDashboards', 'zh', 'dashboard.allDashboards', '全部仪表盘', '', '2022-06-07 03:02:28', 407);
+INSERT INTO `sys_i18n` VALUES (6123, 'dashboard.starredDashboards', 'en', 'dashboard.starredDashboards', 'Starred dashboards', '', '2022-06-07 03:09:20', 407);
+INSERT INTO `sys_i18n` VALUES (6124, 'dashboard.starredDashboards', 'zh', 'dashboard.starredDashboards', '我的收藏', '', '2022-06-07 03:03:23', 407);
+INSERT INTO `sys_i18n` VALUES (6125, 'dashboard.createdByYou', 'en', 'dashboard.createdByYou', 'Created by you', '', '2022-06-07 03:03:59', 407);
+INSERT INTO `sys_i18n` VALUES (6126, 'dashboard.createdByYou', 'zh', 'dashboard.createdByYou', '我的创建', '', '2022-06-07 03:04:11', 407);
+INSERT INTO `sys_i18n` VALUES (6127, 'dashboard.recentlyViewed', 'en', 'dashboard.recentlyViewed', 'Recently viewed', '', '2022-06-07 03:04:36', 407);
+INSERT INTO `sys_i18n` VALUES (6128, 'dashboard.recentlyViewed', 'zh', 'dashboard.recentlyViewed', '最近浏览', '', '2022-06-07 03:04:46', 407);
 
 
 SET FOREIGN_KEY_CHECKS = 1;
