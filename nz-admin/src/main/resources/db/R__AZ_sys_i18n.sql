@@ -5546,6 +5546,14 @@ INSERT INTO `sys_i18n` VALUES (6117, '231041', 'en', 'ENDPOINT_LABELS_ISNULL', '
 INSERT INTO `sys_i18n` VALUES (6118, '231041', 'zh', 'ENDPOINT_LABELS_ISNULL', '端点标签不能为空', '', '2022-06-06 16:47:06', 1);
 INSERT INTO `sys_i18n` VALUES (6119, '234042', 'en', 'ENDPOINT_LABELS_ACTION_INVALIDE', 'Endpoint labels action must be 0 or 1', '', '2022-06-06 16:47:06', 1);
 INSERT INTO `sys_i18n` VALUES (6120, '234042', 'zh', 'ENDPOINT_LABELS_ACTION_INVALIDE', '端点标签动作参数必须为0或1', '', '2022-06-06 16:47:06', 1);
+INSERT INTO `sys_i18n` VALUES (6121, 'dashboard.allDashboards', 'en', 'dashboard.allDashboards', 'All dashboards', '', '2022-06-07 03:02:11', 407);
+INSERT INTO `sys_i18n` VALUES (6122, 'dashboard.allDashboards', 'zh', 'dashboard.allDashboards', '全部仪表盘', '', '2022-06-07 03:02:28', 407);
+INSERT INTO `sys_i18n` VALUES (6123, 'dashboard.starredDashboards', 'en', 'dashboard.starredDashboards', 'Starred dashboards', '', '2022-06-07 03:09:20', 407);
+INSERT INTO `sys_i18n` VALUES (6124, 'dashboard.starredDashboards', 'zh', 'dashboard.starredDashboards', '我的收藏', '', '2022-06-07 03:03:23', 407);
+INSERT INTO `sys_i18n` VALUES (6125, 'dashboard.createdByYou', 'en', 'dashboard.createdByYou', 'Created by you', '', '2022-06-07 03:03:59', 407);
+INSERT INTO `sys_i18n` VALUES (6126, 'dashboard.createdByYou', 'zh', 'dashboard.createdByYou', '我的创建', '', '2022-06-07 03:04:11', 407);
+INSERT INTO `sys_i18n` VALUES (6127, 'dashboard.recentlyViewed', 'en', 'dashboard.recentlyViewed', 'Recently viewed', '', '2022-06-07 03:04:36', 407);
+INSERT INTO `sys_i18n` VALUES (6128, 'dashboard.recentlyViewed', 'zh', 'dashboard.recentlyViewed', '最近浏览', '', '2022-06-07 03:04:46', 407);
 
 
 SET FOREIGN_KEY_CHECKS = 1;
