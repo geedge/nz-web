@@ -111,4 +111,10 @@ public class Dc implements Serializable {
     @TableField(exist = false)
     private Promserver agent;
 
+    /**
+     * 是否收藏 0:未收藏 1:已收藏
+     */
+    @TableField(exist = false)
+    private Integer starred;
+
 }

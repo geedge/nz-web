@@ -13,6 +13,7 @@
 		<result property="dcId" column="dc_id" />
 		<result property="remark" column="remark" />
 		<result property="seq" column="seq" />
+        <result property="starred" column="starred"/>
 		
 		<association property="dc" columnPrefix="dc_" javaType="com.nis.modules.asset.entity.Dc">
             <id column="id" property="id"/>
@@ -22,10 +23,11 @@
     
     <select id="queryPage" resultMap="ipamSubnet">
     	select ipam.*,
-    	dc.id as dc_id,
-    	dc.name as dc_name
+    	dc.name as dc_name,
+        IFNULL( sta.starred, 0 ) AS starred
     	from ipam_subnet ipam left join dc on ipam.dc_id = dc.id
-		<where>
+        LEFT JOIN ( SELECT IF(COUNT(1) > 0, 1, 0) AS starred,tid FROM sys_user_starred WHERE TYPE = "ipamSubnet" AND uid = #{params.currentLoginUserID} GROUP BY tid) sta ON ipam.id = sta.tid
+        <where>
             <if test="params.ids != null and params.ids.size > 0">
                 ipam.id IN
                 <foreach collection="params.ids" item="id" index="no" open="(" separator="," close=")">
@@ -54,6 +56,9 @@
                 <foreach collection="params.dcIds" item="dcId" index="no" open="(" separator="," close=")">
                     #{dcId}
                 </foreach>
+            </if>
+            <if test="params.starred != null and params.starred != ''">
+                AND IFNULL( sta.starred, 0 ) = #{params.starred}
             </if>
         </where>
         <if test="params.orderBy == null or params.orderBy == ''">

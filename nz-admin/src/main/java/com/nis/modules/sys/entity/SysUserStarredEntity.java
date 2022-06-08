@@ -17,6 +17,9 @@ public class SysUserStarredEntity implements Serializable {
 
     private Integer uid;
 
+    /**
+     * 支持类型:datacenter,project,module,endpoint,alertRule,asset,panel,chart,cabinet,ipamSubnet
+     */
     private String type;
 
     private Integer tid;

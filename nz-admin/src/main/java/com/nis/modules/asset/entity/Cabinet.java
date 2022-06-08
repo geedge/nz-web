@@ -112,4 +112,10 @@ public class Cabinet implements Serializable {
     public void setuSize(Integer uSize) {
         this.uSize = uSize;
     }
+
+    /**
+     * 是否收藏 0:未收藏 1:已收藏
+     */
+    @TableField(exist = false)
+    private Integer starred;
 }

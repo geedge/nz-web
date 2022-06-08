@@ -156,14 +156,16 @@
     "pageSize": null,
     "orderBy": "",
     "ids": "2,4",
-    "name": ""
+    "name": "",
+    "starred": 0
   },
   "queryIpamSubnetList_notexist": {
     "pageNo": null,
     "pageSize": null,
     "orderBy": "",
     "ids": "9999",
-    "name": "4624F06B"
+    "name": "4624F06B",
+    "starred": 1
   },
   "queryIpamSubnetList_name": {
     "pageNo": null,

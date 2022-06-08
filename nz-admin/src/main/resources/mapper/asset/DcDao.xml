@@ -12,6 +12,7 @@
         <result property="cabinetNum" column="cabinetNum"/>
         <result property="assetNum" column="assetNum"/>
         <result property="alertNum" column="alertNum"/>
+        <result property="starred" column="starred"/>
         <result property="x" column="x"/>
         <result property="y" column="y"/>
         <result property="state" column="state"/>
@@ -22,12 +23,14 @@
 			dc.*,
 			IFNULL( cab.cabinetNum, 0 ) AS cabinetNum,
 			IFNULL( asset.assetNum, 0 ) AS assetNum,
-			IFNULL( msg.alertNum, 0 ) AS alertNum
+			IFNULL( msg.alertNum, 0 ) AS alertNum,
+            IFNULL( sta.starred, 0 ) AS starred
 		FROM
 			dc dc
 			LEFT JOIN ( SELECT dc_id, count( 1 ) cabinetNum FROM cabinet GROUP BY dc_id ) cab ON cab.dc_id = dc.id
 			LEFT JOIN ( SELECT dc_id, count( 1 ) assetNum FROM asset_asset GROUP BY dc_id ) asset ON asset.dc_id = dc.id
 			LEFT JOIN ( SELECT dc_id, count( 1 ) alertNum FROM alert_message_active WHERE dc_id IS NOT NULL GROUP BY dc_id ) msg ON dc.id = msg.dc_id
+            LEFT JOIN ( SELECT IF(COUNT(1) > 0, 1, 0) AS starred,tid FROM sys_user_starred WHERE TYPE = "datacenter" AND uid = #{params.currentLoginUserID} GROUP BY tid) sta ON dc.id = sta.tid
         <where>
             <if test="params.ids != null">
                 dc.id in
@@ -54,6 +57,9 @@
 
             <if test="params.principal != null and params.principal != ''">
                 AND dc.principal = #{params.principal}
+            </if>
+            <if test="params.starred != null and params.starred != ''">
+                AND IFNULL( sta.starred, 0 ) = #{params.starred}
             </if>
         </where>
         <if test="params.orderBy == null or params.orderBy == ''">

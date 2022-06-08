@@ -4,13 +4,15 @@
     "pageNo": null,
     "pageSize": null,
     "orderBy": "",
-    "ids": "1,2"
+    "ids": "1,2",
+    "starred": 0
   },
   "queryDcList_notexist": {
     "pageNo": null,
     "pageSize": null,
     "orderBy": "",
-    "ids": "10,20"
+    "ids": "10,20",
+    "starred": 1
   },
   "------------------ POST  /dc data---------------------": "note",
   "addDc_success": {
@@ -176,13 +178,15 @@
     "pageNo": null,
     "pageSize": null,
     "orderBy": "",
-    "ids": "1,2"
+    "ids": "1,2",
+    "starred": 0
   },
   "queryCabinetList_notexist": {
     "pageNo": null,
     "pageSize": null,
     "orderBy": "",
-    "ids": "20,21"
+    "ids": "20,21",
+    "starred": 1
   },
   "------------------ POST  /dc/cabinet data---------------------": "note",
   "addCabinet_success": {

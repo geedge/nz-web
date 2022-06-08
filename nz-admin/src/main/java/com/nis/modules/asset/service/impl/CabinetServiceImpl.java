@@ -21,8 +21,11 @@ import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.CabinetService;
 import com.nis.modules.asset.service.DcService;
 import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysUserStarredService;
+import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -62,7 +65,10 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
     
     @Autowired
     private BasicImportAndExportServices basicImportAndExportServices;
-    
+
+    @Autowired
+    private SysUserStarredService starredService;
+
     /**
      * 校验 cabinet 相关信息
      * 1. 校验机房是否存在
@@ -163,6 +169,13 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
         }else{
             cabinet.setAlertNum(0);
         }
+        //收藏判断
+        int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
+                .eq(SysUserStarredEntity::getTid,cabinet.getId())
+                .eq(SysUserStarredEntity::getType,"cabinet")
+                .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId())
+        );
+        cabinet.setStarred(count == 0 ? 0 : 1);
         return cabinet;
     }
 
@@ -177,6 +190,9 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
         if (StrUtil.isNotBlank(dcIds)) {
             params.put("dcIds", Arrays.asList(dcIds.split(",")));
         }
+
+        // 当前登录用户
+        params.put("currentLoginUserID", ShiroUtils.getUserId().intValue());
 
         IPage page = new Query(Cabinet.class).getPage(params);
         List<Cabinet> cabinetList = cabinetDao.queryPage(page, params);
@@ -233,6 +249,13 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
 
         // 删除
         this.removeByIds(Arrays.asList(ids));
+
+        // 删删除用户收藏数据
+        starredService.remove(
+                new LambdaQueryWrapper<SysUserStarredEntity>()
+                        .eq(SysUserStarredEntity::getType, "cabinet")
+                        .in(SysUserStarredEntity::getTid, ids)
+        );
     }
 
     @Override

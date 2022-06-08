@@ -12,6 +12,10 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletResponse;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nis.modules.sys.entity.SysUserStarredEntity;
+import com.nis.modules.sys.service.SysUserStarredService;
+import com.nis.modules.sys.shiro.ShiroUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,12 +69,22 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
     @Autowired
     private DcService dcService;
 
+	@Autowired
+	private SysUserStarredService starredService;
+
 	@Override
 	public IpamSubnet queryInfo(Integer id) {
 		IpamSubnet ipamSubnet = ipamSubnetDao.selectById(id);
 		Dc dc = dcService.getById(ipamSubnet.getDcId());
 		ipamSubnet.setDc(dc);
 		ipamSubnet.setUsed(0);
+		//收藏判断
+		int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
+				.eq(SysUserStarredEntity::getTid,ipamSubnet.getId())
+				.eq(SysUserStarredEntity::getType,"ipamSubnet")
+				.eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId())
+		);
+		ipamSubnet.setStarred(count == 0 ? 0 : 1);
 		return ipamSubnet;
 	}
 
@@ -84,7 +98,10 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 		if (ToolUtil.isNotEmpty(params.get("dcIds"))) {
             params.put("dcIds", Arrays.asList(String.valueOf(params.get("dcIds")).split(StringPool.COMMA)));
         }
-		
+
+        // 当前登录用户
+        params.put("currentLoginUserID", ShiroUtils.getUserId().intValue());
+
 		IPage page = new Query(IpamSubnet.class).getPage(params);
 		List<IpamSubnet> result = ipamSubnetDao.queryPage(page,params);
 		
@@ -157,6 +174,13 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 	@Transactional(rollbackFor = Exception.class)
 	public void delIpamSubnets(List<Integer> ids) {
 		ipamSubnetDao.deleteBatchIds(ids);
+
+		// 删除用户收藏数据
+		starredService.remove(
+				new LambdaQueryWrapper<SysUserStarredEntity>()
+						.eq(SysUserStarredEntity::getType, "ipamSubnet")
+						.in(SysUserStarredEntity::getTid, ids)
+		);
 	}
 	
 	@Override

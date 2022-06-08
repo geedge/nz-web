@@ -27,9 +27,12 @@ import com.nis.modules.promserver.dao.PromserverDao;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
+import com.nis.modules.sys.service.SysUserStarredService;
+import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -79,6 +82,9 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
     @Autowired
     private BasicImportAndExportServices basicImportAndExportServices;
 
+    @Autowired
+    private SysUserStarredService starredService;
+
     @Override
     public Dc queryDcDetails(Integer id) {
         Dc dc = this.getById(id);
@@ -104,6 +110,14 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
         Integer assetNum = assetDao.selectCount(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getDcId, dc.getId()));
         dc.setAssetNum(assetNum);
 
+        //收藏判断
+        int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
+                .eq(SysUserStarredEntity::getTid,dc.getId())
+                .eq(SysUserStarredEntity::getType,"datacenter")
+                .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId())
+        );
+        dc.setStarred(count == 0 ? 0 : 1);
+
         return dc;
     }
 
@@ -114,6 +128,9 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
             List<String> listIds = Arrays.asList(ids.split(","));
             params.put("ids", listIds);
         }
+
+        // 当前登录用户
+        params.put("currentLoginUserID", ShiroUtils.getUserId().intValue());
 
         IPage page = new Query(Dc.class).getPage(params);
         List<Dc> dcList = dcDao.queryDcList(page, params);
@@ -290,6 +307,13 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
 
         // 5. 删除 alert
         alertMessageService.removeByDcIds(Arrays.asList(ids));
+
+        // 删删除用户收藏数据
+        starredService.remove(
+                new LambdaQueryWrapper<SysUserStarredEntity>()
+                        .eq(SysUserStarredEntity::getType, "datacenter")
+                        .in(SysUserStarredEntity::getTid, ids)
+        );
     }
 
     @Override
