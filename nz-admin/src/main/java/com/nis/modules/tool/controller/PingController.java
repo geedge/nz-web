@@ -69,17 +69,19 @@ public class PingController {
         }
 
         String tid = UUID.randomUUID().toString();
-
+        List<String> ipList = Tool.StrUtil.split(ips, ',');
         for (Dc dc : futureDcList) {
-            PingRunnable pingRunnable = new PingRunnable(dc, ips, tid, Long.valueOf(timeout), TimeUnit.SECONDS);
-            pingRunnable.setName(Tool.StrUtil.concat(true, tid, "-", dc.getName()));
-            ThreadUtil.execAsync(pingRunnable);
+            for (String ip : ipList) {
+                PingRunnable pingRunnable = new PingRunnable(dc, ip, tid, Long.valueOf(timeout), TimeUnit.SECONDS);
+                pingRunnable.setName(Tool.StrUtil.concat(true, tid, "-", dc.getName()));
+                ThreadUtil.execAsync(pingRunnable);
+            }
         }
 
         Map m = Tool.MapUtil.newHashMap();
         m.put("tid", tid);
         Map task = Tool.MapUtil.newHashMap();
-        task.put("total", (int) Tool.NumberUtil.mul(futureDcList.size(), Tool.StrUtil.split(ips, ',').size()));
+        task.put("total", (int) Tool.NumberUtil.mul(futureDcList.size(), ipList.size()));
         task.put("done", 0);
         task.put("process", 0);
         m.put("task", task);
