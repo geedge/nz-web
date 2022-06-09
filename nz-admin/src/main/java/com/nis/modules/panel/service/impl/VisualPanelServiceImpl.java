@@ -12,6 +12,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
+import com.nis.modules.asset.service.AssetAssetService;
+import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.panel.dao.VisualPanelDao;
 import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.panel.entity.VisualChartElement;
@@ -101,6 +103,12 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
     @Autowired
     private SysUserStarredService starredService;
+
+    @Autowired
+    private AssetAssetService assetAssetService;
+
+    @Autowired
+    private MonitorEndpointService monitorEndpointService;
 
     @Override
     public VisualPanel queryInfo(Integer id) {
@@ -635,20 +643,42 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             datasource = chart.getDatasource();
             Map<String, String> chartParam = (HashMap) chart.getParam();
             if(StrUtil.equals("system", datasource)) {
-                futureList.add(CompletableFuture.supplyAsync(() ->{
-                    JSONObject dataSource = JSONArray.parseArray(JSONObject.toJSONString(chartParam.get("datasource"))).getJSONObject(0);
-                    JSONArray selectAry = new JSONArray();
-                    selectAry.add(dataSource.get("select"));
-                    dataSource.put("select", selectAry);
-                    HashMap analyseMap = new HashMap();
-                    analyseMap.put("q", dataSource.toJSONString());
-                    Map paramData2 = new HashMap<>();
-                    paramData2.put("status", "success");
-                    paramData2.put("eleIndex", "0");
-                    paramData2.put("chartId", chart.getId());
-                    paramData2.putAll(statServiceImpl.queryAnalyse(analyseMap));
-                    return paramData2;
-                }));
+                CompletableFuture<Map> mapCompletableFuture = null;
+                if(StrUtil.equals("assetInfo",chart.getType())){
+                    mapCompletableFuture = CompletableFuture.supplyAsync(() -> {
+                        VisualPanel visualPanel = this.queryInfo(chart.getPanelId());
+                        R ok = R.ok(assetAssetService.queryAssetInfo(visualPanel.getLink()));
+                        ok.put("status", "success");
+                        ok.put("eleIndex", "0");
+                        ok.put("chartId", chart.getId());
+                        return ok;
+                    });
+                }else if(StrUtil.equals("endpointInfo",chart.getType())){
+                    mapCompletableFuture = CompletableFuture.supplyAsync(() -> {
+                        VisualPanel visualPanel = this.queryInfo(chart.getPanelId());
+                        R ok = R.ok(monitorEndpointService.queryEndpointEntity(visualPanel.getLink()));
+                        ok.put("status", "success");
+                        ok.put("eleIndex", "0");
+                        ok.put("chartId", chart.getId());
+                        return ok;
+                    });
+                }else{
+                    mapCompletableFuture = CompletableFuture.supplyAsync(() -> {
+                        JSONObject dataSource = JSONArray.parseArray(JSONObject.toJSONString(chartParam.get("datasource"))).getJSONObject(0);
+                        JSONArray selectAry = new JSONArray();
+                        selectAry.add(dataSource.get("select"));
+                        dataSource.put("select", selectAry);
+                        HashMap analyseMap = new HashMap();
+                        analyseMap.put("q", dataSource.toJSONString());
+                        Map paramData2 = new HashMap<>();
+                        paramData2.put("status", "success");
+                        paramData2.put("eleIndex", "0");
+                        paramData2.put("chartId", chart.getId());
+                        paramData2.putAll(statServiceImpl.queryAnalyse(analyseMap));
+                        return paramData2;
+                    });
+                }
+                futureList.add(mapCompletableFuture);
             }else if(StrUtil.equals("misc", datasource)){
 
             }else{
