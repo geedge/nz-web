@@ -43,7 +43,7 @@
 				and si.lang = #{params.lang}
 			</if>
 			<if test="params.value != null and params.value != ''">
-				and si.value = #{params.value}
+				and locate(#{params.value},si.value)
 			</if>
 		</where>
 	</select>
