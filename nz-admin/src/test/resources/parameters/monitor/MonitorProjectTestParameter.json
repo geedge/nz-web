@@ -12,6 +12,9 @@
     "orderBy": "",
     "ids": "10,20"
   },
+  "queryMonitorProjectList_starred": {
+    "starred": 1
+  },
   "------------------ POST  /monitor/project---------------------": "note",
   "addMonitorProject_success":{
   "name": "kafka",
@@ -46,6 +49,9 @@
   },
   "deleteMonitorProject_idisnull": {
     "ids": ""
+  },
+  "deleteMonitorProject_starred": {
+    "ids": "8"
   },
   "------------------ GET  /monitor/project/topo/iconUnit---------------------": "note",
   "queryTopoIconUnit_success" : {

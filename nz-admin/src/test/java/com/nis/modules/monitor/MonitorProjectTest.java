@@ -128,11 +128,46 @@ public class MonitorProjectTest extends BaseTest<MonitorProject> {
     }
 
     /**
+     * GET /monitor/project/id
+     *
+     * @throws Exception
+     */
+    @Test
+    public void queryMonitorProjectInfo_ID4() throws Exception {
+        MvcResult result = UTUtil.performGet("/monitor/project/7", null);
+
+        String responseStr = result.getResponse().getContentAsString();
+        Assert.assertNotNull("No success response", responseStr);
+
+        Map<String, Object> actualResult = JSONObject.parseObject(responseStr, Map.class);
+        Object projectInfo = actualResult.get("data");
+
+        // isExist
+        Assert.assertNotNull(projectInfo);
+
+        int starred = (int) ((Map) actualResult.get("data")).get("starred");
+
+        Assert.assertEquals(1,starred);
+    }
+
+    /**
      * GET /monitor/project exist
      *
      */
     @Test
     public void queryMonitorProjectList_exist(){
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performGet("/monitor/project", map);
+
+        UTUtil.assertToSizeByFlag(result, true);
+    }
+
+    /**
+     * GET /monitor/project exist
+     *
+     */
+    @Test
+    public void queryMonitorProjectList_starred(){
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
         MvcResult result = UTUtil.performGet("/monitor/project", map);
 
@@ -245,6 +280,18 @@ public class MonitorProjectTest extends BaseTest<MonitorProject> {
         MvcResult result = UTUtil.performDelete("/monitor/project", map);
 
         UTUtil.assertEqualsRCode(result, RCode.PROJECT_ID_ISNULL);
+    }
+
+    /**
+     * DELETE /monitor/project  id is null
+     *
+     */
+    @Test
+    public void deleteMonitorProject_starred() {
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performDelete("/monitor/project", map);
+
+        UTUtil.assertEqualsRCode(result, RCode.SUCCESS);
     }
 
     /**

@@ -19,6 +19,9 @@ import com.nis.modules.project.dao.MonitorProjectDao;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.stat.service.StatService;
+import com.nis.modules.sys.entity.SysUserStarredEntity;
+import com.nis.modules.sys.service.SysUserStarredService;
+import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -47,6 +50,9 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
     @Autowired
     private StatService statService;
 
+    @Autowired
+    private SysUserStarredService starredService;
+
     @Override
     public MonitorProject queryProjectEntity(Integer id) {
         MonitorProject project = this.getById(id);
@@ -72,6 +78,14 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
         List<Map<String, Object>> alert = statService.getSeverityStatByRuleMsgCount(Tool.MapUtil.empty(), ruleIdAndAlertCountMap);
         project.setAlert(alert);
 
+        // 当前用户收藏状态  1：收藏  0：未收藏
+        int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
+                .eq(SysUserStarredEntity::getTid, project.getId())
+                .eq(SysUserStarredEntity::getType, "project")
+                .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId().intValue())
+        );
+
+        project.setStarred(count == 0 ? 0 : 1);
         return project;
     }
 
@@ -82,7 +96,8 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
             List<String> listIds = Arrays.asList(ids.split(","));
             params.put("ids", listIds);
         }
-
+        //当前用户id
+        params.put("uid",ShiroUtils.getUserId().intValue());
         IPage page = new Query(MonitorProject.class).getPage(params);
         List<MonitorProject> projectList = monitorProjectDao.queryProjectList(page, params);
 
@@ -152,6 +167,9 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
 
         // 删除
         this.removeByIds(Arrays.asList(ids));
+
+        //删除收藏
+        starredService.remove(new LambdaQueryWrapper<SysUserStarredEntity>().eq(SysUserStarredEntity::getType,"project").in(SysUserStarredEntity::getTid,ids));
 
         // 删除告警消息
         alertMessageService.removeByProjectIds(Arrays.asList(ids));

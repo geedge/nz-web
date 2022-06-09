@@ -12,4 +12,6 @@ INSERT INTO `monitor_endpoint`(`id`, `name`, `module_id`, `asset_id`, `seq`) VAL
 (9, 'CM-API-CM Server-2', 2, 247, ''),
 (10, 'CM-API-CM Server-3', 1, 1, ''),
 (11, 'CM-API-CM Server-2', 1, 1, 'd1f0d730-5aa2-40b2-98ef-e6a03e870c50'),
-(12, 'CM-API-CM Server-3', 1, 1, 'd1f0d730-5aa2-40b2-98ef-e6a03e870c50');
+(12, 'CM-API-CM Server-3', 1, 1, 'd1f0d730-5aa2-40b2-98ef-e6a03e870c50'),
+(13, 'CM-API-CM Server-4', 1, 1, ''),
+(14, 'CM-API-CM Server-5', 1, 1, '');

@@ -11,6 +11,7 @@
         <result property="moduleNum" column="moduleNum"/>
         <result property="endpointNum" column="endpointNum"/>
         <result property="alertNum" column="alertNum"/>
+        <result property="starred" column="starred"/>
     </resultMap>
 
 
@@ -20,7 +21,8 @@
 			IFNULL( mm.moduleNum, 0 ) AS moduleNum,
 			IFNULL( me.endpointNum, 0 ) AS endpointNum,
 			IFNULL( me.assetNum, 0 ) AS assetNum,
-			IFNULL( msg.alertNum, 0 ) AS alertNum 
+			IFNULL( msg.alertNum, 0 ) AS alertNum,
+            IFNULL( sta.starred, 0 ) AS starred
 		FROM
 			monitor_project mp
 			LEFT JOIN ( SELECT project_id, count( 1 ) AS moduleNum FROM monitor_module GROUP BY project_id ) mm ON mm.project_id = mp.id
@@ -36,6 +38,7 @@
 				m.project_id 
 			) me ON mp.id = me.project_id
 			LEFT JOIN ( SELECT project_id, count( 1 ) AS alertNum FROM alert_message_active WHERE project_id IS NOT NULL GROUP BY project_id ) msg ON mp.id = msg.project_id
+            LEFT JOIN ( SELECT IF(COUNT(1) > 0, 1, 0) AS starred,tid FROM sys_user_starred WHERE TYPE = "project" AND uid = #{params.uid} GROUP BY tid) sta ON mp.id = sta.tid
         <where>
             <if test="params.ids != null">
                 mp.id in
@@ -46,6 +49,16 @@
 
             <if test="params.name != null and params.name != ''">
                 AND locate(#{params.name} , mp.name)
+            </if>
+
+            <if test="params.starred != null and params.starred != ''">
+                AND
+                <if test=' params.starred eq 1 '>
+                    sta.starred = #{params.starred}
+                </if>
+                <if test=' params.starred eq 0 '>
+                    sta.starred IS NULL
+                </if>
             </if>
         </where>
         <if test="params.orderBy == null or params.orderBy == ''">

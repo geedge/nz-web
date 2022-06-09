@@ -97,11 +97,48 @@ public class MonitorModuleTest extends BaseTest<MonitorModule> {
     }
 
     /**
+     * GET /monitor/module/id
+     *
+     * @throws Exception
+     */
+    @Test
+    public void queryMonitorModuleInfo_ID4() throws Exception {
+        MvcResult result = UTUtil.performGet("/monitor/module/12", null);
+
+        String responseStr = result.getResponse().getContentAsString();
+        Assert.assertNotNull("No success response", responseStr);
+
+        Map<String, Object> actualResult = JSONObject.parseObject(responseStr, Map.class);
+        Object projectInfo = actualResult.get("data");
+
+        // isExist
+        Assert.assertNotNull(projectInfo);
+
+       int starred = (int) ((Map) actualResult.get("data")).get("starred");
+
+       Assert.assertEquals(1,starred);
+
+
+    }
+
+    /**
      * GET /monitor/module exits
      *
      */
     @Test
     public void queryMonitorModuleList_exits(){
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performGet("/monitor/module", map);
+
+        UTUtil.assertToSizeByFlag(result,true);
+    }
+
+    /**
+     * GET /monitor/module exits
+     *
+     */
+    @Test
+    public void queryMonitorModuleList_starred(){
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
         MvcResult result = UTUtil.performGet("/monitor/module", map);
 
@@ -479,6 +516,19 @@ public class MonitorModuleTest extends BaseTest<MonitorModule> {
     public void MonitorModuleCancelImport_success(){
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
         MvcResult result = UTUtil.performDelete("/monitor/module/cancelImport", map);
+
+        UTUtil.assertEqualsRCode(result,RCode.SUCCESS);
+
+    }
+
+    /**
+     * DELETE /monitor/module success
+     *
+     */
+    @Test
+    public void deleteMonitorModule_success(){
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performDelete("/monitor/module", map);
 
         UTUtil.assertEqualsRCode(result,RCode.SUCCESS);
 

@@ -97,6 +97,31 @@ public class MonitorEndpointTest extends BaseTest<MonitorEndpoint> {
         Assert.assertEquals("0", p3Alert);
     }
 
+    /**
+     * GET /monitor/endpoint/id
+     *
+     * @throws Exception
+     */
+    @Test
+    public void queryMonitorEndpointInfo_ID3() throws Exception {
+        MvcResult result = UTUtil.performGet("/monitor/endpoint/13", null);
+
+        String responseStr = result.getResponse().getContentAsString();
+        Assert.assertNotNull("No success response", responseStr);
+
+        Map<String, Object> actualResult = JSONObject.parseObject(responseStr, Map.class);
+        Object projectInfo = actualResult.get("data");
+
+        // isExist
+        Assert.assertNotNull(projectInfo);
+
+        int starred =  (int)((Map) actualResult.get("data")).get("starred");
+
+        Assert.assertEquals(1,starred);
+
+
+    }
+
 
     /**
      * GET /monitor/endpoint exits
@@ -104,6 +129,18 @@ public class MonitorEndpointTest extends BaseTest<MonitorEndpoint> {
      */
     @Test
     public void queryMonitorEndpointList_exits(){
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performGet("/monitor/endpoint", map);
+
+        UTUtil.assertToSizeByFlag(result,true);
+    }
+
+    /**
+     * GET /monitor/endpoint exits
+     *
+     */
+    @Test
+    public void queryMonitorEndpointList_starred(){
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
         MvcResult result = UTUtil.performGet("/monitor/endpoint", map);
 
@@ -261,6 +298,18 @@ public class MonitorEndpointTest extends BaseTest<MonitorEndpoint> {
      */
     @Test
     public void deleteMonitorEndpoint_success(){
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performDelete("/monitor/endpoint", map);
+
+        UTUtil.assertEqualsRCode(result,RCode.SUCCESS);
+    }
+
+    /**
+     * DELETE /monitor/endpoint starred
+     *
+     */
+    @Test
+    public void deleteMonitorEndpoint_starred(){
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
         MvcResult result = UTUtil.performDelete("/monitor/endpoint", map);
 

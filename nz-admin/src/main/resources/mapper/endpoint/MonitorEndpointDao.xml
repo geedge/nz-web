@@ -8,6 +8,7 @@
         <result property="moduleId" column="module_id"/>
         <result property="assetId" column="asset_id"/>
         <result property="alertNum" column="alertNum"/>
+        <result property="starred" column="starred"/>
 
         <association columnPrefix="m_" property="module" javaType="com.nis.modules.module.entity.MonitorModule">
 	    	<id column="id" property="id"/>
@@ -117,7 +118,8 @@
 			a.NAME AS a_name,
 			p.id AS p_id,
 			p.NAME AS p_name,
-			IFNULL( msg.alertNum, 0 ) AS alertNum 
+			IFNULL( msg.alertNum, 0 ) AS alertNum,
+            IFNULL( sta.starred, 0 ) AS starred
 		FROM
 			(select e.* from  monitor_endpoint e left join monitor_endpoint_state es on e.id = es.endpoint_id
 		<where>
@@ -176,6 +178,7 @@
 			LEFT JOIN monitor_project p ON m.project_id = p.id
 			LEFT JOIN asset_asset a ON e.asset_id = a.id
 			LEFT JOIN ( SELECT endpoint_id, count( 1 ) AS alertNum FROM alert_message_active WHERE endpoint_id IS NOT NULL GROUP BY endpoint_id ) msg ON e.id = msg.endpoint_id
+            LEFT JOIN ( SELECT IF(COUNT(1) > 0, 1, 0) AS starred,tid FROM sys_user_starred WHERE TYPE = "endpoint" AND uid = #{params.uid} GROUP BY tid) sta ON e.id = sta.tid
         <where>
 
            <if test="params.ids != null and params.ids.length > 0">
@@ -214,6 +217,16 @@
            <if test="params.assetName != null and params.assetName != ''">
                AND locate(#{params.assetName} , a.name)
            </if>
+
+            <if test="params.starred != null and params.starred != ''">
+                AND
+                <if test=' params.starred eq 1 '>
+                    sta.starred = #{params.starred}
+                </if>
+                <if test=' params.starred eq 0 '>
+                    sta.starred IS NULL
+                </if>
+            </if>
 
        </where>
         <if test="params.orderBy == null or params.orderBy == ''">

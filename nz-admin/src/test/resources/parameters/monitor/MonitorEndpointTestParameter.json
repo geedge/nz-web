@@ -12,6 +12,9 @@
     "orderBy": "",
     "ids": "19,20"
   },
+  "queryMonitorEndpointList_starred": {
+    "starred": 1
+  },
   "------------------ get  /monitor/endpoint/tree---------------------": "note",
   "queryMonitorEndpointTree_exits": {
     "name": "CM"
@@ -74,6 +77,9 @@
   },
   "deleteMonitorEndpoint_idIsNull": {
     "ids": ""
+  },
+  "deleteMonitorEndpoint_starred": {
+    "ids": "14"
   },
   "------------------ get  /monitor/endpoint/template---------------------": "note",
   "getMonitorEndpointTemplate_en": {

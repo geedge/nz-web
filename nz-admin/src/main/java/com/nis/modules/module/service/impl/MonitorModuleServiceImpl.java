@@ -34,9 +34,12 @@ import com.nis.modules.project.service.TopoService;
 import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.entity.SnmpCredential;
 import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SnmpCredentialService;
 import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysUserStarredService;
+import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -93,6 +96,9 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
     @Autowired
     private DataSourceTransactionManager dataSourceTransactionManager;
 
+    @Autowired
+    private SysUserStarredService starredService;
+
     @Override
     public MonitorModule queryModuleInfo(Integer id) {
         MonitorModule module = this.getById(id);
@@ -121,6 +127,15 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
             List<VisualChart> charts = (List<VisualChart>) visualChartService.listByIds(Arrays.asList(chartIds.split(",")));
             module.setCharts(charts);
         }
+
+        // 当前用户收藏状态  1：收藏  0：未收藏
+        int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
+                .eq(SysUserStarredEntity::getTid, module.getId())
+                .eq(SysUserStarredEntity::getType, "module")
+                .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId().intValue())
+        );
+
+        module.setStarred(count == 0 ? 0 : 1);
         return module;
     }
 
@@ -144,6 +159,9 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
     public PageUtils queryPage(Map<String, Object> params) {
         // 处理请求参数
         this.handleQueryParam(params);
+
+        //当前用id
+        params.put("uid",ShiroUtils.getUserId().intValue());
 
         IPage page = new Query(MonitorModule.class).getPage(params);
         List<MonitorModule> datas = monitorModuleDao.queryPage(page, params);
@@ -426,6 +444,9 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
         // 删除
         this.removeByIds(Arrays.asList(ids));
+
+        //删除收藏
+        starredService.remove(new LambdaQueryWrapper<SysUserStarredEntity>().eq(SysUserStarredEntity::getType,"module").in(SysUserStarredEntity::getTid,Arrays.asList(ids)));
 
         //删除alert相关信息
         alertMessageService.removeByModuleIds(Arrays.asList(ids));

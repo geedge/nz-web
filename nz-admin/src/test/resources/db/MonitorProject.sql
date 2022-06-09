@@ -7,4 +7,6 @@ VALUES
     (3, 'Central-Management', '', '0', NULL),
     (4, 'OLAP', '', '0', NULL),
     (5, 'Nezha', '', '0', NULL),
-    (6, 'Switch', '', '0', NULL);
+    (6, 'Switch', '', '0', NULL),
+    (7, 'Switch1', '', '0', NULL),
+    (8, 'Switch2', '', '0', NULL);

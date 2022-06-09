@@ -74,4 +74,10 @@ public class MonitorProject implements Serializable {
 
     @TableField(exist = false)
     private List alert;
+
+    /**
+     * 是否收藏 0:未收藏 1:已收藏
+     */
+    @TableField(exist = false)
+    private Integer starred;
 }

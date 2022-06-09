@@ -46,9 +46,11 @@ import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.entity.SnmpCredential;
+import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SnmpCredentialService;
 import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -121,6 +123,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     @Autowired
     private RedisTemplate redisTemplate;
+
+    @Autowired
+    private SysUserStarredService starredService;
     
     @Override
     public MonitorEndpoint queryEndpointEntity(Integer id) {
@@ -176,6 +181,15 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             endpointConfig.setLastUpdate(endpointStateByConfigId.getTime());
         }
         endpoint.setConfigs(endpointConfigs);
+
+
+        // 当前用户收藏状态  1：收藏  0：未收藏
+        int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
+                .eq(SysUserStarredEntity::getTid, endpoint.getId())
+                .eq(SysUserStarredEntity::getType, "endpoint")
+                .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId().intValue())
+        );
+        endpoint.setStarred(count == 0 ? 0 : 1);
         return endpoint;
     }
 
@@ -184,6 +198,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     	Map<String,Object> result = new HashMap<String,Object>();
         // 处理请求参数
         this.handleQueryParam(params);
+
+        //当前用户id
+        params.put("uid",ShiroUtils.getUserId().intValue());
 
         IPage page = new Query(MonitorEndpoint.class).getPage(params);
         List<MonitorEndpoint> datas = monitorEndpointDao.queryPage(page, params);
@@ -771,6 +788,12 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     public void deleteEndpointByIds(List<Integer> ids) {
         // 删除 endpoint
         this.removeByIds(ids);
+
+        //删除收藏
+        starredService.remove(new LambdaQueryWrapper<SysUserStarredEntity>()
+                .eq(SysUserStarredEntity::getType,"endpoint")
+                .in(SysUserStarredEntity::getTid,ids)
+        );
 
         // 删除 endpoint state
         endpointStateService.removeByIds(ids);

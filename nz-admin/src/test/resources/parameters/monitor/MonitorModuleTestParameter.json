@@ -12,6 +12,9 @@
     "orderBy": "",
     "ids": "15,20"
   },
+  "queryMonitorModuleList_starred": {
+    "starred": 1
+  },
   "------------------ get  /monitor/module/tree---------------------": "note",
   "queryMonitorModuleTree_exits": {
     "name": "CM"
@@ -203,5 +206,9 @@
   "------------------ delete  /monitor/module/cancelImport---------------------": "note",
   "MonitorModuleCancelImport_success": {
     "seq": "9cafbc78-6666-4151-9a9a-7682bc587179"
+  },
+  "------------------ delete  /monitor/module---------------------": "note",
+  "deleteMonitorModule_success": {
+    "ids": "13"
   }
 }
