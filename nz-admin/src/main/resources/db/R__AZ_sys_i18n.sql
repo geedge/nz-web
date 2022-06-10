@@ -5555,6 +5555,8 @@ INSERT INTO `sys_i18n` VALUES (6125, 'dashboard.createdByYou', 'en', 'dashboard.
 INSERT INTO `sys_i18n` VALUES (6126, 'dashboard.createdByYou', 'zh', 'dashboard.createdByYou', '我的创建', '', '2022-06-07 03:04:11', 407);
 INSERT INTO `sys_i18n` VALUES (6127, 'dashboard.recentlyViewed', 'en', 'dashboard.recentlyViewed', 'Recently viewed', '', '2022-06-07 03:04:36', 407);
 INSERT INTO `sys_i18n` VALUES (6128, 'dashboard.recentlyViewed', 'zh', 'dashboard.recentlyViewed', '最近浏览', '', '2022-06-07 03:04:46', 407);
+INSERT INTO `sys_i18n` VALUES (6129, '376012', 'zh', 'ASSET_FIELD_META_REFERENCED', '属性被资产引用', '', '2022-06-09 03:04:46', 1);
+INSERT INTO `sys_i18n` VALUES (6130, '376012', 'en', 'ASSET_FIELD_META_REFERENCED', 'Asset field meta referenced', '', '2022-06-09 03:04:46', 1);
 
 
 SET FOREIGN_KEY_CHECKS = 1;

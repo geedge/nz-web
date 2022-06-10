@@ -421,6 +421,7 @@ public enum RCode {
     ASSET_FIELD_META_KEY_ERROR(373009,"Asset field key value incorrect format"),
     ASSET_FIELD_META_KEY_NAME_DUPLICATE(372010,"Asset field key value or name duplicate"),
     ASSET_FIELD_META_NOT_FOUND(376011, "Asset field meta not found"),
+    ASSET_FIELD_META_REFERENCED(376012, "Asset field meta referenced"),
 
     /**
      * ASSET_FIELD_GROUP
