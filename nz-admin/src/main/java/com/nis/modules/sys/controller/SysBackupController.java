@@ -43,8 +43,8 @@ public class SysBackupController {
 		sysBackupService.save(params);
 		return R.ok();
 	}
-	
-	@PostMapping("/list")
+
+	@GetMapping("/list")
 	public R backupList() {
 		List<Object> result = sysBackupService.queryBackupList();
 		return R.ok(result);
