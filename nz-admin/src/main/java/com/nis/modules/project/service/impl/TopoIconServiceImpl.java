@@ -120,6 +120,9 @@ public class TopoIconServiceImpl extends ServiceImpl<TopoIconDao, TopoIcon> impl
             response.setHeader("width", String.valueOf(icon.getWidth()));
             response.setHeader("height", String.valueOf(icon.getHeight()));
             response.setHeader("Access-Control-Expose-Headers", "width,height");
+            // 缓存12小时
+            response.setHeader("Cache-Control","max-age=" + 12 * 60 * 60 + ", must-revalidate");
+//            response.setDateHeader("Expires", System.currentTimeMillis() + 12 * 60 * 60 * 1000);
             os.write(bytes);
             os.flush();
         } catch (IOException e) {
