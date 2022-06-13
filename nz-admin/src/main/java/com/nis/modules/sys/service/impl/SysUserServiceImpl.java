@@ -91,6 +91,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 			}
 
 			for (SysUserEntity userEntity : userList) {
+				checkUserOnLine(userEntity);
 				List<SysUserRoleEntity> userRoleEntities = userRoleMap.get(userEntity.getId().intValue());
 				if (CollectionUtils.isEmpty(userRoleEntities)) {
 					userEntity.setRoles(Collections.emptyList());
@@ -380,7 +381,24 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		List<Integer> roleIdList = sysUserRoleService.queryRoleIdList(userId.intValue());
 		List<SysRoleEntity> roles = sysRoleService.list(new QueryWrapper<SysRoleEntity>().lambda().in(SysRoleEntity::getId, roleIdList));
 		user.setRoles(roles);
+		checkUserOnLine(user);
 		return user;
+	}
+
+	//检查用户登录状态
+	private void checkUserOnLine(SysUserEntity user) {
+		//在线用户名称
+		Set<String> userName = new HashSet<>();
+		Map<String, SysUserEntity> shiroSessionInfoMap = ShiroUtils.getShiroSessionInfoMap();
+		for (String key : shiroSessionInfoMap.keySet()) {
+			SysUserEntity userEntity = shiroSessionInfoMap.get(key);
+			userName.add(userEntity.getName());
+		}
+		if (userName.contains(user.getName())){
+			user.setOnline(1);
+		}else {
+			user.setOnline(0);
+		}
 	}
 
 	@SuppressWarnings("unchecked")

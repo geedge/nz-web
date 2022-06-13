@@ -131,4 +131,10 @@ public class SysUserEntity implements Serializable {
 	private Integer theme; 
 	
 	private Date pinTime;
+
+	/**
+	 * 用户登录状态 1:在线 0:离线
+	 */
+	@TableField(exist = false)
+	private Integer online;
 }
