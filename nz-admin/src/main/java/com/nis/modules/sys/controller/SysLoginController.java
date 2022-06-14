@@ -14,6 +14,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang.time.DateUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.IncorrectCredentialsException;
@@ -82,6 +83,9 @@ public class SysLoginController extends AbstractController {
 
 	@Autowired
 	private TimezoneService timezoneService;
+
+	@Autowired
+	private SysConfigService sysConfigService;
 	
 	@RequestMapping("captcha.jpg")
 	public void captcha(HttpServletResponse response)throws IOException {
@@ -169,6 +173,24 @@ public class SysLoginController extends AbstractController {
 					result.put("offset", timezoneEntity.getOffset());
 				}
 				result.put(ToolUtil.toCamelCase(configEntity.getParamKey()), configEntity.getParamValue());
+			}
+
+			String pinPolicy = sysConfigService.getValue("pin_policy");
+			if(ToolUtil.isNotEmpty(pinPolicy)) {
+				Map<String,Object> pinPolicyInfo = (Map<String, Object>) JSON.parse(pinPolicy);
+				// 密码有效时间
+				Integer valid = (Integer) pinPolicyInfo.get("valid");
+				if(valid > 0){
+					long pwdExpiredTime = DateUtils.MILLIS_PER_DAY * valid - Tool.DateUtil.betweenMs(sysUser.getPinTime(),new Date());
+					result.put("pwdExpiredTime",pwdExpiredTime);
+					//pwdExpiredTime 低于三天给出提醒
+					if (pwdExpiredTime < DateUtils.MILLIS_PER_DAY * 3){
+						result.put("pwdRemindTime",pwdExpiredTime);
+					}
+				}else {
+					//一直有效
+					result.put("pwdExpiredTime",-1);
+				}
 			}
 			// 登录成功标识
 			flag = true;
