@@ -91,16 +91,17 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 			}
 			// 获取缓存中登录的用户
 			Map<String, SysUserEntity> shiroSessionInfoMap = ShiroUtils.getShiroSessionInfoMap();
-			Set<String> uName = new HashSet<>();
-			for (String key : shiroSessionInfoMap.keySet()) {
-				SysUserEntity userEntity = shiroSessionInfoMap.get(key);
-				uName.add(userEntity.getName());
-			}
+			List<SysUserEntity> users = new ArrayList<SysUserEntity>(shiroSessionInfoMap.values());
 			for (SysUserEntity userEntity : userList) {
-				if (uName.contains(userEntity.getName())){
-					userEntity.setOnline(1);
-				}else {
-					userEntity.setOnline(0);
+				for (SysUserEntity user : users) {
+					if (user.getId().equals(userEntity.getId())){
+						//在线
+						userEntity.setOnline(1);
+						break;
+					}else {
+						//离线
+						userEntity.setOnline(0);
+					}
 				}
 				List<SysUserRoleEntity> userRoleEntities = userRoleMap.get(userEntity.getId().intValue());
 				if (CollectionUtils.isEmpty(userRoleEntities)) {
@@ -393,15 +394,16 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		user.setRoles(roles);
 		// 获取缓存中登录的用户
 		Map<String, SysUserEntity> shiroSessionInfoMap = ShiroUtils.getShiroSessionInfoMap();
-		Set<String> uName = new HashSet<>();
-		for (String key : shiroSessionInfoMap.keySet()) {
-			SysUserEntity userEntity = shiroSessionInfoMap.get(key);
-			uName.add(userEntity.getName());
-		}
-		if (uName.contains(user.getName())){
-			user.setOnline(1);
-		}else {
-			user.setOnline(0);
+		List<SysUserEntity> users = new ArrayList<SysUserEntity>(shiroSessionInfoMap.values());
+		for (SysUserEntity userEntity : users) {
+			if (userEntity.getId().equals(user.getId())){
+				//在线
+				user.setOnline(1);
+				break;
+			}else {
+				//离线
+				user.setOnline(0);
+			}
 		}
 		return user;
 	}
