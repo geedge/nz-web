@@ -119,6 +119,7 @@ public class ShiroConfig {
 		filterMap.put("/healthy", "anon"); //健康检查接口
 		filterMap.put("/buildInfo", "anon"); //编译信息查询接口
 		filterMap.put("/terminal.ws", "anon"); //terminal websocket 接口
+		filterMap.put("/terminal/monitor.ws", "anon"); //terminal/monitor websocket 接口
 		filterMap.put("/sys/license/**", "anon");// license 相关接口
 		filterMap.put("/setup/**", "anon");// 程序配置 相关接口
 		filterMap.put("/sys/appearance","anon"); //系统外观配置查询接口
