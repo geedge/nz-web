@@ -89,9 +89,19 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 			for (SysRoleEntity sysRoleEntity : roleList) {
 				roleIdAndEntityMap.put(sysRoleEntity.getId(), sysRoleEntity);
 			}
-
+			// 获取缓存中登录的用户
+			Map<String, SysUserEntity> shiroSessionInfoMap = ShiroUtils.getShiroSessionInfoMap();
+			Set<String> uName = new HashSet<>();
+			for (String key : shiroSessionInfoMap.keySet()) {
+				SysUserEntity userEntity = shiroSessionInfoMap.get(key);
+				uName.add(userEntity.getName());
+			}
 			for (SysUserEntity userEntity : userList) {
-				checkUserOnLine(userEntity);
+				if (uName.contains(userEntity.getName())){
+					userEntity.setOnline(1);
+				}else {
+					userEntity.setOnline(0);
+				}
 				List<SysUserRoleEntity> userRoleEntities = userRoleMap.get(userEntity.getId().intValue());
 				if (CollectionUtils.isEmpty(userRoleEntities)) {
 					userEntity.setRoles(Collections.emptyList());
@@ -381,25 +391,21 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		List<Integer> roleIdList = sysUserRoleService.queryRoleIdList(userId.intValue());
 		List<SysRoleEntity> roles = sysRoleService.list(new QueryWrapper<SysRoleEntity>().lambda().in(SysRoleEntity::getId, roleIdList));
 		user.setRoles(roles);
-		checkUserOnLine(user);
-		return user;
-	}
-
-	//检查用户登录状态
-	private void checkUserOnLine(SysUserEntity user) {
-		//在线用户名称
-		Set<String> userName = new HashSet<>();
+		// 获取缓存中登录的用户
 		Map<String, SysUserEntity> shiroSessionInfoMap = ShiroUtils.getShiroSessionInfoMap();
+		Set<String> uName = new HashSet<>();
 		for (String key : shiroSessionInfoMap.keySet()) {
 			SysUserEntity userEntity = shiroSessionInfoMap.get(key);
-			userName.add(userEntity.getName());
+			uName.add(userEntity.getName());
 		}
-		if (userName.contains(user.getName())){
+		if (uName.contains(user.getName())){
 			user.setOnline(1);
 		}else {
 			user.setOnline(0);
 		}
+		return user;
 	}
+
 
 	@SuppressWarnings("unchecked")
 	@Override
