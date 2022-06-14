@@ -1345,7 +1345,7 @@ INSERT INTO `sys_i18n` VALUES (1314, 'dashboard.panel.lastFifteenMin', 'en', 'da
 INSERT INTO `sys_i18n` VALUES (1315, 'dashboard.panel.moreTitleOther', 'en', 'dashboard.panel.moreTitleOther', 'Showing only 10 the data. ', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1316, 'dashboard.panel.customTimeRange', 'en', 'dashboard.panel.customTimeRange', 'Custom time range', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1317, 'dashboard.panel.lastTwoDay', 'en', 'dashboard.panel.lastTwoDay', 'Last 2 days', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (1318, 'dashboard.panel.editPanelTitle', 'en', 'dashboard.panel.editPanelTitle', 'Edit panel', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (1318, 'dashboard.panel.editPanelTitle', 'en', 'dashboard.panel.editPanelTitle', 'Edit dashboard', '', '2022-06-14 06:15:28', 1);
 INSERT INTO `sys_i18n` VALUES (1319, 'dashboard.panel.recFour', 'en', 'dashboard.panel.recFour', 'Last 4 hours', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1320, 'dashboard.panel.refreshInterval.never', 'en', 'dashboard.panel.refreshInterval.never', 'Off', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1321, 'dashboard.panel.refreshInterval.threeMinutes', 'en', 'dashboard.panel.refreshInterval.threeMinutes', '3 minutes', '', '2021-11-02 00:00:00', 1);
@@ -1360,7 +1360,7 @@ INSERT INTO `sys_i18n` VALUES (1329, 'dashboard.panel.createPanelTitleSec', 'en'
 INSERT INTO `sys_i18n` VALUES (1330, 'dashboard.panel.lastThreeHour', 'en', 'dashboard.panel.lastThreeHour', 'Last 3 hours', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1331, 'dashboard.panel.addChartTemp', 'en', 'dashboard.panel.addChartTemp', 'addChartTemp', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1332, 'dashboard.panel.lastTwelveHour', 'en', 'dashboard.panel.lastTwelveHour', 'Last 12 hours', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (1333, 'dashboard.panel.createPanelTitle', 'en', 'dashboard.panel.createPanelTitle', 'New panel', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (1333, 'dashboard.panel.createPanelTitle', 'en', 'dashboard.panel.createPanelTitle', 'New dashboard', '', '2022-06-14 06:16:50', 1);
 INSERT INTO `sys_i18n` VALUES (1334, 'dashboard.panel.singleStatErrorTip', 'en', 'dashboard.panel.singleStatErrorTip', 'Only queries that return single series/table is supported', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1335, 'dashboard.panel.recSevenDay', 'en', 'dashboard.panel.recSevenDay', 'Last 7 day', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1336, 'dashboard.panel.createChartTempTitle', 'en', 'dashboard.panel.createChartTempTitle', 'New chart template', '', '2021-11-02 00:00:00', 1);
@@ -2907,7 +2907,7 @@ INSERT INTO `sys_i18n` VALUES (2896, 'dashboard.panel.lastFifteenMin', 'zh', 'da
 INSERT INTO `sys_i18n` VALUES (2897, 'dashboard.panel.moreTitleOther', 'zh', 'dashboard.panel.moreTitleOther', '仅显示 10 条数据。', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2898, 'dashboard.panel.customTimeRange', 'zh', 'dashboard.panel.customTimeRange', '自定义时间区间', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2899, 'dashboard.panel.lastTwoDay', 'zh', 'dashboard.panel.lastTwoDay', '最近2天', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2900, 'dashboard.panel.editPanelTitle', 'zh', 'dashboard.panel.editPanelTitle', '面板', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2900, 'dashboard.panel.editPanelTitle', 'zh', 'dashboard.panel.editPanelTitle', '编辑仪表盘', '', '2022-06-14 06:15:58', 1);
 INSERT INTO `sys_i18n` VALUES (2901, 'dashboard.panel.recFour', 'zh', 'dashboard.panel.recFour', '最近4小时', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2902, 'dashboard.panel.refreshInterval.never', 'zh', 'dashboard.panel.refreshInterval.never', '关闭', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2903, 'dashboard.panel.refreshInterval.threeMinutes', 'zh', 'dashboard.panel.refreshInterval.threeMinutes', '3分钟', '', '2021-11-02 00:00:00', 1);
@@ -2922,7 +2922,7 @@ INSERT INTO `sys_i18n` VALUES (2911, 'dashboard.panel.createPanelTitleSec', 'zh'
 INSERT INTO `sys_i18n` VALUES (2912, 'dashboard.panel.lastThreeHour', 'zh', 'dashboard.panel.lastThreeHour', '最近3小时', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2913, 'dashboard.panel.addChartTemp', 'zh', 'dashboard.panel.addChartTemp', '添加图表', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2914, 'dashboard.panel.lastTwelveHour', 'zh', 'dashboard.panel.lastTwelveHour', '最近12小时', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2915, 'dashboard.panel.createPanelTitle', 'zh', 'dashboard.panel.createPanelTitle', '新增面板', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2915, 'dashboard.panel.createPanelTitle', 'zh', 'dashboard.panel.createPanelTitle', '新增仪表盘', '', '2022-06-14 06:17:06', 1);
 INSERT INTO `sys_i18n` VALUES (2916, 'dashboard.panel.singleStatErrorTip', 'zh', 'dashboard.panel.singleStatErrorTip', '仅支持返回单个系列/表的查询', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2917, 'dashboard.panel.recSevenDay', 'zh', 'dashboard.panel.recSevenDay', '最近7日', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2918, 'dashboard.panel.createChartTempTitle', 'zh', 'dashboard.panel.createChartTempTitle', '新增图表模板', '', '2021-11-02 00:00:00', 1);
@@ -5449,7 +5449,7 @@ INSERT INTO `sys_i18n` VALUES (6019, 'backup.DayOfMonth', 'zh', 'backup.DayOfMon
 INSERT INTO `sys_i18n` VALUES (6020, 'backup.WeekOn', 'en', 'backup.WeekOn', 'week on', '', '2022-04-08 09:29:51', 1);
 INSERT INTO `sys_i18n` VALUES (6021, 'backup.WeekOn', 'zh', 'backup.WeekOn', '一周', '', '2022-04-08 09:30:21', 1);
 INSERT INTO `sys_i18n` VALUES (6022, 'backup.RepeatEvery', 'en', 'backup.RepeatEvery', 'Repeat every', '', '2022-04-08 09:31:04', 1);
-INSERT INTO `sys_i18n` VALUES (6023, 'backup.RepeatEvery', 'zh', 'backup.RepeatEvery', '每一次的重复', '', '2022-04-08 09:31:18', 1);
+INSERT INTO `sys_i18n` VALUES (6023, 'backup.RepeatEvery', 'zh', 'backup.RepeatEvery', '循环间隔', '', '2022-06-14 06:23:37', 1);
 INSERT INTO `sys_i18n` VALUES (6024, 'config.backup.backup', 'en', 'config.backup.backup', 'Backup', '', '2022-04-08 10:00:52', 1);
 INSERT INTO `sys_i18n` VALUES (6025, 'config.backup.backup', 'zh', 'config.backup.backup', '备份与恢复', '', '2022-04-08 10:01:04', 1);
 INSERT INTO `sys_i18n` VALUES (6026, 'trace.maximumHops', 'en', 'trace.maxHops', 'Maximum Hops', '', '2022-04-11 01:34:14', 407);
@@ -5557,6 +5557,22 @@ INSERT INTO `sys_i18n` VALUES (6127, 'dashboard.recentlyViewed', 'en', 'dashboar
 INSERT INTO `sys_i18n` VALUES (6128, 'dashboard.recentlyViewed', 'zh', 'dashboard.recentlyViewed', '最近浏览', '', '2022-06-07 03:04:46', 407);
 INSERT INTO `sys_i18n` VALUES (6129, '376012', 'zh', 'ASSET_FIELD_META_REFERENCED', '属性被资产引用', '', '2022-06-09 03:04:46', 1);
 INSERT INTO `sys_i18n` VALUES (6130, '376012', 'en', 'ASSET_FIELD_META_REFERENCED', 'Asset field meta referenced', '', '2022-06-09 03:04:46', 1);
+INSERT INTO `sys_i18n` VALUES (6131, 'dashboard.panel.report', 'en', 'dashboard.panel.report', 'Report', '', '2022-06-13 02:30:26', 1);
+INSERT INTO `sys_i18n` VALUES (6132, 'dashboard.panel.endAt', 'en', 'dashboard.panel.endAt', 'End at', '', '2022-06-13 02:42:34', 1);
+INSERT INTO `sys_i18n` VALUES (6133, 'dashboard.panel.endAt', 'zh', 'dashboard.panel.endAt', '结束时间', '', '2022-06-13 02:45:54', 1);
+INSERT INTO `sys_i18n` VALUES (6134, 'dashboard.panel.report', 'zh', 'dashboard.panel.report', '报表', '', '2022-06-13 02:47:47', 1);
+INSERT INTO `sys_i18n` VALUES (6135, 'dashboard.panel.period', 'en', 'dashboard.panel.period', 'Period', '', '2022-06-13 05:28:17', 1);
+INSERT INTO `sys_i18n` VALUES (6136, 'dashboard.panel.period', 'zh', 'dashboard.panel.period', '周期', '', '2022-06-13 05:28:42', 1);
+INSERT INTO `sys_i18n` VALUES (6137, 'dashboard.panel.prevMonth', 'en', 'dashboard.panel.prevMonth', 'Previous month', '', '2022-06-13 05:32:01', 1);
+INSERT INTO `sys_i18n` VALUES (6138, 'dashboard.panel.prevMonth', 'zh', 'dashboard.panel.prevMonth', '前一个月', '', '2022-06-13 05:33:26', 1);
+INSERT INTO `sys_i18n` VALUES (6139, 'dashboard.panel.prevDay', 'en', 'dashboard.panel.prevDay', 'Previous day', '', '2022-06-13 05:34:11', 1);
+INSERT INTO `sys_i18n` VALUES (6140, 'dashboard.panel.prevDay', 'zh', 'dashboard.panel.prevDay', '前一天', '', '2022-06-13 05:34:51', 1);
+INSERT INTO `sys_i18n` VALUES (6141, 'dashboard.panel.prevWeek', 'en', 'dashboard.panel.prevWeek', 'Previous week', '', '2022-06-13 05:35:20', 1);
+INSERT INTO `sys_i18n` VALUES (6142, 'dashboard.panel.prevWeek', 'zh', 'dashboard.panel.prevWeek', '前一周', '', '2022-06-14 06:25:15', 1);
+INSERT INTO `sys_i18n` VALUES (6143, 'dashboard.panel.receivers', 'en', 'dashboard.panel.receivers', 'Receivers', '', '2022-06-13 07:14:16', 1);
+INSERT INTO `sys_i18n` VALUES (6144, 'dashboard.panel.receivers', 'zh', 'dashboard.panel.receivers', '接收人', '', '2022-06-13 07:14:24', 1);
+INSERT INTO `sys_i18n` VALUES (6145, 'alert.relatedAlerts', 'en', 'alert.relatedAlerts', 'Related alerts', '', '2022-06-13 08:54:09', 1);
+INSERT INTO `sys_i18n` VALUES (6146, 'alert.relatedAlerts', 'zh', 'alert.relatedAlerts', '相关告警', '', '2022-06-13 08:54:48', 1);
 
 
 SET FOREIGN_KEY_CHECKS = 1;
