@@ -274,7 +274,8 @@
           "unit": "week"
         },
         "schedule": {
-          "type": 1
+          "type": 2,
+          "stime": "2021-01-10 10:10:10"
         },
         "receivers": [1]
       }
@@ -292,8 +293,7 @@
           "unit": "week"
         },
         "schedule": {
-          "type": 1,
-          "repeat": 1
+          "type": 1
         },
         "receivers": [1]
       }
@@ -312,7 +312,6 @@
         },
         "schedule": {
           "type": 10,
-          "repeat": 1,
           "stime": "2021-01-10 10:10:10"
         },
         "receivers": [1]

@@ -369,13 +369,15 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     }
                     Map schedule = JSONObject.parseObject(JSONObject.toJSONString(report.get("schedule")), Map.class);
                     ValidateUtils.is(schedule.get("type")).notNull(RCode.PANEL_PARAM_SCHEDULETYPE_ISNULL)
-                            .and(schedule.get("repeat")).notNull(RCode.PANEL_PARAM_SCHEDULEREPEAT_ISNULL)
                             .and(schedule.get("stime")).notNull(RCode.PANEL_PARAM_SCHEDULESTIME_ISNULL);
                     if(!Arrays.asList(new Integer[]{1, 2, 3, 4}).contains(schedule.get("type"))){
                         throw new NZException(RCode.PANEL_PARAM_SCHEDULETYPE_INVALIDE);
                     }
-                    if(ToolUtil.equals(schedule.get("type").toString(),"3")){
-                        ValidateUtils.is(schedule.get("nums")).notNull(RCode.PANEL_PARAM_SCHEDULENUMS_ISNULL);
+                    if(ToolUtil.equals(schedule.get("type").toString(),"2")) {
+                        ValidateUtils.is(schedule.get("repeat")).notNull(RCode.PANEL_PARAM_SCHEDULEREPEAT_ISNULL);
+                    }else if(ToolUtil.equals(schedule.get("type").toString(),"3")){
+                        ValidateUtils.is(schedule.get("repeat")).notNull(RCode.PANEL_PARAM_SCHEDULEREPEAT_ISNULL)
+                            .and(schedule.get("nums")).notNull(RCode.PANEL_PARAM_SCHEDULENUMS_ISNULL);
                         if(!Arrays.asList(new Integer[]{1, 2, 3, 4, 5, 6, 7}).containsAll(JSONArray.parseObject(JSONObject.toJSONString(schedule.get("nums")), List.class))){
                             throw new NZException(RCode.PANEL_PARAM_SCHEDULENUMS_INVALIDE);
                         }
