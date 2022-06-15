@@ -14,6 +14,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import cn.hutool.core.util.ObjectUtil;
 import org.apache.commons.lang.time.DateUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authc.AuthenticationException;
@@ -180,11 +181,13 @@ public class SysLoginController extends AbstractController {
 				Map<String,Object> pinPolicyInfo = (Map<String, Object>) JSON.parse(pinPolicy);
 				// 密码有效时间
 				Integer valid = (Integer) pinPolicyInfo.get("valid");
+				Integer remind = (Integer) pinPolicyInfo.get("remind");
+				remind = remind == null ? 3 : remind;
 				if(valid > 0){
 					long pwdExpiredTime = DateUtils.MILLIS_PER_DAY * valid - Tool.DateUtil.betweenMs(sysUser.getPinTime(),new Date());
 					result.put("pwdExpiredTime",pwdExpiredTime);
 					//pwdExpiredTime 低于三天给出提醒
-					if (pwdExpiredTime < DateUtils.MILLIS_PER_DAY * 3){
+					if (pwdExpiredTime < DateUtils.MILLIS_PER_DAY * remind){
 						result.put("pwdRemindTime",pwdExpiredTime);
 					}
 				}else {
