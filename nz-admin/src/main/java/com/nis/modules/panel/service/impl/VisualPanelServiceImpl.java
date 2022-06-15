@@ -112,7 +112,10 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
     @Override
     public VisualPanel queryInfo(Integer id) {
-    	return this.baseMapper.queryInfo(id);
+    	VisualPanel visualPanel = this.baseMapper.queryInfo(id);
+        if(ToolUtil.isNotEmpty(visualPanel.getParam()))
+            visualPanel.setParam(JSONObject.parseObject(String.valueOf(visualPanel.getParam()), Map.class));
+        return visualPanel;
     }
     
     @Override
@@ -132,10 +135,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         List<VisualPanel> panelList = new ArrayList<>();
         if (StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(),type)) {
             panelList = this.baseMapper.queryList(params);
-            if (CollectionUtils.isEmpty(panelList) || panelList.size() == 1) {
-                return panelList;
+            if (CollectionUtils.isNotEmpty(panelList) && panelList.size() != 1) {
+                panelList = this.getVisualPanelTreeList(panelList, 0);
             }
-            panelList = this.getVisualPanelTreeList(panelList, 0);
         } else {
             // 3. 其他类型不进行排序
             panelList = this.baseMapper.queryList(params);
@@ -147,6 +149,10 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 //        	Integer chartNum = ObjectUtil.isEmpty(chartNums.get(visualPanel.getId()))?0:chartNums.get(visualPanel.getId());
 //        	visualPanel.setChartNum(chartNum);
 //        }
+        for (VisualPanel visualPanel: panelList) {
+            if(ToolUtil.isNotEmpty(visualPanel.getParam()))
+                visualPanel.setParam(JSONObject.parseObject(String.valueOf(visualPanel.getParam()), Map.class));
+        }
         return panelList;
     }
 
@@ -341,6 +347,65 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 throw new NZException(RCode.PANEL_NOT_EXIST);
             }
         }
+
+        // panel param 校验
+        if(ToolUtil.isNotEmpty(panel.getParam())){
+            Map param = JSONObject.parseObject(JSONObject.toJSONString(panel.getParam()), Map.class);
+            if(ToolUtil.isNotEmpty(param.get("report"))){
+                Map report = JSONObject.parseObject(JSONObject.toJSONString(param.get("report")), Map.class);
+                // enable 为 true 时
+                if(ToolUtil.isNotEmpty(report.get("enable")) && ToolUtil.equals("true", report.get("enable").toString())){
+                    ValidateUtils.is(report.get("range")).notNull(RCode.PANEL_PARAM_REPORTRANGE_ISNULL)
+                            .and(report.get("schedule")).notNull(RCode.PANEL_PARAM_REPORTSCHEDULE_ISNULL)
+                            .and(report.get("receivers")).notNull(RCode.PANEL_PARAM_REPORTRECEIVERS_ISNULL);
+                    Map range = JSONObject.parseObject(JSONObject.toJSONString(report.get("range")), Map.class);
+                    ValidateUtils.is(range.get("type")).notNull(RCode.PANEL_PARAM_RANGETYPE_ISNULL)
+                            .and(range.get("interval")).notNull(RCode.PANEL_PARAM_RANGEINTERVAL_ISNULL)
+                            .and(range.get("unit")).notNull(RCode.PANEL_PARAM_RANGEUNIT_ISNULL);
+                    if(!Arrays.asList(new String[]{"previous", "last"}).contains(range.get("type"))){
+                        throw new NZException(RCode.PANEL_PARAM_RANGETYPE_INVALIDE);
+                    }else if(!Arrays.asList(new String[]{"hour", "day", "week", "month"}).contains(range.get("unit"))){
+                        throw new NZException(RCode.PANEL_PARAM_RANGEUNIT_INVALIDE);
+                    }
+                    Map schedule = JSONObject.parseObject(JSONObject.toJSONString(report.get("schedule")), Map.class);
+                    ValidateUtils.is(schedule.get("type")).notNull(RCode.PANEL_PARAM_SCHEDULETYPE_ISNULL)
+                            .and(schedule.get("repeat")).notNull(RCode.PANEL_PARAM_SCHEDULEREPEAT_ISNULL)
+                            .and(schedule.get("stime")).notNull(RCode.PANEL_PARAM_SCHEDULESTIME_ISNULL);
+                    if(!Arrays.asList(new Integer[]{1, 2, 3, 4}).contains(schedule.get("type"))){
+                        throw new NZException(RCode.PANEL_PARAM_SCHEDULETYPE_INVALIDE);
+                    }
+                    if(ToolUtil.equals(schedule.get("type").toString(),"3")){
+                        ValidateUtils.is(schedule.get("nums")).notNull(RCode.PANEL_PARAM_SCHEDULENUMS_ISNULL);
+                        if(!Arrays.asList(new Integer[]{1, 2, 3, 4, 5, 6, 7}).containsAll(JSONArray.parseObject(JSONObject.toJSONString(schedule.get("nums")), List.class))){
+                            throw new NZException(RCode.PANEL_PARAM_SCHEDULENUMS_INVALIDE);
+                        }
+                    }else if(ToolUtil.equals(schedule.get("type").toString(),"4")){
+                        ValidateUtils.is(schedule.get("nums")).notNull(RCode.PANEL_PARAM_SCHEDULENUMS_ISNULL);
+                        List<Integer> monthlyList = new ArrayList<>();
+                        for (int i = 1; i < 32; i++) {
+                            monthlyList.add(i);
+                        }
+                        monthlyList.add(-1);
+                        if(!monthlyList.containsAll(JSONArray.parseObject(JSONObject.toJSONString(schedule.get("nums")), List.class))){
+                            throw new NZException(RCode.PANEL_PARAM_SCHEDULENUMS_INVALIDE);
+                        }
+                    }
+                }else{
+                    if(ToolUtil.isEmpty(report.get("enable"))){
+                        report.put("enable", false);
+                        param.put("report", report);
+                    }
+                }
+            }
+            if(ToolUtil.isNotEmpty(param.get("chartShare"))){
+                if(!Arrays.asList(new String[]{"none", "crosshair", "tooltip"}).contains(param.get("chartShare"))){
+                    throw new NZException(RCode.PANEL_PARAM_REPORTCHARTSHARE_INVALIDE);
+                }
+            }else{
+                param.put("chartShare","none");
+            }
+            panel.setParam(JSONObject.toJSONString(param));
+        }
     }
 
     @Override
@@ -354,6 +419,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         if (ToolUtil.isEmpty(panel.getLink())) {
             panel.setType(Constant.PanelType.DASHBOARD.getValue());
         }
+        panel.setUts(System.currentTimeMillis());
+        if (ToolUtil.isNotEmpty(panel.getParam()))
+            panel.setParam(String.valueOf(panel.getParam()));
 
         Integer pid = panel.getPid();
         pid = (pid == null) ? 0 : pid;
@@ -381,6 +449,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         if (oldPanel == null) {
             throw new NZException(RCode.PANEL_NOT_EXIST);
         }
+        panel.setUts(System.currentTimeMillis());
+        if (ToolUtil.isNotEmpty(panel.getParam()))
+            panel.setParam(String.valueOf(panel.getParam()));
 
         // 改变 pid 父级节点时，将该 panel 加入到该 pid 下末尾位置
         if (!oldPanel.getPid().equals(panel.getPid())) {
@@ -510,6 +581,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         Long userId = ShiroUtils.getUserId();
         panel.setCreateBy(userId.intValue());
         panel.setId(null);
+        panel.setUts(System.currentTimeMillis());
 
         Integer pid = panel.getPid();
         // 查询该父级节点下是否存在 Panel 节点

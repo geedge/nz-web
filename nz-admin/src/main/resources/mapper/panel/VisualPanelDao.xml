@@ -12,6 +12,9 @@
         <result property="pid" column="pid"></result>
         <result property="weight" column="weight"></result>
         <result property="seq" column="seq"></result>
+        <result property="param" column="param"></result>
+        <result property="remark" column="remark"></result>
+        <result property="uts" column="uts"></result>
         <result property="chartNum" column="chart_num"></result>
         <association property="parent" columnPrefix="parent_" javaType="com.nis.modules.panel.entity.VisualPanel">
             <result property="id" column="id" />
