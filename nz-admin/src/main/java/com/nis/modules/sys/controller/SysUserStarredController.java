@@ -11,6 +11,7 @@ import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -26,7 +27,7 @@ public class SysUserStarredController {
     public R queryStarred(String type) {
         List<SysUserStarredEntity> sysUserStarredEntityList = sysUserStarredService.queryStarred(type);
         Map<String, Object> starredMap = Tool.MapUtil.newConcurrentHashMap();
-        starredMap.put("list",sysUserStarredEntityList);
+        starredMap.put("list",sysUserStarredEntityList == null ? new ArrayList<>() : sysUserStarredEntityList);
         return R.ok(starredMap);
     }
 
