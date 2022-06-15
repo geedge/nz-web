@@ -947,7 +947,7 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			params.put("endpoint",alertMessageEntity.getEndpointId());
 			params.put("alertrule",alertMessageEntity.getRuleId());
 			params.put("datacenter",alertMessageEntity.getDcId());
-			params.put("hash ",alertMessageEntity.getHashKey());
+			params.put("hash",alertMessageEntity.getHashKey());
 		}else {
 			throw new NZException(RCode.ALERTMSG_NOT_EXITS);
 		}
