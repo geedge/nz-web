@@ -1,5 +1,5 @@
 # 定义全局docker镜像
-image: git.mesalab.cn:7443/nezha/nz-build-env:1.3
+image: git.mesalab.cn:7443/nezha/nz-build-env:1.4
 # 定义全局变量
 variables:
   MINIO_HOST: 'http://192.168.44.36:2020/'
@@ -12,6 +12,13 @@ variables:
   MYSQL_ROOT_PASSWORD: '111111'
   # redis 端口定义 （必须）
   REDIS_PORT: 6379
+  # sys_i18n 数据源信息
+  NZ_DB_HOST: "192.168.40.42"
+  NZ_DB_USER: "root"
+  NZ_DB_PASSWORD: "111111"
+  NZ_DB_NAME: "nz-dev-v3.0"
+  # 由于 git tag 的时候获取不到 branch ，在此定义 R__AZ_sys_i18n.sql 提交分支
+  NZ_COMMIT_BRANCH: "dev-3.3"
 # 定义全局依赖的docker服务，即 这条流水线 pipeline 中的任务都用这里的服务
 services:
   - mariadb:10.2.14
@@ -24,6 +31,7 @@ after_script:
   - echo "end ci"
 # 该ci pipeline适合的场景，按照定义的顺序执行任务
 stages:
+  - update_i18n
   - build
   - test
   - junit_test
@@ -53,6 +61,30 @@ build_rpm:
   # 在哪个分支上可用
   only:
     - /^rel-.*$/i
+  # 指定哪个ci runner跑该工作
+  tags:
+    - nezha
+
+# ci 更新 sys_i18n sql
+ci_update_i18n_sql:
+  stage: update_i18n
+  script:
+    - env | sort
+    - pwd
+    - chmod +x ./tools/beforeinstall.sh
+    - ./tools/beforeinstall.sh
+  artifacts:
+    name: "R__AZ_sys_i18n.sql"
+    when: on_success
+    paths:
+      - /builds/nezha/nz-web/nz-admin/src/main/resources/db/R__AZ_sys_i18n.sql
+    expire_in: 1 day
+  # 在哪个分支上可用
+  only:
+    - /^rel-.*$/i
+  # 指定不执行的标签
+  except:
+    - schedules
   # 指定哪个ci runner跑该工作
   tags:
     - nezha
