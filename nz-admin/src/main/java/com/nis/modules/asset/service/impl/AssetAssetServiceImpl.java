@@ -1046,6 +1046,12 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // 删除 asset
         this.removeByIds(idList);
 
+        //删除starred
+        starredService.remove(new LambdaQueryWrapper<SysUserStarredEntity>()
+                .eq(SysUserStarredEntity::getType,"asset")
+                .in(SysUserStarredEntity::getTid,idList)
+        );
+
         // 删除 endponiet
         List<MonitorEndpoint> endpoints = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().in(MonitorEndpoint::getAssetId, idList));
         if (CollectionUtils.isNotEmpty(endpoints)) {

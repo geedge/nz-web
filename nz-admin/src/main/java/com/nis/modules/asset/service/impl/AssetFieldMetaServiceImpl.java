@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -124,6 +125,12 @@ public class AssetFieldMetaServiceImpl extends ServiceImpl<AssetFieldMetaDao,Ass
 		// 先删除关联关系 最后删除本身数据信息
 		//assetFieldValueDao.delete(new QueryWrapper<AssetFieldValue>().lambda().in(AssetFieldValue::getMetaId, assetFieldMetaIds));
 		assetFieldMetaDao.deleteBatchIds(assetFieldMetaIds);
+
+		//删除starred
+		starredService.remove(new LambdaQueryWrapper<SysUserStarredEntity>()
+				.eq(SysUserStarredEntity::getType,"assetFieldMeta")
+				.in(SysUserStarredEntity::getTid,assetFieldMetaIds)
+		);
 	}
 
 }

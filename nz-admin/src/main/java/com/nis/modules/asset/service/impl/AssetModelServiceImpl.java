@@ -256,6 +256,12 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
 
         // 删除
         this.removeByIds(Arrays.asList(ids));
+
+        //删除starred
+        starredService.remove(new LambdaQueryWrapper<SysUserStarredEntity>()
+                .eq(SysUserStarredEntity::getType,"assetModel")
+                .in(SysUserStarredEntity::getTid,Arrays.asList(ids))
+        );
     }
 
     @Override
