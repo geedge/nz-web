@@ -1,10 +1,7 @@
 package com.nis.modules.sys.controller;
 
 import com.nis.common.annotation.SysLog;
-import com.nis.common.utils.OperationEnum;
-import com.nis.common.utils.R;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.TypeEnum;
+import com.nis.common.utils.*;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.SysUserStarredService;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
@@ -26,6 +23,7 @@ public class SysUserStarredController {
     public R queryStarred(String type) {
         List<SysUserStarredEntity> sysUserStarredEntityList = sysUserStarredService.queryStarred(type);
         Map<String, Object> starredMap = Tool.MapUtil.newConcurrentHashMap();
+        sysUserStarredEntityList = ToolUtil.isEmpty(sysUserStarredEntityList) ? Tool.ListUtil.empty() : sysUserStarredEntityList;
         starredMap.put("list",sysUserStarredEntityList);
         return R.ok(starredMap);
     }
