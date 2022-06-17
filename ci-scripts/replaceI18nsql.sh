@@ -18,14 +18,5 @@ fi
 # 导出表数据
 mysqldump --extended-insert=FALSE --add-locks=FALSE  -h $NZ_DB_HOST -u$NZ_DB_USER -p$NZ_DB_PASSWORD $NZ_DB_NAME sys_i18n > ./nz-admin/src/main/resources/db/R__AZ_sys_i18n.sql
 
-# 提交 git
-git init
-git config --global user.email "shizhendong@zdjizhi.com"
-git config --global user.name "ci"
-git config --global push.default current
-git status
-git commit nz-admin/src/main/resources/db/R__AZ_sys_i18n.sql -m "[ci skip] fix: ci update sys_i18n data"
-git push https://shizhendong:NGzn5d6uymQSGnAsyJa5@git.mesalab.cn/nezha/nz-web.git HEAD:$NZ_COMMIT_BRANCH
-
 echo 'add sys_i18n finished'
 exit 0

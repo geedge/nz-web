@@ -17,8 +17,6 @@ variables:
   NZ_DB_USER: "root"
   NZ_DB_PASSWORD: "111111"
   NZ_DB_NAME: "nz-dev-v3.0"
-  # 由于 git tag 的时候获取不到 branch ，在此定义 R__AZ_sys_i18n.sql 提交分支
-  NZ_COMMIT_BRANCH: "dev-3.3"
 # 定义全局依赖的docker服务，即 这条流水线 pipeline 中的任务都用这里的服务
 services:
   - mariadb:10.2.14
@@ -71,8 +69,8 @@ ci_update_i18n_sql:
   script:
     - env | sort
     - pwd
-    - chmod +x ./tools/beforeinstall.sh
-    - ./tools/beforeinstall.sh
+    - chmod +x ./ci-scripts/replaceI18nsql.sh
+    - ./ci-scripts/replaceI18nsql.sh
   artifacts:
     name: "R__AZ_sys_i18n.sql"
     when: on_success
