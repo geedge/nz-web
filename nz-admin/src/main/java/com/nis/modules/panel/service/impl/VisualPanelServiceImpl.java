@@ -8,6 +8,7 @@ import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
@@ -28,10 +29,8 @@ import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
-import com.nis.modules.sys.service.BasicImportAndExportServices;
-import com.nis.modules.sys.service.SysConfigService;
-import com.nis.modules.sys.service.SysDictService;
-import com.nis.modules.sys.service.SysUserStarredService;
+import com.nis.modules.sys.entity.Timezone;
+import com.nis.modules.sys.service.*;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -109,6 +108,12 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
     @Autowired
     private MonitorEndpointService monitorEndpointService;
+
+    @Autowired
+    private SysConfigService configService;
+
+    @Autowired
+    private TimezoneService timezoneService;
 
     @Override
     public VisualPanel queryInfo(Integer id) {
@@ -566,6 +571,12 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         resultMap.put("start",start);
         resultMap.put("end",end);
         resultMap.put("panel",R.ok(panel));
+        // 查询系统时区信息
+        SysConfigEntity configEntity = configService.getOne(new LambdaUpdateWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, "timezone"));
+        Timezone timezoneEntity = timezoneService.getOne(new LambdaUpdateWrapper<Timezone>().eq(Timezone::getName, configEntity.getParamValue()));
+        resultMap.put("offset", timezoneEntity.getOffset());
+        resultMap.put(ToolUtil.toCamelCase(configEntity.getParamKey()), configEntity.getParamValue());
+
         // charts 查询
         Map param = new HashMap<>();
         param.put("pageSize", "-1");
