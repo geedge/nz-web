@@ -5573,6 +5573,28 @@ INSERT INTO `sys_i18n` VALUES (6143, 'dashboard.panel.receivers', 'en', 'dashboa
 INSERT INTO `sys_i18n` VALUES (6144, 'dashboard.panel.receivers', 'zh', 'dashboard.panel.receivers', '接收人', '', '2022-06-13 07:14:24', 1);
 INSERT INTO `sys_i18n` VALUES (6145, 'alert.relatedAlerts', 'en', 'alert.relatedAlerts', 'Related alerts', '', '2022-06-13 08:54:09', 1);
 INSERT INTO `sys_i18n` VALUES (6146, 'alert.relatedAlerts', 'zh', 'alert.relatedAlerts', '相关告警', '', '2022-06-13 08:54:48', 1);
+INSERT INTO `sys_i18n` VALUES (6147, '731001', 'en', 'IPAM_IP_ID_ISNULL', 'Ipamip id can not be null', '', '2022-06-20 15:54:48', 1);
+INSERT INTO `sys_i18n` VALUES (6148, '731001', 'zh', 'IPAM_IP_ID_ISNULL', 'ip id不能为空', '', '2022-06-20 15:54:48', 1);
+INSERT INTO `sys_i18n` VALUES (6149, '731002', 'en', 'IPAM_IP_NAME_ISNULL', 'Ipamip name can not be null', '', '2022-06-20 15:54:48', 1);
+INSERT INTO `sys_i18n` VALUES (6150, '731002', 'zh', 'IPAM_IP_NAME_ISNULL', 'ip名称不能为空', '', '2022-06-20 15:54:48', 1);
+INSERT INTO `sys_i18n` VALUES (6151, '731003', 'en', 'IPAM_IP_ADDR_ISNULL', 'Ipamip addr can not be null', '', '2022-06-20 15:54:48', 1);
+INSERT INTO `sys_i18n` VALUES (6152, '731003', 'zh', 'IPAM_IP_ADDR_ISNULL', 'ip地址不能为空', '', '2022-06-20 15:54:48', 1);
+INSERT INTO `sys_i18n` VALUES (6153, '731004', 'en', 'IPAM_IP_MAC_ISNULL', 'Ipamip mac can not be null', '', '2022-06-20 15:54:48', 1);
+INSERT INTO `sys_i18n` VALUES (6154, '731004', 'zh', 'IPAM_IP_MAC_ISNULL', 'ip mac地址不能为空', '', '2022-06-20 15:54:48', 1);
+INSERT INTO `sys_i18n` VALUES (6155, '731005', 'en', 'IPAM_IP_ADDR_ERROR', 'Ipamip addr format error,please check ip format for ipv4/6', '', '2022-06-20 15:54:48', 1);
+INSERT INTO `sys_i18n` VALUES (6156, '731005', 'zh', 'IPAM_IP_ADDR_ERROR', 'ip地址格式错误', '', '2022-06-20 15:54:48', 1);
+INSERT INTO `sys_i18n` VALUES (6157, '731006', 'en', 'IPAM_IP_INTERVAL_ERROR', 'Ipamip interval already exists', '', '2022-06-20 15:54:48', 1);
+INSERT INTO `sys_i18n` VALUES (6158, '731006', 'zh', 'IPAM_IP_INTERVAL_ERROR', 'ip地址已存在', '', '2022-06-20 15:54:48', 1);
+INSERT INTO `sys_i18n` VALUES (6159, '731007', 'en', 'IPAM_IP_ASSET_ISNULL', 'Ipamip asset can not be null', '', '2022-06-20 15:54:48', 1);
+INSERT INTO `sys_i18n` VALUES (6160, '731007', 'zh', 'IPAM_IP_ASSET_ISNULL', 'ip资产不存在', '', '2022-06-20 15:54:48', 1);
+INSERT INTO `sys_i18n` VALUES (6161, '731008', 'en', 'IPAM_IP_SUBNET_ISNULL', 'Ipamip subnet can not be null', '', '2022-06-20 15:54:48', 1);
+INSERT INTO `sys_i18n` VALUES (6162, '731008', 'zh', 'IPAM_IP_SUBNET_ISNULL', 'ip子网不存在', '', '2022-06-20 15:54:48', 1);
+INSERT INTO `sys_i18n` VALUES (6163, '731009', 'en', 'IPAM_IP_MAC_ERROR', 'Ipamip mac error, mac repeat', '', '2022-06-20 15:54:48', 1);
+INSERT INTO `sys_i18n` VALUES (6164, '731009', 'zh', 'IPAM_IP_MAC_ERROR', 'ip mac地址重复', '', '2022-06-20 15:54:48', 1);
+INSERT INTO `sys_i18n` VALUES (6165, '731010', 'en', 'IPAM_IP_SUBNET_ADDR_ERROR', 'Ipamip addr error, ip addr different subnet addr', '', '2022-06-20 15:54:48', 1);
+INSERT INTO `sys_i18n` VALUES (6166, '731010', 'zh', 'IPAM_IP_SUBNET_ADDR_ERROR', 'ip地址与子网不匹配', '', '2022-06-20 15:54:48', 1);
+INSERT INTO `sys_i18n` VALUES (6167, '731011', 'en', 'IPAM_IP_MAC_ADDR_ERROR', 'Ipamip mac and addr exist', '', '2022-06-20 15:54:48', 1);
+INSERT INTO `sys_i18n` VALUES (6168, '731011', 'zh', 'IPAM_IP_MAC_ADDR_ERROR', 'ip地址与mac地址重复', '', '2022-06-20 15:54:48', 1);
 
 
 SET FOREIGN_KEY_CHECKS = 1;
