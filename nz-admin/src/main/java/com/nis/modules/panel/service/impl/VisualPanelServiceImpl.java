@@ -474,7 +474,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         Map chartTypeMap = (Map) i18nConfigMap.get(Constant.DICT_CHART_TYPE);
         Map chartTypeMapByLanguage = (Map) chartTypeMap.get(language);
         if (ToolUtil.isEmpty(chartTypeMapByLanguage)) {
-            throw new NZException(RCode.PANEL_EXPORT_HEADER_LANGUAGE_ERROR);
+            throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
         }
 
         ArrayList<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
@@ -1299,7 +1299,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 }
                 Object url = map.get(Constant.CHART_URL_TYPE);
                 if (ToolUtil.isEmpty(url)) {
-                    return RCode.CHART_PARAMURL_ISNULL.getMsg();
+                    return RCode.CHART_URLPARAM_ISNULL.getMsg();
                 }
 
                 if(StrUtil.equals(Constant.PanelType.MODEL.getValue(),panelType)) {
@@ -1352,7 +1352,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 }
                 Object text = map.get(Constant.CHART_TEXT_TYPE);
                 if (ToolUtil.isEmpty(text)) {
-                    return RCode.CHART_PARAMTEXT_ISNULL.getMsg();
+                    return RCode.CHART_TEXTPARAM_ISNULL.getMsg();
                 }
                 break;
             }

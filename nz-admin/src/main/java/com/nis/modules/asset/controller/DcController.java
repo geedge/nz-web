@@ -171,7 +171,7 @@ public class DcController {
     @DeleteMapping("/cancelImport")
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.DATACENTER)
     public R cancelImport(@RequestParam(value = "seq", required = false) String seq) {
-        ValidateUtils.is(seq).notNull(RCode.DC_SEQ_ISNULL);
+        ValidateUtils.is(seq).notNull(RCode.UNDO_IMPORT_SEQ_ISNULL);
 
         dcService.cancelImport(seq);
         return R.ok();
@@ -330,7 +330,7 @@ public class DcController {
     @DeleteMapping("/cabinet/cancelImport")
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.DATACENTER)
     public R cancelCabinetImport(@RequestParam(value = "seq", required = false) String seq) {
-        ValidateUtils.is(seq).notNull(RCode.DC_SEQ_ISNULL);
+        ValidateUtils.is(seq).notNull(RCode.UNDO_IMPORT_SEQ_ISNULL);
 
         cabinetService.cancelImport(seq);
         return R.ok();

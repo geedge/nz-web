@@ -1087,7 +1087,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                     if (ToolUtil.isNotEmpty(host)) {
                         if (!CommonUtils.checkIp(host.toString())) {
                             saveFlag = false;
-                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ASSET_HOST_FORMAT.getMsg());
+                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ASSET_MANAGEIP_FORMAT.getMsg());
                         }
                     }
                     // snmp 类型校验 config

@@ -158,7 +158,7 @@ public class MonitorModuleController {
     @DeleteMapping("/module/cancelImport")
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.MODULE)
     public R cancelImport(@RequestParam(value = "seq", required = false) String seq) {
-        ValidateUtils.is(seq).notNull(RCode.MODULE_SEQ_ISNULL);
+        ValidateUtils.is(seq).notNull(RCode.UNDO_IMPORT_SEQ_ISNULL);
 
         monitorModuleService.cancelImport(seq);
         return R.ok();

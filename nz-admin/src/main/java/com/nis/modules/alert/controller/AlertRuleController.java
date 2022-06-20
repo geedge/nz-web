@@ -148,7 +148,7 @@ public class AlertRuleController {
     @DeleteMapping("/cancelImport")
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ALERTRULE)
     public R cancelImport(String seq) {
-        ValidateUtils.is(seq).notNull(RCode.ALERTRULE_CANCELIMPORTSEQ_ISNULL);
+        ValidateUtils.is(seq).notNull(RCode.UNDO_IMPORT_SEQ_ISNULL);
 
         alertRuleService.cancelImport(seq);
         return R.ok();

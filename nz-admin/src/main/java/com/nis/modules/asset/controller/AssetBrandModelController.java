@@ -183,7 +183,7 @@ public class AssetBrandModelController {
     @DeleteMapping("/asset/model/cancelImport")
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.MODEL)
     public R cancelImport(@RequestParam(value = "seq", required = false) String seq) {
-        ValidateUtils.is(seq).notNull(RCode.ASSET_MODEL_SEQ_ISNULL);
+        ValidateUtils.is(seq).notNull(RCode.UNDO_IMPORT_SEQ_ISNULL);
 
         modelService.cancelImport(seq);
         return R.ok();

@@ -218,7 +218,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	            ValidateUtils.is(param).notNull(RCode.CHART_URLPARAM_ISNULL);
 	            Object url = param.get(Constant.CHART_URL_TYPE);
 	            if (ToolUtil.isEmpty(url)) {
-	                throw new NZException(RCode.CHART_PARAMURL_ISNULL);
+	                throw new NZException(RCode.CHART_URLPARAM_ISNULL);
 	            }
 	
 	            String urlStr = url.toString();
@@ -267,7 +267,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	        case Constant.CHART_TEXT_TYPE: {
 	            ValidateUtils.is(param).notNull(RCode.CHART_TEXTPARAM_ISNULL);
 	            Object text = param.get(Constant.CHART_TEXT_TYPE);
-	            if (ToolUtil.isEmpty(text)) throw new NZException(RCode.CHART_PARAMTEXT_ISNULL);
+	            if (ToolUtil.isEmpty(text)) throw new NZException(RCode.CHART_TEXTPARAM_ISNULL);
 	            break;
 	        }
 	    }

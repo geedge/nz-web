@@ -403,7 +403,7 @@ public class MonitorEndpointTest extends BaseTest<MonitorEndpoint> {
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
         MvcResult result = UTUtil.performDelete("/monitor/endpoint/cancelImport", map);
 
-        UTUtil.assertEqualsRCode(result,RCode.ENDPOINT_CANCELIMPORTSEQ_ISNULL);
+        UTUtil.assertEqualsRCode(result,RCode.UNDO_IMPORT_SEQ_ISNULL);
     }
 
     /**

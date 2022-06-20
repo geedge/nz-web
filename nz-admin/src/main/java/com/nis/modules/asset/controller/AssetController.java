@@ -282,7 +282,7 @@ public class AssetController {
     @DeleteMapping("/asset/cancelImport")
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ASSET)
     public R cancelImportAssetData(String seq) {
-        ValidateUtils.is(seq).notNull(RCode.ASSET_CANCELIMPORTSEQ_ISNULL);
+        ValidateUtils.is(seq).notNull(RCode.UNDO_IMPORT_SEQ_ISNULL);
 
         assetAssetService.cancelImport(seq);
         return R.ok();

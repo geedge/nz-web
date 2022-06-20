@@ -132,7 +132,7 @@ public class IpamSubnetController {
     @DeleteMapping("/cancelImport")
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.CHART)
     public R cancelImport(String seq) {
-        ValidateUtils.is(seq).notNull(RCode.PANEL_CANCELIMPORTSEQ_ISNULL);
+        ValidateUtils.is(seq).notNull(RCode.UNDO_IMPORT_SEQ_ISNULL);
         ipamSubnetService.cancelImport(seq);
         return R.ok();
     }

@@ -351,7 +351,7 @@ public class DcTest extends BaseTest<Dc> {
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
         MvcResult result = UTUtil.performDelete("/dc/cancelImport", map);
 
-        UTUtil.assertEqualsRCode(result,RCode.DC_SEQ_ISNULL);
+        UTUtil.assertEqualsRCode(result,RCode.UNDO_IMPORT_SEQ_ISNULL);
     }
 
 
@@ -592,7 +592,7 @@ public class DcTest extends BaseTest<Dc> {
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
         MvcResult result = UTUtil.performGet("/dc/cabinet/u", map);
 
-        UTUtil.assertEqualsRCode(result,RCode.ASSET_CABINET_NOTFOUND);
+            UTUtil.assertEqualsRCode(result,RCode.CABINET_NOT_EXISTS);
 
     }
 
@@ -721,7 +721,7 @@ public class DcTest extends BaseTest<Dc> {
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
         MvcResult result = UTUtil.performDelete("/dc/cabinet/cancelImport", map);
 
-        UTUtil.assertEqualsRCode(result,RCode.DC_SEQ_ISNULL);
+        UTUtil.assertEqualsRCode(result,RCode.UNDO_IMPORT_SEQ_ISNULL);
     }
 
 }

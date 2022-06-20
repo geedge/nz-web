@@ -263,7 +263,7 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
         // 获取当前机柜
         Cabinet cabinet = this.getById(id);
         if (cabinet == null) {
-            throw new NZException(RCode.ASSET_CABINET_NOTFOUND);
+            throw new NZException(RCode.CABINET_NOT_EXISTS);
         }
 
         Map resuleData = new HashMap();

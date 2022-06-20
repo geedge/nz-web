@@ -153,7 +153,7 @@ public class ExpreTmplController {
     @DeleteMapping("/cancelImport")
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.EXPRESSIONTMPL)
     public R cancelImport(@RequestParam(value = "seq", required = false) String seq) {
-        ValidateUtils.is(seq).notNull(RCode.EXPRETMPL_SEQ_ISNULL);
+        ValidateUtils.is(seq).notNull(RCode.UNDO_IMPORT_SEQ_ISNULL);
 
         expreTmplService.cancelImport(seq);
         return R.ok();

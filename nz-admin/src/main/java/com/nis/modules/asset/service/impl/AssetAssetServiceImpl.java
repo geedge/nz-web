@@ -588,12 +588,12 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         if (typeConf.getVm().equals(0)) {
             // dc
             Dc dc = dcService.getById(asset.getDcId());
-            ValidateUtils.is(dc).notNull(RCode.ASSET_DC_NOTFOUND);
+            ValidateUtils.is(dc).notNull(RCode.DC_NOT_EXISTS);
 
             // cab
             if (ToolUtil.isNotEmpty(asset.getCabinetId())) {
                 Cabinet cabinet = cabinetService.getById(asset.getCabinetId());
-                ValidateUtils.is(cabinet).notNull(RCode.ASSET_CABINET_NOTFOUND);
+                ValidateUtils.is(cabinet).notNull(RCode.CABINET_NOT_EXISTS);
 
                 // cabinet dc 不匹配
                 if (!dc.getId().equals(cabinet.getDcId())) {
