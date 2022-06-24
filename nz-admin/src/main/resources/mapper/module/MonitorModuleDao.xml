@@ -108,4 +108,14 @@
             mm.id = #{moduleId}
     </select>
 
+    <select id="queryAssetMoudules" resultType="java.lang.String">
+        SELECT
+            IFNULL(GROUP_CONCAT( DISTINCT mm.name ), '')
+        FROM
+            monitor_endpoint me
+            LEFT JOIN monitor_module mm ON me.module_id = mm.id
+        WHERE
+            me.asset_id = #{assetId}
+    </select>
+
 </mapper>

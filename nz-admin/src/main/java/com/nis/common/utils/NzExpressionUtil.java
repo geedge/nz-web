@@ -171,7 +171,7 @@ public class NzExpressionUtil {
 				expre = expre.replaceAll("project.", "");
 				result = BeanUtil.getProperty(obj,expre);
 			}else if (obj instanceof MonitorModule) {
-				expre = expre.replaceAll("module.", "");
+				expre = expre.replaceAll("module\\.", "");
 				result = BeanUtil.getProperty(obj,expre);
 			}else if (obj instanceof Dc) {
 				expre = expre.replaceAll("datacenter.", "").replaceAll("dc.", "");

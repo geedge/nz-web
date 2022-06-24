@@ -25,4 +25,6 @@ public interface MonitorModuleDao extends BaseMapper<MonitorModule> {
     List<AssetAsset> queryAssetListByModuleId(@Param("moduleId") Integer moduleId);
 
     List<Dc> queryDcListByModuleId(@Param("moduleId") Integer moduleId);
+
+    String queryAssetMoudules(@Param("assetId") Integer assetId);
 }

@@ -38,4 +38,6 @@ public interface MonitorModuleService extends IService<MonitorModule> {
     List<AssetAsset> getAssetListByModuleId(Integer moduleId);
 
     List<Dc> getDcListByModuleId(Integer moduleId);
+
+    String queryAssetMoudules(Integer assetId);
 }

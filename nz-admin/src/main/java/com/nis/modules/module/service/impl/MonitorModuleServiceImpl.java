@@ -898,4 +898,8 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
         return exportDataList;
     }
 
+    @Override
+    public String queryAssetMoudules(Integer assetId) {
+        return this.baseMapper.queryAssetMoudules(assetId);
+    }
 }

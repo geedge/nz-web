@@ -222,7 +222,7 @@ public class VisualExpreTmplServiceImpl extends ServiceImpl<VisualExpreTmplDao, 
             renderValue = (var.startsWith("asset.") && ToolUtil.isNotEmpty(asset) && renderValue == null) ? BeanUtil.getProperty(asset, var.replaceAll("asset.", "")) : renderValue;
             renderValue = (var.startsWith("datacenter.") && ToolUtil.isNotEmpty(dc) && renderValue == null) ? BeanUtil.getProperty(dc, var.replaceAll("datacenter.", "")) : renderValue;
             renderValue = (var.startsWith("project.") && ToolUtil.isNotEmpty(project) && renderValue == null) ? BeanUtil.getProperty(project, var.replaceAll("project.", "")) : renderValue;
-            renderValue = (var.startsWith("module.") && ToolUtil.isNotEmpty(module) && renderValue == null) ? BeanUtil.getProperty(module, var.replaceAll("module.", "")) : renderValue;
+            renderValue = (var.startsWith("module.") && ToolUtil.isNotEmpty(module) && renderValue == null) ? BeanUtil.getProperty(module, var.replaceAll("module\\.", "")) : renderValue;
             renderValue = (var.startsWith("endpoint.") && ToolUtil.isNotEmpty(endpoint) && renderValue == null) ? BeanUtil.getProperty(endpoint, var.replaceAll("endpoint.", "")) : renderValue;
             renderValue = (renderValue == null && flag) ? varsVal.get(var) : renderValue;
             if (renderValue == null && flag) {

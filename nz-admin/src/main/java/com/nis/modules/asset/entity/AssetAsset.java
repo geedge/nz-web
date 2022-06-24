@@ -328,4 +328,10 @@ public class AssetAsset implements Serializable {
      */
     @TableField(exist = false)
     private Integer starred;
+
+    /**
+     * asset.modules 模板变量
+     */
+    @TableField(exist = false)
+    private String modules;
 }

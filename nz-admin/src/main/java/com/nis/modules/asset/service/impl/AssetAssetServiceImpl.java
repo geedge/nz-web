@@ -259,6 +259,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 .eq(SysUserStarredEntity::getUid,ShiroUtils.getUserId())
         );
         asset.setStarred(count == 0 ? 0 : 1);
+        // 已配置的 module 名单
+        asset.setModules(moduleService.queryAssetMoudules(asset.getId()));
         return asset;
     }
 
