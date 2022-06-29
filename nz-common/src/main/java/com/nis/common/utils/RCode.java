@@ -166,6 +166,18 @@ public enum RCode {
     MODULE_TYPE_INCONSISTENT(223025,"Module type is invalid"),
     MODULE_TYPE_ISNULL(221026,"Module type can not be empty"),
     MODULE_USERNAME_INVALID(221027,"Auth username is missing, required for SNMPv3"),
+    MODULE_CONFIG_JOURNALUNIT_ISNULL(221028,"Module config journal unit is null"),
+    MODULE_CONFIG_SYSLOG_APPNAME_ISNULL(221029,"Module config syslog appName is null"),
+    MODULE_CONFIG_SYSLOG_ADDRESS_ISNULL(221030,"Module config syslog listenAddress is null"),
+    MODULE_CONFIG_PIPELINE_EXPRESSION_ISNULL(221031,"Module config pipeline expression is null"),
+    MODULE_CONFIG_PIPELINE_TEMPLATE_ISNULL(221032,"Module config pipeline template is null"),
+    MODULE_CONFIG_PIPELINE_FORMAT_ISNULL(221033,"Module config pipeline format is null"),
+    MODULE_CONFIG_PIPELINE_EXPRESSIONS_ISNULL(221034,"Module config pipeline expressions is null"),
+    MODULE_CONFIG_PIPELINE_SOURCE_ISNULL(221035,"Module config pipeline source is null"),
+    MODULE_CONFIG_RELABEL_SOURCELABELS_ISNULL(221036,"Module config relabel source_labels is null"),
+    MODULE_CONFIG_RELABEL_TARGETLABEL_ISNULL(221037,"Module config relabel target_label is null"),
+    MODULE_CONFIG_RELABEL_REGEX_ISNULL(221038,"Module config relabel regex is null"),
+    MODULE_CONFIG_RELABEL_REPLACEMENT_ISNULL(221039,"Module config relabel replacement is null"),
 
     /**
      * endpoint
@@ -191,6 +203,8 @@ public enum RCode {
     ENDPOINT_SNMP_WALK_ISNULL(231019,"Snmp type module walk oids cannot be empty"),
     ENDPOINT_TYPE_INVALID(233020,"Endpoint type is invalid"),
     ENDPOINT_TYPE_ISNULL(231021,"Endpoint type can not be empty"),
+    ENDPOINT_PORT_ISNULL(231022,"Endpoint port can not be empty"),
+    ENDPOINT_LABELNAME_FORMAT_ERROR(233023,"Expressions label key does not comply with Prometheus labelname format"),
 
     /**
      * assets菜单项相关

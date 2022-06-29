@@ -406,6 +406,21 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                         .in(MonitorEndpointConfig::getEndpointId, ids));
                 for (MonitorEndpointConfig endpointConfig : endpointConfigList) {
                     endpointConfig.setEnable(Integer.parseInt(String.valueOf(params.get("enable"))));
+                    if(ToolUtil.equals(1, params.get("enable"))){
+                        if(ToolUtil.equals(2, editType)) {
+                            Map configMap = JSONObject.parseObject(JSONObject.toJSONString(endpointConfig), Map.class);
+                            validateEndpointMetrics(configMap);
+                            Map map = JSONObject.parseObject(String.valueOf(configMap.get("config")), Map.class);
+                            if (ToolUtil.isEmpty(map.get("host"))) {
+                                MonitorEndpoint monitorEndpoint = this.getById(endpointConfig.getEndpointId());
+                                AssetAsset asset = assetService.getById(monitorEndpoint.getAssetId());
+                                map.put("host", asset.getManageIp());
+                                endpointConfig.setConfig(JSONObject.toJSONString(map));
+                            }
+                        }else{
+                            validateEndpointLogs(JSONObject.parseObject(JSONObject.toJSONString(endpointConfig), Map.class));
+                        }
+                    }
                 }
                 endpointConfigService.updateBatchById(endpointConfigList);
                 break;
@@ -1272,66 +1287,119 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 String configType = (String) map.get("type");
                 return StrUtil.equals("metrics", configType);
             }).findFirst().orElse(null);
-
-            if (metricsConfigMap != null && (1 == (Integer) ObjectUtil.defaultIfNull(metricsConfigMap.get("enable"), 1))) {
-                Map configMap = (Map) metricsConfigMap.get("config");
-                String protocol = (String) configMap.get("protocol");
-                // 校验 type 类型是否在枚举范围内
-                if (!StrUtil.equals(Constant.MODULE_TYPE_HTTP, protocol) && !StrUtil.equals(Constant.MODULE_TYPE_SNMP, protocol)
-                		&& !StrUtil.equals(Constant.MODULE_TYPE_HTTPS, protocol)) {
-                    throw new NZException(RCode.ENDPOINT_PROTOCOL_INVALID);
-                }
-
-                // snmp 类型校验 config
-                if (StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_SNMP, protocol)) {
-                    // snmpCredentialsId 必须存在
-                    Object snmpCredentialsId = configMap.get("snmpCredentialsId");
-                    ValidateUtils.is(snmpCredentialsId).notNull(RCode.SNMP_CREDENTIAL_ID_ISNULL);
-
-                    SnmpCredential snmpCredential = snmpCredentialService.getById(snmpCredentialsId.toString());
-                    ValidateUtils.is(snmpCredential).notNull(RCode.SNMP_CREDENTIAL_NOT_FOUND);
-
-                    Object walk = configMap.get("walk");
-                    ValidateUtils.is(walk).notNull(RCode.ENDPOINT_SNMP_WALK_ISNULL);
-
-                    try {
-                        JSONArray.parseArray(JSONObject.toJSONString(walk));
-                    } catch (JSONException e) {
-                        throw new NZException(RCode.ENDPOINT_SNMP_WALK_FORMAT);
-                    }
-                }
-
-                Map<String, Object> labels = MapUtil.defaultIfEmpty((Map) configMap.get("labels"), Collections.emptyMap());
-                for (String labelKey : labels.keySet()) {
-                    ValidateUtils.is(labelKey).regex(Constant.PROMETHEUS_LABELNAME_EXPRESSION, RCode.PROMETHEUS_LABELNAME_FORMAT_ERROR);
-                }
-
-                List<Map> relabelConfigList = ObjectUtil.defaultIfNull((List) configMap.get("relabel_config"), Collections.emptyList());
-                for (Map map : relabelConfigList) {
-                    List<String> sourceLabels = ObjectUtil.defaultIfNull((List) map.get("source_labels"), Collections.emptyList());
-                    for (String sourceLabel : sourceLabels) {
-                        ValidateUtils.is(sourceLabel).regex(Constant.PROMETHEUS_LABELNAME_EXPRESSION, RCode.PROMETHEUS_LABELNAME_FORMAT_ERROR);
-                    }
-                    String targetLabel = (String) map.get("target_label");
-                    if (StrUtil.isNotEmpty(targetLabel)) {
-                        ValidateUtils.is(targetLabel).regex(Constant.PROMETHEUS_LABELNAME_EXPRESSION, RCode.PROMETHEUS_LABELNAME_FORMAT_ERROR);
-                    }
-                }
-            }
+            validateEndpointMetrics(metricsConfigMap);
 
             Map logsConfigMap = configMapList.stream().filter(map -> {
                 String configType = (String) map.get("type");
                 return StrUtil.equals(Constant.MonitorConfType.LOGS.getValue(), configType);
             }).findFirst().orElse(null);
+            validateEndpointLogs(logsConfigMap);
+        }
+    }
 
-            if (logsConfigMap != null && 1 == (Integer) ObjectUtil.defaultIfNull(logsConfigMap.get("enable"), 1)) {
-                if (ToolUtil.isNotEmpty(logsConfigMap.get("config"))) {
-                    List<Map> configMaps = (List<Map>) logsConfigMap.get("config");
-                    for (Map configMap : configMaps) {
-                        if ("file".equals(configMap.get("type").toString()) && ToolUtil.isEmpty(configMap.get("fileName"))) {
-                            throw new NZException(RCode.MODULE_CONFIG_FILENAME_ISNULL);
+    private void validateEndpointLogs(Map logsConfigMap){
+        if (logsConfigMap != null && 1 == (Integer) ObjectUtil.defaultIfNull(logsConfigMap.get("enable"), 1)) {
+            if (ToolUtil.isNotEmpty(logsConfigMap.get("config"))) {
+                List<Map> configMaps = JSONArray.parseArray(String.valueOf(logsConfigMap.get("config")), Map.class);
+                for (Map configMap : configMaps) {
+                    // Basic
+                    if ("file".equals(configMap.get("type").toString()) && ToolUtil.isEmpty(configMap.get("fileName"))) {
+                        throw new NZException(RCode.MODULE_CONFIG_FILENAME_ISNULL);
+                    }else if ("journal".equals(configMap.get("type").toString()) && ToolUtil.isEmpty(configMap.get("unit"))) {
+                        throw new NZException(RCode.MODULE_CONFIG_JOURNALUNIT_ISNULL);
+                    }else if ("syslog".equals(configMap.get("type").toString())) {
+                        if(ToolUtil.isEmpty(configMap.get("appName"))){
+                            throw new NZException(RCode.MODULE_CONFIG_SYSLOG_APPNAME_ISNULL);
+                        }else if(ToolUtil.isEmpty(configMap.get("listenAddress"))){
+                            throw new NZException(RCode.MODULE_CONFIG_SYSLOG_ADDRESS_ISNULL);
                         }
                     }
+                    // Pipeline
+                    if(ToolUtil.isNotEmpty(configMap.get("pipeline"))){
+                        List<Map> pipelineList = JSONObject.parseArray(String.valueOf(configMap.get("pipeline")), Map.class);
+                        for (Map pipeline: pipelineList) {
+                            String pipelType = String.valueOf(pipeline.get("type"));
+                            if(StrUtil.equals("regex", pipelType) && ToolUtil.isEmpty(pipeline.get("expression"))){
+                                throw new NZException(RCode.MODULE_CONFIG_PIPELINE_EXPRESSION_ISNULL);
+                            }else if(StrUtil.equals("template", pipelType) && ToolUtil.isEmpty(pipeline.get("template"))){
+                                throw new NZException(RCode.MODULE_CONFIG_PIPELINE_TEMPLATE_ISNULL);
+                            }else if(StrUtil.equals("timestamp", pipelType) && ToolUtil.isEmpty(pipeline.get("format"))){
+                                throw new NZException(RCode.MODULE_CONFIG_PIPELINE_FORMAT_ISNULL);
+                            }else if(StrUtil.equals("json", pipelType)){
+                                if(correctVal(pipeline.get("expressions"))){
+                                    throw new NZException(RCode.MODULE_CONFIG_PIPELINE_EXPRESSIONS_ISNULL);
+                                }else{
+                                    Map<String, Object> expressions = ObjectUtil.defaultIfNull(JSONObject.parseObject(String.valueOf(pipeline.get("expressions")), Map.class), Collections.emptyMap());
+                                    for (String expression : expressions.keySet()) {
+                                        ValidateUtils.is(expression).regex(Constant.PROMETHEUS_LABELNAME_EXPRESSION, RCode.ENDPOINT_LABELNAME_FORMAT_ERROR);
+                                    }
+                                }
+                            }
+                            if(!StrUtil.equals("labels", pipelType) && ToolUtil.isEmpty(pipeline.get("source"))){
+                                throw new NZException(RCode.MODULE_CONFIG_PIPELINE_SOURCE_ISNULL);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void validateEndpointMetrics(Map metricsConfigMap){
+        if (metricsConfigMap != null && (1 == (Integer) ObjectUtil.defaultIfNull(metricsConfigMap.get("enable"), 1))) {
+            Map configMap = JSONObject.parseObject(String.valueOf(metricsConfigMap.get("config")), Map.class);
+            String protocol = (String) configMap.get("protocol");
+            // 校验 type 类型是否在枚举范围内
+            if (!StrUtil.equals(Constant.MODULE_TYPE_HTTP, protocol) && !StrUtil.equals(Constant.MODULE_TYPE_SNMP, protocol)
+                    && !StrUtil.equals(Constant.MODULE_TYPE_HTTPS, protocol)) {
+                throw new NZException(RCode.ENDPOINT_PROTOCOL_INVALID);
+            }
+            ValidateUtils.is(configMap.get("port")).notNull(RCode.ENDPOINT_PORT_ISNULL);
+            // snmp 类型校验 config
+            if (StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_SNMP, protocol)) {
+                // snmpCredentialsId 必须存在
+                Object snmpCredentialsId = configMap.get("snmpCredentialsId");
+                ValidateUtils.is(snmpCredentialsId).notNull(RCode.SNMP_CREDENTIAL_ID_ISNULL);
+
+                SnmpCredential snmpCredential = snmpCredentialService.getById(snmpCredentialsId.toString());
+                ValidateUtils.is(snmpCredential).notNull(RCode.SNMP_CREDENTIAL_NOT_FOUND);
+
+                Object walk = configMap.get("walk");
+                ValidateUtils.is(walk).notNull(RCode.ENDPOINT_SNMP_WALK_ISNULL);
+
+                try {
+                    JSONArray.parseArray(JSONObject.toJSONString(walk));
+                } catch (JSONException e) {
+                    throw new NZException(RCode.ENDPOINT_SNMP_WALK_FORMAT);
+                }
+            }
+
+            Map<String, Object> labels = MapUtil.defaultIfEmpty((Map) configMap.get("labels"), Collections.emptyMap());
+            for (String labelKey : labels.keySet()) {
+                ValidateUtils.is(labelKey).regex(Constant.PROMETHEUS_LABELNAME_EXPRESSION, RCode.PROMETHEUS_LABELNAME_FORMAT_ERROR);
+            }
+            // Metric relabel
+            List<Map> relabelConfigList = ObjectUtil.defaultIfNull((List) configMap.get("relabel_config"), Collections.emptyList());
+            for (Map map : relabelConfigList) {
+                String action = String.valueOf(map.get("action"));
+                if((StrUtil.equals("replace",action) || StrUtil.equals("keep",action) || StrUtil.equals("drop",action)) && correctVal(map.get("source_labels"))){
+                    throw new NZException(RCode.MODULE_CONFIG_RELABEL_SOURCELABELS_ISNULL);
+                }
+                if(StrUtil.equals("replace",action) && ToolUtil.isEmpty(map.get("target_label"))){
+                    throw new NZException(RCode.MODULE_CONFIG_RELABEL_TARGETLABEL_ISNULL);
+                }
+                ValidateUtils.is(map.get("regex")).notNull(RCode.MODULE_CONFIG_RELABEL_REGEX_ISNULL);
+                if((StrUtil.equals("replace",action) || StrUtil.equals("labelmap",action)) && ToolUtil.isEmpty(map.get("replacement"))){
+                    throw new NZException(RCode.MODULE_CONFIG_RELABEL_REPLACEMENT_ISNULL);
+                }
+
+                List<String> sourceLabels = ObjectUtil.defaultIfNull((List) map.get("source_labels"), Collections.emptyList());
+                for (String sourceLabel : sourceLabels) {
+                    ValidateUtils.is(sourceLabel).regex(Constant.PROMETHEUS_LABELNAME_EXPRESSION, RCode.PROMETHEUS_LABELNAME_FORMAT_ERROR);
+                }
+                String targetLabel = (String) map.get("target_label");
+                if (StrUtil.isNotEmpty(targetLabel)) {
+                    ValidateUtils.is(targetLabel).regex(Constant.PROMETHEUS_LABELNAME_EXPRESSION, RCode.PROMETHEUS_LABELNAME_FORMAT_ERROR);
                 }
             }
         }
