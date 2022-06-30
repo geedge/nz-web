@@ -6,6 +6,7 @@ import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.JSONPath;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -23,6 +24,8 @@ import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.promserver.service.LokiserverService;
 import com.nis.modules.promserver.service.PromserverService;
+import com.nis.modules.report.config.ReportConstant;
+import com.nis.modules.report.job.ReportJobManager;
 import com.nis.modules.stat.service.impl.StatServiceImpl;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
@@ -33,15 +36,19 @@ import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import com.nis.modules.topic.service.TopicService;
 import org.apache.commons.collections.CollectionUtils;
+import org.quartz.SchedulerException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.yaml.snakeyaml.util.UriEncoder;
@@ -109,6 +116,12 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
     @Autowired
     private MonitorEndpointService monitorEndpointService;
+
+    @Autowired
+    private TopicService topicService;
+
+    @Autowired
+    private ReportJobManager reportJobManager;
 
     @Override
     public VisualPanel queryInfo(Integer id) {
@@ -219,6 +232,15 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         // 3. 删除关联的 chart chartElement
         Integer[] removePanelIds = allPanelIds.stream().toArray(n -> new Integer[n]);
         visualChartService.delVisualChartsByPanelId(removePanelIds);
+
+        try {
+            // 删除 Report job
+            for (Integer panelId : allPanelIds) {
+                reportJobManager.findJobAndDelByGroup(panelId.toString());
+            }
+        } catch (SchedulerException e) {
+            log.error("Delete dashboard report job error", e);
+        }
     }
 
     /**
@@ -422,8 +444,11 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             panel.setType(Constant.PanelType.DASHBOARD.getValue());
         }
         panel.setUts(System.currentTimeMillis());
-        if (ToolUtil.isNotEmpty(panel.getParam()))
+        String reportEnable = null;
+        if (ToolUtil.isNotEmpty(panel.getParam())) {
+            reportEnable = JSONPath.read(panel.getParam().toString(), "report.enable").toString();
             panel.setParam(String.valueOf(panel.getParam()));
+        }
 
         Integer pid = panel.getPid();
         pid = (pid == null) ? 0 : pid;
@@ -438,6 +463,15 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             Integer weight = endPanel.getWeight();
             panel.setWeight(++weight);
             this.save(panel);
+        }
+
+        // publish report config when reportEnable is true
+        if (Tool.StrUtil.equalsIgnoreCase("true", StrUtil.nullToDefault(reportEnable, "false"))) {
+            Map publishMap = new HashMap(4);
+            publishMap.put("panelId", panel.getId());
+            publishMap.putAll(JSONObject.parseObject(panel.getParam().toString(), Map.class));
+
+            topicService.publishMessage(ReportConstant.REPORT_TOPIC_NAME, publishMap);
         }
     }
 
@@ -469,6 +503,19 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
         // 修改
         this.updateById(panel);
+
+        // report
+        String oldParamStr = ToolUtil.isEmpty(oldPanel.getParam()) ? JSONObject.toJSONString(Tool.MapUtil.empty()) : oldPanel.getParam().toString();
+        Map oldParamMap = JSONObject.parseObject(oldParamStr, LinkedHashMap.class);
+        String newParamStr = ToolUtil.isEmpty(panel.getParam()) ? JSONObject.toJSONString(Tool.MapUtil.empty()) : panel.getParam().toString();
+        Map newParamMap = JSONObject.parseObject(newParamStr, LinkedHashMap.class);
+        if (!oldParamMap.equals(newParamMap)) {
+            Map publishMap = new HashMap(4);
+            publishMap.put("panelId", panel.getId());
+            publishMap.putAll(newParamMap);
+
+            topicService.publishMessage(ReportConstant.REPORT_TOPIC_NAME, publishMap);
+        }
     }
 
     @Override
@@ -584,6 +631,11 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         panel.setCreateBy(userId.intValue());
         panel.setId(null);
         panel.setUts(System.currentTimeMillis());
+        String reportEnable = null;
+        if (ToolUtil.isNotEmpty(panel.getParam())) {
+            reportEnable = JSONPath.read(panel.getParam().toString(), "report.enable").toString();
+            panel.setParam(String.valueOf(panel.getParam()));
+        }
 
         Integer pid = panel.getPid();
         // 查询该父级节点下是否存在 Panel 节点
@@ -593,6 +645,15 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         Integer weight = endPanel.getWeight();
         panel.setWeight(++weight);
         this.save(panel);
+
+        // publish report config when reportEnable is true
+        if (Tool.StrUtil.equalsIgnoreCase("true", StrUtil.nullToDefault(reportEnable, "false"))) {
+            Map publishMap = new HashMap(4);
+            publishMap.put("panelId", panel.getId());
+            publishMap.putAll(JSONObject.parseObject(panel.getParam().toString(), Map.class));
+
+            topicService.publishMessage(ReportConstant.REPORT_TOPIC_NAME, publishMap);
+        }
 
         //  复制panel 下的 charts
         List<VisualChart> chartsGroupList = visualChartService.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getPanelId, id).orderByAsc(VisualChart::getGroupId));
@@ -632,34 +693,77 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         if (panel == null) {
             throw new NZException(RCode.CHART_PANEL_ISNULL);
         }
+
+        // 生成模板
+        String snapshotStr = genSnapshotByTemplate(request, panel, start, end, language);
+
+        format = StrUtil.emptyToDefault(format, "html");
+        try {
+            response.setCharacterEncoding("utf-8");
+            response.setContentType("multipart/form-data");
+            response.setHeader("Content-disposition", "attachment;filename=panel-" + panel.getName() + "." + format + ";filename*=utf-8''" + URLEncoder.encode("panel-" + panel.getName() + "." + format, "UTF-8"));
+            response.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
+            response.getOutputStream().write(snapshotStr.getBytes());
+        } catch (IOException e) {
+            log.error(e);
+        }
+    }
+
+    @Override
+    public String snapshot(String format, Integer panelId, Long start, Long end, String language) {
+        VisualPanel panel = this.getById(panelId);
+        if (panel == null) {
+            throw new NZException(RCode.CHART_PANEL_ISNULL);
+        }
+
+        // mock
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setMethod(RequestMethod.GET.name());
+
+        // 生成模板
+        String snapshotStr = genSnapshotByTemplate(request, panel, start, end, language);
+        return snapshotStr;
+    }
+
+    /**
+     * 生成快照 string
+     *
+     * @param request
+     * @param panel
+     * @param start
+     * @param end
+     * @param language
+     * @return
+     */
+    private String genSnapshotByTemplate(HttpServletRequest request, VisualPanel panel, Long start, Long end, String language) {
         // 计算步长
         String step = getTimeStep(start, end);
         // 封装返回结果
         Map<String, Object> resultMap = new HashMap();
-        resultMap.put("language",language);
-        resultMap.put("start",start);
-        resultMap.put("end",end);
-        resultMap.put("panel",R.ok(panel));
+        resultMap.put("language", language);
+        resultMap.put("start", start);
+        resultMap.put("end", end);
+        resultMap.put("panel", R.ok(panel));
         // charts 查询
         Map param = new HashMap<>();
         param.put("pageSize", "-1");
-        param.put("panelId", panelId);
+        param.put("panelId", panel.getId());
         param.put("groupId", 0);
         PageUtils chartPageUtils = visualChartService.queryPage(param);
-        resultMap.put("charts",R.ok(chartPageUtils));
+        resultMap.put("charts", R.ok(chartPageUtils));
         List<VisualChart> chartsList = (List<VisualChart>) chartPageUtils.getList();
-        if(Tool.CollUtil.isEmpty(chartsList)){
+        if (Tool.CollUtil.isEmpty(chartsList)) {
             throw new NZException(RCode.CHART_SPAN_ISNULL);
-        }else{
+        } else {
             // 封装公共请求参数
             String queryString = "start=" + start + "&end=" + end + "&step=" + step;
             Map<String, String> paramData = new HashMap();
-            paramData.put("start",StrUtil.toString(start));
-            paramData.put("end",StrUtil.toString(end));
-            paramData.put("step",step);
+            paramData.put("start", StrUtil.toString(start));
+            paramData.put("end", StrUtil.toString(end));
+            paramData.put("step", step);
             paramData.put("queryString", queryString);
             // 将chartsData获取任务装入futureList
-            List<CompletableFuture<Map>> futureList = recursionChartsData(request,chartsList, paramData);
+            List<CompletableFuture<Map>> futureList = recursionChartsData(request, chartsList, paramData);
             try {
                 Map chartsDataMap = new HashMap();
                 CompletableFuture.allOf((CompletableFuture<?>[]) futureList.toArray(new CompletableFuture[0]))
@@ -667,46 +771,39 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 futureList.forEach(future -> {
                     Map<String, Object> result = future.getNow(null);
                     if (Tool.MapUtil.isNotEmpty(result)) {
-                        if(Tool.MapUtil.isNotEmpty(result)) { //  && Tool.StrUtil.equals("success",Tool.StrUtil.toString(result.get("status")))
+                        if (Tool.MapUtil.isNotEmpty(result)) { //  && Tool.StrUtil.equals("success",Tool.StrUtil.toString(result.get("status")))
                             chartsDataMap.put(StrUtil.concat(true, StrUtil.toString(result.get("chartId")), "_", StrUtil.toString(result.get("eleIndex"))), result);
                         }
                     }
                 });
-                resultMap.put("chartsData",chartsDataMap);
+                resultMap.put("chartsData", chartsDataMap);
             } catch (InterruptedException | ExecutionException | TimeoutException e) {
                 log.error(e);
             }
         }
         // 读取模板，替换数据
         BufferedReader reader = null;
+        StringBuffer sbf = new StringBuffer();
         try {
             String path = sysConfigDao.queryByKey("snapshot_template_path").getParamValue();
             reader = new BufferedReader(new FileReader(Tool.StrUtil.concat(true, path, File.separator, "snapshot_template.html")));
             String line = null;
-            StringBuffer sbf = new StringBuffer();
             while ((line = reader.readLine()) != null) {
-                if(Tool.StrUtil.startWith(line,"<script>window.dataJson"))
+                if (Tool.StrUtil.startWith(line, "<script>window.dataJson"))
                     line = "<script>window.dataJson=" + JSONUtil.toJsonStr(resultMap) + "</script>";
                 sbf.append(line + "\n");
             }
-            if(StrUtil.isBlank(format)){
-                format = "html";
-            }
-            response.setCharacterEncoding("utf-8");
-            response.setContentType("multipart/form-data");
-            response.setHeader("Content-disposition", "attachment;filename=panel-" + panel.getName() + "." + format + ";filename*=utf-8''" + URLEncoder.encode("panel-" + panel.getName()  + "." + format, "UTF-8"));
-            response.setHeader("Access-Control-Expose-Headers","Content-Disposition");
-            response.getOutputStream().write(sbf.toString().getBytes());
         } catch (IOException e) {
-            e.printStackTrace();
-        }finally{
+            log.error(e);
+        } finally {
             try {
-                if(reader!=null)
+                if (reader != null)
                     reader.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error(e);
             }
         }
+        return sbf.toString();
     }
 
     private List<CompletableFuture<Map>> recursionChartsData(HttpServletRequest request,List<VisualChart> chartsList, Map paramData){
