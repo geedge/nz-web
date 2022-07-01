@@ -307,7 +307,7 @@ public class Constant {
 		CHART_SINGLESTAT_STATISTICS.add("range");
 		CHART_SINGLESTAT_STATISTICS.add("different");
 
-		RULE_OPERATORS = Arrays.asList(new String[] { "==", "!=", ">", "<", ">=", "<=" });
+		RULE_OPERATORS = Arrays.asList(new String[] { "==", "!=", ">", "<", ">=", "<=", "~=" });
 
 		SNMP_OID_MAP = new HashMap<>();
 		SNMP_OID_MAP.put("sysName", "1.3.6.1.2.1.1.5");

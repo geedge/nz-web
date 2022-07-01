@@ -13,6 +13,7 @@
         <result property="expr" column="expr"/>
         <result property="operator" column="operator"/>
         <result property="threshold" column="threshold"/>
+        <result property="condition" column="condition"/>
         <result property="unit" column="unit"/>
         <result property="method" column="method"/>
         <result property="last" column="last"/>

@@ -4,6 +4,9 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONException;
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -98,6 +101,10 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             this.handleResuleList(ruleEntityList);
         }
 
+        for (AlertRuleEntity alertRule : ruleEntityList) {
+            if(ToolUtil.isNotEmpty(alertRule.getCondition()))
+                alertRule.setCondition(JSONArray.parseArray(alertRule.getConditionStr(), Map.class));
+        }
         page.setRecords(ruleEntityList);
         return new PageUtils(page);
     }
@@ -221,6 +228,14 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             Integer defaultScrapeTimeout = Integer.valueOf(sysConfigService.getValue(Constant.SYSCONFIG_KEY_SCRAPETIMEOUT));
             alertRule.setTimeout(defaultScrapeTimeout);
         }
+        alertRule.setCondition(alertRule.getConditionStr());
+
+        // --- 获取第一个告警规则，维持与其他页面的正常统计及Job的正常工作
+        JSONObject condition = JSONArray.parseArray(alertRule.getConditionStr()).getJSONObject(0);
+        alertRule.setSeverityId(condition.getInteger("id"));
+        alertRule.setOperator(condition.getString("operator"));
+        if (3 != alertRule.getType())
+            alertRule.setThreshold(condition.getDouble("value"));
 
         // 入库
         if (alertRule.getId() == null) {
@@ -330,10 +345,9 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             String timeoutStr = dataMap.get(3);
 
             String expr = dataMap.get(4);
-            String operator = dataMap.get(5);
-            String threshold = dataMap.get(6);
-            String unit = dataMap.get(7);
-            String last = dataMap.get(8);
+            String condition = dataMap.get(5);
+            String unit = dataMap.get(6);
+            String last = dataMap.get(7);
             if (saveFlag) {
                 if (StringUtils.isEmpty(expr)) {
                     saveFlag = false;
@@ -346,80 +360,90 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                         this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ALERTRULE_OIDFORMAT_ERROR.getMsg());
                     }
                 } else {
-                    if (StringUtils.isEmpty(threshold)) {
+                    if (StringUtils.isEmpty(condition)) {
                         saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ALERTRULE_THRESHOLD_ISNULL.getMsg());
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.ALERTRULE_THRESHOLD_ISNULL.getMsg());
                     } else {
                         try {
-                            Double.valueOf(threshold);
-                        } catch (NumberFormatException e) {
+                            List<Map> conditionList = JSONArray.parseArray(condition, Map.class);
+                            for (Map conditionMap:conditionList) {
+                                String operator = String.valueOf(conditionMap.get("operator"));
+                                if (StringUtils.isEmpty(operator)) {
+                                    saveFlag = false;
+                                    this.addFailDetail(dataFromExcelRowNum, failDetails, "operator", RCode.ALERTRULE_OPERATOR_ISNULL.getMsg());
+                                } else {
+                                    operator = operator.replaceAll(" ", "");
+                                    if (!Constant.RULE_OPERATORS.contains(operator)) {
+                                        saveFlag = false;
+                                        this.addFailDetail(dataFromExcelRowNum, failDetails, "operator", RCode.ALERTRULE_OPERATOR_INVALIDE.getMsg());
+                                    }
+                                }
+                                if(!StrUtil.equals(operator, Constant.RULE_OPERATORS.get(Constant.RULE_OPERATORS.size() - 1))){
+                                    try {
+                                        Double.valueOf(String.valueOf(conditionMap.get("value")));
+                                    } catch (NumberFormatException e) {
+                                        saveFlag = false;
+                                        this.addFailDetail(dataFromExcelRowNum, failDetails, "value", RCode.ALERTRULE_THRESHOLD_FORMAT.getMsg());
+                                    }
+                                }
+                                String severity = String.valueOf(conditionMap.get("id"));
+                                if (StringUtils.isEmpty(severity)) {
+                                    saveFlag = false;
+                                    this.addFailDetail(dataFromExcelRowNum, failDetails, "id", RCode.ALERTRULE_SEVERITY_ISNULL.getMsg());
+                                }else{
+                                    AlertSeverityConf alertSeverityConf = severityConfs.stream().filter(t -> Tool.StrUtil.equals(severity, t.getId().toString())).findAny().orElse(null);
+                                    if(ToolUtil.isEmpty(alertSeverityConf)){
+                                        saveFlag = false;
+                                        this.addFailDetail(dataFromExcelRowNum, failDetails, "id", RCode.ALERTRULE_SEVERITY_INCORRECT.getMsg());
+                                    }
+                                }
+                            }
+                        } catch (JSONException e) {
                             saveFlag = false;
-                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ALERTRULE_THRESHOLD_FORMAT.getMsg());
+                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.ALERTRULE_CONDITION_FORMAT.getMsg());
                         }
                     }
                     if (StringUtils.isEmpty(unit)) {
                         saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), RCode.ALERTRULE_UNIT_ISNULL.getMsg());
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ALERTRULE_UNIT_ISNULL.getMsg());
                     } else {
                         Integer integer = Constant.ALERT_RULE_UNIT_MAP.get(unit);
                         if (ToolUtil.isEmpty(integer)) {
                             saveFlag = false;
-                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), RCode.ALERTRULE_UNIT_INVALIDE.getMsg());
-                        }
-                    }
-                    if (StringUtils.isEmpty(operator)) {
-                        saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.ALERTRULE_OPERATOR_ISNULL.getMsg());
-                    } else {
-                        operator = operator.replaceAll(" ", "");
-                        if (!Constant.RULE_OPERATORS.contains(operator)) {
-                            saveFlag = false;
-                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.ALERTRULE_OPERATOR_INVALIDE.getMsg());
+                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ALERTRULE_UNIT_INVALIDE.getMsg());
                         }
                     }
                     if (StringUtils.isEmpty(last)) {
                         saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), RCode.ALERTRULE_LAST_ISNULL.getMsg());
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), RCode.ALERTRULE_LAST_ISNULL.getMsg());
                     } else {
                         try {
                             Double.valueOf(last).intValue();
                         } catch (NumberFormatException e) {
                             saveFlag = false;
-                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), RCode.ALERTRULE_LAST_ISNOTPOSITIVE.getMsg());
+                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), RCode.ALERTRULE_LAST_ISNOTPOSITIVE.getMsg());
                         }
                     }
                 }
             }
-            String severity = dataMap.get(9);
-            AlertSeverityConf alertSeverityConf=null;
-            if (StringUtils.isEmpty(severity)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(9), RCode.ALERTRULE_SEVERITY_ISNULL.getMsg());
-            }else{
-                alertSeverityConf = severityConfs.stream().filter(t -> Tool.StrUtil.equals(severity, t.getName())).findAny().orElse(null);
-                if(ToolUtil.isEmpty(alertSeverityConf)){
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(9), RCode.ALERTRULE_SEVERITY_INCORRECT.getMsg());
-                }
-            }
-            String summary = dataMap.get(10);
+            String summary = dataMap.get(8);
             if (StringUtils.isEmpty(summary)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(10), RCode.ALERTRULE_SUMMARY_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), RCode.ALERTRULE_SUMMARY_ISNULL.getMsg());
             }
-            String description = dataMap.get(11);
-            String receiver = dataMap.get(12);
-            String method = dataMap.get(13);
+            String description = dataMap.get(9);
+            String receiver = dataMap.get(10);
+            String method = dataMap.get(11);
             if (StringUtils.isNotEmpty(receiver)) {
                 if (CollectionUtils.isNotEmpty(this.getNonExistentUsers(receiver, userList))) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(12), RCode.ALERTRULE_RECEIVER_NOTFOUND.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(10), RCode.ALERTRULE_RECEIVER_NOTFOUND.getMsg());
                 } else {
                     receiver = this.getUserIdsByUserNames(receiver, userList);
                 }
                 if(StringUtils.isEmpty(method)){
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(13), RCode.ALERTRULE_METHOD_ISNULL.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11), RCode.ALERTRULE_METHOD_ISNULL.getMsg());
                 }
             }
 
@@ -427,54 +451,54 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 // 校验 method 是否存在
                 if (CollectionUtils.isNotEmpty(this.getNonExistentMethods(method, methodList))) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(12), RCode.ALERTRULE_METHOD_NOTFOUND.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11), RCode.ALERTRULE_METHOD_NOTFOUND.getMsg());
                 } else {
                     // 获取 method ids
                     method = this.getMethodIdsByUserNames(method, methodList);
                 }
             }
 
-            String stateStr = dataMap.get(14);
+            String stateStr = dataMap.get(12);
             if (StrUtil.isNotEmpty(stateStr)) {
                 if (!StrUtil.equals("1", stateStr) && !StrUtil.equals("0", stateStr)) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(14), RCode.ALERTRULE_STATE_INCORRECT.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(12), RCode.ALERTRULE_STATE_INCORRECT.getMsg());
                 }
             }
 
-            String autoExpiredStr = dataMap.get(15);
+            String autoExpiredStr = dataMap.get(13);
             // 默认开启 进行校验 day start end format
-            String schedEnableStr = dataMap.get(16);
+            String schedEnableStr = dataMap.get(14);
             schedEnableStr = StrUtil.emptyToDefault(schedEnableStr, "1");
-            String schedDaysStr = dataMap.get(17);
+            String schedDaysStr = dataMap.get(15);
             schedDaysStr = StrUtil.emptyToDefault(schedDaysStr, "1,2,3,4,5,6,7");
-            String schedStimeStr = dataMap.get(18);
+            String schedStimeStr = dataMap.get(16);
             schedStimeStr = StrUtil.emptyToDefault(schedStimeStr, "00:00");
-            String schedEtimeStr = dataMap.get(19);
+            String schedEtimeStr = dataMap.get(17);
             schedEtimeStr = StrUtil.emptyToDefault(schedEtimeStr, "23:59");
-            String notifyActiveStr = dataMap.get(20);
-            String notifyExpiredStr = dataMap.get(21);
-            String trbShotStr = dataMap.get(22);
+            String notifyActiveStr = dataMap.get(18);
+            String notifyExpiredStr = dataMap.get(19);
+            String trbShotStr = dataMap.get(20);
 
             List<String> enableList = Arrays.asList(new String[]{"0", "1"});
             if (StrUtil.isNotEmpty(autoExpiredStr) && !enableList.contains(autoExpiredStr)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(15), RCode.ALERTRULE_AUTOEXPIRED_INCORRECT.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(13), RCode.ALERTRULE_AUTOEXPIRED_INCORRECT.getMsg());
             }
 
             if (StrUtil.isNotEmpty(notifyActiveStr) && !enableList.contains(notifyActiveStr)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(20), RCode.ALERTRULE_NOTIFYACTIVE_INCORRECT.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(18), RCode.ALERTRULE_NOTIFYACTIVE_INCORRECT.getMsg());
             }
 
             if (StrUtil.isNotEmpty(notifyExpiredStr) && !enableList.contains(notifyExpiredStr)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(21), RCode.ALERTRULE_NOTIFYEXPIRED_INCORRECT.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(19), RCode.ALERTRULE_NOTIFYEXPIRED_INCORRECT.getMsg());
             }
 
             if (!enableList.contains(schedEnableStr)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(16), RCode.ALERTRULE_SCHEDENABLE_INCORRECT.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(14), RCode.ALERTRULE_SCHEDENABLE_INCORRECT.getMsg());
             }
 
             if (StrUtil.isNotEmpty(schedDaysStr)) {
@@ -482,18 +506,18 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 for (String s : tempList) {
                     if (!RegexUtil.test("^[1-7]$", s)) {
                         saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(17), RCode.ALERTRULE_SCHEDDAYS_INCORRECT.getMsg());
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(15), RCode.ALERTRULE_SCHEDDAYS_INCORRECT.getMsg());
                     }
                 }
             }
 
             if (!RegexUtil.test("^(?:[01]\\d|2[0-3])(?::[0-5]\\d)$", schedStimeStr)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(18), RCode.ALERTRULE_SCHEDSTIME_INCORRECT.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(16), RCode.ALERTRULE_SCHEDSTIME_INCORRECT.getMsg());
             }
             if (!RegexUtil.test("^(?:[01]\\d|2[0-3])(?::[0-5]\\d)$", schedEtimeStr)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(19), RCode.ALERTRULE_SCHEDETIME_INCORRECT.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(17), RCode.ALERTRULE_SCHEDETIME_INCORRECT.getMsg());
             }
             try {
                 DateFormat formatter = new SimpleDateFormat("HH:mm");
@@ -502,7 +526,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 // 结束时间应该晚于开始时间
                 if (DateUtil.compare(schedStimeDate, schedEtimeDate) > 0) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(19), RCode.ALERTRULE_SCHEDETIME_ERROR.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(17), RCode.ALERTRULE_SCHEDETIME_ERROR.getMsg());
                 }
             } catch (ParseException e) {
                 log.error(e);
@@ -512,11 +536,17 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 AlertRuleEntity ruleEntity = new AlertRuleEntity();
                 ruleEntity.setName(alertName);
                 ruleEntity.setExpr(expr);
-                ruleEntity.setOperator(operator);
-                ruleEntity.setThreshold(StrUtil.isNotEmpty(threshold) ? Double.valueOf(threshold) : null);
+                ruleEntity.setCondition(condition);
+
+                // --- 获取第一个告警规则，维持与其他页面的正常统计及Job的正常工作
+                JSONObject conditionJson = JSONArray.parseArray(ruleEntity.getConditionStr()).getJSONObject(0);
+                ruleEntity.setSeverityId(conditionJson.getInteger("id"));
+                ruleEntity.setOperator(conditionJson.getString("operator"));
+                if (3 != ruleEntity.getType())
+                    ruleEntity.setThreshold(conditionJson.getDouble("value"));
+
                 ruleEntity.setUnit(Constant.ALERT_RULE_UNIT_MAP.get(StrUtil.emptyToDefault(unit,"none")));
                 ruleEntity.setLast(StrUtil.isNotEmpty(last) ? Double.valueOf(last).intValue() : null);
-                ruleEntity.setSeverityId(alertSeverityConf.getId());
                 ruleEntity.setSummary(summary);
                 ruleEntity.setDescription(description);
                 ruleEntity.setReceiver(receiver);
@@ -699,11 +729,9 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             tempList.add(ObjectUtil.defaultIfNull(rule.getInr(), "").toString());
             tempList.add(ObjectUtil.defaultIfNull(rule.getTimeout(), "").toString());
             tempList.add(rule.getExpr());
-            tempList.add(rule.getOperator());
-            tempList.add(rule.getThreshold() == null ? "" : rule.getThreshold() + "");
+            tempList.add(rule.getConditionStr());
             tempList.add(getUnitDescrByVal(rule.getUnit()));
             tempList.add(ObjectUtil.defaultIfNull(rule.getLast(),"").toString());
-            tempList.add(rule.getSeverity().getName());
             tempList.add(rule.getSummary());
             tempList.add(rule.getDescription());
             receiveIds = rule.getReceiver();
@@ -759,12 +787,10 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     }
 
     private void validateParam(AlertRuleEntity alertRule) {
-        String operator = alertRule.getOperator();
         Integer unit = alertRule.getUnit();
         ValidateUtils.is(alertRule.getName()).notNull(RCode.ALERTRULE_NAME_ISNULL).maxLength(64)
                 .and(alertRule.getExpr()).notNull(RCode.ALERTRULE_EXPR_ISNULL).maxLength(512)
                 .and(alertRule.getLast()).notNull(RCode.ALERTRULE_LAST_ISNULL).min(1, RCode.ALERTRULE_LAST_ISNOTPOSITIVE)
-                .and(alertRule.getSeverityId()).notNull(RCode.ALERTRULE_SEVERITY_ISNULL)
                 .and(alertRule.getSummary()).notNull(RCode.ALERTRULE_SUMMARY_ISNULL).maxLength(512)
                 .and(alertRule.getDescription()).maxLength(512)
                 .and(alertRule.getType()).notNull(RCode.ALERTRULE_TYPE_ISNULL);
@@ -772,6 +798,41 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         List<Integer> typeList = Arrays.asList(new Integer[]{1, 2, 3});
         if (!typeList.contains(alertRule.getType())) {
             throw new NZException(RCode.ALERTRULE_TYPE_INCORRECT);
+        }
+        // condition 校验
+        ValidateUtils.is(alertRule.getCondition()).notNull(RCode.ALERTRULE_CONDITION_ISNULL).maxLength(4096);
+        try {
+            List<Map> conditionList = JSONArray.parseArray(alertRule.getConditionStr(), Map.class);
+            List<AlertSeverityConf> severityConfs = alertSeverityService.list();
+            for (Map conditionMap:conditionList) {
+                String operator = String.valueOf(conditionMap.get("operator"));
+                if (StringUtils.isEmpty(operator)) {
+                    throw new NZException(RCode.ALERTRULE_OPERATOR_ISNULL);
+                } else {
+                    operator = operator.replaceAll(" ", "");
+                    if (!Constant.RULE_OPERATORS.contains(operator)) {
+                        throw new NZException(RCode.ALERTRULE_OPERATOR_INVALIDE);
+                    }
+                }
+                if(!StrUtil.equals(operator, Constant.RULE_OPERATORS.get(Constant.RULE_OPERATORS.size() - 1))){
+                    try {
+                        Double.valueOf(String.valueOf(conditionMap.get("value")));
+                    } catch (NumberFormatException e) {
+                        throw new NZException(RCode.ALERTRULE_THRESHOLD_FORMAT);
+                    }
+                }
+                String severity = String.valueOf(conditionMap.get("id"));
+                if (StringUtils.isEmpty(severity)) {
+                    throw new NZException(RCode.ALERTRULE_SEVERITY_ISNULL);
+                }else{
+                    AlertSeverityConf alertSeverityConf = severityConfs.stream().filter(t -> Tool.StrUtil.equals(severity, t.getId().toString())).findAny().orElse(null);
+                    if(ToolUtil.isEmpty(alertSeverityConf)){
+                        throw new NZException(RCode.ALERTRULE_SEVERITY_INCORRECT);
+                    }
+                }
+            }
+        } catch (JSONException e) {
+            throw new NZException(RCode.ALERTRULE_CONDITION_FORMAT);
         }
 
         // snmp trap type
@@ -782,21 +843,13 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             }
         } else {
             // 除 snmp trap 类型外，threshold unit 必填
-            ValidateUtils.is(alertRule.getThreshold()).notNull(RCode.ALERTRULE_THRESHOLD_ISNULL).maxLength(20)
-                    .and(unit).notNull(RCode.ALERTRULE_UNIT_ISNULL)
-                    .and(operator).notNull(RCode.ALERTRULE_OPERATOR_ISNULL);
+            ValidateUtils.is(unit).notNull(RCode.ALERTRULE_UNIT_ISNULL);
 
             List<Integer> unitList = new ArrayList(Constant.ALERT_RULE_UNIT_MAP.values());
             if (unit < Collections.min(unitList) || unit > Collections.max(unitList)) {
                 throw new NZException(RCode.ALERTRULE_UNIT_INVALIDE);
             }
 
-            operator = operator.replaceAll(" ", "");
-            alertRule.setOperator(operator);
-
-            if (!Constant.RULE_OPERATORS.contains(operator)) {
-                throw new NZException(RCode.ALERTRULE_OPERATOR_INVALIDE);
-            }
         }
 
         // 校验 method 是否存在
@@ -919,6 +972,8 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                             .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId().intValue()));
 
             alertRule.setStarred(ruleStarredCount == 0 ? 0 : 1);
+            if(ToolUtil.isNotEmpty(alertRule.getCondition()))
+                alertRule.setCondition(JSONArray.parseArray(alertRule.getConditionStr(), Map.class));
         }
 
 		return alertRule;

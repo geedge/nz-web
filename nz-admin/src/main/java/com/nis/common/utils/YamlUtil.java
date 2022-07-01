@@ -1,6 +1,7 @@
 package com.nis.common.utils;
 
 import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -88,22 +89,23 @@ public class YamlUtil {
 		List rules = new ArrayList();
 		group.put("name", "check" + System.currentTimeMillis());
 		group.put("rules", rules);
-		
-		Map rule = new HashMap();
-		rules.add(rule);
-		
-		Map labels = new HashMap();
-		labels.put("severity", alertRule.getSeverityId());
+
 		Map annotations = new HashMap();
 		annotations.put("summary", alertRule.getSummary());
 		annotations.put("description", alertRule.getDescription());
-		
-		rule.put("alert", alertRule.getName());
-        rule.put("expr", "(" + alertRule.getExpr() + ")" + alertRule.getOperator() + alertRule.getThreshold());
-		rule.put("for", alertRule.getLast() + "s");
-		rule.put("labels", labels);
-		rule.put("annotations", annotations);
-		
+
+		List<Map> conditionList = JSONArray.parseArray(alertRule.getConditionStr(), Map.class);
+		for (Map condition : conditionList) {
+			Map rule = new HashMap();
+			rule.put("alert", alertRule.getName());
+			rule.put("expr", "(" + alertRule.getExpr() + ")" + condition.get("operator") + condition.get("value"));
+			rule.put("for", alertRule.getLast() + "s");
+			Map labels = new HashMap();
+			labels.put("severity", condition.get("id"));
+			rule.put("labels", labels);
+			rule.put("annotations", annotations);
+			rules.add(rule);
+		}
 		return toCheck;
 	}
 

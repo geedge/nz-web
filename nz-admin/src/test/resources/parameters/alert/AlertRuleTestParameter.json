@@ -8,5 +8,537 @@
   "------------------ DELETE  /alert/rule data---------------------": "note",
   "DeleteRuleList_success": {
     "ids": "6,7"
+  },
+  "------------------ POST  /alert/rule data---------------------": "note",
+  "saveAlertRule_success": {
+    "name": "alertRule",
+    "expr": "up",
+    "type": 1,
+    "condition": [{
+      "id": 1,
+      "weight": 1,
+      "operator": ">",
+      "value": "200"
+    }, {
+      "id": 2,
+      "weight": 2,
+      "operator": "<=",
+      "value": "10"
+    }],
+    "unit": 1,
+    "last": 1,
+    "summary": "summary",
+    "description": "description",
+    "receiver": "1",
+    "method": "1",
+    "autoExpired": 1,
+    "schedEnable": 1,
+    "schedDays": "1,2,3,4,5,6,7",
+    "schedStime": "00:00",
+    "schedEtime": "23:59",
+    "notifyActive": 1,
+    "notifyExpired": 1,
+    "trbShot": "故障排查指南..."
+  },
+  "saveAlertRule_nameIsnull": {
+    "name": ""
+  },
+  "saveAlertRule_exprIsnull": {
+    "name": "alertRule Exception",
+    "expr": ""
+  },
+  "saveAlertRule_lastIsnull": {
+    "name": "alertRule Exception",
+    "expr": "up"
+  },
+  "saveAlertRule_summaryIsnull": {
+    "name": "alertRule Exception",
+    "expr": "up",
+    "last": 1,
+    "summary": ""
+  },
+  "saveAlertRule_typeIsnull": {
+    "name": "alertRule Exception",
+    "expr": "up",
+    "last": 1,
+    "summary": "summary"
+  },
+  "saveAlertRule_typeIncorrect": {
+    "name": "alertRule Exception",
+    "expr": "up",
+    "last": 1,
+    "summary": "summary",
+    "type": 4
+  },
+  "saveAlertRule_conditionIsnull": {
+    "name": "alertRule Exception",
+    "expr": "up",
+    "last": 1,
+    "summary": "summary",
+    "type": 2
+  },
+  "saveAlertRule_operatorIsnull": {
+    "name": "alertRule Exception",
+    "expr": "up",
+    "last": 1,
+    "summary": "summary",
+    "type": 2,
+    "condition": [{
+      "id": 1,
+      "weight": 1,
+      "operator": "",
+      "value": "20"
+    }],
+    "receiver": "1"
+  },
+  "saveAlertRule_operatorInvalide": {
+    "name": "alertRule Exception",
+    "expr": "up",
+    "last": 1,
+    "summary": "summary",
+    "type": 2,
+    "condition": [{
+      "id": 1,
+      "weight": 1,
+      "operator": "/",
+      "value": "20"
+    }]
+  },
+  "saveAlertRule_thresholdFormat": {
+    "name": "alertRule Exception",
+    "expr": "up",
+    "last": 1,
+    "summary": "summary",
+    "type": 2,
+    "condition": [{
+      "id": 1,
+      "weight": 1,
+      "operator": ">",
+      "value": ".*"
+    }]
+  },
+  "saveAlertRule_severityIsnull": {
+    "name": "alertRule Exception",
+    "expr": "up",
+    "last": 1,
+    "summary": "summary",
+    "type": 2,
+    "condition": [{
+      "id": "",
+      "weight": 1,
+      "operator": ">",
+      "value": "20"
+    }]
+  },
+  "saveAlertRule_severityIncorrect": {
+    "name": "alertRule Exception",
+    "expr": "up",
+    "last": 1,
+    "summary": "summary",
+    "type": 2,
+    "condition": [{
+      "id": 9,
+      "weight": 1,
+      "operator": ">",
+      "value": "20"
+    }]
+  },
+  "saveAlertRule_conditionFormat": {
+    "name": "alertRule Exception",
+    "expr": "up",
+    "last": 1,
+    "summary": "summary",
+    "unit": 1,
+    "type": 2,
+    "condition": "[{id: 1,weight: 1,operator: >,value: 20}]"
+  },
+  "saveAlertRule_oidformatError": {
+    "name": "alertRule Exception",
+    "expr": "up",
+    "last": 1,
+    "summary": "summary",
+    "type": 3,
+    "condition": [{
+      "id": 3,
+      "weight": 1,
+      "operator": ">",
+      "value": "20"
+    }]
+  },
+  "saveAlertRule_unitIsnull": {
+    "name": "alertRule Exception",
+    "expr": "up",
+    "last": 1,
+    "summary": "summary",
+    "type": 2,
+    "condition": [{
+      "id": 2,
+      "weight": 1,
+      "operator": ">",
+      "value": "20"
+    }]
+  },
+  "saveAlertRule_unitInvalide": {
+    "name": "alertRule Exception",
+    "expr": "up",
+    "last": 1,
+    "summary": "summary",
+    "type": 2,
+    "unit": 99,
+    "condition": [{
+      "id": 2,
+      "weight": 1,
+      "operator": ">",
+      "value": "20"
+    }]
+  },
+  "saveAlertRule_methodNotfound": {
+    "name": "alertRule Exception",
+    "expr": "up",
+    "last": 1,
+    "summary": "summary",
+    "type": 2,
+    "unit": 1,
+    "condition": [{
+      "id": 2,
+      "weight": 1,
+      "operator": ">",
+      "value": "20"
+    }],
+    "method": "10"
+  },
+  "saveAlertRule_stateIncorrect": {
+    "name": "alertRule Exception",
+    "expr": "up",
+    "last": 1,
+    "summary": "summary",
+    "type": 2,
+    "unit": 1,
+    "condition": [{
+      "id": 2,
+      "weight": 1,
+      "operator": ">",
+      "value": "20"
+    }],
+    "method": "1",
+    "state": 2
+  },
+  "saveAlertRule_autoexpiredIncorrect": {
+    "name": "alertRule Exception",
+    "expr": "up",
+    "last": 1,
+    "summary": "summary",
+    "type": 2,
+    "unit": 1,
+    "condition": [{
+      "id": 2,
+      "weight": 1,
+      "operator": ">",
+      "value": "20"
+    }],
+    "method": "1",
+    "state": 1,
+    "autoExpired": 2
+  },
+  "saveAlertRule_notifyactiveIncorrect": {
+    "name": "alertRule Exception",
+    "expr": "up",
+    "last": 1,
+    "summary": "summary",
+    "type": 2,
+    "unit": 1,
+    "condition": [{
+      "id": 2,
+      "weight": 1,
+      "operator": ">",
+      "value": "20"
+    }],
+    "method": "1",
+    "state": 1,
+    "autoExpired": 1,
+    "notifyActive": 2
+  },
+  "saveAlertRule_notifyexpiredIncorrect": {
+    "name": "alertRule Exception",
+    "expr": "up",
+    "last": 1,
+    "summary": "summary",
+    "type": 2,
+    "unit": 1,
+    "condition": [{
+      "id": 2,
+      "weight": 1,
+      "operator": ">",
+      "value": "20"
+    }],
+    "method": "1",
+    "state": 1,
+    "autoExpired": 1,
+    "notifyActive": 1,
+    "notifyExpired": 2
+  },
+  "saveAlertRule_schedenableIncorrect": {
+    "name": "alertRule Exception",
+    "expr": "up",
+    "last": 1,
+    "summary": "summary",
+    "type": 2,
+    "unit": 1,
+    "condition": [{
+      "id": 2,
+      "weight": 1,
+      "operator": ">",
+      "value": "20"
+    }],
+    "method": "1",
+    "state": 1,
+    "autoExpired": 1,
+    "notifyActive": 1,
+    "notifyExpired": 1,
+    "schedEnable": 2
+  },
+  "saveAlertRule_scheddaysIncorrect": {
+    "name": "alertRule Exception",
+    "expr": "up",
+    "last": 1,
+    "summary": "summary",
+    "type": 2,
+    "unit": 1,
+    "condition": [{
+      "id": 2,
+      "weight": 1,
+      "operator": ">",
+      "value": "20"
+    }],
+    "method": "1",
+    "state": 1,
+    "autoExpired": 1,
+    "notifyActive": 1,
+    "notifyExpired": 1,
+    "schedEnable": 1,
+    "schedEnable": 1,
+    "schedStime": "00:00",
+    "schedEtime": "23:58",
+    "schedDays": "10"
+  },
+  "saveAlertRule_schedstimeIncorrect": {
+    "name": "alertRule Exception",
+    "expr": "up",
+    "last": 1,
+    "summary": "summary",
+    "type": 2,
+    "unit": 1,
+    "condition": [{
+      "id": 2,
+      "weight": 1,
+      "operator": ">",
+      "value": "20"
+    }],
+    "method": "1",
+    "state": 1,
+    "autoExpired": 1,
+    "notifyActive": 1,
+    "notifyExpired": 1,
+    "schedEnable": 1,
+    "schedDays": "1,2",
+    "schedStime": "24:00",
+    "schedEtime": "23:00"
+  },
+  "saveAlertRule_schedetimeIncorrect": {
+    "name": "alertRule Exception",
+    "expr": "up",
+    "last": 1,
+    "summary": "summary",
+    "type": 2,
+    "unit": 1,
+    "condition": [{
+      "id": 2,
+      "weight": 1,
+      "operator": ">",
+      "value": "20"
+    }],
+    "method": "1",
+    "state": 1,
+    "autoExpired": 1,
+    "notifyActive": 1,
+    "notifyExpired": 1,
+    "schedEnable": 1,
+    "schedDays": "1,2",
+    "schedStime": "00:00",
+    "schedEtime": "25:59"
+  },
+  "saveAlertRule_schedetimeError": {
+    "name": "alertRule Exception",
+    "expr": "up",
+    "last": 1,
+    "summary": "summary",
+    "type": 2,
+    "unit": 1,
+    "condition": [{
+      "id": 2,
+      "weight": 1,
+      "operator": ">",
+      "value": "20"
+    }],
+    "method": "1",
+    "state": 1,
+    "autoExpired": 1,
+    "notifyActive": 1,
+    "notifyExpired": 1,
+    "schedEnable": 1,
+    "schedDays": "1,2",
+    "schedStime": "23:59",
+    "schedEtime": "23:58"
+  },
+  "saveAlertRule_nameDuplicate": {
+    "name": "Default snmptrap",
+    "expr": "up",
+    "last": 1,
+    "summary": "summary",
+    "type": 2,
+    "unit": 1,
+    "condition": [{
+      "id": 2,
+      "weight": 1,
+      "operator": ">",
+      "value": "20"
+    }],
+    "method": "1",
+    "state": 1,
+    "autoExpired": 1,
+    "notifyActive": 1,
+    "notifyExpired": 1,
+    "schedEnable": 1,
+    "schedDays": "1,2",
+    "schedStime": "00:00",
+    "schedEtime": "23:59"
+  },
+  "saveAlertRule_exprError": {
+    "name": "alertRule Exception",
+    "expr": "00",
+    "last": 1,
+    "summary": "summary",
+    "type": 1,
+    "unit": 1,
+    "condition": [{
+      "id": 2,
+      "weight": 1,
+      "operator": ">",
+      "value": "20"
+    }],
+    "method": "1",
+    "state": 1,
+    "autoExpired": 1,
+    "notifyActive": 1,
+    "notifyExpired": 1,
+    "schedEnable": 1,
+    "schedDays": "1,2",
+    "schedStime": "00:00",
+    "schedEtime": "23:59"
+  },
+  "saveAlertRule_receiverFormat": {
+    "name": "alertRule Exception",
+    "expr": "UP",
+    "last": 1,
+    "summary": "summary",
+    "type": 2,
+    "unit": 1,
+    "condition": [{
+      "id": 2,
+      "weight": 1,
+      "operator": ">",
+      "value": "20"
+    }],
+    "method": "1",
+    "state": 1,
+    "autoExpired": 1,
+    "notifyActive": 1,
+    "notifyExpired": 1,
+    "schedEnable": 1,
+    "schedDays": "1,2",
+    "schedStime": "00:00",
+    "schedEtime": "23:59",
+    "receiver": "ID"
+  },
+  "saveAlertRule_userNotExist": {
+    "name": "alertRule Exception",
+    "expr": "UP",
+    "last": 1,
+    "summary": "summary",
+    "type": 2,
+    "unit": 1,
+    "condition": [{
+      "id": 2,
+      "weight": 1,
+      "operator": ">",
+      "value": "20"
+    }],
+    "method": "1",
+    "state": 1,
+    "autoExpired": 1,
+    "notifyActive": 1,
+    "notifyExpired": 1,
+    "schedEnable": 1,
+    "schedDays": "1,2",
+    "schedStime": "00:00",
+    "schedEtime": "23:59",
+    "receiver": "99"
+  },
+  "------------------ PUT  /alert/rule data---------------------": "note",
+  "editAlertRule_success": {
+    "id": 1,
+    "name": "Default snmptrap",
+    "expr": "up",
+    "type": 1,
+    "condition": [{
+      "id": 3,
+      "weight": 1,
+      "operator": ">",
+      "value": "200"
+    }, {
+      "id": 2,
+      "weight": 2,
+      "operator": ">=",
+      "value": "10"
+    }],
+    "unit": 1,
+    "last": 1,
+    "summary": "summary",
+    "description": "description",
+    "receiver": "1",
+    "method": "1",
+    "autoExpired": 1,
+    "schedEnable": 1,
+    "schedDays": "1,2,3,4,5,6,7",
+    "schedStime": "00:00",
+    "schedEtime": "23:59",
+    "notifyActive": 1,
+    "notifyExpired": 1,
+    "trbShot": "故障排查指南..."
+  },
+  "editAlertRule_buildinCanNotUpdate": {
+    "id": 2,
+    "name": "editAlertRuleE",
+    "expr": "UP",
+    "last": 1,
+    "summary": "summary",
+    "type": 2,
+    "unit": 1,
+    "condition": [{
+      "id": 2,
+      "weight": 1,
+      "operator": ">",
+      "value": "20"
+    }],
+    "method": "1",
+    "state": 1,
+    "autoExpired": 1,
+    "notifyActive": 1,
+    "notifyExpired": 1,
+    "schedEnable": 1,
+    "schedDays": "1,2",
+    "schedStime": "00:00",
+    "schedEtime": "23:59",
+    "receiver": "1"
   }
 }

@@ -390,6 +390,8 @@ public enum RCode {
     ALERTRULE_UNIT_FORMAT(423038,"Alert unit format should be a integer"),
     ALERTRULE_UNIT_INVALIDE(423039,"Alert unit is invalide"),
     ALERTRULE_UNIT_ISNULL(421040,"Alert unit can not be empty"),
+    ALERTRULE_CONDITION_ISNULL(421041,"Alert condition can not be empty"),
+    ALERTRULE_CONDITION_FORMAT(421042,"Alert condition format should be a JSON"),
 
 
 

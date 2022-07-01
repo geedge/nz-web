@@ -8,6 +8,7 @@ import java.util.Map;
 
 import javax.annotation.PostConstruct;
 
+import com.nis.common.utils.ToolUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ResourceLoaderAware;
 import org.springframework.context.support.AbstractMessageSource;
@@ -97,6 +98,9 @@ public class I18nConfig extends AbstractMessageSource implements ResourceLoaderA
         Map<String, String> props = I18N_CACHE.get(language);
         if (null != props && props.containsKey(code)) {
         	String msg = props.get(code);
+            if(ToolUtil.isEmpty(param)){
+                return msg;
+            }
             return MessageFormat.format(msg, param);
         } else {
         	try {

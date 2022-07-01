@@ -1,9 +1,11 @@
 package com.nis.modules.alert.entity;
 
+import com.alibaba.fastjson.JSONArray;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.sys.entity.SysUserEntity;
 import lombok.Data;
 
@@ -46,6 +48,11 @@ public class AlertRuleEntity implements Serializable {
 	 * 阈值
 	 */
 	private Double threshold;
+	/**
+	 * 多阈值json数据
+	 */
+	@TableField("`condition`")
+	private Object condition;
 
 	/**
 	 * 单位
@@ -178,13 +185,12 @@ public class AlertRuleEntity implements Serializable {
 	/**
 	 * 计算 alert rule hash id
 	 *
-	 * @param entity
 	 * @return
 	 */
 
 	public String getAlertRuleHashId() {
 		String content = new StringBuilder(AlertRuleEntity.class.getName()).append(id).append(name).append(expr)
-				.append(operator).append(threshold).append(unit).append(last).append(severityId).append(summary)
+				.append(condition).append(unit).append(last).append(summary)
 				.append(description).append(autoExpired).append(schedEnable).append(schedDays).append(schedStime)
 				.append(schedEtime).append(notifyActive).append(notifyExpired).append(receiver).append(method)
 				.append(buildIn).append(seq).append(state).append(type).append(inr).append(timeout).toString();
@@ -208,5 +214,15 @@ public class AlertRuleEntity implements Serializable {
 		return timeout;
 	}
 
+	public String getConditionStr(){
+		if(ToolUtil.isEmpty(condition)){
+			return "";
+		}
+		if(condition instanceof String){
+			return String.valueOf(condition);
+		}else{
+			return JSONArray.toJSONString(condition);
+		}
+	}
 
 }
