@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.JSONPath;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.modules.panel.entity.VisualPanel;
 import com.nis.modules.panel.service.VisualPanelService;
@@ -82,9 +83,10 @@ public class SetupRunner implements CommandLineRunner{
 		log.info("Setup dashboard report job begin...");
 		List<VisualPanel> panelList = visualPanelService.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, Constant.PanelType.DASHBOARD.getValue()));
 		for (VisualPanel panel : panelList) {
-			if (ToolUtil.isNotEmpty(panel.getParam())) {
-				Map paramMap = JSONObject.parseObject(panel.getParam().toString(), Map.class);
-				if (Tool.MapUtil.isNotEmpty(paramMap)) {
+			Map paramMap = JSONObject.parseObject(panel.getParam().toString(), Map.class);
+			if (Tool.MapUtil.isNotEmpty(paramMap)) {
+				String reportEnable = JSONPath.read(panel.getParam().toString(), "report.enable").toString();
+				if (Tool.StrUtil.equalsIgnoreCase("true", StrUtil.nullToDefault(reportEnable, "false"))) {
 					reportJobManager.createReportJob(panel.getParam().toString(), panel.getId().toString());
 				}
 			}
