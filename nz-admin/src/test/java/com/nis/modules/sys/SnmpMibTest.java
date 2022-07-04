@@ -76,7 +76,7 @@ public class SnmpMibTest extends BaseTest<SnmpMib> {
     @Test
     public void updateSnmpMibl_success(){
         Map snmpMib = jsonToInParameter(testName.getMethodName(), Map.class);
-        MvcResult result = UTUtil.performPut("/mib",snmpMib);
+        MvcResult result = UTUtil.performMultipart("/mib","/file/CESHI-MIB.txt","file",snmpMib,null);
 
         UTUtil.assertEqualsRCode(result, RCode.SUCCESS);
     }

@@ -85,7 +85,7 @@ public class SnmpMibController extends AbstractController {
     @PutMapping
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.MIB)
     @RequiresPermissions({"sys:mib:update"})
-    public R update(@RequestBody SnmpMib snmpMib, @RequestParam(value = "file", required = false) MultipartFile file) {
+    public R update(SnmpMib snmpMib, @RequestParam(value = "file", required = false) MultipartFile file) {
         ValidateUtils.is(snmpMib.getId()).notNull(RCode.SNMP_MIB_ID_ISNULL).and(snmpMib.getRemark()).maxLength(256);
 
         snmpMibService.saveOrUpdateSnmpMib(snmpMib, file);
