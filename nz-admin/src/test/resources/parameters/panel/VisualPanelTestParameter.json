@@ -1,0 +1,394 @@
+{
+  "------------------ get  /visual/panel---------------------": "note",
+  "queryVisualPanel_success": {
+    "pageNo": 1,
+    "pageSize": 20,
+    "ids": "1,2"
+  },
+  "------------------ post  /visual/panel---------------------": "note",
+  "addVisualPanel_success": {
+    "name": "panel_6",
+    "remark": "测试新增",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": "last",
+          "interval": 1,
+          "unit": "month"
+        },
+        "schedule": {
+          "type": 4,
+          "repeat": 1,
+          "stime": "2021-01-10 10:10:10",
+          "nums": [1, 10, 30, -1]
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "addVisualPanel_nameIsnull": {
+    "name": "",
+    "remark": "测试新增"
+  },
+  "addVisualPanel_nameFormatError": {
+    "name": "panel/7",
+    "remark": "测试新增"
+  },
+  "addVisualPanel_nameDuplicate": {
+    "name": "panel_4",
+    "remark": "测试新增",
+    "pid": 10
+  },
+  "addVisualPanel_typeIsnull": {
+    "name": "panel_7",
+    "remark": "测试新增",
+    "link": 1
+  },
+  "addVisualPanel_typeInvalide": {
+    "name": "panel_7",
+    "remark": "测试新增",
+    "link": 1,
+    "type": "abcd"
+  },
+  "addVisualPanel_notExist": {
+    "name": "panel_7",
+    "remark": "测试新增",
+    "pid": 19
+  },
+  "addVisualPanel_error": {
+    "name": "panel_7_add_________________________________this_name_length_is_66",
+    "remark": "测试新增"
+  },
+  "------------------ put  /visual/panel---------------------": "note",
+  "updateVisualPanel_success": {
+    "id": 3,
+    "name": "panel_3_update",
+    "type": "overview",
+    "link": 1,
+    "pid": 1,
+    "remark": "测试修改",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": "previous",
+          "interval": 1,
+          "unit": "week"
+        },
+        "schedule": {
+          "type": 3,
+          "repeat": 1,
+          "stime": "2021-01-10 10:10:10",
+          "nums": [1, 3, 7]
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "updateVisualPanel_idIsnull": {
+    "id": null,
+    "name": "panel_3_update",
+    "type": "overview",
+    "link": 1,
+    "pid": 1,
+    "remark": "测试修改",
+    "param": {
+      "report": {
+        "enable": false,
+        "receivers": [1]
+      }
+    }
+  },
+  "updateVisualPanel_error": {
+    "id": 3,
+    "name": "panel_3_update______________________________this_name_length_is_66",
+    "type": "overview",
+    "link": 1,
+    "pid": 1,
+    "remark": "测试修改",
+    "param": {
+      "report": {
+        "enable": false,
+        "receivers": [1]
+      }
+    }
+  },
+  "------------------ delete  /visual/panel---------------------": "note",
+  "deleteVisualPanel_success": {
+    "ids": "2, 5"
+  },
+  "deleteVisualPanel_idIsnull": {
+    "ids": ""
+  },
+  "------------------ post  /visual/panel  param---------------------": "note",
+  "addVisualPanel_receiversIsNull": {
+    "name": "panel_param_test",
+    "remark": "测试param receivers校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": ""
+        },
+        "schedule": {
+          "type": ""
+        },
+        "receivers": ""
+      }
+    }
+  },
+  "addVisualPanel_rangeIsNull": {
+    "name": "panel_param_test",
+    "remark": "测试report range校验",
+    "param": {
+      "report": {
+        "enable": true
+      }
+    }
+  },
+  "addVisualPanel_rangeTypeIsNull": {
+    "name": "panel_param_test",
+    "remark": "测试range type校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": ""
+        },
+        "schedule": {
+          "type": 3
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "addVisualPanel_rangeIntervalIsnull": {
+    "name": "panel_param_test",
+    "remark": "测试range interval校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": "previous"
+        },
+        "schedule": {
+          "type": 3
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "addVisualPanel_rangeUnitIsnull": {
+    "name": "panel_param_test",
+    "remark": "测试range unit校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": "previous",
+          "interval": 1
+        },
+        "schedule": {
+          "type": 3
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "addVisualPanel_rangeTypeInvalide": {
+    "name": "panel_param_test",
+    "remark": "测试range type校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": 1,
+          "interval": 1,
+          "unit": "week"
+        },
+        "schedule": {
+          "type": 3
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "addVisualPanel_rangeUnitInvalide": {
+    "name": "panel_param_test",
+    "remark": "测试range unit校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": "previous",
+          "interval": 1,
+          "unit": "weeks"
+        },
+        "schedule": {
+          "type": 3
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "addVisualPanel_reportScheduleIsnull": {
+    "name": "panel_param_test",
+    "remark": "测试report schedule校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": "last"
+        }
+      }
+    }
+  },
+  "addVisualPanel_scheduleTypeIsnull": {
+    "name": "panel_param_test",
+    "remark": "测试schedule type校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": "previous",
+          "interval": 1,
+          "unit": "week"
+        },
+        "schedule": {
+          "type": ""
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "addVisualPanel_scheduleRepeatIsnull": {
+    "name": "panel_param_test",
+    "remark": "测试schedule repeat校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": "previous",
+          "interval": 1,
+          "unit": "week"
+        },
+        "schedule": {
+          "type": 2,
+          "stime": "2021-01-10 10:10:10"
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "addVisualPanel_scheduleStimeIsnull": {
+    "name": "panel_param_test",
+    "remark": "测试schedule stime校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": "previous",
+          "interval": 1,
+          "unit": "week"
+        },
+        "schedule": {
+          "type": 1
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "addVisualPanel_scheduleTypeInvalide": {
+    "name": "panel_param_test",
+    "remark": "测试schedule type校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": "previous",
+          "interval": 1,
+          "unit": "week"
+        },
+        "schedule": {
+          "type": 10,
+          "stime": "2021-01-10 10:10:10"
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "addVisualPanel_scheduleNumsIsnull": {
+    "name": "panel_param_test",
+    "remark": "测试schedule nums校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": "previous",
+          "interval": 1,
+          "unit": "week"
+        },
+        "schedule": {
+          "type": 3,
+          "repeat": 1,
+          "stime": "2021-01-10 10:10:10"
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "addVisualPanel_scheduleNumsInvalide3": {
+    "name": "panel_param_test",
+    "remark": "测试schedule type=3, nums校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": "previous",
+          "interval": 1,
+          "unit": "week"
+        },
+        "schedule": {
+          "type": 3,
+          "repeat": 1,
+          "stime": "2021-01-10 10:10:10",
+          "nums": [1, 10]
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "addVisualPanel_scheduleNumsInvalide4": {
+    "name": "panel_param_test",
+    "remark": "测试schedule type=4, nums校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": "previous",
+          "interval": 1,
+          "unit": "week"
+        },
+        "schedule": {
+          "type": 3,
+          "repeat": 1,
+          "stime": "2021-01-10 10:10:10",
+          "nums": [1, 10, 32]
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "addVisualPanel_reportChartShareInvalide": {
+    "name": "panel_param_test",
+    "remark": "测试report chartShare校验",
+    "param": {
+      "report": {
+        "enable": false,
+        "receivers": [1]
+      },
+      "chartShare": "chart"
+    }
+  }
+}

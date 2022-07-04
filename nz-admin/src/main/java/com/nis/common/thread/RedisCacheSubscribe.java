@@ -4,9 +4,13 @@ import java.util.Map;
 
 import javax.servlet.Filter;
 
+import com.alibaba.fastjson.JSONPath;
+import com.nis.common.utils.Tool;
+import com.nis.modules.report.job.ReportJobManager;
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.crazycake.shiro.RedisCacheManager;
 import org.crazycake.shiro.RedisSessionDAO;
+import org.quartz.SchedulerException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.connection.Message;
@@ -48,6 +52,9 @@ public class RedisCacheSubscribe  implements MessageListener{
 	
 	@Autowired
 	private SNMPTrapReceiver trapReceiver;
+
+	@Autowired
+	private ReportJobManager reportJobManager;
 	
 	@Override
 	public void onMessage(Message message, byte[] pattern) {
@@ -78,6 +85,31 @@ public class RedisCacheSubscribe  implements MessageListener{
 			redisSessionDao.setExpire(Integer.valueOf(sessionTimeOut) * 60);
 			mySessionManager.setGlobalSessionTimeout(Integer.valueOf(sessionTimeOut) * 60 * 1000);
 		}
+
+		// dashboard report
+		if(StrUtil.equals(topic, Constant.REPORT_TOPIC_NAME)){
+			log.info("Report consumer message, report begin ...");
+			log.info("consumer message :{}", value);
+			String reportEnable = JSONPath.read(value, "report.enable").toString();
+			String panelId = JSONPath.read(value, "panelId").toString();
+
+			if (Tool.StrUtil.equalsIgnoreCase("true", StrUtil.nullToDefault(reportEnable, "false"))) {
+				try {
+					reportJobManager.delJobByName(panelId);
+					reportJobManager.createReportJob(value, panelId);
+					log.info("createReportJob success.");
+				} catch (SchedulerException e) {
+					log.error("report job create or update error,panelId:{}", e, panelId);
+				}
+			} else {
+				try {
+					reportJobManager.delJobByName(panelId);
+				} catch (SchedulerException e) {
+					log.error("delete report job error, panelId:{}", panelId, e);
+				}
+			}
+			log.info("Report consumer message, report finished");
+		}
 	}
 
 	@Bean
@@ -87,6 +119,7 @@ public class RedisCacheSubscribe  implements MessageListener{
 	    container.setConnectionFactory(redisTemplate.getConnectionFactory());
 	    container.addMessageListener(listenerAdapter, new PatternTopic(Constant.SYSCONFIG_SESSION_TIMEOUT_KEY));
 	    container.addMessageListener(listenerAdapter, new PatternTopic(Constant.SYSCONFIG_SNMP_PORT_KEY));
+		container.addMessageListener(listenerAdapter, new PatternTopic(Constant.REPORT_TOPIC_NAME));
 	    return container;
 	}
 	

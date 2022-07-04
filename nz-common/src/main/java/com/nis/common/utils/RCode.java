@@ -99,6 +99,21 @@ public enum RCode {
     CHARTELEMENT_TYPE_INVALIDE(123058,"Chart element type is invalide"),
     CHARTELEMENT_NAME_ISNULL(121059,"Chart element name can not be empty"),
     CHARTELEMENT_EXPRESSION_ISNULL(121060,"Chart element expression can not be empty"),
+    PANEL_PARAM_REPORTRANGE_ISNULL(121082,"Panel param report range can not be empty"),
+    PANEL_PARAM_RANGETYPE_ISNULL(121083,"Panel param range type can not be empty"),
+    PANEL_PARAM_RANGETYPE_INVALIDE(123084,"Panel param range type must be previous or last"),
+    PANEL_PARAM_RANGEINTERVAL_ISNULL(121085,"Panel param range interval can not be empty"),
+    PANEL_PARAM_RANGEUNIT_ISNULL(121086,"Panel param range unit can not be empty"),
+    PANEL_PARAM_RANGEUNIT_INVALIDE(123087,"Panel param range unit must be hour, day, week or month"),
+    PANEL_PARAM_REPORTSCHEDULE_ISNULL(121088,"Panel param report schedule can not be empty"),
+    PANEL_PARAM_SCHEDULETYPE_ISNULL(121089,"Panel param schedule type can not be empty"),
+    PANEL_PARAM_SCHEDULETYPE_INVALIDE(123090,"Panel param schedule type must be 1, 2, 3 or 4"),
+    PANEL_PARAM_SCHEDULEREPEAT_ISNULL(121091,"Panel param schedule repeat can not be empty"),
+    PANEL_PARAM_SCHEDULESTIME_ISNULL(121092,"Panel param schedule stime can not be empty"),
+    PANEL_PARAM_SCHEDULENUMS_ISNULL(121093,"Panel param schedule nums can not be empty"),
+    PANEL_PARAM_SCHEDULENUMS_INVALIDE(123094,"Panel param schedule nums is invalide"),
+    PANEL_PARAM_REPORTRECEIVERS_ISNULL(121095,"Panel param report receivers can not be empty"),
+    PANEL_PARAM_REPORTCHARTSHARE_INVALIDE(123096,"Panel param report tooltip must be none, crosshair or tooltip"),
 
     /**
      * EXPRETMPL

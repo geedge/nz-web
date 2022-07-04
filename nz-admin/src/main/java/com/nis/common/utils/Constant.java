@@ -1104,6 +1104,13 @@ public class Constant {
 	public static final String SYSCONFIG_SNMP_PORT_KEY = "snmp_trap_listen_port";
 	public static final String SYSCONFIG_SESSION_TIMEOUT_KEY = "session_timeout";
 
+	public static final String REPORT_TOPIC_NAME = "report_topic";
+
+	public static final String REPORT_JOB_GROUP = "report_job_group";
+
+	// sys_config key
+	public static final String REPORT_EMAIL_TEMPLATE = "report_email_template";
+
 	public static final String SETUP_FILE_NAME = "setup.json";
 	/**
 	 * aes 对称加密 密钥

@@ -29,6 +29,12 @@ public class VisualPanel {
 	private Integer buildIn;
 	
 	private String seq;
+
+	private Object param;
+
+	private String remark;
+
+	private Long uts;
 	
 	@TableField(exist = false)
     private List<VisualPanel> children;

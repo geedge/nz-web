@@ -4,15 +4,14 @@ import cn.hutool.log.Log;
 import com.nis.common.exception.NZException;
 import com.nis.modules.sys.service.SysConfigService;
 import com.sun.mail.util.MailConnectException;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.activation.DataHandler;
+import javax.activation.FileDataSource;
 import javax.mail.*;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
+import javax.mail.internet.*;
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Properties;
 
@@ -29,19 +28,30 @@ public class MailUtil {
 
 	String from,host,port,code,protocol,user;
 
-	
-	public void sendHTML(List<String> to, String subject,String txt) throws MessagingException {
+
+	public void sendHTML(List<String> to, String subject, String txt) throws MessagingException {
 		/*from = configService.getValue("email_smtp_account");
 		sendHTML(from, to, subject, txt);*/
 		// 发送邮箱地址
 		from = configService.getValue("email_send_account");
-		if(StringUtils.isEmpty(from)){
+		if (StringUtils.isEmpty(from)) {
 			// 如果发送邮箱地址为空 则默认使用登录邮箱
 			from = configService.getValue("email_auth_account");
 		}
-		sendHTML(from, to, subject, txt);
+		sendHTML(from, to, subject, txt, Tool.StrUtil.EMPTY);
 	}
-	public void sendHTML(String from, List<String> to, String subject,String txt) throws MessagingException {
+
+	public void sendHTMLAndAppendFile(List<String> to, String subject, String txt, String filePath) throws MessagingException {
+		// 发送邮箱地址
+		from = configService.getValue("email_send_account");
+		if (StringUtils.isEmpty(from)) {
+			// 如果发送邮箱地址为空 则默认使用登录邮箱
+			from = configService.getValue("email_auth_account");
+		}
+        sendHTML(from, to, subject, txt, filePath);
+	}
+
+	public void sendHTML(String from, List<String> to, String subject, String txt, String appendFilePath) throws MessagingException {
 		host = configService.getValue("email_host");
 		port = configService.getValue("email_port");
 		code = configService.getValue("email_auth_password");
@@ -67,7 +77,8 @@ public class MailUtil {
 			props.put("mail.smtp.auth", "true");
 			// 用刚刚设置好的props对象构建一个session
 			session = Session.getInstance(props);
-			session.setDebug(true);
+			// 发送附件不记录日志 快照文件太大了
+			if (Tool.StrUtil.isEmpty(appendFilePath)) session.setDebug(true);
 		}
 		
 		// 用session为参数定义消息对象
@@ -90,10 +101,21 @@ public class MailUtil {
 
 			// 设置邮件的文本内容
 			BodyPart contentPart = new MimeBodyPart();
-			
-			contentPart.setHeader("heard1", "header2");
-			contentPart.setContent(txt, "text/html;charset=utf-8");
+
+			contentPart.setText(txt);
+			contentPart.setContent(txt, "text/html");
 			multipart.addBodyPart(contentPart);
+
+			// 组装附件
+			if (Tool.StrUtil.isNotEmpty(appendFilePath)) {
+				BodyPart attachmentPart = new MimeBodyPart();
+				FileDataSource file_datasource = new FileDataSource(appendFilePath);
+				DataHandler dh = new DataHandler(file_datasource);
+				attachmentPart.setDataHandler(dh);
+				// 附件区别内嵌内容的一个特点是有文件名，为防止中文乱码要编码
+				attachmentPart.setFileName(MimeUtility.encodeText(dh.getName()));
+				multipart.addBodyPart(attachmentPart);
+			}
 
 			// 将multipart对象放到message中
 			message.setContent(multipart);
@@ -109,6 +131,8 @@ public class MailUtil {
 		} catch (MessagingException e) {
 			logger.error("send to {} subject {} from {} faild with exception ",to.toString(),from,subject,e);
 			throw e;
+		} catch (UnsupportedEncodingException e) {
+			logger.error(e);
 		}
 	}
 

@@ -1,7 +1,14 @@
 package com.nis.common.config;
 
 import java.io.File;
+import java.util.List;
+import java.util.Map;
 
+import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nis.modules.panel.entity.VisualPanel;
+import com.nis.modules.panel.service.VisualPanelService;
+import com.nis.modules.report.job.ReportJobManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
@@ -52,6 +59,12 @@ public class SetupRunner implements CommandLineRunner{
     
     @Autowired
     LicenseService licenseService;
+
+    @Autowired
+	ReportJobManager reportJobManager;
+
+    @Autowired
+	VisualPanelService visualPanelService;
 	
     
     
@@ -64,6 +77,20 @@ public class SetupRunner implements CommandLineRunner{
 			log.info("license install {}", lr);
 		}
 		log.info("Setup inited {}", inited);
+
+		// 加载已有 panel report job type = DASHBOARD
+		log.info("Setup dashboard report job begin...");
+		List<VisualPanel> panelList = visualPanelService.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, Constant.PanelType.DASHBOARD.getValue()));
+		for (VisualPanel panel : panelList) {
+			if (ToolUtil.isNotEmpty(panel.getParam())) {
+				Map paramMap = JSONObject.parseObject(panel.getParam().toString(), Map.class);
+				if (Tool.MapUtil.isNotEmpty(paramMap)) {
+					reportJobManager.createReportJob(panel.getParam().toString(), panel.getId().toString());
+				}
+			}
+		}
+		log.info("Setup dashboard report job finished");
+
 		if (inited == 2) {
 			log.info(" inited = {}	,skip init setup", inited);
 			return;

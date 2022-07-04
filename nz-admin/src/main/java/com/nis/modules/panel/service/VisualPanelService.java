@@ -2,16 +2,14 @@ package com.nis.modules.panel.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.modules.panel.entity.VisualPanel;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.springframework.web.multipart.MultipartFile;
 
 public interface VisualPanelService extends IService<VisualPanel> {
 	VisualPanel queryInfo(Integer id);
@@ -43,4 +41,6 @@ public interface VisualPanelService extends IService<VisualPanel> {
     void duplicate(Integer id);
 
     void snapshot(HttpServletRequest request, HttpServletResponse response, String format, Integer panelId, Long start, Long end, String language);
+
+    String snapshot(String format, Integer panelId, Long start, Long end, String language);
 }
