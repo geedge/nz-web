@@ -1016,6 +1016,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		panel.setLink(linkId);
 		panel.setWeight(0);
 		panel.setCreateBy(ShiroUtils.getUserId().intValue());
+		panel.setUts(new Date().getTime());
 		if(StringUtils.isNotEmpty(seq)){
 			panel.setSeq(seq);
 		}
