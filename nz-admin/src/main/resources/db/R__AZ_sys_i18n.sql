@@ -4169,8 +4169,6 @@ INSERT INTO `sys_i18n` VALUES (6400, 'overall.rightShift', 'en', 'overall.rightS
 INSERT INTO `sys_i18n` VALUES (6401, 'overall.rightShift', 'zh', 'overall.rightShift', '向右移', '', '2022-06-30 06:43:55', 415);
 INSERT INTO `sys_i18n` VALUES (6402, 'overall.backToTop', 'en', 'overall.backToTop', 'Back to the top', '', '2022-06-30 06:54:48', 415);
 INSERT INTO `sys_i18n` VALUES (6403, 'overall.backToTop', 'zh', 'overall.backToTop', '回到顶部', '', '2022-06-30 06:55:02', 415);
-INSERT INTO `sys_i18n` VALUES (6404, 'overall.positiveSequence', 'en', 'overall.positiveSequence', 'Positive sequence', '', '2022-06-30 07:10:09', 415);
-INSERT INTO `sys_i18n` VALUES (6406, 'overall.invertedOrder', 'en', 'overall.invertedOrder', 'Inverted order', '', '2022-06-30 07:12:34', 415);
 INSERT INTO `sys_i18n` VALUES (6408, 'alert.config.name', 'en', 'alert.config.name', 'Name', '', '2022-06-29 15:34:14', 416);
 INSERT INTO `sys_i18n` VALUES (6409, 'alert.config.name', 'zh', 'alert.config.name', '告警规则名称', '', '2022-06-29 15:34:14', 416);
 INSERT INTO `sys_i18n` VALUES (6410, 'alert.type', 'en', 'alert.type', 'Type', '', '2022-06-29 15:34:14', 416);

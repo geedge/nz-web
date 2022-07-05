@@ -13,10 +13,10 @@ variables:
   # redis 端口定义 （必须）
   REDIS_PORT: 6379
   # sys_i18n 数据源信息
-  NZ_DB_HOST: "192.168.40.42"
-  NZ_DB_USER: "root"
+  NZ_DB_HOST: "192.168.40.126"
+  NZ_DB_USER: "nezha"
   NZ_DB_PASSWORD: "111111"
-  NZ_DB_NAME: "nz-dev-v3.0"
+  NZ_DB_NAME: "nz-dev-v3.4"
 # 定义全局依赖的docker服务，即 这条流水线 pipeline 中的任务都用这里的服务
 services:
   - mariadb:10.2.14
