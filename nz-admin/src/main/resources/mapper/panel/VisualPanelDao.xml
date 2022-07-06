@@ -16,6 +16,7 @@
         <result property="remark" column="remark"></result>
         <result property="uts" column="uts"></result>
         <result property="chartNum" column="chart_num"></result>
+        <result property="starred" column="starred"></result>
         <association property="parent" columnPrefix="parent_" javaType="com.nis.modules.panel.entity.VisualPanel">
             <result property="id" column="id" />
             <result property="name" column="name"></result>
@@ -42,12 +43,14 @@
 			fatherPanel.id AS parent_id,
 			fatherPanel.NAME AS parent_name,
 			childrenPanel.*,
-			IFNULL( chart.chartNum, 0 ) AS chart_num 
+			IFNULL( chart.chartNum, 0 ) AS chart_num ,
+            IFNULL( sta.starred, 0 ) AS starred
 		FROM
 			visual_panel pan
 			LEFT JOIN visual_panel fatherPanel ON pan.pid = fatherPanel.id
 			LEFT JOIN visual_panel childrenPanel ON pan.id = childrenPanel.pid
 			LEFT JOIN ( SELECT panel_id, count( 1 ) AS chartNum FROM visual_chart GROUP BY panel_id ) chart ON pan.id = chart.panel_id
+            LEFT JOIN ( SELECT IF(COUNT(1) > 0, 1, 0) AS starred,tid FROM sys_user_starred WHERE TYPE = "panel" AND uid = #{params.currentLoginUserID} GROUP BY tid) sta ON pan.id = sta.tid
         <where>
             <if test="params.ids != null">
                 and pan.id in 
@@ -62,6 +65,15 @@
 
             <if test="params.link != null and params.link != ''">
                 and pan.link=#{params.link}
+            </if>
+            <if test="params.starred != null and params.starred != ''">
+                AND
+                <if test=' params.starred eq 1 '>
+                    starred = #{params.starred}
+                </if>
+                <if test=' params.starred eq 0 '>
+                    starred IS NULL
+                </if>
             </if>
         </where>
 		<!-- 按照 weight 排序 -->

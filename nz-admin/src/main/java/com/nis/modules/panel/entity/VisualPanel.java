@@ -44,4 +44,10 @@ public class VisualPanel {
     
     @TableField(exist = false)
     private Integer chartNum;
+
+	/**
+	 * 是否收藏 0:未收藏 1:已收藏
+	 */
+	@TableField(exist = false)
+	private Integer starred;
 }

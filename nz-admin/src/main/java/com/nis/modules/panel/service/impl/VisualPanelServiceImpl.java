@@ -132,6 +132,15 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
     	VisualPanel visualPanel = this.baseMapper.queryInfo(id);
         if(ToolUtil.isNotEmpty(visualPanel.getParam()))
             visualPanel.setParam(JSONObject.parseObject(String.valueOf(visualPanel.getParam()), Map.class));
+
+        // 当前用户收藏状态  1：收藏  0：未收藏
+        int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
+                .eq(SysUserStarredEntity::getTid, visualPanel.getId())
+                .eq(SysUserStarredEntity::getType, "panel")
+                .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId().intValue())
+        );
+
+        visualPanel.setStarred(count == 0 ? 0 : 1);
         return visualPanel;
     }
     
@@ -142,6 +151,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         	List<String> listIds = Arrays.asList(ids.split(","));
         	params.put("ids",listIds);
         }
+        //获取当前登录用户的id
+        Long currentLoginUserID = ShiroUtils.getUserId();
+        params.put("currentLoginUserID",currentLoginUserID);
         // 1. 查询时 type 为空则默认 dashboard 类型
         String type = (String) params.get("type");
         if (StringUtils.isEmpty(type)) {
