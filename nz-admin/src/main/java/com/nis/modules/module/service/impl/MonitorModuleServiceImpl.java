@@ -485,6 +485,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
             }
             if (ToolUtil.isNotEmpty(camelToUnderlineMap.get("priv_pin"))) {
                 camelToUnderlineMap.put("priv_password", camelToUnderlineMap.get("priv_pin"));
+                camelToUnderlineMap.put("priv_protocol", String.valueOf(camelToUnderlineMap.get("priv_protocol")).replace("-128", "").replace("-", ""));
             }
         }
         // contextname 最终需要格式为 context_name , 因原本不是 驼峰格式 ，这里特殊处理下

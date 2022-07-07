@@ -12,10 +12,7 @@ import org.snmp4j.smi.*;
 import org.snmp4j.transport.DefaultUdpTransportMapping;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class SnmpUtil {
 
@@ -56,8 +53,12 @@ public class SnmpUtil {
             String privProtocol = auth.get("privProtocol");
             if ("DES".equals(privProtocol)) {
                 privProtocolOid = PrivDES.ID;
-            } else if ("AES".equals(privProtocol)) {
+            } else if ("AES-128".equals(privProtocol)) {
                 privProtocolOid = PrivAES128.ID;
+            } else if ("AES-192".equals(privProtocol)) {
+                privProtocolOid = PrivAES192.ID;
+            } else if ("AES-256".equals(privProtocol)) {
+                privProtocolOid = PrivAES256.ID;
             }
 
             String privPassword = auth.get("privPin");
@@ -454,7 +455,7 @@ public class SnmpUtil {
                     throw new NZException(RCode.MODULE_PRIVPASSWORD_ISNULL);
                 }
 
-                if (StringUtils.isEmpty(privProtocol) || (!"DES".equals(privProtocol) && !"AES".equals(privProtocol))) {
+                if (StringUtils.isEmpty(privProtocol) || !Arrays.asList(new String[]{"DES","AES-128","AES-192","AES-256"}).contains(privProtocol)) {
                     throw new NZException(RCode.MODULE_PRIVPROTOCOL_INVALID);
                 }
 
