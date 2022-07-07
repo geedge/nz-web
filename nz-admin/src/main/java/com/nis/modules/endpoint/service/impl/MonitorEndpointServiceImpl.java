@@ -195,10 +195,13 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId().intValue())
         );
         endpoint.setStarred(count == 0 ? 0 : 1);
-
-        String agentId = String.valueOf(redisTemplate.opsForHash().entries(Constant.REDIS_KEY_ENDPOINT_PROM).get("" + id));
-        Promserver promserver = promserverService.getById(Integer.valueOf(agentId));
-        endpoint.setPromserver(promserver);
+        // 获取agent信息
+        Map endpointProm = redisTemplate.opsForHash().entries(Constant.REDIS_KEY_ENDPOINT_PROM);
+        if(ToolUtil.isNotEmpty(endpointProm)) {
+            String agentId = ToolUtil.toStr(endpointProm.get("" + id));
+            if(StrUtil.isNotBlank(agentId))
+                endpoint.setPromserver(promserverService.getById(Integer.valueOf(agentId)));
+        }
         return endpoint;
     }
 
@@ -652,7 +655,11 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 endpointConfig.setLastUpdate(endpointStateByConfigId.getTime());
             }
             endpoint.setConfigs(configsByEndpointId);
-            endpoint.setPromserver(agentMap.get(Integer.valueOf(String.valueOf(endpointProm.get("" + endpoint.getId())))));
+            if(ToolUtil.isNotEmpty(endpointProm)) {
+                String agentId = ToolUtil.toStr(endpointProm.get("" + endpoint.getId()));
+                if(StrUtil.isNotBlank(agentId))
+                    endpoint.setPromserver(agentMap.get(Integer.valueOf(agentId)));
+            }
         }
     }
 
