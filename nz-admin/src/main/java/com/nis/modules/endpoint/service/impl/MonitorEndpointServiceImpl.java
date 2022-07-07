@@ -44,6 +44,8 @@ import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
+import com.nis.modules.promserver.entity.Promserver;
+import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.entity.SnmpCredential;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
@@ -126,6 +128,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     @Autowired
     private SysUserStarredService starredService;
+
+    @Autowired
+    private PromserverService promserverService;
     
     @Override
     public MonitorEndpoint queryEndpointEntity(Integer id) {
@@ -190,6 +195,10 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId().intValue())
         );
         endpoint.setStarred(count == 0 ? 0 : 1);
+
+        String agentId = String.valueOf(redisTemplate.opsForHash().entries(Constant.REDIS_KEY_ENDPOINT_PROM).get("" + id));
+        Promserver promserver = promserverService.getById(Integer.valueOf(agentId));
+        endpoint.setPromserver(promserver);
         return endpoint;
     }
 
@@ -607,7 +616,11 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
         Map endpointMetricsStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
         Map endpointLogsStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
-        
+        // 获取agent
+        Map endpointProm = redisTemplate.opsForHash().entries(Constant.REDIS_KEY_ENDPOINT_PROM);
+        List<Promserver> promserverList = (List<Promserver>) promserverService.queryPage(MapUtil.newHashMap()).getList();
+        Map<Integer, Promserver> agentMap = promserverList.stream().collect(Collectors.toMap(Promserver::getId, o -> o));
+
         for (MonitorEndpoint endpoint : endpointList) {
             List<MonitorEndpointConfig> configsByEndpointId = endpointConfigs.stream().filter(endpointConfig -> endpoint.getId().equals(endpointConfig.getEndpointId())).collect(Collectors.toList());
             for (MonitorEndpointConfig endpointConfig : configsByEndpointId) {
@@ -639,6 +652,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 endpointConfig.setLastUpdate(endpointStateByConfigId.getTime());
             }
             endpoint.setConfigs(configsByEndpointId);
+            endpoint.setPromserver(agentMap.get(Integer.valueOf(String.valueOf(endpointProm.get("" + endpoint.getId())))));
         }
     }
 
