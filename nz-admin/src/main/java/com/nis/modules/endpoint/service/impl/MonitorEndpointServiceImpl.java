@@ -556,7 +556,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             Map basicAuth = JSONObject.parseObject(metricsConfig.getString("basic_auth"), Map.class);
             Map oldBasicAuth = JSONObject.parseObject(oldMetricsConfig.getString("basic_auth"), Map.class);
             displaceVal(basicAuth,oldBasicAuth,"username");
-            displaceVal(basicAuth,oldBasicAuth,"pin");
+            displaceVal(basicAuth,oldBasicAuth,"password");
             metricsConfig.put("basic_auth",basicAuth);
         }
         if(correctVal(metricsConfig.getString("bearer_token"))){
