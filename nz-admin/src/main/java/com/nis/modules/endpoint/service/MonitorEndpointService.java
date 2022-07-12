@@ -68,4 +68,6 @@ public interface MonitorEndpointService extends IService<MonitorEndpoint> {
     void syncTmpl(List<Integer> moduleIds, List<Integer> endpointIds, List<Integer> assetIds);
 
     void bulkEdit(Map<String, Object> params);
+
+    Map<String, Object> diagnose(Integer id);
 }

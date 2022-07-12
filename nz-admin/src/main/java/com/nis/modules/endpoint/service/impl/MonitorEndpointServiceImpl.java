@@ -20,13 +20,13 @@ import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.smartvalidate.utils.CommonUtil;
 import com.nis.common.utils.*;
-import com.nis.modules.alert.dao.AlertMessageDao;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.entity.AssetAsset;
-import com.nis.modules.asset.entity.AssetFieldValue;
 import com.nis.modules.asset.entity.AssetPing;
+import com.nis.modules.asset.entity.AssetTalonStatus;
 import com.nis.modules.asset.service.AssetAssetService;
+import com.nis.modules.asset.service.AssetTalonStatusService;
 import com.nis.modules.endpoint.dao.MonitorEndpointDao;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.entity.MonitorEndpointConfig;
@@ -49,10 +49,7 @@ import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.entity.SnmpCredential;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
-import com.nis.modules.sys.service.BasicImportAndExportServices;
-import com.nis.modules.sys.service.SnmpCredentialService;
-import com.nis.modules.sys.service.SysConfigService;
-import com.nis.modules.sys.service.SysUserStarredService;
+import com.nis.modules.sys.service.*;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,6 +63,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.ConnectException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -77,9 +77,6 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     @Autowired
     private AssetAssetService assetService;
-
-    @Autowired
-    private AlertMessageDao alertMessageDao;
 
     @Autowired
     private MonitorEndpointDao monitorEndpointDao;
@@ -131,6 +128,12 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     @Autowired
     private PromserverService promserverService;
+
+    @Autowired
+    private AssetTalonStatusService assetTalonService;
+
+    @Autowired
+    private SysI18nService i18nService;
     
     @Override
     public MonitorEndpoint queryEndpointEntity(Integer id) {
@@ -152,40 +155,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         List<Map<String, Object>> alert = statService.getSeverityStatByRuleMsgCount(Tool.MapUtil.empty(), ruleIdAndAlertCountMap);
         endpoint.setAlert(alert);
 
-        Map endpointMetricsStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
-        Map endpointLogsStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
-  
-        // configs
-        List<MonitorEndpointConfig> endpointConfigs = endpointConfigService.list(new LambdaQueryWrapper<MonitorEndpointConfig>().eq(MonitorEndpointConfig::getEndpointId, endpoint.getId()));
-        for (MonitorEndpointConfig endpointConfig : endpointConfigs) {
-            endpointConfig.setVer(endpointConfig.getVersion());
-
-            MonitorEndpointState endpointStateByConfigId = null;
-            if(endpointConfig.getType().equals(Constant.MonitorConfType.METRICS.getValue())) {
-            	if(ToolUtil.isNotEmpty(endpointMetricsStates)) {
-            		Object object = endpointMetricsStates.get(endpointConfig.getEndpointId().toString());
-                	if(ToolUtil.isNotEmpty(object)) {
-                		endpointStateByConfigId = JSON.parseObject((String)object,MonitorEndpointState.class);
-                    }
-            	}
-            }else {
-            	if(ToolUtil.isNotEmpty(endpointLogsStates)) {
-            		Object object = endpointLogsStates.get(endpointConfig.getEndpointId().toString());
-                	if(ToolUtil.isNotEmpty(object)) {
-                		endpointStateByConfigId = JSON.parseObject((String)object,MonitorEndpointState.class);
-                    }
-            	}
-            }
-            // 缓存中未取到值时 从数据库中获取
-            if(endpointStateByConfigId == null) {
-                endpointStateByConfigId = endpointStateService.getOne(new LambdaQueryWrapper<MonitorEndpointState>().eq(MonitorEndpointState::getConfigId, endpointConfig.getId()));
-            }
-            if (endpointStateByConfigId == null)
-                continue;
-            endpointConfig.setState(endpointStateByConfigId.getState());
-            endpointConfig.setLastUpdate(endpointStateByConfigId.getTime());
-        }
-        endpoint.setConfigs(endpointConfigs);
+        endpoint.setConfigs(getEndpointConfigs(endpoint));
 
 
         // 当前用户收藏状态  1：收藏  0：未收藏
@@ -203,6 +173,43 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 endpoint.setPromserver(promserverService.getById(Integer.valueOf(agentId)));
         }
         return endpoint;
+    }
+
+    // 获取 endpointConfigs 及其 state
+    private List<MonitorEndpointConfig> getEndpointConfigs(MonitorEndpoint endpoint){
+        Map endpointMetricsStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
+        Map endpointLogsStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
+
+        List<MonitorEndpointConfig> endpointConfigs = endpointConfigService.list(new LambdaQueryWrapper<MonitorEndpointConfig>().eq(MonitorEndpointConfig::getEndpointId, endpoint.getId()));
+        for (MonitorEndpointConfig endpointConfig : endpointConfigs) {
+            endpointConfig.setVer(endpointConfig.getVersion());
+
+            MonitorEndpointState endpointStateByConfigId = null;
+            if(endpointConfig.getType().equals(Constant.MonitorConfType.METRICS.getValue())) {
+                if(ToolUtil.isNotEmpty(endpointMetricsStates)) {
+                    Object object = endpointMetricsStates.get(endpointConfig.getEndpointId().toString());
+                    if(ToolUtil.isNotEmpty(object)) {
+                        endpointStateByConfigId = JSON.parseObject((String)object,MonitorEndpointState.class);
+                    }
+                }
+            }else{
+                if(ToolUtil.isNotEmpty(endpointLogsStates)) {
+                    Object object = endpointLogsStates.get(endpointConfig.getEndpointId().toString());
+                    if(ToolUtil.isNotEmpty(object)) {
+                        endpointStateByConfigId = JSON.parseObject((String)object,MonitorEndpointState.class);
+                    }
+                }
+            }
+            // 缓存中未取到值时 从数据库中获取
+            if(endpointStateByConfigId == null) {
+                endpointStateByConfigId = endpointStateService.getOne(new LambdaQueryWrapper<MonitorEndpointState>().eq(MonitorEndpointState::getConfigId, endpointConfig.getId()));
+            }
+            if (endpointStateByConfigId == null)
+                continue;
+            endpointConfig.setState(endpointStateByConfigId.getState());
+            endpointConfig.setLastUpdate(endpointStateByConfigId.getTime());
+        }
+        return endpointConfigs;
     }
 
     @Override
@@ -1649,4 +1656,190 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         }
         return resultMapList;
     }
+
+    @Override
+    public Map<String, Object> diagnose(Integer id) {
+        Map<String, Object> resultMap = MapUtil.newHashMap();
+        List<Map<String, String>> resultList = new ArrayList();
+        MonitorEndpoint endpoint = this.getById(id);
+        if(ToolUtil.isEmpty(endpoint)){
+            throw new NZException(RCode.ENDPOINT_NOTFOUND);
+        }
+        // 获取 metrics 和 logs 状态
+        Integer metricsState = null,logsState = null;
+        List<MonitorEndpointConfig> endpointConfigs = getEndpointConfigs(endpoint);
+        for (MonitorEndpointConfig endpointConfig : endpointConfigs) {
+            if (endpointConfig.getType().equals(Constant.MonitorConfType.METRICS.getValue())) {
+                metricsState = endpointConfig.getState();
+                if(metricsState == null && endpointConfig.getEnable() == 0)
+                    metricsState = 12;
+            } else {
+                logsState = endpointConfig.getState();
+                if(logsState == null && endpointConfig.getEnable() == 0)
+                    logsState = 12;
+            }
+        }
+        Map<String, String> metricsMap = MapUtil.newHashMap(), logsMap = MapUtil.newHashMap();
+        if(ToolUtil.equals(null, metricsState)) {
+            //alikeError：等待agent拉取配置
+            setI18nToMap(metricsMap, "agent_wait_pull");
+        }else{
+            if(Arrays.asList(new Integer[]{2, 8, 10}).contains(metricsState)){
+                // alikeError：asset 已停用
+                setI18nToMap(metricsMap, "asset_stop_using");
+            }else if(Arrays.asList(new Integer[]{4, 6}).contains(metricsState)){
+                // alikeError：DataCenter 已关闭
+                setI18nToMap(metricsMap, "dc_disabled");
+            }else{
+                if(ToolUtil.equals(0, metricsState) || ToolUtil.equals(0, logsState)){
+                    //asset ping 状态
+                    Map assetCachePings = redisTemplate.opsForHash().entries(Constant.SYSCONFIG_KEY_ASSET_PING);
+                    Object assetPingInfo = assetCachePings.get(endpoint.getAssetId().toString());
+                    if(ToolUtil.isNotEmpty(assetPingInfo) && ToolUtil.equals(1, JSON.parseObject((String)assetPingInfo,AssetPing.class).getStatus())) {
+                        // 检查 agent
+                        Map endpointProm = redisTemplate.opsForHash().entries(Constant.REDIS_KEY_ENDPOINT_PROM);
+                        if(ToolUtil.isNotEmpty(endpointProm)) {
+                            String agentIdStr = ToolUtil.toStr(endpointProm.get("" + id));
+                            if(StrUtil.isNotBlank(agentIdStr)){
+                                Integer agentId = Integer.valueOf(agentIdStr);
+                                Promserver agent = promserverService.getById(Integer.valueOf(agentId));
+                                if(ToolUtil.equals(1, agent.getStatus())){
+                                    String federation = sysConfigService.getValueOrDefault(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED, "1");
+                                    if(StrUtil.equals("1", federation) && ToolUtil.equals(1, agent.getType())){
+                                        //alikeError：集群模式global agent
+                                        setI18nToMap(metricsMap, "agent_federation_global");
+                                    }else if(StrUtil.equals("2", federation) && ToolUtil.equals(2, agent.getType())){
+                                        //alikeError：非集群模式PerDataCenter agent
+                                        setI18nToMap(metricsMap, "agent_unfederation_per");
+                                    }else{
+                                        // endpoint 配置问题
+                                        endpointDiagnose(endpoint, metricsMap, logsMap, metricsState, logsState, endpointConfigs);
+                                    }
+                                }else{
+                                    //alikeError：agent DOWN
+                                    setI18nToMap(metricsMap, "agent_down");
+                                }
+                            }else{
+                                //alikeError：未分配agent
+                                setI18nToMap(metricsMap, "agent_undistributed");
+                            }
+                        }else{
+                            //alikeError：未分配agent
+                            setI18nToMap(metricsMap, "agent_undistributed");
+                        }
+                    }else{
+                        //alikeError：Asset ping DOWN
+                        setI18nToMap(metricsMap, "asset_ping_down");
+                    }
+                }
+                if(ToolUtil.isEmpty(metricsMap)){
+                    if(ToolUtil.equals(12, metricsState)){
+                        // unlikeError：metrics 未启用
+                        setI18nToMap(metricsMap, "mertic_disable");
+                    }else{
+                        // unlikeError：metrics 正常
+                        setI18nToMap(metricsMap, "mertic_up");
+                    }
+                }
+                if(ToolUtil.isEmpty(logsMap)){
+                    if(Arrays.asList(new Integer[]{8, 10}).contains(logsState)){
+                        // unlikeError：Asset Talon 未开启
+                        setI18nToMap(logsMap, "logs_talon_disable");
+                    }else if(ToolUtil.equals(12, logsState)){
+                        // unlikeError：logs 未启用
+                        setI18nToMap(logsMap, "logs_disable");
+                    }else{
+                        // unlikeError：logs 正常
+                        setI18nToMap(logsMap, "logs_up");
+                    }
+                }
+            }
+        }
+        //共同问题 alikeError 使用 metricsMap
+        resultList.add(metricsMap);
+        if(ToolUtil.isNotEmpty(logsMap) && StrUtil.isEmpty(metricsMap.get("alike")))
+            resultList.add(logsMap);
+        metricsMap.remove("alike");
+        resultMap.put("list", resultList);
+        return resultMap;
+    }
+
+    private void endpointDiagnose(MonitorEndpoint endpoint, Map<String, String> metricsMap, Map<String, String> logsMap, Integer metricsState, Integer logsState, List<MonitorEndpointConfig> endpointConfigs){
+        if(ToolUtil.equals(0, metricsState)){
+            String metricsConfigStr = endpointConfigs.stream().filter(endpointConfig -> StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), endpointConfig.getType())).findFirst().orElse(new MonitorEndpointConfig()).getConfig();
+            Map metricsConfig = JSONObject.parseObject(metricsConfigStr, Map.class);
+            if(StrUtil.equals("snmp", metricsConfig.get("protocol").toString())){
+                List<Map> resultData = null;
+                try{
+                    SnmpCredential snmpCredential = snmpCredentialService.getById(ToolUtil.toStr(metricsConfig.get("snmpCredentialsId")));
+                    Map<String, String> authConfig = JSONObject.parseObject(snmpCredential.getConfig(), Map.class);
+                    String community = authConfig.get("readCommunity");
+                    resultData = SnmpUtil.snmpWalk(ToolUtil.toStr(metricsConfig.get("host")), snmpCredential.getPort(), snmpCredential.getType(), community, "1.3.6.1.2.1.1.1", authConfig);
+                } catch (Exception e) {
+                    //unlikeError: 配置有误
+                    setI18nToMap(metricsMap, "mertic_config_error");
+                }
+                if (CollectionUtils.isEmpty(resultData)){
+                    //unlikeError: 端口不通、身份验证失败、响应超时、代理已关闭
+                    setI18nToMap(metricsMap, "mertic_snmp_error");
+                }else{
+                    //unlikeError: SNMP正常
+                    setI18nToMap(metricsMap, "mertic_up");
+                }
+            }else{
+                try {
+                    String url = ToolUtil.toStr(metricsConfig.get("protocol"))+"://"+ToolUtil.toStr(metricsConfig.get("host"))+":"+ToolUtil.toStr(metricsConfig.get("port"));
+                    HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+                    String httpAuth = "Basic ";
+                    if(ToolUtil.isNotEmpty(metricsConfig.get("bearer_token"))){
+                        httpAuth += new String(Base64.getEncoder().encode(ToolUtil.toStr(metricsConfig.get("bearer_token")).getBytes()));
+                    }else{
+                        JSONObject basicAuth = JSONObject.parseObject(ToolUtil.toStr(metricsConfig.get("basic_auth")));
+                        if(ToolUtil.isNotEmpty(basicAuth.getString("username"))){
+                            httpAuth += new String(Base64.getEncoder().encode((basicAuth.getString("username")+":"+basicAuth.getString("password")).getBytes()));
+                        }
+                    }
+                    connection.setRequestProperty("Authorization", httpAuth);
+                    if (HttpURLConnection.HTTP_UNAUTHORIZED == connection.getResponseCode()) {
+                        //unlikeError: 身份验证失败
+                        setI18nToMap(metricsMap, "mertic_unauthorized");
+                    }else if (HttpURLConnection.HTTP_OK == connection.getResponseCode()) {
+                        //正常
+                        setI18nToMap(metricsMap, "mertic_up");
+                    }
+                } catch (ConnectException e) {
+                    //unlikeError: 连接超时-检查防火墙或调整超时时长
+                    setI18nToMap(metricsMap, "mertic_timeout");
+                } catch (Exception e) {
+                    //unlikeError: 配置有问题
+                    setI18nToMap(metricsMap, "mertic_config_error");
+                }
+            }
+        }
+        if(ToolUtil.equals(0, logsState)){
+            AssetTalonStatus assetTalon = assetTalonService.getById(endpoint.getAssetId());
+            if(assetTalon.getStatus() == 4){
+                //unlikeError：未知错误
+                setI18nToMap(logsMap, "logs_unknown_error");
+            }else if(assetTalon.getStatus() == 3){
+                //unlikeError：认证失败
+                setI18nToMap(logsMap, "logs_authentication_failed");
+            }else if(assetTalon.getStatus() == 2){
+                //unlikeError：连接超时
+                setI18nToMap(logsMap, "logs_timeout");
+            }else{
+                //unlikeError：请检查配置
+                setI18nToMap(logsMap, "logs_config_error");
+            }
+        }
+    }
+
+    private void setI18nToMap(Map<String, String> map, String code){
+        map.put("reason", i18nService.queryValue(code + "_msg"));
+        map.put("resolution", i18nService.queryValue(code + "_handle"));
+        if(!(StrUtil.startWith(code, "logs_") || StrUtil.startWith(code, "mertic_"))){
+            map.put("alike", "alike");
+        }
+    }
+
 }

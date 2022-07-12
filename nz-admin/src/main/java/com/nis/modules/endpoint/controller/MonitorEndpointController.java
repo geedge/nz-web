@@ -211,5 +211,15 @@ public class MonitorEndpointController {
         return R.ok();
     }
 
+    /**
+     * endpoint 错误诊断
+     */
+    @GetMapping( "/endpoint/diagnose/{id}")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ENDPOINT)
+    public R diagnose(@PathVariable("id") Integer id) {
+        ValidateUtils.is(id).notNull(RCode.ENDPOINT_ID_ISNULL);
+        return R.ok(monitorEndpointService.diagnose(id));
+    }
+
 }
 
