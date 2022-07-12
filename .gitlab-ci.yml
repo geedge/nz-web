@@ -2,7 +2,7 @@
 image: git.mesalab.cn:7443/nezha/nz-build-env:1.4
 # 定义全局变量
 variables:
-  MINIO_HOST: 'http://192.168.44.36:2020/'
+  MINIO_HOST: 'http://192.168.41.160:2020/'
   MINIO_USER: 'admin'
   MINIO_PWD: "Nezha@02!"
   MAVEN_REPO: "/etc/maven/repository/"
