@@ -639,7 +639,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         panel.setId(null);
         panel.setUts(System.currentTimeMillis());
         String reportEnable = null;
-        if (ToolUtil.isNotEmpty(panel.getParam())) {
+        if (ToolUtil.isNotEmpty(panel.getParam()) && ToolUtil.contains(panel.getParam(), "enable")) {
             reportEnable = JSONPath.read(panel.getParam().toString(), "report.enable").toString();
             panel.setParam(String.valueOf(panel.getParam()));
         }
