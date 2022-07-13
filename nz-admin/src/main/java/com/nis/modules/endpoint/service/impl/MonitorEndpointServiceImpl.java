@@ -1,15 +1,13 @@
 package com.nis.modules.endpoint.service.impl;
 
+import cn.hutool.core.lang.Pair;
 import cn.hutool.core.lang.hash.MurmurHash;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONException;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.*;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -19,6 +17,7 @@ import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.smartvalidate.utils.CommonUtil;
 import com.nis.common.utils.*;
+import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.entity.AssetAsset;
@@ -53,6 +52,7 @@ import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpMethod;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionStatus;
@@ -627,8 +627,8 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         Map endpointLogsStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
         // 获取agent
         Map endpointProm = redisTemplate.opsForHash().entries(Constant.REDIS_KEY_ENDPOINT_PROM);
-        List<Agent> promserverList = (List<Agent>) agentService.queryPage(MapUtil.newHashMap()).getList();
-        Map<Integer, Agent> agentMap = promserverList.stream().collect(Collectors.toMap(Agent::getId, o -> o));
+        List<Agent> agentList = agentService.list();
+        Map<Integer, Agent> agentMap = agentList.stream().collect(Collectors.toMap(Agent::getId, o -> o));
 
         for (MonitorEndpoint endpoint : endpointList) {
             List<MonitorEndpointConfig> configsByEndpointId = endpointConfigs.stream().filter(endpointConfig -> endpoint.getId().equals(endpointConfig.getEndpointId())).collect(Collectors.toList());
@@ -1691,44 +1691,53 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 setI18nToMap(metricsMap, "dc_disabled");
             }else{
                 if(ToolUtil.equals(0, metricsState) || ToolUtil.equals(0, logsState)){
-                    //asset ping 状态
-                    Map assetCachePings = redisTemplate.opsForHash().entries(Constant.SYSCONFIG_KEY_ASSET_PING);
-                    Object assetPingInfo = assetCachePings.get(endpoint.getAssetId().toString());
-                    if(ToolUtil.isNotEmpty(assetPingInfo) && ToolUtil.equals(1, JSON.parseObject((String)assetPingInfo,AssetPing.class).getStatus())) {
-                        // 检查 agent
-                        Map endpointProm = redisTemplate.opsForHash().entries(Constant.REDIS_KEY_ENDPOINT_PROM);
-                        if(ToolUtil.isNotEmpty(endpointProm)) {
-                            String agentIdStr = ToolUtil.toStr(endpointProm.get("" + id));
-                            if(StrUtil.isNotBlank(agentIdStr)){
-                                Integer agentId = Integer.valueOf(agentIdStr);
-                                Agent agent = agentService.getById(Integer.valueOf(agentId));
-                                if(ToolUtil.equals(1, agent.getStatus())){
-                                    String federation = sysConfigService.getValueOrDefault(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED, "1");
-                                    if(StrUtil.equals("1", federation) && ToolUtil.equals(1, agent.getType())){
-                                        //alikeError：集群模式global agent
-                                        setI18nToMap(metricsMap, "agent_federation_global");
-                                    }else if(StrUtil.equals("2", federation) && ToolUtil.equals(2, agent.getType())){
-                                        //alikeError：非集群模式PerDataCenter agent
-                                        setI18nToMap(metricsMap, "agent_unfederation_per");
-                                    }else{
+                    // 检查 agent
+                    Map<String, String> endpointProm = redisTemplate.opsForHash().entries(Constant.REDIS_KEY_ENDPOINT_PROM);
+                    if(ToolUtil.isNotEmpty(endpointProm)) {
+                        String agentIdStr = endpointProm.get("" + id);
+                        if(StrUtil.isNotBlank(agentIdStr)){
+                            Agent agent = agentService.getById(agentIdStr);
+                            if(ToolUtil.equals(1, agent.getStatus())){
+                                String federation = sysConfigService.getValueOrDefault(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED, "1");
+                                if(StrUtil.equals("1", federation) && ToolUtil.equals(1, agent.getType())){
+                                    //alikeError：集群模式global agent
+                                    setI18nToMap(metricsMap, "agent_federation_global");
+                                }else if(StrUtil.equals("2", federation) && ToolUtil.equals(2, agent.getType())){
+                                    //alikeError：非集群模式PerDataCenter agent
+                                    setI18nToMap(metricsMap, "agent_unfederation_per");
+                                }else{
+                                    //asset ping 状态
+                                    Map<String, String> assetCachePings = redisTemplate.opsForHash().entries(Constant.SYSCONFIG_KEY_ASSET_PING);
+                                    String assetPingInfo = assetCachePings.get(endpoint.getAssetId());
+                                    if(ToolUtil.isNotEmpty(assetPingInfo) && ToolUtil.equals(1, JSON.parseObject(assetPingInfo,AssetPing.class).getStatus())) {
                                         // endpoint 配置问题
                                         endpointDiagnose(endpoint, metricsMap, logsMap, metricsState, logsState, endpointConfigs);
+                                    }else{
+                                        //alikeError：Asset ping DOWN
+                                        AssetAsset asset = assetService.getById(endpoint.getAssetId());
+                                        Map<String, List<String>> body = Tool.MapUtil.of(
+                                                Pair.of("ips", Tool.StrUtil.split(asset.getManageIp(), ','))
+                                        );
+                                        String resultJsonStr = AgentUtil.request(agent, HttpMethod.POST, "/cmd/ping", null, body, String.class);
+                                        Object state = JSONPath.read(resultJsonStr, "data.list[0].state");
+                                        if(ToolUtil.equals(1, state)){
+                                            endpointDiagnose(endpoint, metricsMap, logsMap, metricsState, logsState, endpointConfigs);
+                                        }else{
+                                            setI18nToMap(metricsMap, "asset_ping_down");
+                                        }
                                     }
-                                }else{
-                                    //alikeError：agent DOWN
-                                    setI18nToMap(metricsMap, "agent_down");
                                 }
                             }else{
-                                //alikeError：未分配agent
-                                setI18nToMap(metricsMap, "agent_undistributed");
+                                //alikeError：agent DOWN
+                                setI18nToMap(metricsMap, "agent_down");
                             }
                         }else{
                             //alikeError：未分配agent
                             setI18nToMap(metricsMap, "agent_undistributed");
                         }
                     }else{
-                        //alikeError：Asset ping DOWN
-                        setI18nToMap(metricsMap, "asset_ping_down");
+                        //alikeError：未分配agent
+                        setI18nToMap(metricsMap, "agent_undistributed");
                     }
                 }
                 if(ToolUtil.isEmpty(metricsMap)){
