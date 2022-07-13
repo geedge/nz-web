@@ -23,7 +23,7 @@ CREATE TABLE `sys_i18n`  (
   `lang` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '语言',
   `code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'code码',
   `value` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '翻译值',
-  `remark` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '备注',
+  `remark` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '备注',
   `utime` datetime(0) NOT NULL COMMENT '更新时间',
   `uby` int(10) NOT NULL COMMENT '更新人',
   PRIMARY KEY (`id`) USING BTREE,
@@ -40,7 +40,7 @@ INSERT INTO `sys_i18n` VALUES (4, 'date.week.seven', 'en', 'date.week.seven', 'S
 INSERT INTO `sys_i18n` VALUES (5, 'date.week.two', 'en', 'date.week.two', 'TUE', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (6, 'date.week.three', 'en', 'date.week.three', 'WED', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (7, 'date.week.five', 'en', 'date.week.five', 'FRI', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (8, 'buttons.add', 'en', 'buttons.add', 'Add', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (8, 'buttons.add', 'en', 'buttons.add', 'Add', '监控》应用》新增；\n仪表盘》新增；\n管理》用户》新增；\n管理》角色》新增；\n系统配置》客户端》新增；\n系统配置》IPAM》新增；\n系统配置》导航》新增；', '2022-07-13 07:13:37', 425);
 INSERT INTO `sys_i18n` VALUES (14, 'buttons.system.ldap', 'en', 'buttons.system.ldap', 'LDAP setting', '', '2022-07-08 14:23:50', 415);
 INSERT INTO `sys_i18n` VALUES (15, 'buttons.system.terminal', 'en', 'buttons.system.terminal', 'Web terminal setting', '', '2022-07-12 05:17:59', 415);
 INSERT INTO `sys_i18n` VALUES (17, 'buttons.system.email', 'en', 'buttons.system.email', 'Email server', '', '2022-07-08 14:31:45', 415);
@@ -88,7 +88,7 @@ INSERT INTO `sys_i18n` VALUES (93, 'project.endpoint.scrape_timeout', 'en', 'pro
 INSERT INTO `sys_i18n` VALUES (94, 'project.endpoint.labels2', 'en', 'project.endpoint.labels2', 'Labels', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (96, 'project.endpoint.addGraph', 'en', 'project.endpoint.addGraph', 'View graph', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (100, 'project.endpoint.lastUpdate', 'en', 'project.endpoint.lastUpdate', 'Last reply', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (102, 'project.endpoint.dialogTitle', 'en', 'project.endpoint.dialogTitle', 'History value', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (102, 'project.endpoint.dialogTitle', 'en', 'project.endpoint.dialogTitle', 'History value', '监控/应用实例 -->新增', '2022-07-13 03:20:25', 425);
 INSERT INTO `sys_i18n` VALUES (104, 'project.endpoint.basic', 'en', 'project.endpoint.basic', 'Basic', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (106, 'project.endpoint.status', 'en', 'project.endpoint.status', 'Endpoint status', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (108, 'project.endpoint.credentials', 'en', 'project.endpoint.credentials', 'Credentials', '', '2021-11-02 00:00:00', 1);
@@ -128,7 +128,7 @@ INSERT INTO `sys_i18n` VALUES (159, 'project.topology.exit', 'en', 'project.topo
 INSERT INTO `sys_i18n` VALUES (161, 'project.topology.left', 'en', 'project.topology.left', 'align left', '', '2022-07-07 08:01:10', 415);
 INSERT INTO `sys_i18n` VALUES (162, 'project.topology.shakeX', 'en', 'project.topology.shakeX', 'shakeX', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (163, 'project.topology.transparency', 'en', 'project.topology.transparency', 'Transparency', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (164, 'project.topology.style', 'en', 'project.topology.style', 'Style', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (164, 'project.topology.style', 'en', 'project.topology.style', 'Styles', '', '2022-07-13 05:52:46', 415);
 INSERT INTO `sys_i18n` VALUES (165, 'project.topology.fontSize', 'en', 'project.topology.fontSize', 'Font Size', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (166, 'project.topology.flash', 'en', 'project.topology.flash', 'flash', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (167, 'project.topology.cut', 'en', 'project.topology.cut', 'Cut', '', '2021-11-02 00:00:00', 1);
@@ -353,7 +353,7 @@ INSERT INTO `sys_i18n` VALUES (497, 'overall.dragFileTip', 'en', 'overall.dragFi
 INSERT INTO `sys_i18n` VALUES (499, 'overall.createUser', 'en', 'overall.createUser', 'New user', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (500, 'overall.endTime', 'en', 'overall.endTime', 'End time', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (501, 'overall.asset', 'en', 'overall.asset', 'Assets', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (502, 'overall.config', 'en', 'overall.config', 'Configurations', '', '2022-07-12 05:44:12', 415);
+INSERT INTO `sys_i18n` VALUES (502, 'overall.config', 'en', 'overall.config', 'Configurations', '', '2022-07-13 05:43:35', 415);
 INSERT INTO `sys_i18n` VALUES (504, 'overall.entity', 'en', 'overall.entity', 'Entity', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (505, 'overall.dc', 'en', 'overall.dc', 'Data center', '', '2022-07-08 12:39:49', 415);
 INSERT INTO `sys_i18n` VALUES (506, 'overall.administration', 'en', 'overall.administration', 'Administrations', '', '2022-07-12 05:45:02', 415);
@@ -549,7 +549,7 @@ INSERT INTO `sys_i18n` VALUES (780, 'config.agent.up', 'en', 'config.agent.up', 
 INSERT INTO `sys_i18n` VALUES (781, 'config.exprTemp.exprTempRender', 'en', 'config.exprTemp.exprTempRender', 'expression template render', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (782, 'config.exprTemp.exprTempExport', 'en', 'config.exprTemp.exprTempExport', 'expression template export', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (783, 'config.exprTemp.expressionError', 'en', 'config.exprTemp.expressionError', 'Please fill in the \"expression\" value', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (784, 'config.exprTemp.exprTempDown', 'en', 'config.exprTemp.exprTempDown', 'expression template download', '', '2021-11-02 00:00:00', 1);
+                               INSERT INTO `sys_i18n` VALUES (784, 'config.exprTemp.exprTempDown', 'en', 'config.exprTemp.exprTempDown', 'expression template download', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (785, 'config.exprTemp.expression', 'en', 'config.exprTemp.expression', 'Expression', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (786, 'config.exprTemp.exprTempImportCancel', 'en', 'config.exprTemp.exprTempImportCancel', 'expression template import rollback', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (787, 'config.exprTemp.edit', 'en', 'config.exprTemp.edit', 'Edit expression template', '', '2021-11-02 00:00:00', 1);
@@ -743,7 +743,7 @@ INSERT INTO `sys_i18n` VALUES (1107, 'config.assetLabel.infoLabel', 'en', 'confi
 INSERT INTO `sys_i18n` VALUES (1108, 'config.assetLabel.isCheck', 'en', 'config.assetLabel.isCheck', 'Is check', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1109, 'config.assetLabel.labelOptionNull', 'en', 'config.assetLabel.labelOptionNull', 'Please input option', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1110, 'config.assetLabel.operate', 'en', 'config.assetLabel.operate', 'Operate', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (1111, 'config.assetLabel.decimals', 'en', 'config.assetLabel.decimals', 'Decimals', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (1111, 'config.assetLabel.decimals', 'en', 'config.assetLabel.decimals', 'Decimal', '', '2022-07-13 04:43:50', 415);
 INSERT INTO `sys_i18n` VALUES (1115, 'config.assetLabel.interval', 'en', 'config.assetLabel.interval', 'Interval', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1116, 'config.assetLabel.multitext', 'en', 'config.assetLabel.multitext', 'MULTITEXT', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1118, 'config.assetLabel.option', 'en', 'config.assetLabel.option', 'Options', '', '2021-11-02 00:00:00', 1);
@@ -876,7 +876,7 @@ INSERT INTO `sys_i18n` VALUES (1361, 'dashboard.panel.moreTitle', 'en', 'dashboa
 INSERT INTO `sys_i18n` VALUES (1363, 'dashboard.panel.chartForm.legend', 'en', 'dashboard.panel.chartForm.legend', 'Legend', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1370, 'dashboard.panel.chartForm.valMapping.range', 'en', 'dashboard.panel.chartForm.valMapping.range', 'Range', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1371, 'dashboard.panel.chartForm.valMapping.from', 'en', 'dashboard.panel.chartForm.valMapping.from', 'From', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (1375, 'dashboard.panel.chartForm.tooltip', 'en', 'dashboard.panel.chartForm.tooltip', 'Tooltip', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (1375, 'dashboard.panel.chartForm.tooltip', 'en', 'dashboard.panel.chartForm.tooltip', 'Tooltips', '', '2022-07-13 05:49:26', 415);
 INSERT INTO `sys_i18n` VALUES (1379, 'dashboard.panel.chartForm.aggregation', 'en', 'dashboard.panel.chartForm.aggregation', 'Aggregation', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1384, 'dashboard.panel.chartForm.content', 'en', 'dashboard.panel.chartForm.content', 'Content', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1386, 'dashboard.panel.chartForm.high', 'en', 'dashboard.panel.chartForm.high', 'Height', '', '2021-11-02 00:00:00', 1);
@@ -3053,7 +3053,7 @@ INSERT INTO `sys_i18n` VALUES (4569, 'el.datepicker.endDate', 'en', 'el.datepick
 INSERT INTO `sys_i18n` VALUES (4570, 'el.datepicker.year', 'en', 'el.datepicker.year', '', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (4571, 'el.datepicker.selectDate', 'en', 'el.datepicker.selectDate', 'Select date', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (4572, 'el.datepicker.month12', 'en', 'el.datepicker.month12', 'December', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (4573, 'el.datepicker.prevMonth', 'en', 'el.datepicker.prevMonth', 'Previous Month', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4573, 'el.datepicker.prevMonth', 'en', 'el.datepicker.prevMonth', 'Previous Month', '与dashboard.panel.prevMonth 一样， 第二个字母大小写不同，这个value更改不了', '2022-07-13 03:05:52', 415);
 INSERT INTO `sys_i18n` VALUES (4574, 'el.datepicker.month11', 'en', 'el.datepicker.month11', 'November', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (4575, 'el.datepicker.now', 'en', 'el.datepicker.now', 'Now', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (4576, 'el.datepicker.today', 'en', 'el.datepicker.today', 'Today', '', '2021-11-02 00:00:00', 1);
@@ -3181,7 +3181,7 @@ INSERT INTO `sys_i18n` VALUES (4837, 'dashboard.panel.chartForm.stack', 'zh', 'd
 INSERT INTO `sys_i18n` VALUES (4838, 'dashboard.panel.chartForm.legendPosition', 'en', 'dashboard.panel.chartForm.legendPosition', 'Placement', '', '2022-07-08 13:00:04', 415);
 INSERT INTO `sys_i18n` VALUES (4839, 'dashboard.panel.chartForm.legendPosition', 'zh', 'dashboard.panel.chartForm.legendPosition', '布局', '', '2021-12-01 03:31:31', 1);
 INSERT INTO `sys_i18n` VALUES (4840, 'dashboard.panel.chartForm.legendValues', 'en', 'dashboard.panel.chartForm.legendValues', 'Values', '', '2021-12-01 03:32:03', 1);
-INSERT INTO `sys_i18n` VALUES (4841, 'dashboard.panel.chartForm.legendValues', 'zh', 'dashboard.panel.chartForm.legendValues', 'Values', '', '2021-12-01 03:32:16', 1);
+INSERT INTO `sys_i18n` VALUES (4841, 'dashboard.panel.chartForm.legendValues', 'zh', 'dashboard.panel.chartForm.legendValues', '值', '', '2022-07-13 03:49:20', 415);
 INSERT INTO `sys_i18n` VALUES (4842, 'dashboard.panel.chartForm.valueMapping', 'en', 'dashboard.panel.chartForm.valueMapping', 'Value mappings', '', '2022-07-11 09:52:33', 415);
 INSERT INTO `sys_i18n` VALUES (4843, 'dashboard.panel.chartForm.valueMapping', 'zh', 'dashboard.panel.chartForm.valueMapping', '映射值', '', '2022-07-11 09:52:27', 415);
 INSERT INTO `sys_i18n` VALUES (4844, 'dashboard.panel.chartForm.typeVal.point.label', 'en', 'dashboard.panel.chartForm.typeVal.point.label', 'Point', '', '2021-12-02 05:43:04', 1);
@@ -3451,7 +3451,7 @@ INSERT INTO `sys_i18n` VALUES (5573, 'login.download', 'zh', 'login.download', '
 INSERT INTO `sys_i18n` VALUES (5574, '121059', 'en', 'CHARTELEMENT_NAME_ISNULL', 'Chart element name can not be empty', '', '2021-12-18 09:32:35', 1);
 INSERT INTO `sys_i18n` VALUES (5575, '121059', 'zh', 'CHARTELEMENT_NAME_ISNULL', '图表元素名称不能为空', '', '2021-12-18 09:32:58', 1);
 INSERT INTO `sys_i18n` VALUES (5576, 'dashboard.panel.chartForm.nullType', 'en', 'dashboard.panel.chartForm.nullType', 'Null value', '', '2021-12-22 06:22:10', 1);
-INSERT INTO `sys_i18n` VALUES (5577, 'dashboard.panel.chartForm.nullType', 'zh', 'dashboard.panel.chartForm.nullType', 'Null value', '', '2021-12-22 06:22:23', 1);
+INSERT INTO `sys_i18n` VALUES (5577, 'dashboard.panel.chartForm.nullType', 'zh', 'dashboard.panel.chartForm.nullType', '空值', '', '2022-07-13 03:49:06', 415);
 INSERT INTO `sys_i18n` VALUES (5580, 'dashboard.panel.chartForm.typeVal.map.label', 'en', 'dashboard.panel.chartForm.typeVal.map.label', 'Map', '', '2021-12-23 05:44:52', 381);
 INSERT INTO `sys_i18n` VALUES (5581, 'dashboard.panel.chartForm.typeVal.map.label', 'zh', 'dashboard.panel.chartForm.typeVal.map.label', '地图', '', '2021-12-23 05:45:02', 381);
 INSERT INTO `sys_i18n` VALUES (5582, 'dashboard.panel.chartForm.typeVal.topology.label', 'en', 'dashboard.panel.chartForm.typeVal.topology.label', 'Project topology', '', '2021-12-23 05:46:08', 381);
@@ -3743,7 +3743,7 @@ INSERT INTO `sys_i18n` VALUES (5934, '715010', 'en', 'LICENSE_TYPE_ISNULL', 'Lic
 INSERT INTO `sys_i18n` VALUES (5935, '715010', 'zh', 'LICENSE_TYPE_ISNULL', '许可证类型参数不能为空', '', '2022-03-30 06:46:32', 1);
 INSERT INTO `sys_i18n` VALUES (5936, '416004', 'en', 'ALERTMSG_NOT_EXITS', 'Alert message not exits', '', '2022-03-30 06:46:32', 1);
 INSERT INTO `sys_i18n` VALUES (5937, '416004', 'zh', 'ALERTMSG_NOT_EXITS', '告警消息不能为空', '', '2022-03-30 06:46:32', 1);
-INSERT INTO `sys_i18n` VALUES (5938, 'project.topology.font', 'en', 'project.topology.font', 'Font', '', '2022-03-30 07:59:26', 1);
+INSERT INTO `sys_i18n` VALUES (5938, 'project.topology.font', 'en', 'project.topology.font', 'Fonts', '', '2022-07-13 05:57:50', 415);
 INSERT INTO `sys_i18n` VALUES (5939, 'project.topology.font', 'zh', 'project.topology.font', '字体', '', '2022-03-30 07:59:39', 1);
 INSERT INTO `sys_i18n` VALUES (5940, 'ping.timeout', 'en', 'ping.timeout', 'Timeout', '', '2022-04-08 03:34:58', 407);
 INSERT INTO `sys_i18n` VALUES (5941, 'ping.timeout', 'zh', 'ping.timeout', '超时', '', '2022-04-08 03:16:26', 407);
@@ -3869,7 +3869,7 @@ INSERT INTO `sys_i18n` VALUES (6078, 'date.formatError', 'zh', 'date.formatError
 INSERT INTO `sys_i18n` VALUES (6079, 'date.fromGreaterTo', 'en', 'date.fromGreaterTo', 'StartTime is longer the endTime', '', '2022-05-07 06:14:27', 1);
 INSERT INTO `sys_i18n` VALUES (6080, 'date.fromGreaterTo', 'zh', 'date.fromGreaterTo', '开始时间大于结束', '', '2022-05-07 06:14:40', 1);
 INSERT INTO `sys_i18n` VALUES (6081, 'ping.trace', 'en', 'ping.trace', 'Trace route ', '', '2022-07-05 09:56:41', 1);
-INSERT INTO `sys_i18n` VALUES (6082, 'ping.trace', 'zh', 'ping.trace', 'Trace route ', '', '2022-07-05 09:56:45', 1);
+INSERT INTO `sys_i18n` VALUES (6082, 'ping.trace', 'zh', 'ping.trace', '路由跟踪', '', '2022-07-13 05:40:41', 415);
 INSERT INTO `sys_i18n` VALUES (6083, 'overall.snapshoot', 'en', 'overall.snapshoot', 'Snapshoot', '', '2022-05-27 01:35:01', 1);
 INSERT INTO `sys_i18n` VALUES (6084, 'overall.snapshoot', 'zh', 'overall.snapshoot', '快照', '', '2022-05-27 01:35:11', 1);
 INSERT INTO `sys_i18n` VALUES (6085, 'tip.addFavorites', 'en', 'tip.addFavorites', 'Add to Favorites', '', '2022-05-27 02:28:36', 1);
@@ -4333,8 +4333,6 @@ INSERT INTO `sys_i18n` VALUES (6711, 'agent_wait_pull_msg', 'zh', 'agent_wait_pu
 INSERT INTO `sys_i18n` VALUES (6713, 'agent_wait_pull_msg', 'en', 'agent_wait_pull_msg', 'Agent is updating collection config', '', '2022-07-11 16:28:48', 416);
 INSERT INTO `sys_i18n` VALUES (6715, 'agent_wait_pull_handle', 'zh', 'agent_wait_pull_handle', '- 等待Agent更新采集配置', '', '2022-07-11 16:28:48', 416);
 INSERT INTO `sys_i18n` VALUES (6717, 'agent_wait_pull_handle', 'en', 'agent_wait_pull_handle', '- Wait for the agent to update the collection config', '', '2022-07-11 16:28:48', 416);
-INSERT INTO `sys_i18n` VALUES (6719, 'PROMSERVER_PARAM_AGENTID_ISNULL', 'en', '521021', 'Parameter \'agentId\' is required', '', '2022-07-12 08:06:42', 1);
-INSERT INTO `sys_i18n` VALUES (6721, 'PROMSERVER_PARAM_AGENTID_ISNULL', 'zh', '521021', '客户端ID不能为空', '', '2022-07-12 08:07:42', 1);
 INSERT INTO `sys_i18n` VALUES (6723, '521021', 'en', 'AGENT_PARAM_AGENTID_ISNULL', 'Parameter \'agentId\' is required', '', '2022-07-12 08:21:05', 1);
 INSERT INTO `sys_i18n` VALUES (6725, '521021', 'zh', 'AGENT_PARAM_AGENTID_ISNULL', '客户端ID不能为空', '', '2022-07-12 08:21:36', 1);
 INSERT INTO `sys_i18n` VALUES (6727, 'upload.template', 'en', 'upload.template', 'Template', '', '2022-07-12 09:35:51', 415);
@@ -4343,5 +4341,7 @@ INSERT INTO `sys_i18n` VALUES (6731, 'export.records', 'en', 'export.records', '
 INSERT INTO `sys_i18n` VALUES (6733, 'export.records', 'zh', 'export.records', '记录', '', '2022-07-12 09:43:17', 415);
 INSERT INTO `sys_i18n` VALUES (6735, 'export.fileFormat', 'en', 'export.fileFormat', 'File format', '', '2022-07-12 09:44:42', 415);
 INSERT INTO `sys_i18n` VALUES (6737, 'export.fileFormat', 'zh', 'export.fileFormat', '文件格式', '', '2022-07-12 09:44:56', 415);
+INSERT INTO `sys_i18n` VALUES (6739, 'dashboard.panel.prevMonth', 'en', 'dashboard.panel.prevMonth', 'Previous month', '', '2022-07-13 03:04:39', 415);
+INSERT INTO `sys_i18n` VALUES (6741, 'dashboard.panel.prevMonth', 'zh', 'dashboard.panel.prevMonth', '前一月', '', '2022-07-13 03:03:52', 415);
 
 SET FOREIGN_KEY_CHECKS = 1;
