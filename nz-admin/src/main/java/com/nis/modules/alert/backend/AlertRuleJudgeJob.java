@@ -1,24 +1,8 @@
 package com.nis.modules.alert.backend;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
-import org.quartz.DisallowConcurrentExecution;
-import org.quartz.JobDataMap;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.quartz.QuartzJobBean;
-import org.springframework.stereotype.Component;
-
+import cn.hutool.core.date.StopWatch;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.nis.common.exception.NZException;
@@ -31,28 +15,43 @@ import com.nis.modules.alert.entity.AlertRuleEvalLog;
 import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertRuleEvalLogService;
-import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.promserver.service.PromserverService;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.promserver.entity.Agent;
+import com.nis.modules.promserver.service.LokiApiService;
+import com.nis.modules.promserver.service.PromApiService;
+import org.quartz.DisallowConcurrentExecution;
+import org.quartz.JobDataMap;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.scheduling.quartz.QuartzJobBean;
+import org.springframework.stereotype.Component;
 
-import cn.hutool.core.date.StopWatch;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Component
 @DisallowConcurrentExecution
 public class AlertRuleJudgeJob extends QuartzJobBean {
 	private static final Log log = Log.get();
+
 	@Autowired
-	private PromserverService promService;
+	private PromApiService promApiService;
+
+	@Autowired
+	private LokiApiService lokiApiService;
+
 	@Autowired
 	private RedisTemplate<String, String> redisTemplate;
+
 	@Autowired
 	private AlertRuleEvalLogService evalLogService;
+
 	@Autowired
 	private AlertMessageService alertMessageService;
-	@Autowired
-	private SysConfigService sysConfigService;
 
 	/**
 	 * alert rule 查询告警数据 向前偏移
@@ -94,7 +93,7 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 			 * 
 			 */
 			// 获取可用 globa agent
-			Promserver agent = promService.getOneAvaliableGlobalAgent();
+			Agent agent = promApiService.getOneAvaliableGlobalAgent();
 			if (Tool.ObjectUtil.isNull(agent)) {
 				throw new NZException("No health agent available", 999);
 			}
@@ -230,7 +229,7 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 	 * @param rule
 	 * @return
 	 */
-	private JSONObject queryVetor(Promserver agent, AlertRuleEntity rule) {
+	private JSONObject queryVetor(Agent agent, AlertRuleEntity rule) {
 		// 组合表达式
 		String expression = rule.getExpression();
 		// type 类型，1：metrics，2：logs
@@ -245,17 +244,18 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 			}
 		}
 
-		String path = null, queryString = null;
+		Map requestParam = Tool.MapUtil.newHashMap(4);
+		JSONObject jsonObject = new JSONObject();
 		if (type == 1) {
-			String promPathPrefix = promService.getPromPathPrefix();
-			path = String.format("%s/api/v1/query", promPathPrefix);
-			queryString = String.format("query=%s&time=%s", expression, queryTime == null ? "" : queryTime);
+			requestParam.put("query", expression);
+			requestParam.put("time", queryTime == null ? "" : queryTime);
+			jsonObject = promApiService.query(HttpEntity.EMPTY, requestParam);
 		} else if (type == 2) {
-			String agentPathPrex = sysConfigService.getValueOrDefault(Constant.CONFAGENT_PATH, "");
-			path = String.format("%s/loki/proxy/loki/api/v1/query", agentPathPrex);
-			queryString = String.format("query=%s&limit=1&time=%s", expression, queryTime == null ? "" : queryTime);
+			requestParam.put("query", expression);
+			requestParam.put("limit", 1);
+			requestParam.put("time", queryTime == null ? "" : queryTime);
+			jsonObject = lokiApiService.query(HttpEntity.EMPTY, requestParam);
 		}
-		JSONObject jsonObject = promService.requestAgent(agent, path, queryString);
 		return jsonObject;
 	}
 

@@ -8,7 +8,7 @@ import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.project.entity.MonitorProject;
-import com.nis.modules.promserver.entity.Promserver;
+import com.nis.modules.promserver.entity.Agent;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -62,7 +62,7 @@ public class MonitorEndpoint implements Serializable {
 	private Integer alertNum;
 
 	@TableField(exist = false)
-	private Promserver promserver;
+	private Agent agent;
 
 	@TableField(exist = false)
 	private Map config;

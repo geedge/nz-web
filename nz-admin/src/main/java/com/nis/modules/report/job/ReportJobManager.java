@@ -1,6 +1,7 @@
 package com.nis.modules.report.job;
 
 import cn.hutool.core.date.DateTime;
+import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONPath;
@@ -11,7 +12,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.TemporalAdjusters;
+import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class ReportJobManager {
@@ -82,6 +90,102 @@ public class ReportJobManager {
         JobKey jobKey = this.getJobKey(panelId, Constant.REPORT_JOB_GROUP);
         boolean b = scheduler.checkExists(jobKey);
         if (b) scheduler.deleteJob(jobKey);
+    }
+
+    /**
+     * 根据 startAt 和 report 规则 判断本次是否执行
+     *
+     * @param scheduleType
+     * @param stime
+     * @param repeatStr
+     * @param nums
+     * @return
+     */
+    public static Boolean checkJobIsRun(String scheduleType, String stime, String repeatStr, String nums) {
+        Date now = new Date();
+        Date startAt = Tool.DateUtil.parse(stime, "yyyy-MM-dd HH:mm:ss");
+        Integer repeat = Integer.valueOf(StrUtil.emptyToDefault(repeatStr, "1"));
+
+        switch (scheduleType) {
+            // one time
+            case "1":
+                return true;
+            case "2": {// daily
+                if (repeat == 1) return true;
+                // 判断间隔时间
+                long betweenDay = Tool.DateUtil.between(startAt, now, DateUnit.DAY);
+                if (betweenDay % repeat == 0) return true;
+                break;
+            }
+            case "3": {// weekly
+                List<Integer> execWeekArray = Arrays.asList(nums.split(",")).stream().mapToInt(Integer::parseInt).sorted().boxed().collect(Collectors.toList());
+
+                // 获取今天周几
+                java.util.Calendar cal = java.util.Calendar.getInstance();
+                cal.setTime(now);
+                int todayWeek = cal.get(java.util.Calendar.DAY_OF_WEEK) - 1;
+                if (todayWeek == 0) todayWeek = 7;
+
+                // startAt 和当前时间在同一周，  符合 周几、周几 执行即可
+                if (Tool.DateUtil.weekOfYear(startAt) == Tool.DateUtil.weekOfYear(now)) {
+                    if (execWeekArray.contains(todayWeek)) return true;
+                } else {
+                    // startAt 和当前时间 不在同一周，根据 repeat + weekly 判断是否执行
+                    if (repeat == 1) {
+                        // 每周都执行 符合 周几、周几 执行即可
+                        if (execWeekArray.contains(todayWeek)) return true;
+                    } else {
+                        // 根据今天是周几，找到 startAt 所在周 周几的日期，差值取模
+                        Date date = getSpecifiedWeekByDate(startAt, todayWeek);
+                        long betweenDay = Tool.DateUtil.between(date, now, DateUnit.DAY);
+                        if (betweenDay % (repeat * 7) == 0 && execWeekArray.contains(todayWeek)) return true;
+                    }
+                }
+                break;
+            }
+            case "4": {// monthly
+                java.util.Calendar cal = java.util.Calendar.getInstance();
+                cal.setTime(now);
+                int dayOfMonth = cal.get(Calendar.DAY_OF_MONTH);
+                List<String> execDayList = Arrays.asList(nums.split(","));
+
+                if (StrUtil.contains(nums, "-1")) {
+                    LocalDateTime lastDayOfMonth = now.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().with(TemporalAdjusters.lastDayOfMonth());
+                    if (dayOfMonth == lastDayOfMonth.getDayOfMonth()) return true;
+                }
+
+                if (execDayList.contains(dayOfMonth + "")) return true;
+                break;
+            }
+            default:
+                break;
+        }
+        return false;
+    }
+
+    /**
+     * 根据传入日期，获取所在周指定周几的 时间
+     *
+     * @param date
+     * @param week
+     * @return
+     */
+    public static Date getSpecifiedWeekByDate(Date date, Integer week) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        // 判断要计算的日期是否是周日，如果是则减一天计算周六的，否则会出问题，计算到下一周去了
+        int dayWeek = cal.get(Calendar.DAY_OF_WEEK);
+        if (1 == dayWeek) {
+            cal.add(Calendar.DAY_OF_MONTH, -1);
+        }
+        // 设置一个星期的第一天
+        cal.setFirstDayOfWeek(Calendar.MONDAY);
+        int day = cal.get(Calendar.DAY_OF_WEEK);// 获得当前日期是一个星期的第几天
+        // 根据日历的规则，给当前日期减去星期几与一个星期第一天的差值
+        cal.add(Calendar.DATE, cal.getFirstDayOfWeek() - day);
+        // 获取指定星期的日期
+        cal.add(Calendar.DATE, week - 1);
+        return cal.getTime();
     }
 
     /**

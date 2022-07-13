@@ -1,39 +1,17 @@
 package com.nis.modules.agent.job;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Component;
-import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
-
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.hash.MurmurHash;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.TemplateUtil;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
+import com.nis.common.utils.*;
 import com.nis.modules.agent.dao.MonitorEventLogDao;
 import com.nis.modules.agent.entity.MonitorEventLog;
 import com.nis.modules.agent.util.AgentUtil;
@@ -51,19 +29,22 @@ import com.nis.modules.endpoint.service.MonitorEndpointStateService;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.project.entity.MonitorProject;
-import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.promserver.service.PromserverService;
+import com.nis.modules.promserver.entity.Agent;
+import com.nis.modules.promserver.service.AgentService;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
-
-import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.lang.hash.MurmurHash;
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Component;
+import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
 @SuppressWarnings("all")
 @Component
 public class AgentConfigUtil {
@@ -92,7 +73,7 @@ public class AgentConfigUtil {
 	private AlertRuleService ruleService;
 
 	@Autowired
-	private PromserverService promService;
+	private AgentService agentService;
 
 	@Autowired
 	private MonitorEventLogDao confEventDao;
@@ -238,17 +219,17 @@ public class AgentConfigUtil {
 	/**
 	 * 生成 cortex.yml
 	 *
-	 * @param promserver
-	 * @param globalPromServerList
+	 * @param agent
+	 * @param globalAgentList
 	 * @param isAlert
 	 * @return
 	 */
-	public Map generateCortexYml(Promserver promserver, List<Promserver> globalPromServerList, Boolean isAlert) {
+	public Map generateCortexYml(Agent agent, List<Agent> globalAgentList, Boolean isAlert) {
 		log.debug("cortex.yml 开始生成");
 		Map params = new LinkedHashMap(8);
 		
-		params.put("ip", promserver.getHost());
-		params.put("localAgent", promserver);
+		params.put("ip", agent.getHost());
+		params.put("localAgent", agent);
 		params.put("objectStroageUrl", sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_S3_ENDPOINT));
 		params.put("bucketName", sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_S3_BUCKET));
 		params.put("accessKey", sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_S3_ACCESS_KEY));
@@ -260,8 +241,8 @@ public class AgentConfigUtil {
 		params.put("isLocalStorage", isLocalStorage);
 
 		List<String> joinMemberIpList = new ArrayList<>();
-		joinMemberIpList = globalPromServerList.stream().filter(entity -> !entity.getId().equals(promserver.getId()))
-				.map(Promserver::getHost).collect(Collectors.toList());
+		joinMemberIpList = globalAgentList.stream().filter(entity -> !entity.getId().equals(agent.getId()))
+				.map(Agent::getHost).collect(Collectors.toList());
 		params.put("joinMemberList", joinMemberIpList);
 		params.put("isMemberlistStore", CollectionUtil.isNotEmpty(joinMemberIpList));
 
@@ -299,10 +280,10 @@ public class AgentConfigUtil {
 	 *
 	 * @return
 	 */
-	public Map generateLokiYml(Promserver promserver,List<Promserver> globalPromServerList) {
+	public Map generateLokiYml(Agent agent,List<Agent> globalAgentList) {
 		log.debug("loki.yml 开始生成");
 		Map params = new LinkedHashMap(16);
-		params.put("localAgent", promserver);
+		params.put("localAgent", agent);
 		
 		String interfaceNames = sysConfigService.getValue("interface_name");
 		if(StrUtil.isBlank(interfaceNames)) {
@@ -312,8 +293,8 @@ public class AgentConfigUtil {
 		params.put("interfaceNameList", interfaceNameList);
 		
 		List<String> joinMemberIpList = new ArrayList<>();
-		joinMemberIpList = globalPromServerList.stream().filter(entity -> !entity.getId().equals(promserver.getId()))
-				.map(Promserver::getHost).collect(Collectors.toList());
+		joinMemberIpList = globalAgentList.stream().filter(entity -> !entity.getId().equals(agent.getId()))
+				.map(Agent::getHost).collect(Collectors.toList());
 		params.put("joinMemberList", joinMemberIpList);
 		params.put("isMemberlistStore", CollectionUtil.isNotEmpty(joinMemberIpList));
 		
@@ -352,28 +333,28 @@ public class AgentConfigUtil {
 	/**
 	 * 获取当前支持 alert 的 agent id , 如果获取失败 则获取 global 第一个 agent
 	 *
-	 * @param healthyPromServers
+	 * @param healthyAgents
 	 * @return
 	 */
-	public Integer getSupportAlertPromId(List<Promserver> healthyPromServers) {
-		Object supportAlertPromId = redisTemplate.opsForValue().get(Constant.REDIS_KEY_SUPPORT_ALERT_PROMSERVER_ID);
+	public Integer getSupportAlertPromId(List<Agent> healthyAgents) {
+		Object supportAlertPromId = redisTemplate.opsForValue().get(Constant.REDIS_KEY_SUPPORT_ALERT_AGENT_ID);
 		supportAlertPromId = ToolUtil.isEmpty(supportAlertPromId) ? "" : supportAlertPromId;
 
 		// 当前支持 alert 的 agent ， 判断是否存在,不存在则重新 找一个 agent 下发配置
 		if (StrUtil.isNotEmpty(supportAlertPromId.toString())) {
-			Promserver promServerById = promService.getById(supportAlertPromId.toString());
-			if (promServerById == null || promServerById.getStatus() != 1) {
+			Agent agentById = agentService.getById(supportAlertPromId.toString());
+			if (agentById == null || agentById.getStatus() != 1) {
 				supportAlertPromId = "";
 			}
 		}
 
 		// 第一个 健康的 gloabl cortex 支持 alert
 		if (StrUtil.isEmpty(supportAlertPromId.toString())) {
-			Promserver supportAlertAgent = healthyPromServers.stream()
-					.filter(promserver -> Constant.PromserverType.GLOBAL.getValue().equals(promserver.getType()))
-					.sorted(Comparator.comparing(Promserver::getId)).findFirst().orElse(null);
+			Agent supportAlertAgent = healthyAgents.stream()
+					.filter(agent -> Constant.AgentType.GLOBAL.getValue().equals(agent.getType()))
+					.sorted(Comparator.comparing(Agent::getId)).findFirst().orElse(null);
 			supportAlertPromId = supportAlertAgent.getId();
-			redisTemplate.opsForValue().set(Constant.REDIS_KEY_SUPPORT_ALERT_PROMSERVER_ID,
+			redisTemplate.opsForValue().set(Constant.REDIS_KEY_SUPPORT_ALERT_AGENT_ID,
 					supportAlertPromId.toString());
 		}
 		return Integer.valueOf(supportAlertPromId.toString());
@@ -441,7 +422,7 @@ public class AgentConfigUtil {
 	 * @return
 	 */
 	@SuppressWarnings("all")
-	public Map generatePromtailYml(Promserver currentAgent, List<Promserver> globalAgentList,
+	public Map generatePromtailYml(Agent currentAgent, List<Agent> globalAgentList,
 			List<MonitorEndpoint> logsEndpointConfigListForAsset) {
 		log.debug("promtail.yml 开始生成");
 		Map<String, Object> params = new LinkedHashMap();
@@ -489,7 +470,7 @@ public class AgentConfigUtil {
 			String logsStorageType = sysConfigService.getValueOrDefault(Constant.SYSCONFIG_KEY_LOGS_STORAGE_TYPE, "1");
 
 			if (Tool.StrUtil.equals("1", logsStorageType)) {
-				for (Promserver globalAgent : globalAgentList) {
+				for (Agent globalAgent : globalAgentList) {
 					Map client = new HashMap(4);
 					client.put("url", String.format("http://%s:%s%s", globalAgent.getHost(), lokiDefaultPort,
 							"/loki/api/v1/push"));
@@ -499,10 +480,10 @@ public class AgentConfigUtil {
 			} else {
 				// s3存储，只需要推送一个
 				int randomInt = Tool.RandomUtil.randomInt(globalAgentList.size());
-				Promserver prom = globalAgentList.get(randomInt);
+				Agent agent = globalAgentList.get(randomInt);
 				Map client = new HashMap(4);
-				client.put("url",String.format("http://%s:%s%s", prom.getHost(), lokiDefaultPort, "/loki/api/v1/push"));
-				client.put("token", prom.getToken());
+				client.put("url",String.format("http://%s:%s%s", agent.getHost(), lokiDefaultPort, "/loki/api/v1/push"));
+				client.put("token", agent.getToken());
 				clientsMapList.add(client);
 			}
 			break;
@@ -529,14 +510,14 @@ public class AgentConfigUtil {
 	/**
 	 * 生成 per-datacenter prometheus.yml
 	 *
-	 * @param promserver
+	 * @param agent
 	 * @param endpointList
 	 * @param assetList
-	 * @param globalPromServers
+	 * @param globalAgents
 	 * @return
 	 */
-	public Map generatePerdatacenterYml(Promserver promserver, List<MonitorEndpoint> endpointList,
-			List<AssetAsset> assetList, List<Promserver> globalPromServers) {
+	public Map generatePerdatacenterYml(Agent agent, List<MonitorEndpoint> endpointList,
+			List<AssetAsset> assetList, List<Agent> globalAgents) {
 		log.debug("per-datacenter prometheus.yml 开始生成");
 		Map<String, Object> params = new LinkedHashMap();
 		params.put("scrape_interval", sysConfigService.getValue(Constant.SYSCONFIG_KEY_SCRAPEINTERVAL));
@@ -555,20 +536,20 @@ public class AgentConfigUtil {
 		Map promMetricsMap = new LinkedHashMap();
 		promMetricsMap.put("job_name", "prometheus_metric");
 		promMetricsMap.put("metrics_path",sysConfigService.getValue(Constant.CONFAGENT_PATH) + "/prometheus/proxy/metrics");
-		promMetricsMap.put("scheme",promserver.getProtocol());
+		promMetricsMap.put("scheme",agent.getProtocol());
 		
 		List promMetricsStaticConfigList = new ArrayList();
 		Map promMetricsStaticConfig = new LinkedHashMap(2);
 		List<String> promMetricsTargets = new ArrayList();
-		promMetricsTargets.add(promserver.getHost() + ":" + promserver.getPort());
+		promMetricsTargets.add(agent.getHost() + ":" + agent.getPort());
 		promMetricsStaticConfig.put("targets", promMetricsTargets);
 
 		Map labels = new LinkedHashMap(4);
-		Dc dc = dcService.getById(promserver.getDcId());
+		Dc dc = dcService.getById(agent.getDcId());
 		labels.put("datacenter", ToolUtil.string2Json(dc.getName()));
-		labels.put("type", Constant.PromserverType.getPromserverType(promserver.getType()).getName());
+		labels.put("type", Constant.AgentType.getAgentType(agent.getType()).getName());
 		labels.put("application", "prometheus");
-		labels.put("agent_name",promserver.getName());
+		labels.put("agent_name",agent.getName());
 		promMetricsStaticConfig.put("labels", labels);
 		promMetricsStaticConfigList.add(promMetricsStaticConfig);
 		promMetricsMap.put("staticConfigList", promMetricsStaticConfigList);
@@ -578,19 +559,19 @@ public class AgentConfigUtil {
 		Map agentMetricsMap = new LinkedHashMap();
 		agentMetricsMap.put("job_name", "agent_metrics");
 		agentMetricsMap.put("metrics_path",sysConfigService.getValue(Constant.CONFAGENT_PATH) + "/actuator/prometheus");
-		agentMetricsMap.put("scheme",promserver.getProtocol());
+		agentMetricsMap.put("scheme",agent.getProtocol());
 		
 		List agentMetricsStaticConfigList = new ArrayList();
 		Map agentMetricsStaticConfig = new LinkedHashMap(2);
 		List agentMetricsTargets = new ArrayList();
-		agentMetricsTargets.add(String.format("%s:%s", promserver.getHost(), promserver.getPort()));
+		agentMetricsTargets.add(String.format("%s:%s", agent.getHost(), agent.getPort()));
 		agentMetricsStaticConfig.put("targets", agentMetricsTargets);
 
 		Map agentLabels = new LinkedHashMap(4);
 		agentLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
-		agentLabels.put("type", Constant.PromserverType.getPromserverType(promserver.getType()).getName());
+		agentLabels.put("type", Constant.AgentType.getAgentType(agent.getType()).getName());
 		agentLabels.put("application", "nz-agent");
-		agentLabels.put("agent_name", promserver.getName());
+		agentLabels.put("agent_name", agent.getName());
 		agentMetricsStaticConfig.put("labels", agentLabels);
 
 		agentMetricsStaticConfigList.add(agentMetricsStaticConfig);
@@ -606,14 +587,14 @@ public class AgentConfigUtil {
 		List snmpExporterMetricsStaticConfigList = new ArrayList();
 		Map snmpExporterMetricsStaticConfig = new LinkedHashMap(2);
 		List snmpExporterMetricsTargets = new ArrayList();
-		snmpExporterMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_HOST))?promserver.getHost():sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_HOST), sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_PORT)));
+		snmpExporterMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_HOST))?agent.getHost():sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_HOST), sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_PORT)));
 		snmpExporterMetricsStaticConfig.put("targets", snmpExporterMetricsTargets);
 
 		Map snmpExporterLabels = new LinkedHashMap(4);
 		snmpExporterLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
-		snmpExporterLabels.put("type", Constant.PromserverType.getPromserverType(promserver.getType()).getName());
+		snmpExporterLabels.put("type", Constant.AgentType.getAgentType(agent.getType()).getName());
 		snmpExporterLabels.put("application", "snmp-exporter");
-		snmpExporterLabels.put("agent_name",promserver.getName());
+		snmpExporterLabels.put("agent_name",agent.getName());
 		snmpExporterMetricsStaticConfig.put("labels", snmpExporterLabels);
 
 		snmpExporterMetricsStaticConfigList.add(snmpExporterMetricsStaticConfig);
@@ -629,14 +610,14 @@ public class AgentConfigUtil {
 		List blackboxExporterMetricsStaticConfigList = new ArrayList();
 		Map blackboxExporterMetricsStaticConfig = new LinkedHashMap(2);
 		List blackboxExporterMetricsTargets = new ArrayList();
-		blackboxExporterMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_HOST))?promserver.getHost():sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_HOST), sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PORT)));
+		blackboxExporterMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_HOST))?agent.getHost():sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_HOST), sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PORT)));
 		blackboxExporterMetricsStaticConfig.put("targets", blackboxExporterMetricsTargets);
 
 		Map blackboxExporterLabels = new LinkedHashMap(4);
 		blackboxExporterLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
-		blackboxExporterLabels.put("type", Constant.PromserverType.getPromserverType(promserver.getType()).getName());
+		blackboxExporterLabels.put("type", Constant.AgentType.getAgentType(agent.getType()).getName());
 		blackboxExporterLabels.put("application", "blackbox-exporter");
-		blackboxExporterLabels.put("agent_name",promserver.getName());
+		blackboxExporterLabels.put("agent_name",agent.getName());
 		blackboxExporterMetricsStaticConfig.put("labels", blackboxExporterLabels);
 
 		blackboxExporterMetricsStaticConfigList.add(blackboxExporterMetricsStaticConfig);
@@ -650,7 +631,7 @@ public class AgentConfigUtil {
 		params.put("jobList", jobList);
 
 		// 处理 endpoint 配置项 为了适应模板
-		this.handleDataConfigForTmpl(promserver, endpointList, assetList);
+		this.handleDataConfigForTmpl(agent, endpointList, assetList);
 
 		params.put("endpointList", endpointList);
 		// remote_write url and token
@@ -676,20 +657,20 @@ public class AgentConfigUtil {
 					// global 使用 federation job 集中收集各个 per-datacenter 数据，do nothing
 				} else if (StrUtil.equals("2", prometheusFedMode)) {
 					// global使用 remote_write 集中收集各个 per-datacenter数据
-					for (Promserver globalPromServer : globalPromServers) {
+					for (Agent globalAgent : globalAgents) {
 						Map map = new HashMap();
-						map.put("url", String.format("%s://%s:%s%s/prometheus/proxy/api/v1/write",globalPromServer.getProtocol(),
-								globalPromServer.getHost(), globalPromServer.getPort(), agentPath));
-						map.put("token", globalPromServer.getToken());
+						map.put("url", String.format("%s://%s:%s%s/prometheus/proxy/api/v1/write",globalAgent.getProtocol(),
+								globalAgent.getHost(), globalAgent.getPort(), agentPath));
+						map.put("token", globalAgent.getToken());
 						remoteWriteUrlInfoMapList.add(map);
 					}
 				}
 			} else {
 				// s3 存储 and agent 代理，任选一个 global 即可
 				Map map = new HashMap();// http://127.0.0.1:${agentPort?c}${agentPath}/cortex/proxy/api/v1/push
-				map.put("url", String.format("%s://%s:%s%s/cortex/proxy/api/v1/push",globalPromServers.get(0).getProtocol(),
-						globalPromServers.get(0).getHost(), globalPromServers.get(0).getPort(), agentPath));
-				map.put("token", globalPromServers.get(0).getToken());
+				map.put("url", String.format("%s://%s:%s%s/cortex/proxy/api/v1/push",globalAgents.get(0).getProtocol(),
+						globalAgents.get(0).getHost(), globalAgents.get(0).getPort(), agentPath));
+				map.put("token", globalAgents.get(0).getToken());
 				remoteWriteUrlInfoMapList.add(map);
 			}
 			break;
@@ -705,20 +686,20 @@ public class AgentConfigUtil {
 					// global 使用 federation job 集中收集各个 per-datacenter 数据，do nothing
 				} else if (StrUtil.equals("2", prometheusFedMode)) {
 					// global使用 remote_write 集中收集各个 per-datacenter数据
-					for (Promserver globalPromServer : globalPromServers) {
+					for (Agent globalAgent : globalAgents) {
 						Map map = new HashMap();
-						map.put("url", String.format("http://%s:%s/api/v1/write", globalPromServer.getHost(),
+						map.put("url", String.format("http://%s:%s/api/v1/write", globalAgent.getHost(),
 								prometheusDefaultPort));
-						map.put("token", globalPromServer.getToken());
+						map.put("token", globalAgent.getToken());
 						remoteWriteUrlInfoMapList.add(map);
 					}
 				}
 			} else {
 				// s3 存储 and cortex，任选一个 global cortex 即可
 				Map map = new HashMap();// http://127.0.0.1:${agentPort?c}${agentPath}/cortex/proxy/api/v1/push
-				map.put("url", String.format("http://%s:%s/api/v1/push", globalPromServers.get(0).getHost(),
+				map.put("url", String.format("http://%s:%s/api/v1/push", globalAgents.get(0).getHost(),
 						cortexDefaultPort));
-				map.put("token", globalPromServers.get(0).getToken());
+				map.put("token", globalAgents.get(0).getToken());
 				remoteWriteUrlInfoMapList.add(map);
 			}
 			break;
@@ -750,16 +731,16 @@ public class AgentConfigUtil {
 	 * 生成 global prometheus.yml 配置
 	 *
 	 * @param currentAgent
-	 * @param globalPromServers
-	 * @param perDataCenterPromServers
+	 * @param globalAgents
+	 * @param perDataCenterAgents
 	 * @param assetList
 	 * @param endpointList
 	 * @param isAlert
 	 * @param isSupportSysteMetrics
 	 * @return
 	 */
-	public Map generateGlobalYml(Promserver currentAgent, List<Promserver> globalPromServers,
-			List<Promserver> perDataCenterPromServers, List<AssetAsset> assetList, List<MonitorEndpoint> endpointList,
+	public Map generateGlobalYml(Agent currentAgent, List<Agent> globalAgents,
+			List<Agent> perDataCenterAgents, List<AssetAsset> assetList, List<MonitorEndpoint> endpointList,
 			Boolean isAlert, Boolean isSupportSysteMetrics) {
 		log.debug("global prometheus.yml 开始生成");
 		// sys_config 配置表信息
@@ -770,11 +751,11 @@ public class AgentConfigUtil {
 		boolean fedeEnabled = StrUtil.equals("1", configMap.get(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED));
 		// 关闭联邦 不启用 per-datecenter
 		if (!fedeEnabled)
-			perDataCenterPromServers = new ArrayList<>();
+			perDataCenterAgents = new ArrayList<>();
 
-		List<Promserver> allPromserverList = new ArrayList<>();
-		allPromserverList.addAll(globalPromServers);
-		allPromserverList.addAll(perDataCenterPromServers);
+		List<Agent> allAgentList = new ArrayList<>();
+		allAgentList.addAll(globalAgents);
+		allAgentList.addAll(perDataCenterAgents);
 
 		// agent 代理接口前缀
 		String proxyPath = configMap.get(Constant.CONFAGENT_PATH) + "/prometheus/proxy";
@@ -782,7 +763,7 @@ public class AgentConfigUtil {
 		List<Map> federateMapList = new ArrayList<>();
 		// blackbox job 1: global 2: per-datacenter
 		String assetPingFrom = configMap.get(Constant.SYSCONFIG_KEY_ASSET_PING_FROM);
-		for (Promserver server : allPromserverList) {
+		for (Agent server : allAgentList) {
 			// 联邦开启
 			/*if (fedeEnabled) {
 				// global 做 ping 检测，联邦排除自己
@@ -810,7 +791,7 @@ public class AgentConfigUtil {
 			
 			federateMap.put("isFederate", true);
 			// global 做 ping 检测，且 当前角色为 global
-			if ("1".equals(assetPingFrom) && Constant.PromserverType.GLOBAL.getValue().equals(server.getType())) {
+			if ("1".equals(assetPingFrom) && Constant.AgentType.GLOBAL.getValue().equals(server.getType())) {
 				federateMap.put("scrapePing", true);
 			} else {
 				federateMap.put("scrapePing", false);
@@ -843,7 +824,7 @@ public class AgentConfigUtil {
 
 		List promMetricsStaticConfigList = new ArrayList();
 		/*
-		 * for (Promserver entity : allPromserverList) { Map promMetricsStaticConfig =
+		 * for (Agent entity : allPromserverList) { Map promMetricsStaticConfig =
 		 * new LinkedHashMap(2); List<String> promMetricsTargets = new ArrayList();
 		 * promMetricsTargets.add(entity.getHost() + ":" + entity.getPort());
 		 * promMetricsStaticConfig.put("targets", promMetricsTargets);
@@ -865,7 +846,7 @@ public class AgentConfigUtil {
 		Map labels = new LinkedHashMap(4);
 		Dc dc = dcService.getById(currentAgent.getDcId());
 		labels.put("datacenter", ToolUtil.string2Json(dc.getName()));
-		labels.put("type", Constant.PromserverType.getPromserverType(currentAgent.getType()).getName());
+		labels.put("type", Constant.AgentType.getAgentType(currentAgent.getType()).getName());
 		labels.put("application", "prometheus");
 		labels.put("agent_name",currentAgent.getName());
 		promMetricsStaticConfig.put("labels", labels);
@@ -912,7 +893,7 @@ public class AgentConfigUtil {
 		Map agentLabels = new LinkedHashMap(3);
 		agentLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
 		agentLabels.put("application", "nz-agent");
-		agentLabels.put("type", Constant.PromserverType.getPromserverType(currentAgent.getType()).getName());
+		agentLabels.put("type", Constant.AgentType.getAgentType(currentAgent.getType()).getName());
 		agentLabels.put("agent_name", currentAgent.getName());
 		agentMetricsStaticConfig.put("labels", agentLabels);
 		agentMetricsStaticConfigList.add(agentMetricsStaticConfig);
@@ -1045,11 +1026,11 @@ public class AgentConfigUtil {
 				} else if (StrUtil.equals("2", prometheusFedMode)) {
 					// global使用 remote_write 集中收集各个 per-datacenter数据 , 通过 联邦 job 收集其他 global 数据（global 负责任务采集，如 ping prometheus 等）
 					// 只采集 其他 global 即可
-					List<Integer> globalPromServerIdList = globalPromServers.stream().map(Promserver::getId).collect(Collectors.toList());
+					List<Integer> globalAgentIdList = globalAgents.stream().map(Agent::getId).collect(Collectors.toList());
 					for (Map map : federateMapList) {
 						String jobName = (String) map.get("job_name");
 						Integer serverId = Integer.valueOf(jobName.replaceAll("federate_", ""));
-						if (globalPromServerIdList.contains(serverId) && !serverId.equals(currentAgent.getId())) {
+						if (globalAgentIdList.contains(serverId) && !serverId.equals(currentAgent.getId())) {
 							jobList.add(map);
 						}
 					}
@@ -1087,23 +1068,23 @@ public class AgentConfigUtil {
 					}
 				} else if (StrUtil.equals("2", prometheusFedMode)) {
 					// global使用 remote_write 集中收集其他 global promethues
-					for (Promserver globalPromServer : globalPromServers) {
+					for (Agent globalAgent : globalAgents) {
 						// 跳过自己
-						if (globalPromServer.getId().equals(currentAgent.getId()))
+						if (globalAgent.getId().equals(currentAgent.getId()))
 							continue;
 						Map map = new HashMap();
 						String remoteWriteUrl;
 						if (isProxyPush) {
 							remoteWriteUrl = String.format("%s://%s:%s%s/prometheus/proxy/api/v1/write",
-									globalPromServer.getProtocol(),
-									globalPromServer.getHost(), globalPromServer.getPort(),
+									globalAgent.getProtocol(),
+									globalAgent.getHost(), globalAgent.getPort(),
 									configMap.get(Constant.CONFAGENT_PATH));
 						} else {
-							remoteWriteUrl = String.format("http://%s:%s/api/v1/write", globalPromServer.getHost(),
+							remoteWriteUrl = String.format("http://%s:%s/api/v1/write", globalAgent.getHost(),
 									prometheusDefaultPort);
 						}
 						map.put("url", remoteWriteUrl);
-						map.put("token", globalPromServer.getToken());
+						map.put("token", globalAgent.getToken());
 						remoteWriteUrlInfoMapList.add(map);
 					}
 				}
@@ -1167,11 +1148,11 @@ public class AgentConfigUtil {
 	/**
 	 * 处理生成模板中 数据格式问题
 	 *
-	 * @param promserver
+	 * @param agent
 	 * @param endpointList
 	 * @param assetList
 	 */
-	private void handleDataConfigForTmpl(Promserver promserver, List<MonitorEndpoint> endpointList,
+	private void handleDataConfigForTmpl(Agent agent, List<MonitorEndpoint> endpointList,
 			List<AssetAsset> assetList) {
 		for (AssetAsset asset : assetList) {
 			// dc name 处理
@@ -1179,8 +1160,8 @@ public class AgentConfigUtil {
 			dc.setName(ToolUtil.string2Json(dc.getName()));
 			asset.setDc(dc);
 
-			// nz_agent_id，对应 promserver id
-			asset.setPromserver(promserver);
+			// nz_agent_id，对应 agent id
+			asset.setAgent(agent);
 		}
 		for (MonitorEndpoint endpoint : endpointList) {
 			Map endpointConfigFieldMap = JSONObject.parseObject(endpoint.getEndpointConfig().getConfig(), Map.class);
@@ -1221,19 +1202,19 @@ public class AgentConfigUtil {
 			// endpoint name 处理
 			endpoint.setName(ToolUtil.string2Json(endpoint.getName()));
 
-			// nz_agent_id，对应 promserver id
-			endpoint.setPromserver(promserver);
+			// nz_agent_id，对应 agent id
+			endpoint.setAgent(agent);
 		}
 	}
 
 	/**
 	 * 获取 global lokipushurl config map
 	 *
-	 * @param promserver
-	 * @param globalPromServers
+	 * @param agent
+	 * @param globalAgents
 	 * @return
 	 */
-	public Map<String, Object> getLokiPushConfig(Promserver promserver, List<Promserver> globalPromServers) {
+	public Map<String, Object> getLokiPushConfig(Agent agent, List<Agent> globalAgents) {
 		Map<String, Object> lokiPushUrlConfigBody = new LinkedHashMap(4);
 		List<Map> lokiPushUrls = new ArrayList<>();
 		lokiPushUrlConfigBody.put("lokiPushUrls", lokiPushUrls);
@@ -1260,14 +1241,14 @@ public class AgentConfigUtil {
 
 		// 开启agent集群
 		if (Tool.StrUtil.equals("1", federation)) {
-			Integer type = promserver.getType();
+			Integer type = agent.getType();
 			if (Tool.ObjectUtil.equal(type, 1)) {// global
 				Map<String, String> push = Tool.MapUtil.builder("mode", "local").build();
 				lokiPushUrls.add(push);
 			}
 			if (Tool.ObjectUtil.equal(type, 2)) {// per-datacenter
 				if (Tool.StrUtil.equals("1", logsStorageType)) {// 本地存储
-					globalPromServers.forEach(prom -> {
+					globalAgents.forEach(prom -> {
 						Map<String, String> push = Tool.MapUtil.builder("mode", "remote").build();
 						push.put("token", prom.getToken());
 						String target = Tool.StrUtil.equals("1", logsProxyPushType)
@@ -1277,13 +1258,13 @@ public class AgentConfigUtil {
 						lokiPushUrls.add(push);
 					});
 				} else { // s3存储
-					int randomInt = Tool.RandomUtil.randomInt(globalPromServers.size());
-					Promserver prom = globalPromServers.get(randomInt);
+					int randomInt = Tool.RandomUtil.randomInt(globalAgents.size());
+					Agent ag = globalAgents.get(randomInt);
 					Map<String, String> push = Tool.MapUtil.builder("mode", "remote").build();
-					push.put("token", prom.getToken());
+					push.put("token", ag.getToken());
 					String target = Tool.StrUtil.equals("1", logsProxyPushType)
-							? String.format("%s://%s:%s%s/loki/proxy", prom.getProtocol(), prom.getHost(), prom.getPort(), agentPath)
-							: String.format("http://%s:%s", prom.getHost(), lokiDefaultPort);
+							? String.format("%s://%s:%s%s/loki/proxy", ag.getProtocol(), ag.getHost(), ag.getPort(), agentPath)
+							: String.format("http://%s:%s", ag.getHost(), lokiDefaultPort);
 					push.put("target", target);
 					lokiPushUrls.add(push);
 				}
@@ -1292,17 +1273,17 @@ public class AgentConfigUtil {
 
 		// 关闭集群
 		if (Tool.StrUtil.equals("0", federation)) {
-			Integer type = promserver.getType();
+			Integer type = agent.getType();
 			if (Tool.ObjectUtil.equal(type, 1)) {// global
 				Map<String, String> push = Tool.MapUtil.builder("mode", "local").build();
 				lokiPushUrls.add(push);
 				if (Tool.StrUtil.equals("1", logsStorageType)) {// 本地存储
-					globalPromServers.forEach(prom -> {
-						if (Tool.ObjectUtil.notEqual(promserver.getId(), prom.getId())) {
+					globalAgents.forEach(ag -> {
+						if (Tool.ObjectUtil.notEqual(agent.getId(), ag.getId())) {
 							Map<String, String> remote = Tool.MapUtil.builder("mode", "remote").build();
-							remote.put("token", prom.getToken());
-							remote.put("target", String.format("%s://%s:%s%s/loki/proxy",prom.getProtocol(), prom.getHost(),
-									prom.getPort(), agentPath));
+							remote.put("token", ag.getToken());
+							remote.put("target", String.format("%s://%s:%s%s/loki/proxy",ag.getProtocol(), ag.getHost(),
+									ag.getPort(), agentPath));
 							lokiPushUrls.add(remote);
 						}
 					});
@@ -1310,7 +1291,7 @@ public class AgentConfigUtil {
 			}
 		}
 		log.info("agent:{},type:{},federation:{},logsProxyPushType:{},logsStorageType:{}lokipushurl:{},",
-				promserver.getId(), promserver.getType(), federation, logsProxyPushType, logsStorageType,
+				agent.getId(), agent.getType(), federation, logsProxyPushType, logsStorageType,
 				Tool.JSONUtil.toJsonStr(lokiPushUrlConfigBody));
 		return lokiPushUrlConfigBody;
 	}
@@ -1318,15 +1299,15 @@ public class AgentConfigUtil {
 	/**
 	 * 一致性 hash 分配 endpoint
 	 *
-	 * @param promserverList
+	 * @param agentList
 	 * @param endpointList
 	 * @return
 	 */
-	public Map<Integer, Integer> consistentHashingAssignEndpoint(List<Promserver> promserverList,
+	public Map<Integer, Integer> consistentHashingAssignEndpoint(List<Agent> agentList,
 			List<MonitorEndpoint> endpointList) {
 		// 1. 真实节点
-		Map<String, Integer> realNodeList = promserverList.stream().collect(
-				Collectors.toMap(promserver -> promserver.getHost() + ":" + promserver.getPort(), Promserver::getId));
+		Map<String, Integer> realNodeList = agentList.stream().collect(
+				Collectors.toMap(pojo -> pojo.getHost() + ":" + pojo.getPort(), Agent::getId));
 		// 2. 通过 真实节点 加上虚拟节点获取 hash 环
 		SortedMap<Long, String> nodeMap = this.getHashRingByRealList(realNodeList);
 
@@ -1350,13 +1331,13 @@ public class AgentConfigUtil {
 				endpointIdAndPromIdMap.put(endpointId, realNodeList.get(nodeMap.get(nodeIndex)));
 				if (log.isDebugEnabled())
 					log.debug("endpoint: " + endpointId + "\t" + "node: " + nodeMap.get(nodeIndex) + "\t"
-							+ "promserver id: " + realNodeList.get(nodeMap.get(nodeIndex)));
+							+ "agent id: " + realNodeList.get(nodeMap.get(nodeIndex)));
 			} else {
 				Long nodeIndex = tailMap.firstKey();
 				endpointIdAndPromIdMap.put(endpointId, realNodeList.get(nodeMap.get(nodeIndex)));
 				if (log.isDebugEnabled())
 					log.debug("endpoint: " + endpointId + "\t" + "node: " + nodeMap.get(nodeIndex) + "\t"
-							+ "promserver id: " + realNodeList.get(nodeMap.get(nodeIndex)));
+							+ "agent id: " + realNodeList.get(nodeMap.get(nodeIndex)));
 			}
 		}
 		return endpointIdAndPromIdMap;
@@ -1365,14 +1346,14 @@ public class AgentConfigUtil {
 	/**
 	 * 一致性 hash 分配 asset
 	 *
-	 * @param promserverList
+	 * @param agentList
 	 * @param assetList
 	 * @return
 	 */
-	public Map<Integer, Integer> consistentHashingAssignAsset(List<Promserver> promserverList,
+	public Map<Integer, Integer> consistentHashingAssignAsset(List<Agent> agentList,
 			List<AssetAsset> assetList) {
-		Map<String, Integer> realNodeList = promserverList.stream().collect(
-				Collectors.toMap(promserver -> promserver.getHost() + ":" + promserver.getPort(), Promserver::getId));
+		Map<String, Integer> realNodeList = agentList.stream().collect(
+				Collectors.toMap(pojo -> pojo.getHost() + ":" + pojo.getPort(), Agent::getId));
 		SortedMap<Long, String> nodeMap = this.getHashRingByRealList(realNodeList);
 
 		if (log.isDebugEnabled())
@@ -1390,13 +1371,13 @@ public class AgentConfigUtil {
 				Long nodeIndex = nodeMap.firstKey();
 				assetIdAndPromIdMap.put(assetId, realNodeList.get(nodeMap.get(nodeIndex)));
 				if (log.isDebugEnabled())
-					log.debug("asset: " + assetId + "\t" + "node: " + nodeMap.get(nodeIndex) + "\t" + "promserver id: "
+					log.debug("asset: " + assetId + "\t" + "node: " + nodeMap.get(nodeIndex) + "\t" + "agent id: "
 							+ realNodeList.get(nodeMap.get(nodeIndex)));
 			} else {
 				Long nodeIndex = tailMap.firstKey();
 				assetIdAndPromIdMap.put(assetId, realNodeList.get(nodeMap.get(nodeIndex)));
 				if (log.isDebugEnabled())
-					log.debug("asset: " + assetId + "\t" + "node: " + nodeMap.get(nodeIndex) + "\t" + "promserver id: "
+					log.debug("asset: " + assetId + "\t" + "node: " + nodeMap.get(nodeIndex) + "\t" + "agent id: "
 							+ realNodeList.get(nodeMap.get(nodeIndex)));
 			}
 		}
@@ -1428,7 +1409,7 @@ public class AgentConfigUtil {
 	}
 
 	/**
-	 * 更新 redis 中 endpointid 和 promserver id对应关系 endpoint_prom
+	 * 更新 redis 中 endpointid 和 agent id对应关系 endpoint_prom
 	 *
 	 * @param endpointIdAndPromIdMap
 	 */
@@ -1461,34 +1442,34 @@ public class AgentConfigUtil {
 	 *
 	 * @param requestUrl
 	 * @param result
-	 * @param promserver
+	 * @param agent
 	 */
-	public void afterRequestApi(String requestUrl, String result, Promserver promserver) {
+	public void afterRequestApi(String requestUrl, String result, Agent agent) {
 		try {
 			R parseObject = JSONObject.parseObject(result, R.class);
 			if (!RCode.SUCCESS.getCode().equals((Integer) parseObject.get("code"))) {
 				log.error(String.format("请求 Agent 接口异常，接口地址: %s 错误信息: %s, Agent: %s", requestUrl, result,
-						JSONObject.toJSONString(promserver)));
-				this.updatePromServerStatus(promserver, 0);
+						JSONObject.toJSONString(agent)));
+				this.updateAgentStatus(agent, 0);
 			}
 		} catch (Exception e) {
 			log.error(String.format("请求 Agent 接口异常，接口地址: %s 错误信息: %s, Agent: %s", requestUrl, result,
-					JSONObject.toJSONString(promserver)), e);
+					JSONObject.toJSONString(agent)), e);
 		}
 	}
 
 	/**
-	 * 修改 promservers 状态
+	 * 修改 agents 状态
 	 *
-	 * @param promserver
+	 * @param agent
 	 * @param status
 	 */
-	public void updatePromServerStatus(Promserver promserver, Integer status) {
-		promserver.setStatus(status);
-		promserver.setStatusInfo(getPromStatusInfoErrorMsg());
-		promserver.setCheckTime(new Date());
+	public void updateAgentStatus(Agent agent, Integer status) {
+		agent.setStatus(status);
+		agent.setStatusInfo(getPromStatusInfoErrorMsg());
+		agent.setCheckTime(new Date());
 		// 缓存和数据库需同时更新
-		redisTemplate.opsForHash().put(Constant.AGENT_STATE_CACHE_KEY, promserver.getId().toString(), JSON.toJSONString(promserver));
-		promService.updateById(promserver);
+		redisTemplate.opsForHash().put(Constant.AGENT_STATE_CACHE_KEY, agent.getId().toString(), JSON.toJSONString(agent));
+		agentService.updateById(agent);
 	}
 }

@@ -1,17 +1,15 @@
 package com.nis.modules.agent.job;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.nis.common.utils.*;
+import com.nis.modules.agent.util.AgentUtil;
+import com.nis.modules.promserver.entity.Agent;
+import com.nis.modules.promserver.service.AgentService;
+import com.nis.modules.sys.service.SysConfigService;
 import org.apache.commons.lang3.time.StopWatch;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
@@ -21,22 +19,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
-import com.nis.modules.agent.util.AgentUtil;
-import com.nis.modules.endpoint.entity.MonitorEndpointState;
-import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.promserver.service.PromserverService;
-import com.nis.modules.sys.service.SysConfigService;
-
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import java.util.*;
+import java.util.concurrent.*;
 
 @DisallowConcurrentExecution
 public class AgentHealthCheckJob extends QuartzJobBean {
@@ -47,7 +31,7 @@ public class AgentHealthCheckJob extends QuartzJobBean {
 	private Integer connectTimeout;
 
 	@Autowired
-	private PromserverService promService;
+	private AgentService agentService;
 	@Autowired
 	private SysConfigService configService;
 	@Autowired
@@ -83,32 +67,32 @@ public class AgentHealthCheckJob extends QuartzJobBean {
 	}
 
 	/**
-	 * 调用 agent/healthy 更新 prom_server 数据状态
+	 * 调用 agent/healthy 更新 agent 数据状态
 	 */
 	@SuppressWarnings("unchecked")
 	public void updateAgentStatus() {
-		List<Promserver> allPromServers = promService.list();
+		List<Agent> allAgents = agentService.list();
 		String metricsStorageType = configService.getValueOrDefault(Constant.SYSCONFIG_KEY_METRICS_STORAGE_TYPE, "1");
-		allPromServers.stream().forEach(promserver -> promserver.setStatus(null));
+		allAgents.stream().forEach(agent -> agent.setStatus(null));
 
-		List<Callable<Promserver>> tasks = new ArrayList<>();
-		allPromServers.stream().forEach(promServer -> {
-			Callable<Promserver> task = new Callable<Promserver>() {
+		List<Callable<Agent>> tasks = new ArrayList<>();
+		allAgents.stream().forEach(agent -> {
+			Callable<Agent> task = new Callable<Agent>() {
 				@Override
-				public Promserver call() throws Exception {
+				public Agent call() throws Exception {
 					String result = null;
 					try {
-						result = AgentUtil.requestGet(promServer, "/healthy", null, String.class);
+						result = AgentUtil.requestGet(agent, "/healthy", null, String.class);
 					} catch (RuntimeException e) {
-						log.error(e, "request error,agent:{}", Tool.JSONUtil.toJsonStr(promServer));
+						log.error(e, "request error,agent:{}", Tool.JSONUtil.toJsonStr(agent));
 					}
 					if (log.isDebugEnabled()) {
-						log.debug("request result,agent:{},result:{}", Tool.JSONUtil.toJsonStr(promServer), result);
+						log.debug("request result,agent:{},result:{}", Tool.JSONUtil.toJsonStr(agent), result);
 					}
 					// 接口请求失败
 					if (result == null) {
-						promServer.setStatus(0);
-						promServer.setStatusInfo(getPromStatusInfoErrorMsg());
+						agent.setStatus(0);
+						agent.setStatusInfo(getPromStatusInfoErrorMsg());
 					} else {
 						try {
 							R resultObj = JSONObject.parseObject(result, R.class);
@@ -126,14 +110,14 @@ public class AgentHealthCheckJob extends QuartzJobBean {
 								if (down.equals(prometheusState) || down.equals(confagentState)
 										|| down.equals(snmpExporterState) 
 										|| down.equals(blackboxExporterState)
-										|| (down.equals(cortexState) && promServer.getType() == Constant.PromserverType.GLOBAL.getValue() && "2".equals(metricsStorageType))
-										|| (down.equals(lokiState) && promServer.getType() == Constant.PromserverType.GLOBAL.getValue() )) {
+										|| (down.equals(cortexState) && agent.getType() == Constant.AgentType.GLOBAL.getValue() && "2".equals(metricsStorageType))
+										|| (down.equals(lokiState) && agent.getType() == Constant.AgentType.GLOBAL.getValue() )) {
 									// 异常
-									promServer.setStatus(0);
+									agent.setStatus(0);
 								} else {
 									if ("FALSE".equals(authState)) {
 										// 认证失败
-										promServer.setStatus(-1);
+										agent.setStatus(-1);
 									} else {
 										// 状态不为 down ，继续判断 可用状态
 										if (unavailable.equals(cortexState)) {
@@ -141,54 +125,54 @@ public class AgentHealthCheckJob extends QuartzJobBean {
 													.hasKey(Constant.REDIS_KEY_CORTEX_UPDATE);
 											// 返回为 UNAVAILABLE 但不存在更新标识，认为其不可用
 											if (!cortexUpdateExist)
-												promServer.setStatus(0);
+												agent.setStatus(0);
 										}
 										if (unavailable.equals(lokiState)) {
 											Boolean lokiUpdateExist = redisTemplate
 													.hasKey(Constant.REDIS_KEY_LOKI_UPDATE);
 											// 返回为 UNAVAILABLE 但不存在更新标识，认为其不可用
 											if (!lokiUpdateExist)
-												promServer.setStatus(0);
+												agent.setStatus(0);
 										}
 										// 服务可用
-										if (promServer.getStatus() == null)
-											promServer.setStatus(1);
+										if (agent.getStatus() == null)
+											agent.setStatus(1);
 									}
 								}
-								data.remove("auth");
-								promServer.setStatusInfo(JSONObject.toJSONString(data));
+								// data.remove("auth");
+								agent.setStatusInfo(JSONObject.toJSONString(data));
 								// 从 nz-agent /healthy 接口中获取返回得 ts 信息
 								Object tsObj = data.get("ts");
-								promServer.setTs(Tool.ObjectUtil.isNull(tsObj) ? null : Tool.NumberUtil.parseLong(tsObj.toString()));
+								agent.setTs(Tool.ObjectUtil.isNull(tsObj) ? null : Tool.NumberUtil.parseLong(tsObj.toString()));
 							} else {
-								promServer.setStatus(0);
-								promServer.setStatusInfo(getPromStatusInfoErrorMsg());
+								agent.setStatus(0);
+								agent.setStatusInfo(getPromStatusInfoErrorMsg());
 							}
 						} catch (Exception e) {
-							log.error(e, "request error,agent:{}", Tool.JSONUtil.toJsonStr(promServer));
-							promServer.setStatus(0);
-							promServer.setStatusInfo(getPromStatusInfoErrorMsg());
+							log.error(e, "request error,agent:{}", Tool.JSONUtil.toJsonStr(agent));
+							agent.setStatus(0);
+							agent.setStatusInfo(getPromStatusInfoErrorMsg());
 						}
 					}
-					promServer.setCheckTime(new Date());
-					return promServer;
+					agent.setCheckTime(new Date());
+					return agent;
 				}
 			};
 			tasks.add(task);
 		});
 
 		try {
-			List<Future<Promserver>> futures = exec.invokeAll(tasks);
-			for (Future<Promserver> future : futures) {
+			List<Future<Agent>> futures = exec.invokeAll(tasks);
+			for (Future<Agent> future : futures) {
 				if (!future.isCancelled()) {
-					Promserver promserver = future.get();
-					Object agent = redisTemplate.opsForHash().get(Constant.AGENT_STATE_CACHE_KEY,promserver.getId().toString());
-					Promserver promserverCache = JSON.parseObject((String)agent,Promserver.class);
-					if(counter % forceSync == 0 || ToolUtil.isEmpty(promserverCache) || !ObjectUtil.equal(promserverCache.getStatus(), promserver.getStatus())) {						
+					Agent agent = future.get();
+					Object agentInfoInRedis = redisTemplate.opsForHash().get(Constant.AGENT_STATE_CACHE_KEY,agent.getId().toString());
+					Agent agentCache = JSON.parseObject((String) agentInfoInRedis, Agent.class);
+					if(counter % forceSync == 0 || ToolUtil.isEmpty(agentCache) || !ObjectUtil.equal(agentCache.getStatus(), agent.getStatus())) {
 						// 判断状态是否缓存与数据库数据是否一致 不一致需要修改数据库信息
-						promService.updateStatusInfo(promserver);
+						agentService.updateStatusInfo(agent);
 					}
-					redisTemplate.opsForHash().put(Constant.AGENT_STATE_CACHE_KEY,promserver.getId().toString(),JSON.toJSONString(promserver));
+					redisTemplate.opsForHash().put(Constant.AGENT_STATE_CACHE_KEY,agent.getId().toString(),JSON.toJSONString(agent));
 					// 超时周期设置为两个agent周期
 			        redisTemplate.expire(Constant.AGENT_STATE_CACHE_KEY, 1, TimeUnit.MINUTES);
 				}

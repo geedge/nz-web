@@ -1,61 +1,32 @@
 package com.nis.modules.promserver.controller;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeSet;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.stream.Collectors;
-
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import cn.hutool.core.net.url.UrlQuery;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.time.DateFormatUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.client.RestTemplate;
-
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.URLUtil;
+import cn.hutool.crypto.digest.MD5;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.RCode;
-import com.nis.common.utils.ToolUtil;
-import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.promserver.service.PromserverService;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.common.utils.Tool;
+import com.nis.modules.promserver.service.LokiApiService;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.time.DateFormatUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
 
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.net.url.UrlBuilder;
-import cn.hutool.core.net.url.UrlPath;
-import cn.hutool.core.util.ReflectUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.crypto.digest.MD5;
-import cn.hutool.http.HttpResponse;
-import cn.hutool.http.HttpUtil;
-import cn.hutool.log.Log;
-import net.sf.json.util.JSONUtils;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 @Controller
 public class LokiLogController {
@@ -63,54 +34,44 @@ public class LokiLogController {
 	private static final Log log = Log.get();
 
 	@Autowired
-	private PromserverService promserverService;
-
-	@Autowired
-	private SysConfigService sysConfigService;
-
-	@Autowired
-	private RestTemplate restTemplate;
+	private LokiApiService lokiApiService;
 
 	private static ExecutorService exec = Executors.newCachedThreadPool();
 
 	@RequestMapping(value = "/logs/loki/export")
 	public void logExport(HttpServletRequest request, HttpServletResponse response) throws IOException {
-		ValidateUtils.is(request.getParameterValues("logql[]")).notNull(RCode.PROMSERVER_PARAM_QUERY_ISNULL)
-				.and(request.getParameter("start")).notNull(RCode.PROMSERVER_PARAM_START_ISNULL)
-				.and(request.getParameter("end")).notNull(RCode.PROMSERVER_PARAM_END_ISNULL);
+		String[] logqlArr = request.getParameterValues("logql[]");
+		String start = request.getParameter("start");
+		String end = request.getParameter("end");
 
-		// 随机 可用 loki
-		Promserver server = promserverService.getOneAvaPromServer(null, null,
-				Constant.PromserverType.GLOBAL.getValue());
-		if (ToolUtil.isEmpty(server)) {
-			ValidateUtils.is(server).notNull(RCode.PROMSERVER_UNAVAILABLE);
-		}
-		log.debug("loki server:{}", JSONUtils.valueToString(server));
+		ValidateUtils.is(logqlArr).notNull(RCode.AGENT_PARAM_QUERY_ISNULL)
+				.and(start).notNull(RCode.AGENT_PARAM_START_ISNULL)
+				.and(end).notNull(RCode.AGENT_PARAM_END_ISNULL);
 
-		String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
-		agentPath = agentPath + "/loki/proxy";
-
-		String[] logqls = request.getParameterValues("logql[]");
-		List<String> requestUrlList = new ArrayList<>();
-		for (String logql : logqls) {
-			String queryString = ReflectUtil.invoke(request, "getQueryString");
-			logql = logql.replaceAll("&quot;", "\"");
-			String url = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
-					.setPort(server.getPort())
-					.setPath(UrlPath.of(agentPath + "/loki/api/v1/query_range", Charset.forName("UTF-8")))
-					.setQuery(UrlQuery.of("query=" + URLEncoder.encode(logql) + "&" + queryString, Charset.forName("UTF-8")))
-					.toString();
-			requestUrlList.add(url);
-		}
-
-		List<List<Map>> resultList = this.requestLokiApi(requestUrlList, server, request, response);
-		String timeFlag = request.getParameter("timeFlag");
 		String direction = request.getParameter("direction");
-		int timeFlagIntVal = StrUtil.isEmpty(timeFlag) ? 0 : Integer.valueOf(timeFlag);
-		direction = StrUtil.isEmpty(direction) ? "backward" : "forward ";
+		direction = StrUtil.isEmpty(direction) ? "backward" : "forward";
 
 		String limit = request.getParameter("limit");
 		Long limitLongVal = StrUtil.isEmpty(limit) ? 100L : Long.valueOf(limit);
+
+		String[] logqls = request.getParameterValues("logql[]");
+		List<Map> requestParamList = new ArrayList<>();
+		for (String logql : logqls) {
+			logql = logql.replaceAll("&quot;", "\"");
+
+			Map requestParam = Tool.MapUtil.newHashMap(2);
+			requestParam.put("query",  URLUtil.decode(logql));
+			requestParam.put("start", start);
+			requestParam.put("end", end);
+			requestParam.put("limit", limit);
+			requestParam.put("interval", request.getParameter("interval"));
+			requestParam.put("direction", direction);
+			requestParamList.add(requestParam);
+		}
+
+		List<List<Map>> resultList = this.requestLokiApi(requestParamList);
+		String timeFlag = request.getParameter("timeFlag");
+		int timeFlagIntVal = StrUtil.isEmpty(timeFlag) ? 0 : Integer.valueOf(timeFlag);
 
 		ServletOutputStream resOutputStream = null;
 		File file = null;
@@ -192,38 +153,33 @@ public class LokiLogController {
 		return messageList;
 	}
 
-	private List<List<Map>> requestLokiApi(List<String> requestUrlList, Promserver server, HttpServletRequest request,
-			HttpServletResponse response) {
-		List<Callable<String>> tasks = new ArrayList<>();
-		requestUrlList.stream().forEach(url -> {
+
+	private List<List<Map>> requestLokiApi(List<Map> requestParamList) {
+		List<Callable<JSONObject>> tasks = new ArrayList<>();
+		for (Map requestParam : requestParamList) {
 			Callable task = new Callable() {
 				@Override
-				public String call() throws Exception {
-					log.debug("loki url: {}", url);
-					HttpHeaders headers = new HttpHeaders();
-					headers.add(HttpHeaders.AUTHORIZATION, server.getToken());
-					HttpEntity httpEntity = new HttpEntity(headers);
-					ResponseEntity<String> responseEntity = restTemplate.exchange(new URI(url), HttpMethod.GET, httpEntity, String.class);
-					boolean ok = responseEntity.getStatusCode().is2xxSuccessful();
-					if (ok) {
-						return responseEntity.getBody();
+				public JSONObject call() throws Exception {
+					JSONObject jsonObject = null;
+					try {
+						jsonObject = lokiApiService.query_range(HttpEntity.EMPTY, requestParam);
+					} catch (Exception e) {
+						log.error(e);
 					}
-					response.sendError(500, responseEntity.getBody());
-					return "";
+					return jsonObject;
 				}
 			};
 			tasks.add(task);
-		});
+		}
 
 		List<List<Map>> resultList = new ArrayList<>();
 		try {
-			List<Future<String>> futures = exec.invokeAll(tasks);
-			for (Future<String> future : futures) {
+			List<Future<JSONObject>> futures = exec.invokeAll(tasks);
+			for (Future<JSONObject> future : futures) {
 				if (!future.isCancelled()) {
-					String result = future.get();
-					if (StrUtil.isNotEmpty(result)) {
-						Map map = JSONObject.parseObject(result, Map.class);
-						Map data = (Map) map.get("data");
+					JSONObject result = future.get();
+					if (result != null) {
+						Map data = (Map) result.get("data");
 						if (data != null && !"matrix".equals(data.get("resultType").toString())) {
 							List<Map> resultArray = (List<Map>) data.get("result");
 							resultList.add(resultArray);

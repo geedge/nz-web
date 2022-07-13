@@ -75,7 +75,7 @@ public class VisualPanelController {
 
 	/**
 	 * 排序
-	 * 
+	 *
 	 * @param panelList
 	 * @return
 	 */
@@ -85,7 +85,7 @@ public class VisualPanelController {
 		visualPanelService.modify(panelList);
 		return R.ok();
 	}
-	
+
 	@GetMapping("/template")
 	public void getTemplateByLanguage(HttpServletResponse response, String type, HttpServletRequest request) throws IOException {
 		String language = request.getHeader(Constant.LANGUAGE);
@@ -159,15 +159,20 @@ public class VisualPanelController {
 
 	/**
 	 * panel 快照
-	 * @param id
-	 * @return
+	 * @param response
+	 * @param request
+	 * @param format
+	 * @param panelId
+	 * @param start
+	 * @param end
+	 * @param vars
 	 */
 	@GetMapping("/snapshot")
-	public void snapshot(HttpServletResponse response, HttpServletRequest request, String format, Integer panelId, Long start, Long end) {
+	public void snapshot(HttpServletResponse response, HttpServletRequest request, String format, Integer panelId, Long start, Long end, String vars) {
 		ValidateUtils.is(panelId).notNull(RCode.PANEL_ID_ISNULL)
-				.and(start).notNull(RCode.PROMSERVER_PARAM_START_ISNULL)
-				.and(end).notNull(RCode.PROMSERVER_PARAM_END_ISNULL);
+				.and(start).notNull(RCode.AGENT_PARAM_START_ISNULL)
+				.and(end).notNull(RCode.AGENT_PARAM_END_ISNULL);
 		String language = request.getHeader(Constant.LANGUAGE);
-		visualPanelService.snapshot(request,response,format,panelId,start,end,language);
+		visualPanelService.snapshot(response, format, panelId, start, end, language, vars);
 	}
 }

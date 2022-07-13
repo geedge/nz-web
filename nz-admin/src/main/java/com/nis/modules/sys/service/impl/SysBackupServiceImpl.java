@@ -16,6 +16,7 @@ import com.nis.modules.sys.service.SysBackupService;
 import org.mariadb.jdbc.MariaDbBlob;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
@@ -38,7 +39,10 @@ public class SysBackupServiceImpl implements SysBackupService {
     
     @Autowired
     private DataSource dataSource;
-    
+
+    @Autowired
+    private RedisTemplate redisTemplate;
+
     @Value("${nezha.exportMaxSize:10000}")
     private Integer exportMaxSize;
     
@@ -53,18 +57,27 @@ public class SysBackupServiceImpl implements SysBackupService {
 		return result;
 	}
 
-	@Override
+    @Override
 	public void save(Map<String, Object> params) {
 		SysConfigEntity config = sysConfigDao.queryByKey("backup_config");
 		if(ToolUtil.isNotEmpty(config)) {
 			sysConfigDao.updateValueByKey("backup_config", JSON.toJSONString(params));
+
+            String oldParamStr = ToolUtil.isEmpty(config.getParamKey()) ? JSONObject.toJSONString(Tool.MapUtil.empty()) : config.getParamValue();
+            Map oldParamMap = JSONObject.parseObject(oldParamStr, LinkedHashMap.class);
+            if (!oldParamMap.equals(params)) {
+                redisTemplate.convertAndSend(Constant.BACKUP_TOPIC_NAME, JSONObject.toJSONString(params));
+            }
 		}else {
-			config = new SysConfigEntity();
-			config.setParamKey("backup_config");
-			config.setParamValue(JSON.toJSONString(params));
-			config.setStatus("1");
-			sysConfigDao.insert(config);
-		}
+            // 新增
+            config = new SysConfigEntity();
+            config.setParamKey("backup_config");
+            config.setParamValue(JSON.toJSONString(params));
+            config.setStatus("1");
+            sysConfigDao.insert(config);
+
+            redisTemplate.convertAndSend(Constant.BACKUP_TOPIC_NAME, JSONObject.toJSONString(params));
+        }
 	}
 
 	@Override

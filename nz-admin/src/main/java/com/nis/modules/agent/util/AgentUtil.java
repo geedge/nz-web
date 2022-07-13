@@ -17,7 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
 import com.nis.common.utils.Constant;
-import com.nis.modules.promserver.entity.Promserver;
+import com.nis.modules.promserver.entity.Agent;
 import com.nis.modules.sys.service.SysConfigService;
 
 import cn.hutool.core.net.url.UrlBuilder;
@@ -51,11 +51,11 @@ public class AgentUtil {
 		return result;
 	}
 
-	public static <T> T requestGet(Promserver server, String path, String queryString, Class<T> responseType) {
+	public static <T> T requestGet(Agent server, String path, String queryString, Class<T> responseType) {
 		return request(server, HttpMethod.GET, path, queryString, null, responseType);
 	}
 
-	public static <T> T request(Promserver server, HttpMethod method, String path, String queryString, Object body,
+	public static <T> T request(Agent server, HttpMethod method, String path, String queryString, Object body,
 			Class<T> responseType) {
 		String agentPath = sysConfigService.getValueOrDefault(Constant.CONFAGENT_PATH, "");
 		path = path.startsWith("/") ? (String.format("%s%s", agentPath,path)) :(String.format("%s/%s", agentPath,path));

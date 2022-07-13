@@ -1,8 +1,5 @@
 package com.nis.modules.promserver.service.impl;
 
-import cn.hutool.core.net.url.UrlBuilder;
-import cn.hutool.core.net.url.UrlPath;
-import cn.hutool.core.net.url.UrlQuery;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.URLUtil;
@@ -13,54 +10,45 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.*;
-import com.nis.modules.promserver.dao.PromserverDao;
-import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.promserver.service.LokiserverService;
-import com.nis.modules.promserver.service.PromserverService;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
+import com.nis.modules.promserver.dao.AgentDao;
+import com.nis.modules.promserver.entity.Agent;
+import com.nis.modules.promserver.service.LokiApiService;
+import com.nis.modules.promserver.service.PromApiService;
+import com.nis.modules.promserver.utils.AgentProxyApiUtil;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
-import net.sf.json.util.JSONUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.math.BigDecimal;
-import java.net.URI;
-import java.nio.charset.Charset;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-@Service("lokiserverService")
-public class LokiserverServiceImpl extends ServiceImpl<PromserverDao, Promserver> implements LokiserverService {
+@Service
+public class LokApiServiceImpl extends ServiceImpl<AgentDao, Agent> implements LokiApiService {
 
 	private static final Log log = Log.get();
 
 	@Autowired
 	private SysConfigService sysConfigService;
 
-	@Autowired
-	private RestTemplate restTemplate;
-
 	@Value("${connect.timeout:30000}")
 	private Integer connectTimeout;
 
 	@Autowired
-	private PromserverService promserverService;
+	private PromApiService promApiService;
+
+	@Autowired
+	private AgentProxyApiUtil agentProxyApiUtil;
 
 	static Map<Pattern, String> logPatternAndLevelMap = new LinkedHashMap<>();
 
@@ -91,141 +79,124 @@ public class LokiserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 	}
 
 	@Override
+	public JSONObject query(HttpEntity httpEntity, Map<String, String> requestParam) {
+		Agent server = promApiService.getOneAvaliableGlobalAgent();
+
+		// 请求 prometheus server
+		String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
+		String url = String.format("%s%s%s", agentPath, "/loki/proxy", "/loki/api/v1/query");
+
+		JSONObject resultData = agentProxyApiUtil.getForObject(server, url, httpEntity, requestParam);
+		resultData = this.handleResultData(resultData, requestParam);
+		return resultData;
+	}
+
+	@Override
+	public JSONObject query_range(HttpEntity httpEntity, Map<String, String> requestParam) {
+		Agent server = promApiService.getOneAvaliableGlobalAgent();
+
+		// 请求 prometheus server
+		String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
+		String url = String.format("%s%s%s", agentPath, "/loki/proxy", "/loki/api/v1/query_range");
+
+		JSONObject resultData = agentProxyApiUtil.getForObject(server, url, httpEntity, requestParam);
+		resultData = this.handleResultData(resultData, requestParam);
+		return resultData;
+	}
+
+	@Override
+	public JSONObject labels(String proxyPath, HttpEntity httpEntity, Map<String, String> requestParam) {
+		Agent server = promApiService.getOneAvaliableGlobalAgent();
+
+		// 请求 prometheus server
+		String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
+		String url = String.format("%s%s%s", agentPath, "/loki/proxy", proxyPath);
+
+		return agentProxyApiUtil.getForObject(server, url, httpEntity, requestParam);
+	}
+
+
+	@Override
 	public void lokiServerProxy(HttpServletRequest request, HttpServletResponse response, String proxyPath) {
-		Integer promId = request.getParameter("promId") != null ? Integer.valueOf(request.getParameter("promId")) : null;
-		ByteArrayInputStream bais = null;
-		try {
-			String queryString = request.getQueryString();
-			queryString = StrUtil.isNotBlank(queryString)?queryString:"";
-			queryString = URLUtil.decode(queryString);
-			// 复制 body
-			byte[] body = Tool.IoUtil.readBytes(request.getInputStream());
-			//发送 请求
-			ResponseEntity<byte[]> exchange = lokiServerData(request, promId, proxyPath, body, queryString);
-			//响应码
-			int statusCode = exchange.getStatusCodeValue();
-			//响应头
-			HttpHeaders httpHeaders = exchange.getHeaders();
-			byte[] responseBody = exchange.getBody();
-			/*
-			 * query_range 补零
-			 */
-			if (("/loki/api/v1/query".equals(proxyPath) || "/loki/api/v1/query_range".equals(proxyPath)) && statusCode < 300) {
-				// 封装格式化参数
-				Map<String, String> paramMap = new HashMap<>();
-				String format = request.getParameter("format");
-				paramMap.put("format",StrUtil.isNotBlank(format) ? format : "0");
-				paramMap.put("filter",request.getParameter("filter"));
-				paramMap.put("direction",request.getParameter("direction"));
-				// 处理数据格式
-				bais = new ByteArrayInputStream(responseBody);
-				Map resultData = handleResultData(bais, paramMap);
-				responseBody = JSONObject.toJSONString(resultData, SerializerFeature.DisableCircularReferenceDetect, SerializerFeature.MapSortField).getBytes();
+		Agent server = promApiService.getOneAvaliableGlobalAgent();
+
+		// 请求 prometheus server
+		String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
+		String url = String.format("%s%s%s", agentPath, "/loki/proxy", proxyPath);
+
+		agentProxyApiUtil.agentApiProxy(server, url, request, response);
+	}
+
+	private JSONObject handleResultData(JSONObject resultData, Map<String, String> requestParam) {
+		if ("success".equals(resultData.get("status"))) {
+			if (Tool.MapUtil.isNotEmpty(resultData) && resultData.get("data") != null) {
+				String formatStr = requestParam.get("format");
+				Integer format = Integer.valueOf(StrUtil.isNotBlank(formatStr) ? formatStr : "0");
+				String filter = requestParam.get("filter");
+
+				Map<String, Object> data = (Map) resultData.get("data");
+				String resultType = (String) data.get("resultType");
+				if (StrUtil.isNotBlank(filter) && ToolUtil.isNotEmpty(data.get("result"))) {
+					filter = URLUtil.decode(filter);
+					JSONArray resultArray = (JSONArray) data.get("result");
+					resultArray = this.filterResult(resultArray, filter);
+					data.put("result", resultArray);
+				}
+
+				// 重新整理数据结构
+				if (format == 1 && "streams".equals(resultType)) {
+					List<Map> resultArray = (List<Map>) data.get("result");
+					if (ToolUtil.isEmpty(resultArray)) {
+						data.put("resultType", "streamsFormat");
+						resultData.put("data", data);
+						return resultData;
+					}
+
+					List<Object> valuesList = (List<Object>) resultArray.stream().map(map -> (List) map.get("values")).flatMap(Collection::stream).collect(Collectors.toList());
+					// 查询结果集超过系统设置最大限制 , -1 表示不做限制
+					SysConfigEntity configEntity = sysConfigService.getOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.LOKILOG_QUERY_MAX_SERIES));
+					Integer queryMaxSeriesIntVal = Integer.valueOf(configEntity.getParamValue());
+					if (!queryMaxSeriesIntVal.equals(-1) && valuesList.size() > queryMaxSeriesIntVal) {
+						data.put("result", Collections.emptyList());
+						resultData.put("message", String.format("Configure the maximum number of Series: %s, query the total number of Series: %s", queryMaxSeriesIntVal, valuesList.size()));
+					} else {
+						// labels series
+						handleDataStructure(data, resultArray, requestParam.get("direction"));
+						data.put("resultType", "streamsFormat");
+					}
+					resultData.put("data", data);
+				}
 			}
-			promserverService.responseWrite(response,httpHeaders,statusCode,responseBody);
-		} catch (Exception e) {
-			log.error(e, "loki proxy error,path : {}", proxyPath);
-		} finally {
-			Tool.IoUtil.close(bais);
+			return resultData;
 		}
+		return resultData;
 	}
 
 	/**
-	 * 构建路径 请求数据
-	 * @param request
-	 * @param promId
-	 * @param proxyPath
-	 * @param body
-	 * @param paramData
+	 * The result of restrictions is used to query Alert Message data.
+	 *
+	 * @param resultArray
+	 * @param filter
 	 * @return
 	 */
-	public ResponseEntity<byte[]> lokiServerData(HttpServletRequest request,Integer promId,String proxyPath,byte[] body,String queryString){
-		Promserver server = promserverService.getOneAvaPromServer(promId, null, Constant.PromserverType.GLOBAL.getValue());
-		if (ToolUtil.isEmpty(server)) {
-			ValidateUtils.is(server).notNull(RCode.PROMSERVER_UNAVAILABLE);
-		}
-		log.debug("path:{},loki server:{}", proxyPath, JSONUtils.valueToString(server));
-
-		ResponseEntity<byte[]> exchange = null;
-		try {
-			// 重新构造请求参数内容
-			HttpEntity<byte[]> httpEntity = promserverService.buildHeader(request,server.getToken(),body);
-			// 构造请求路径
-			// 请求 prometheus server
-			String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
-			String realPath = agentPath + "/loki/proxy" + proxyPath;
-			String urlString = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
-					.setPort(server.getPort()).setPath(UrlPath.of(realPath, Charset.forName("UTF-8")))
-					.setQuery(UrlQuery.of(queryString, Charset.forName("UTF-8"))).toString();
-			String method = request.getMethod();
-			//发送 请求
-			exchange = restTemplate.exchange(new URI(urlString), HttpMethod.resolve(method), httpEntity, byte[].class);
-		} catch (Exception e) {
-			log.error(e, "loki proxy error,path : {}", proxyPath);
-		}
-		return exchange;
-	}
-
-	/**
-	 * 数据格式化
-	 * @paramMap format = 1
-	 */
-	public Map handleResultData(InputStream connInputStream, Map<String, String> paramMap) {
-		StringBuffer resultStr = new StringBuffer();
-		InputStreamReader inputStreamReader = null;
-		BufferReaderWrapper bufferedReader = null;
-		try {
-			inputStreamReader = new InputStreamReader(connInputStream, "UTF-8");
-			bufferedReader = new BufferReaderWrapper(inputStreamReader);
-			String str = null;
-			while ((str = bufferedReader.load()) != null) {
-				resultStr.append(str);
-			}
-		} catch (IOException e) {
-			log.error(String.format("从流中获取JSON字符串失败，错误信息是：%s", e.getMessage()), e);
-		} finally {
-			Tool.IoUtil.close(bufferedReader);
-			Tool.IoUtil.close(inputStreamReader);
-		}
-
-		Map result = StrUtil.isNotEmpty(resultStr.toString()) ? JSONObject.parseObject(resultStr.toString(), Map.class) : new HashMap();
-
-		if (result != null && result.get("data") != null) {
-			Integer format = Integer.valueOf(paramMap.get("format"));
-			String filter = paramMap.get("filter");
-			Map<String, Object> data = (Map) result.get("data");
-			String resultType = (String) data.get("resultType");
-			if(StrUtil.isNotBlank(filter)&& ToolUtil.isNotEmpty(data.get("result"))) {
-				filter = URLUtil.decode(filter);
-				JSONArray resultArray = (JSONArray) data.get("result");
-				resultArray = promserverService.filterResult(resultArray, filter);
-				data.put("result",resultArray);
-			}
-			// 重新整理数据结构
-			if (format == 1 && "streams".equals(resultType)) {
-				List<Map> resultArray = (List<Map>) data.get("result");
-				if (ToolUtil.isEmpty(resultArray)) {
-					data.put("resultType", "streamsFormat");
-					result.put("data", data);
-					return result;
+	public JSONArray filterResult(JSONArray resultArray, String filter) {
+		Map parse = (Map) JSONObject.parse(filter);
+		JSONObject metric = null;
+		for (int i = resultArray.size() - 1; i >= 0; i--) {
+			boolean flag = false;
+			metric = (JSONObject) resultArray.get(i);
+			JSONObject object = (JSONObject) metric.get("metric");
+			Map javaObject = JSONObject.toJavaObject(object, Map.class);
+			for (Object key : parse.keySet()) {
+				if (!ToolUtil.equals(parse.get(key), javaObject.get(key))) {
+					flag = true;
 				}
-
-				List<Object> valuesList = (List<Object>) resultArray.stream().map(map -> (List) map.get("values")).flatMap(Collection::stream).collect(Collectors.toList());
-				// 查询结果集超过系统设置最大限制 , -1 表示不做限制
-				SysConfigEntity configEntity = sysConfigService.getOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.LOKILOG_QUERY_MAX_SERIES));
-				Integer queryMaxSeriesIntVal = Integer.valueOf(configEntity.getParamValue());
-				if (!queryMaxSeriesIntVal.equals(-1) && valuesList.size() > queryMaxSeriesIntVal) {
-					data.put("result", Collections.emptyList());
-					result.put("message", String.format("Configure the maximum number of Series: %s, query the total number of Series: %s", queryMaxSeriesIntVal, valuesList.size()));
-				} else {
-					// labels series
-					handleDataStructure(data, resultArray, paramMap.get("direction"));
-					data.put("resultType", "streamsFormat");
-				}
-				result.put("data", data);
+			}
+			if (flag) {
+				resultArray.remove(i);
 			}
 		}
-		return result;
+		return resultArray;
 	}
 
 	private void handleDataStructure(Map data, List<Map> resultArray, String direction) {

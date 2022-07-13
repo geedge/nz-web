@@ -324,7 +324,7 @@
     <select id="selectAgentStateAnalysis" resultMap="statAnalysis">
     	select case when status =0 then 'down' when status=1 then 'up' end name,
     	count(id) as num
-    	from prom_server
+    	from agent
     	where 1=1 
     	<if test="params.dcId != null">
     		and dc_id = #{params.dcId}
@@ -338,7 +338,7 @@
     <select id="selectAgentTypeAnalysis" resultMap="statAnalysis">
     	select case when type =1 then 'global' when type=2 then 'per_datacenter' end  name,
     	count(id) as num
-    	from prom_server
+    	from agent
     	where 1=1 
     	<if test="params.dcId != null">
     		and dc_id = #{params.dcId}
@@ -433,7 +433,7 @@
     
     <select id="selectAgentTotal" resultMap="statAnalysis">
     	select count(*) as num
-    	from prom_server ps 
+    	from agent ps
     	where 1=1 
     	<if test="params.type != null">
     		and ps.type = #{params.type}
@@ -571,7 +571,7 @@
 		dc.id,
 		count(*) total,
 		sum(case when ps.status=1 then 1 else 0 end) ok
-		from prom_server ps left join dc on dc.id = ps.dc_id
+		from agent ps left join dc on dc.id = ps.dc_id
 		group by ps.dc_id
     </select>
     

@@ -16,8 +16,8 @@ import com.nis.common.utils.Tool;
 import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.asset.service.DcService;
-import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.promserver.service.PromserverService;
+import com.nis.modules.promserver.entity.Agent;
+import com.nis.modules.promserver.service.AgentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpMethod;
@@ -36,7 +36,7 @@ public class TracerouteController {
     private final static Log log = Log.get();
 
     @Autowired
-    private PromserverService agentService;
+    private AgentService agentService;
 
     @Autowired
     private RedisTemplate redisTemplate;
@@ -58,13 +58,13 @@ public class TracerouteController {
         List<Dc> dcList = dcService.list(new LambdaQueryWrapper<Dc>().in(Tool.StrUtil.isNotEmpty(dcIds), Dc::getId, Tool.StrUtil.split(dcIds, ',')));
 
         // 根据 dcids 获取当前 state = up 的所有 agent
-        List<Promserver> promserverList = agentService.list(new LambdaQueryWrapper<Promserver>()
-                .in(Tool.StrUtil.isNotEmpty(dcIds), Promserver::getDcId, Tool.StrUtil.split(dcIds, ','))
-                .eq(Promserver::getStatus, 1));
+        List<Agent> agentList = agentService.list(new LambdaQueryWrapper<Agent>()
+                .in(Tool.StrUtil.isNotEmpty(dcIds), Agent::getDcId, Tool.StrUtil.split(dcIds, ','))
+                .eq(Agent::getStatus, 1));
 
         List<Dc> futureDcList = Tool.ListUtil.list(false);
         for (Dc dc : dcList) {
-            Promserver agentByDc = promserverList.stream().filter(p -> dc.getId().equals(p.getDcId())).findFirst().orElse(null);
+            Agent agentByDc = agentList.stream().filter(p -> dc.getId().equals(p.getDcId())).findFirst().orElse(null);
             dc.setAgent(agentByDc);
             futureDcList.add(dc);
         }
@@ -178,15 +178,15 @@ public class TracerouteController {
             ACTIVE_TASKS.add(this);
             // agent 存在，向 agent 发起请求获取数据
             if (Optional.ofNullable(dc).map(Dc::getAgent).isPresent()) {
-                Promserver promserver = dc.getAgent();
+                Agent agent = dc.getAgent();
                 CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
                     String path = "/cmd/traceroute";
                     Map<String, Object> body = new HashMap<>();
                     body.put("ips", Tool.StrUtil.split(ips, ','));
                     body.put("maxHops", Integer.valueOf(maxHops));
-                    String resultJsonStr = AgentUtil.request(promserver, HttpMethod.POST, path, null, body, String.class);
+                    String resultJsonStr = AgentUtil.request(agent, HttpMethod.POST, path, null, body, String.class);
                     Object list = JSONPath.read(resultJsonStr, "data.list");
-                    log.info("host: {}, path: {}, result: {}", promserver.getHost(), path, resultJsonStr);
+                    log.info("host: {}, path: {}, result: {}", agent.getHost(), path, resultJsonStr);
                     // 由于 future.cancel 在任务已经运行状态下，不一定能取消，所以在写 redis 前增加判断
                     if (isWrite) {
                         List<Map> mapList = JSONArray.parseArray(JSONArray.toJSONString(list), Map.class);
@@ -195,15 +195,15 @@ public class TracerouteController {
                             dcMap.put("id", dc.getId());
                             dcMap.put("name", dc.getName());
 
-                            Map agent = Tool.MapUtil.newHashMap(4);
-                            agent.put("id", promserver.getId());
-                            agent.put("name", promserver.getName());
+                            Map agentMap = Tool.MapUtil.newHashMap(4);
+                            agentMap.put("id", agent.getId());
+                            agentMap.put("name", agent.getName());
 
                             map.put("dc", dcMap);
-                            map.put("agent", agent);
+                            map.put("agent", agentMap);
 
                             // source 赋值为 agent ip
-                            map.put("source", promserver.getHost());
+                            map.put("source", agent.getHost());
                         }
                         redisTemplate.opsForList().leftPush(Tool.StrUtil.concat(true, "test_traceroute_result_", tid), JSONArray.toJSONString(mapList));
                     } else {
@@ -219,14 +219,14 @@ public class TracerouteController {
                 } catch (TimeoutException e) {
                     boolean cancel = future.cancel(true);
                     isWrite = false;
-                    log.error(String.format("%s agent traceroute %s timeout, Task cancel status: %s", promserver.getName(), ips, cancel));
+                    log.error(String.format("%s agent traceroute %s timeout, Task cancel status: %s", agent.getName(), ips, cancel));
 
                     if (isRun) {
-                        log.info(String.format("%s agent traceroute %s timeout, Timeout data write to redis", promserver.getName(), ips));
+                        log.info(String.format("%s agent traceroute %s timeout, Timeout data write to redis", agent.getName(), ips));
                         // 超时也需要向 redis 中写入 timeout 消息
-                        Map agent = Tool.MapUtil.newHashMap(4);
-                        agent.put("id", promserver.getId());
-                        agent.put("name", promserver.getName());
+                        Map agentMap = Tool.MapUtil.newHashMap(4);
+                        agentMap.put("id", agent.getId());
+                        agentMap.put("name", agent.getName());
 
                         Map dcMap = Tool.MapUtil.newHashMap(4);
                         dcMap.put("id", dc.getId());
@@ -238,22 +238,22 @@ public class TracerouteController {
                                     Pair.of("ip", timeOutIp),
                                     Pair.of("state", 2),
                                     Pair.of("time", null),
-                                    Pair.of("source", promserver.getHost()),
+                                    Pair.of("source", agent.getHost()),
                                     Pair.of("raw", "Timeout"),
-                                    Pair.of("agent", agent),
+                                    Pair.of("agent", agentMap),
                                     Pair.of("dc", dcMap)
                             );
                             list.add(timeoutInfoMap);
                         }
                         redisTemplate.opsForList().leftPush(Tool.StrUtil.concat(true, "test_traceroute_result_", tid), JSONObject.toJSONString(list));
                     } else {
-                        log.info(String.format("%s agent traceroute %s timeout, But the thread is interrupted, and the timeout data is not write to redis.", promserver.getName(), ips));
+                        log.info(String.format("%s agent traceroute %s timeout, But the thread is interrupted, and the timeout data is not write to redis.", agent.getName(), ips));
                     }
                 }
             } else {
                 // agent 不存在（DC 下没有可用 agent,记录错误数据至 REDIS 中）
                 if (isRun) {
-                    log.info(String.format("Dc info : %s , No PromServer available", JSONObject.toJSONString(dc)));
+                    log.info(String.format("Dc info : %s , No Agent available", JSONObject.toJSONString(dc)));
                     Map dcMap = Tool.MapUtil.newHashMap(4);
                     dcMap.put("id", dc.getId());
                     dcMap.put("name", dc.getName());
@@ -273,7 +273,7 @@ public class TracerouteController {
                     }
                     redisTemplate.opsForList().leftPush(Tool.StrUtil.concat(true, "test_traceroute_result_", tid), JSONObject.toJSONString(list));
                 } else {
-                    log.info(String.format("Dc info : %s , No PromServer available, But the thread is interrupted, not write to redis.", JSONObject.toJSONString(dc)));
+                    log.info(String.format("Dc info : %s , No Agent available, But the thread is interrupted, not write to redis.", JSONObject.toJSONString(dc)));
                 }
             }
             ACTIVE_TASKS.remove(this);

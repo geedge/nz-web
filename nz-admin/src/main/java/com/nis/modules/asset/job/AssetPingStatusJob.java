@@ -2,11 +2,9 @@ package com.nis.modules.asset.job;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
-
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
@@ -16,8 +14,8 @@ import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetPing;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetPingService;
-import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.promserver.service.PromserverService;
+import com.nis.modules.promserver.entity.Agent;
+import com.nis.modules.promserver.service.PromApiService;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import org.apache.commons.lang3.time.StopWatch;
@@ -26,13 +24,13 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpEntity;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @DisallowConcurrentExecution
@@ -50,9 +48,6 @@ public class AssetPingStatusJob extends QuartzJobBean {
     private SysConfigService sysConfigService;
 
     @Autowired
-    private PromserverService promserverService;
-
-    @Autowired
     private AssetAssetDao assetDao;
 
     @Autowired
@@ -60,9 +55,10 @@ public class AssetPingStatusJob extends QuartzJobBean {
 
     @Autowired
     private RedisTemplate redisTemplate;
+
     @Autowired
-    private PromserverService promService;
-    
+    private PromApiService promApiService;
+
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
     	Thread.currentThread().setName("AssetPingStatusJob");
@@ -86,9 +82,9 @@ public class AssetPingStatusJob extends QuartzJobBean {
     @SuppressWarnings("unchecked")
 	@Transactional(rollbackFor = Exception.class)
     public void execAssetPing() throws RuntimeException {
-        Promserver promserver = promserverService.getOneAvaPromServer(null, null, Constant.PromserverType.GLOBAL.getValue());
-        if (promserver == null) {
-            log.info("asset ping 状态更新为 DOWN,当前暂无可用 promserver");
+        Agent agent = promApiService.getOneAvaliableGlobalAgent();
+        if (agent == null) {
+            log.info("asset ping 状态更新为 DOWN,当前暂无可用 agent");
             this.allAssetPingStateDown();
             return;
         }
@@ -102,11 +98,16 @@ public class AssetPingStatusJob extends QuartzJobBean {
         String assetPingIntervalStr = configMap.get(Constant.SYSCONFIG_KEY_ASSET_PING_INTERVAL);
         // 减去 半个 asset ping interval 周期，保证数据的完整性
         long time = (currentTimeMillis - Long.valueOf(assetPingIntervalStr) * 1000 / 2) / 1000;
-        String promPathPrefix = promService.getPromPathPrefix();
-        String queryPath = promPathPrefix + "/api/v1/query";
 
-        Map<String, String> assetHostAndStateMap = this.getMetricsDatabByPath(promserver, queryPath, "query=probe_success&time=" + time);
-        Map<String, String> assetHostAndRttMap = this.getMetricsDatabByPath(promserver, queryPath, "query=probe_icmp_duration_seconds{phase='rtt'}&time=" + time);
+        Map requestParam = new HashMap(4);
+        requestParam.put("query", "probe_success");
+        requestParam.put("time", time);
+
+        Map<String, String> assetHostAndStateMap = this.getPingMetricsData(requestParam);
+
+        requestParam.put("query", "probe_icmp_duration_seconds{phase='rtt'}");
+        requestParam.put("time", time);
+        Map<String, String> assetHostAndRttMap = this.getPingMetricsData(requestParam);
 
         // 如果当前未查询到数据，更新状态为 down
         if (ToolUtil.isEmpty(assetHostAndStateMap) || ToolUtil.isEmpty(assetHostAndRttMap)) {
@@ -202,13 +203,11 @@ public class AssetPingStatusJob extends QuartzJobBean {
     /**
      * 根据 url 请求带理接口并返回 asset host / state ，rtt 数据
      *
-     * @param promserver
-     * @param urlPath
-     * @param queryString
+     * @param requestParam
      * @return
      */
-    private Map<String, String> getMetricsDatabByPath(Promserver promserver, String urlPath,String queryString) {
-        JSONObject jsonObject = promserverService.requestAgent(promserver, urlPath, queryString);
+    private Map<String, String> getPingMetricsData(Map requestParam) {
+        JSONObject jsonObject = promApiService.query(HttpEntity.EMPTY, requestParam);
         Map dataMap = (Map) jsonObject.get("data");
         List<Map> resultList = JSONObject.parseArray(JSONObject.toJSONString(dataMap.get("result")), Map.class);
 

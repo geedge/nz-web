@@ -40,7 +40,7 @@ public interface VisualPanelService extends IService<VisualPanel> {
 
     void duplicate(Integer id);
 
-    void snapshot(HttpServletRequest request, HttpServletResponse response, String format, Integer panelId, Long start, Long end, String language);
+    void snapshot(HttpServletResponse response, String format, Integer panelId, Long start, Long end, String language, String vars);
 
-    String snapshot(String format, Integer panelId, Long start, Long end, String language);
+    String snapshot(String format, Integer panelId, Long start, Long end, String language, String vars);
 }

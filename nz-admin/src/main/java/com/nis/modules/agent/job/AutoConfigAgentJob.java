@@ -1,16 +1,25 @@
 package com.nis.modules.agent.job;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeSet;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
+import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nis.common.utils.*;
+import com.nis.modules.agent.entity.MonitorEventLog;
+import com.nis.modules.agent.service.MonitorEventLogService;
+import com.nis.modules.agent.util.AgentUtil;
+import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.asset.service.AssetAssetService;
+import com.nis.modules.endpoint.entity.MonitorEndpoint;
+import com.nis.modules.endpoint.service.MonitorEndpointService;
+import com.nis.modules.promserver.entity.Agent;
+import com.nis.modules.promserver.service.AgentService;
+import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.service.SysConfigService;
+import lombok.Data;
 import org.apache.commons.lang3.time.StopWatch;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
@@ -20,31 +29,10 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
-import com.nis.modules.agent.entity.MonitorEventLog;
-import com.nis.modules.agent.service.MonitorEventLogService;
-import com.nis.modules.agent.util.AgentUtil;
-import com.nis.modules.asset.entity.AssetAsset;
-import com.nis.modules.asset.service.AssetAssetService;
-import com.nis.modules.endpoint.entity.MonitorEndpoint;
-import com.nis.modules.endpoint.service.MonitorEndpointService;
-import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.promserver.service.PromserverService;
-import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.service.SysConfigService;
-
-import cn.hutool.core.map.MapUtil;
-import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
-import lombok.Data;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * AgentJob
@@ -65,7 +53,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
     private AgentConfigUtil configUtil;
 
     @Autowired
-    private PromserverService promService;
+    private AgentService agentService;
 
     @Autowired
     private AssetAssetService assetService;
@@ -95,25 +83,25 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         sw.start();
         try {
             // 获取健康的 agent
-        	List<Promserver> healthyPromServers = null;
-        	List<String> promServerCaches = redisTemplate.opsForHash().values(Constant.AGENT_STATE_CACHE_KEY);
-        	if(ToolUtil.isNotEmpty(promServerCaches)) {
-        		healthyPromServers = promServerCaches.stream().map(promServerCache -> JSON.parseObject(promServerCache, Promserver.class)).filter(p -> p.getStatus().equals(1)).collect(Collectors.toList());
+        	List<Agent> healthyAgents = null;
+        	List<String> agentCaches = redisTemplate.opsForHash().values(Constant.AGENT_STATE_CACHE_KEY);
+        	if(ToolUtil.isNotEmpty(agentCaches)) {
+                healthyAgents = agentCaches.stream().map(agentCache -> JSON.parseObject(agentCache, Agent.class)).filter(p -> p.getStatus().equals(1)).collect(Collectors.toList());
         	}else {
-        		healthyPromServers = promService.list(new LambdaQueryWrapper<Promserver>().eq(Promserver::getStatus, 1));
+                healthyAgents = agentService.list(new LambdaQueryWrapper<Agent>().eq(Agent::getStatus, 1));
         	}
-            log.debug("健康的 Promservers: " + JSONObject.toJSONString(healthyPromServers));
+            log.debug("健康的 Agents: " + JSONObject.toJSONString(healthyAgents));
 
             // 没有可用的 global 不下发配置
-            List<Promserver> globalPromServerList = healthyPromServers.stream().filter(promserver -> Constant.PromserverType.GLOBAL.getValue().equals(promserver.getType())).collect(Collectors.toList());
-            if (Tool.CollectionUtil.isEmpty(globalPromServerList)) return;
+            List<Agent> globalAgentList = healthyAgents.stream().filter(pojo -> Constant.AgentType.GLOBAL.getValue().equals(pojo.getType())).collect(Collectors.toList());
+            if (Tool.CollectionUtil.isEmpty(globalAgentList)) return;
 
             // sys_config 配置表信息
             List<SysConfigEntity> configEntityList = sysConfigService.list();
             sysConfigMap = configEntityList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
 
             // 配置下发
-            this.setUpAgentConfig(healthyPromServers);
+            this.setUpAgentConfig(healthyAgents);
         } catch (RuntimeException e) {
             log.error("agent 同步异常", e);
         } finally {
@@ -123,7 +111,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
     }
 
     // 配置下发
-    public void setUpAgentConfig(List<Promserver> healthyPromServers) {
+    public void setUpAgentConfig(List<Agent> healthyPromServers) {
         ThreadUtil.execAsync(() -> {
         	boolean promtailChangeFlag = configUtil.compareDataChanges("promtail");
         	MonitorEventLog monitorEventLog = eventLogService.getOne(new LambdaQueryWrapper<MonitorEventLog>().eq(MonitorEventLog::getEvent, "promtail"));
@@ -183,9 +171,9 @@ public class AutoConfigAgentJob extends QuartzJobBean {
      * @param healthyPromServers
      * @param version
      */
-    private void udpatePromtailsConf(List<Promserver> healthyPromServers, Integer version) {
-        List<Promserver> perDataCenterPromServers = healthyPromServers.stream().filter(promserver -> Constant.PromserverType.PER_DATACENTER.getValue().equals(promserver.getType())).collect(Collectors.toList());
-        List<Promserver> globalPromServers = healthyPromServers.stream().filter(promserver -> Constant.PromserverType.GLOBAL.getValue().equals(promserver.getType())).collect(Collectors.toList());
+    private void udpatePromtailsConf(List<Agent> healthyPromServers, Integer version) {
+        List<Agent> perDataCenterPromServers = healthyPromServers.stream().filter(pojo -> Constant.AgentType.PER_DATACENTER.getValue().equals(pojo.getType())).collect(Collectors.toList());
+        List<Agent> globalPromServers = healthyPromServers.stream().filter(pojo -> Constant.AgentType.GLOBAL.getValue().equals(pojo.getType())).collect(Collectors.toList());
 
         this.handlePerDatacenterLogs(globalPromServers, perDataCenterPromServers, version);
         this.handleGlobalLogs(globalPromServers, version);
@@ -197,10 +185,10 @@ public class AutoConfigAgentJob extends QuartzJobBean {
      * @param globalPromServers
      * @param version
      */
-    private void handleGlobalLogs(List<Promserver> globalPromServers, Integer version) {
+    private void handleGlobalLogs(List<Agent> globalPromServers, Integer version) {
         // 对象存储开启  global 都需要下发 lokiPushUrls config 指向自己
         // 对象存储关闭  global 都需要下发 lokiPushUrls config 指向自己 和 remote 其他 global
-        for (Promserver globalProm : globalPromServers) {
+        for (Agent globalProm : globalPromServers) {
             Map<String, Object> lokiPushUrlConfigMap = configUtil.getLokiPushConfig(globalProm, globalPromServers);
 
             String result = null;
@@ -211,7 +199,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             }
             
             if (result == null) {
-                configUtil.updatePromServerStatus(globalProm, 0);
+                configUtil.updateAgentStatus(globalProm, 0);
                 continue;
             } else {
                 configUtil.afterRequestApi("/config", result, globalProm);
@@ -231,19 +219,19 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             List<MonitorEndpoint> distinctByAssetId = enableEndpointInfoList.stream().collect(Collectors.collectingAndThen(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(MonitorEndpoint::getAssetId))), ArrayList::new));
             Map<Integer, Integer> endpointIdAndPromIdMap = configUtil.consistentHashingAssignEndpoint(globalPromServers, distinctByAssetId);
 
-            Map<Integer, Promserver> promserverIdAndEntityMap = globalPromServers.stream().collect(Collectors.toMap(Promserver::getId, Function.identity()));
+            Map<Integer, Agent> agentIdAndEntityMap = globalPromServers.stream().collect(Collectors.toMap(Agent::getId, Function.identity()));
             List talonConfigList = new ArrayList();
             Map<Integer, List<MonitorEndpoint>> endpointThroughAssetGroupMap = enableEndpointInfoList.stream().collect(Collectors.groupingBy(MonitorEndpoint::getAssetId));
             for (Map.Entry<Integer, List<MonitorEndpoint>> entry : endpointThroughAssetGroupMap.entrySet()) {
                 List<MonitorEndpoint> logsEndpointForAsset = entry.getValue();
                 Map talonConfig = new HashMap();
-                Promserver promserver = null;
+                Agent agent = null;
                 for (MonitorEndpoint endpoint : logsEndpointForAsset) {
-                    promserver = promserverIdAndEntityMap.get(endpointIdAndPromIdMap.get(endpoint.getId()));
-                    if (promserver != null) break;
+                    agent = agentIdAndEntityMap.get(endpointIdAndPromIdMap.get(endpoint.getId()));
+                    if (agent != null) break;
                 }
 
-                Map promtailYml = configUtil.generatePromtailYml(promserver, globalPromServers, logsEndpointForAsset);
+                Map promtailYml = configUtil.generatePromtailYml(agent, globalPromServers, logsEndpointForAsset);
 
                 AssetAsset asset = logsEndpointForAsset.get(0).getAsset();
                 talonConfig.put("assetId", asset.getId());
@@ -258,7 +246,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             }
 
             // 下发 promtail 配置
-            Promserver firstGlobalAgent = globalPromServers.stream().findFirst().get();
+            Agent firstGlobalAgent = globalPromServers.stream().findFirst().get();
             
             String result = null;
             String path = "/talon/proxy/promtail/config";
@@ -271,7 +259,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             log.debug("Promtail 下发结果 " + result);
 
             if (result == null) {
-                configUtil.updatePromServerStatus(firstGlobalAgent, 0);
+                configUtil.updateAgentStatus(firstGlobalAgent, 0);
             } else {
                 configUtil.afterRequestApi(path, result, firstGlobalAgent);
             }
@@ -284,13 +272,13 @@ public class AutoConfigAgentJob extends QuartzJobBean {
      * @param perDataCenterPromServers
      * @param version
      */
-    private void handlePerDatacenterLogs(List<Promserver> globalPromServers, List<Promserver> perDataCenterPromServers, Integer version) {
+    private void handlePerDatacenterLogs(List<Agent> globalPromServers, List<Agent> perDataCenterPromServers, Integer version) {
         String fedeEnabledStr = sysConfigMap.get(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED);
         log.debug(String.format("prometheus 联邦状态: %s", StrUtil.equals("0", fedeEnabledStr) ? "关闭" : "开启"));
         // 联邦关闭 禁用所有 per-datacenter 角色配置
         if (StrUtil.equals("0", fedeEnabledStr)) return;
         // 按照 dc 分组
-        Map<Integer, List<Promserver>> dcIdAndPromservers = perDataCenterPromServers.stream().collect(Collectors.groupingBy(Promserver::getDcId));
+        Map<Integer, List<Agent>> dcIdAndAgents = perDataCenterPromServers.stream().collect(Collectors.groupingBy(Agent::getDcId));
 
         // 用于生成配置的 endpoint 信息
         List<MonitorEndpoint> enableEndpointInfoList = endpointService.getEnableLogsEndpointInfoListForAgent(version);
@@ -298,16 +286,16 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         if(Tool.CollUtil.isEmpty(enableEndpointInfoList)) {
         	return;
         }
-        for (Map.Entry<Integer, List<Promserver>> entry : dcIdAndPromservers.entrySet()) {
+        for (Map.Entry<Integer, List<Agent>> entry : dcIdAndAgents.entrySet()) {
             Integer dcId = entry.getKey();
             // dc 下的 endpoint 信息
             List<MonitorEndpoint> endpointListByDc = enableEndpointInfoList.stream().filter(endpoint -> dcId.equals(endpoint.getDc().getId())).collect(Collectors.toList());
 
-            List<Promserver> promserverListByDc = entry.getValue();
-            Map<Integer, Promserver> promserverIdAndEntityMap = promserverListByDc.stream().collect(Collectors.toMap(Promserver::getId, Function.identity()));
+            List<Agent> agentListByDc = entry.getValue();
+            Map<Integer, Agent> agentIdAndEntityMap = agentListByDc.stream().collect(Collectors.toMap(Agent::getId, Function.identity()));
 
             List<MonitorEndpoint> distinctByAssetId = endpointListByDc.stream().collect(Collectors.collectingAndThen(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(MonitorEndpoint::getAssetId))), ArrayList::new));
-            Map<Integer, Integer> endpointIdAndPromIdMap = configUtil.consistentHashingAssignEndpoint(promserverListByDc, distinctByAssetId);
+            Map<Integer, Integer> endpointIdAndPromIdMap = configUtil.consistentHashingAssignEndpoint(agentListByDc, distinctByAssetId);
 
             Map<Integer, List<MonitorEndpoint>> endpointThroughAssetGroupMap = endpointListByDc.stream().collect(Collectors.groupingBy(MonitorEndpoint::getAssetId));
 
@@ -317,13 +305,13 @@ public class AutoConfigAgentJob extends QuartzJobBean {
 
                 Map talonConfig = new HashMap();
                 // endpoint 对应的 per-datacenter
-                Promserver promserver = null;
+                Agent agent = null;
                 for (MonitorEndpoint endpoint : logsEndpointForAsset) {
-                    promserver = promserverIdAndEntityMap.get(endpointIdAndPromIdMap.get(endpoint.getId()));
-                    if (promserver != null) break;
+                    agent = agentIdAndEntityMap.get(endpointIdAndPromIdMap.get(endpoint.getId()));
+                    if (agent != null) break;
                 }
                 // 以 asset endpoint 为维度去生成 promtail.yml
-                Map promtailYml = configUtil.generatePromtailYml(promserver, globalPromServers, logsEndpointForAsset);
+                Map promtailYml = configUtil.generatePromtailYml(agent, globalPromServers, logsEndpointForAsset);
 
                 AssetAsset asset = logsEndpointForAsset.get(0).getAsset();
                 talonConfig.put("assetId", asset.getId());
@@ -337,7 +325,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             }
 
             // 1. 更新 per-datacenter 角色 lokiPushUrls config
-            for (Promserver perDataCenterPromServer : perDataCenterPromServers) {
+            for (Agent perDataCenterPromServer : perDataCenterPromServers) {
             	//获取 lokipushurl config
             	Map<String, Object> lokiPushUrlConfigMap = configUtil.getLokiPushConfig(perDataCenterPromServer,globalPromServers);
 
@@ -350,7 +338,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
                 }
                 
                 if (result == null) {
-                    configUtil.updatePromServerStatus(perDataCenterPromServer, 0);
+                    configUtil.updateAgentStatus(perDataCenterPromServer, 0);
                     continue;
                 } else {
                     configUtil.afterRequestApi(path, result, perDataCenterPromServer);
@@ -359,7 +347,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             // 2. global lokipushurl 更新  TODO handleGlobal logs handle
 
             // 3. 选任意一台 global agent 进行下发 promtail 配置
-            Promserver firstGlobalAgent = globalPromServers.stream().findFirst().get();
+            Agent firstGlobalAgent = globalPromServers.stream().findFirst().get();
             String result = null;
             String path = "/talon/proxy/promtail/config";
             try {
@@ -371,7 +359,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             log.debug("Promtail 下发结果 " + result);
 
             if (result == null) {
-                configUtil.updatePromServerStatus(firstGlobalAgent, 0);
+                configUtil.updateAgentStatus(firstGlobalAgent, 0);
             } else {
                 configUtil.afterRequestApi(path, result, firstGlobalAgent);
             }
@@ -383,9 +371,9 @@ public class AutoConfigAgentJob extends QuartzJobBean {
      *
      * @param healthyPromServers
      */
-    private void updatePrometheusConf(List<Promserver> healthyPromServers) {
-        List<Promserver> perDataCenterPromServers = healthyPromServers.stream().filter(promserver -> Constant.PromserverType.PER_DATACENTER.getValue().equals(promserver.getType())).collect(Collectors.toList());
-        List<Promserver> globalPromServers = healthyPromServers.stream().filter(promserver -> Constant.PromserverType.GLOBAL.getValue().equals(promserver.getType())).collect(Collectors.toList());
+    private void updatePrometheusConf(List<Agent> healthyPromServers) {
+        List<Agent> perDataCenterPromServers = healthyPromServers.stream().filter(pojo -> Constant.AgentType.PER_DATACENTER.getValue().equals(pojo.getType())).collect(Collectors.toList());
+        List<Agent> globalPromServers = healthyPromServers.stream().filter(pojo -> Constant.AgentType.GLOBAL.getValue().equals(pojo.getType())).collect(Collectors.toList());
 
         this.handlePerDatacenterMtericsConf(perDataCenterPromServers, globalPromServers);
         this.handleGlobalMtericsConf(globalPromServers, perDataCenterPromServers);
@@ -397,7 +385,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
      * @param globalPromServers
      * @param perDataCenterPromServers
      */
-    private void handleGlobalMtericsConf(List<Promserver> globalPromServers, List<Promserver> perDataCenterPromServers) {
+    private void handleGlobalMtericsConf(List<Agent> globalPromServers, List<Agent> perDataCenterPromServers) {
         boolean fedeEnabled = StrUtil.equals("1", sysConfigMap.get(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED));
 
         List<MonitorEndpoint> endpointList = new ArrayList<>();
@@ -414,7 +402,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             endpointList = endpointService.getEnableMetricsEndpointInfoListForAgent();
             // 分配 endpoint
             endpointIdAndPromIdMap = configUtil.consistentHashingAssignEndpoint(globalPromServers, endpointList);
-            // 保存 redis 中 endpointid 和　promserver id对应关系
+            // 保存 redis 中 endpointid 和　agent id对应关系
             configUtil.updateEndpointPromInRedis(endpointIdAndPromIdMap);
         }
 
@@ -424,14 +412,14 @@ public class AutoConfigAgentJob extends QuartzJobBean {
 
         // global config 配置文件处理 联邦 告警 rule.yml cortex
         for (int i = 0; i < globalPromServers.size(); i++) {
-            Promserver promserver = globalPromServers.get(i);
+            Agent agent = globalPromServers.get(i);
 
             Map<String, Object> globalConfigBody = new LinkedHashMap(4);
 
-            List<Integer> assetIdListForThisAgent = assetIdAndPromIdMap.entrySet().stream().filter(entry -> promserver.getId().equals(entry.getValue())).map(Map.Entry::getKey).collect(Collectors.toList());
+            List<Integer> assetIdListForThisAgent = assetIdAndPromIdMap.entrySet().stream().filter(entry -> agent.getId().equals(entry.getValue())).map(Map.Entry::getKey).collect(Collectors.toList());
             List<AssetAsset> assetListForThisAgent = blackboxAssetInfoList.stream().filter(asset -> assetIdListForThisAgent.contains(asset.getId())).collect(Collectors.toList());
 
-            List<Integer> endpointIdListForThisAgent = endpointIdAndPromIdMap.entrySet().stream().filter(entry -> promserver.getId().equals(entry.getValue())).map(Map.Entry::getKey).collect(Collectors.toList());
+            List<Integer> endpointIdListForThisAgent = endpointIdAndPromIdMap.entrySet().stream().filter(entry -> agent.getId().equals(entry.getValue())).map(Map.Entry::getKey).collect(Collectors.toList());
             List<MonitorEndpoint> endpointListForThisAgent = endpointList.stream().filter(endpoint -> endpointIdListForThisAgent.contains(endpoint.getId())).collect(Collectors.toList());
 
             Boolean isAlert = false;
@@ -441,7 +429,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
                 log.debug("支持告警的 agent :" + JSONObject.toJSONString(promserver));
             }*/
 
-            Map gloablAgentYmlMap = configUtil.generateGlobalYml(promserver, globalPromServers, perDataCenterPromServers, assetListForThisAgent, endpointListForThisAgent, isAlert, i == 0);
+            Map gloablAgentYmlMap = configUtil.generateGlobalYml(agent, globalPromServers, perDataCenterPromServers, assetListForThisAgent, endpointListForThisAgent, isAlert, i == 0);
 
             globalConfigBody.put("config", gloablAgentYmlMap);
             if (isAlert) {
@@ -450,9 +438,9 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             }
 
             Map<String, String> sysCmdLineMap = configUtil.generatePrometheusCmdLine();
-            boolean cmdFlag = this.compareCmdLineChanges(promserver, sysCmdLineMap);
+            boolean cmdFlag = this.compareCmdLineChanges(agent, sysCmdLineMap);
             if (cmdFlag) {
-                log.debug("cmdline 配置下发" + JSONObject.toJSONString(promserver));
+                log.debug("cmdline 配置下发" + JSONObject.toJSONString(agent));
                 globalConfigBody.put("cmdline", sysCmdLineMap);
             }
 
@@ -460,17 +448,17 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             String result = null;
             String path = "/prometheus/config";
             try {
-            	result = AgentUtil.request(promserver, HttpMethod.POST,path, null, globalConfigBody, String.class);
+            	result = AgentUtil.request(agent, HttpMethod.POST,path, null, globalConfigBody, String.class);
             } catch (RuntimeException e) {
-            	log.error(e,"request error,path:{},agent:{}",path,Tool.JSONUtil.toJsonStr(promserver));
+            	log.error(e,"request error,path:{},agent:{}",path,Tool.JSONUtil.toJsonStr(agent));
             }
             
             // 下发失败,更新 prom 状态，造成conf_event 变更，下个周期继续下发配置
             if (result == null) {
-                configUtil.updatePromServerStatus(promserver, 0);
+                configUtil.updateAgentStatus(agent, 0);
                 continue;
             } else {
-                configUtil.afterRequestApi(path, result, promserver);
+                configUtil.afterRequestApi(path, result, agent);
             }
         }
     }
@@ -481,14 +469,14 @@ public class AutoConfigAgentJob extends QuartzJobBean {
      * @param perDataCenterPromServers
      * @param globalPromServers
      */
-    private void handlePerDatacenterMtericsConf(List<Promserver> perDataCenterPromServers, List<Promserver> globalPromServers) {
+    private void handlePerDatacenterMtericsConf(List<Agent> perDataCenterPromServers, List<Agent> globalPromServers) {
         String fedeEnabledStr = sysConfigMap.get(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED);
         log.debug(String.format("prometheus 联邦状态: %s", StrUtil.equals("0", fedeEnabledStr) ? "关闭" : "开启"));
         // 联邦关闭 禁用所有 per-datacenter 角色配置
         if (StrUtil.equals("0", fedeEnabledStr)) return;
 
         // 按照 dc 分组
-        Map<Integer, List<Promserver>> dcIdAndPromservers = perDataCenterPromServers.stream().collect(Collectors.groupingBy(Promserver::getDcId));
+        Map<Integer, List<Agent>> dcIdAndAgents = perDataCenterPromServers.stream().collect(Collectors.groupingBy(Agent::getDcId));
 
         // 用于生成配置的 endpoint 信息
         List<MonitorEndpoint> enableEndpointInfoList = endpointService.getEnableMetricsEndpointInfoListForAgent();
@@ -496,15 +484,15 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         // blackbox 所需 asset 信息
         List<AssetAsset> blackboxAssetInfoList = assetService.getBlackboxAssetInfoList();
 
-        // 维护 redis 中 endpoint id and promserver id map
+        // 维护 redis 中 endpoint id and agent id map
         Map<Integer, Integer> updateRedisEndpointPromMap = new LinkedHashMap<>(16);
-        for (Map.Entry<Integer, List<Promserver>> entry : dcIdAndPromservers.entrySet()) {
+        for (Map.Entry<Integer, List<Agent>> entry : dcIdAndAgents.entrySet()) {
             Integer dcId = entry.getKey();
-            List<Promserver> promserverListByDc = entry.getValue();
+            List<Agent> agentListByDc = entry.getValue();
             List<MonitorEndpoint> endpointListByDc = enableEndpointInfoList.stream().filter(endpoint -> dcId.equals(endpoint.getDc().getId())).collect(Collectors.toList());
 
             // endpoint id 和 promerver id 对应 map
-            Map<Integer, Integer> endpointIdAndPromIdMap = configUtil.consistentHashingAssignEndpoint(promserverListByDc, endpointListByDc);
+            Map<Integer, Integer> endpointIdAndPromIdMap = configUtil.consistentHashingAssignEndpoint(agentListByDc, endpointListByDc);
 
 
             // per-datacenter 支持 asset ping job
@@ -512,47 +500,47 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             Map<Integer, Integer> assetIdAndPromIdMap = new HashMap<>();
             String assetPingFrom = sysConfigMap.get(Constant.SYSCONFIG_KEY_ASSET_PING_FROM);
             if (StrUtil.equals("2", assetPingFrom)) {
-                assetIdAndPromIdMap = configUtil.consistentHashingAssignAsset(promserverListByDc, assetListByDc);
+                assetIdAndPromIdMap = configUtil.consistentHashingAssignAsset(agentListByDc, assetListByDc);
             }
 
             // 生成 per-datacenter 配置信息,并下发配置
-            this.updatePerDatacenterYml(promserverListByDc, endpointListByDc, endpointIdAndPromIdMap, assetListByDc, assetIdAndPromIdMap, globalPromServers);
+            this.updatePerDatacenterYml(agentListByDc, endpointListByDc, endpointIdAndPromIdMap, assetListByDc, assetIdAndPromIdMap, globalPromServers);
 
             updateRedisEndpointPromMap.putAll(endpointIdAndPromIdMap);
         }
-        // 保存 redis 中 endpointid 和　promserver id对应关系
+        // 保存 redis 中 endpointid 和　agent id对应关系
         configUtil.updateEndpointPromInRedis(updateRedisEndpointPromMap);
     }
 
     /**
      * per-datacenter 配置下发
      *
-     * @param promservers
+     * @param agents
      * @param endpoints
      * @param endpointIdAndPromIdMap
      * @param assets
      * @param assetIdAndPromIdMap
      * @param globalPromServers
      */
-    private void updatePerDatacenterYml(List<Promserver> promservers, List<MonitorEndpoint> endpoints, Map<Integer, Integer> endpointIdAndPromIdMap, List<AssetAsset> assets, Map<Integer, Integer> assetIdAndPromIdMap, List<Promserver> globalPromServers) {
-        for (Promserver promserver : promservers) {
-            List<Integer> endpointIdListForThisAgent = endpointIdAndPromIdMap.entrySet().stream().filter(entry -> promserver.getId().equals(entry.getValue())).map(Map.Entry::getKey).collect(Collectors.toList());
+    private void updatePerDatacenterYml(List<Agent> agents, List<MonitorEndpoint> endpoints, Map<Integer, Integer> endpointIdAndPromIdMap, List<AssetAsset> assets, Map<Integer, Integer> assetIdAndPromIdMap, List<Agent> globalPromServers) {
+        for (Agent agent : agents) {
+            List<Integer> endpointIdListForThisAgent = endpointIdAndPromIdMap.entrySet().stream().filter(entry -> agent.getId().equals(entry.getValue())).map(Map.Entry::getKey).collect(Collectors.toList());
             List<MonitorEndpoint> endpointListForThisAgent = endpoints.stream().filter(endpoint -> endpointIdListForThisAgent.contains(endpoint.getId())).collect(Collectors.toList());
 
-            List<Integer> assetIdListForThisAgent = assetIdAndPromIdMap.entrySet().stream().filter(entry -> promserver.getId().equals(entry.getValue())).map(Map.Entry::getKey).collect(Collectors.toList());
+            List<Integer> assetIdListForThisAgent = assetIdAndPromIdMap.entrySet().stream().filter(entry -> agent.getId().equals(entry.getValue())).map(Map.Entry::getKey).collect(Collectors.toList());
             List<AssetAsset> assetListForThisAgent = assets.stream().filter(asset -> assetIdListForThisAgent.contains(asset.getId())).collect(Collectors.toList());
 
             Map<String, Object> perDatacenterConfigBody = new HashMap<>(4);
 
             // 生成配置模板
-            Map perdatacenterYmlMap = configUtil.generatePerdatacenterYml(promserver, endpointListForThisAgent, assetListForThisAgent, globalPromServers);
+            Map perdatacenterYmlMap = configUtil.generatePerdatacenterYml(agent, endpointListForThisAgent, assetListForThisAgent, globalPromServers);
             perDatacenterConfigBody.put("config", perdatacenterYmlMap);
 
             Map<String, String> sysCmdLineMap = configUtil.generatePrometheusCmdLine();
             // 启动项涉及
-            boolean cmdFlag = this.compareCmdLineChanges(promserver, sysCmdLineMap);
+            boolean cmdFlag = this.compareCmdLineChanges(agent, sysCmdLineMap);
             if (cmdFlag) {
-                log.debug("cmdline 配置下发" + JSONObject.toJSONString(promserver));
+                log.debug("cmdline 配置下发" + JSONObject.toJSONString(agent));
                 perDatacenterConfigBody.put("cmdline", sysCmdLineMap);
             }
 
@@ -560,16 +548,16 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             String result = null;
             String path = "/prometheus/config";
             try {
-            	result = AgentUtil.request(promserver, HttpMethod.POST,path, null, perDatacenterConfigBody, String.class);
+            	result = AgentUtil.request(agent, HttpMethod.POST,path, null, perDatacenterConfigBody, String.class);
             } catch (RuntimeException e) {
-            	log.error(e,"request error,path:{},agent:{}",path,Tool.JSONUtil.toJsonStr(promserver));
+            	log.error(e,"request error,path:{},agent:{}",path,Tool.JSONUtil.toJsonStr(agent));
             }
             
             if (result == null) {
-                configUtil.updatePromServerStatus(promserver, 0);
+                configUtil.updateAgentStatus(agent, 0);
                 continue;
             } else {
-                configUtil.afterRequestApi(path, result, promserver);
+                configUtil.afterRequestApi(path, result, agent);
             }
         }
     }
@@ -579,28 +567,28 @@ public class AutoConfigAgentJob extends QuartzJobBean {
      *
      * @param healthyPromServers
      */
-    private void updateLokiConf(List<Promserver> healthyPromServers) {
+    private void updateLokiConf(List<Agent> healthyPromServers) {
     	// 无论联邦与否 最终数据都会存在  Global  所以 per-datacenter 不必下发 loki 配置
-        List<Promserver> globalPromServerList = healthyPromServers.stream().filter(promserver -> Constant.PromserverType.GLOBAL.getValue().equals(promserver.getType())).collect(Collectors.toList());
-        for (Promserver promserver : globalPromServerList) {
+        List<Agent> globalPromServerList = healthyPromServers.stream().filter(pojo -> Constant.AgentType.GLOBAL.getValue().equals(pojo.getType())).collect(Collectors.toList());
+        for (Agent agent : globalPromServerList) {
         	// 生成 loki 配置模板
-            Map lokiYml = configUtil.generateLokiYml(promserver,globalPromServerList);
+            Map lokiYml = configUtil.generateLokiYml(agent,globalPromServerList);
             Map<String, Object> lokiConfigBody = new HashMap<>(2);
             lokiConfigBody.put("config", lokiYml);
             
             String result = null;
             String path = "/loki/config";
             try {
-            	result = AgentUtil.request(promserver, HttpMethod.POST,path, null, lokiConfigBody, String.class);
+            	result = AgentUtil.request(agent, HttpMethod.POST,path, null, lokiConfigBody, String.class);
             } catch (RuntimeException e) {
-            	log.error(e,"request error,path:{},agent:{}",path,Tool.JSONUtil.toJsonStr(promserver));
+            	log.error(e,"request error,path:{},agent:{}",path,Tool.JSONUtil.toJsonStr(agent));
             }
             
             // 下发失败,更新 prom 状态，造成 conf_event 变更，下个周期继续下发配置
             if (result == null) {
-                configUtil.updatePromServerStatus(promserver, 0);
+                configUtil.updateAgentStatus(agent, 0);
             } else {
-                configUtil.afterRequestApi(path, result, promserver);
+                configUtil.afterRequestApi(path, result, agent);
             }
         }
 
@@ -614,23 +602,23 @@ public class AutoConfigAgentJob extends QuartzJobBean {
      *
      * @param healthyPromServers
      */
-    private void updateSnmpExporterConf(List<Promserver> healthyPromServers) {
+    private void updateSnmpExporterConf(List<Agent> healthyPromServers) {
         Map snmpYml = configUtil.generateSnmpYml();
-        for (Promserver promserver : healthyPromServers) {
+        for (Agent agent : healthyPromServers) {
             
             String result = null;
             String path = "/snmpExporter/config";
             try {
-                result = AgentUtil.request(promserver, HttpMethod.POST, path, null, JSONObject.toJSONString(snmpYml), String.class);
+                result = AgentUtil.request(agent, HttpMethod.POST, path, null, JSONObject.toJSONString(snmpYml), String.class);
             } catch (RuntimeException e) {
-            	log.error(e,"request error,path:{},agent:{}",path,Tool.JSONUtil.toJsonStr(promserver));
+            	log.error(e,"request error,path:{},agent:{}",path,Tool.JSONUtil.toJsonStr(agent));
             }
             
             log.debug("snmpExporter 请求返回结果 {}", result);
             if (result == null) {
-                configUtil.updatePromServerStatus(promserver, 0);
+                configUtil.updateAgentStatus(agent, 0);
             } else {
-                configUtil.afterRequestApi(path, result, promserver);
+                configUtil.afterRequestApi(path, result, agent);
             }
         }
     }
@@ -641,11 +629,11 @@ public class AutoConfigAgentJob extends QuartzJobBean {
      * @param alertYmlMap
      * @param healthyPromServers
      */
-    private void justUpdateRuleConf(Map alertYmlMap, List<Promserver> healthyPromServers) {
+    private void justUpdateRuleConf(Map alertYmlMap, List<Agent> healthyPromServers) {
         // 先判断 redis 中是否存在 alert 告警标识
-        Boolean aBoolean = redisTemplate.hasKey(Constant.REDIS_KEY_SUPPORT_ALERT_PROMSERVER_ID);
+        Boolean aBoolean = redisTemplate.hasKey(Constant.REDIS_KEY_SUPPORT_ALERT_AGENT_ID);
         Integer supportAlertPromId = configUtil.getSupportAlertPromId(healthyPromServers);
-        Promserver promserver = promService.getById(supportAlertPromId);
+        Agent agent = agentService.getById(supportAlertPromId);
 
 
        // 无论对象存储与否  全部由于 cortex 支持 rule
@@ -653,24 +641,24 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         updateRuleConfigBody.put("rule", alertYmlMap);
         // 告警标识不存在 则需要同时下发 cortex 配置
         if (!aBoolean) {
-            List<Promserver> globalPromServerList = healthyPromServers.stream().filter(agentEntity -> Constant.PromserverType.GLOBAL.getValue().equals(agentEntity.getType())).collect(Collectors.toList());
-            Map cortexYml = configUtil.generateCortexYml(promserver, globalPromServerList, true);
+            List<Agent> globalPromServerList = healthyPromServers.stream().filter(agentEntity -> Constant.AgentType.GLOBAL.getValue().equals(agentEntity.getType())).collect(Collectors.toList());
+            Map cortexYml = configUtil.generateCortexYml(agent, globalPromServerList, true);
             updateRuleConfigBody.put("config", cortexYml);
         }
         
         String result = null;
         String path = "/cortex/config";
         try {
-        	result = AgentUtil.request(promserver, HttpMethod.POST,path, null, updateRuleConfigBody, String.class);
+        	result = AgentUtil.request(agent, HttpMethod.POST,path, null, updateRuleConfigBody, String.class);
         } catch (RuntimeException e) {
-        	log.error(e,"request error,path:{},agent:{}",path,Tool.JSONUtil.toJsonStr(promserver));
+        	log.error(e,"request error,path:{},agent:{}",path,Tool.JSONUtil.toJsonStr(agent));
         }
         
         log.debug("rule 更新请求返回结果 {}", result);
         if (result == null) {
-            configUtil.updatePromServerStatus(promserver, 0);
+            configUtil.updateAgentStatus(agent, 0);
         } else {
-            configUtil.afterRequestApi(path, result, promserver);
+            configUtil.afterRequestApi(path, result, agent);
         }
     }
 
@@ -678,38 +666,38 @@ public class AutoConfigAgentJob extends QuartzJobBean {
      * cortex 配置下发
      *
      * @param alertYmlMap
-     * @param healthyPromServers
+     * @param healthyAgents
      */
-    private void updateCortexConf(Map alertYmlMap, List<Promserver> healthyPromServers) {
+    private void updateCortexConf(Map alertYmlMap, List<Agent> healthyAgents) {
         // 1. 判断是否开启  object storage
         //String objStroageEnable = sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_TYPE);
         //if (StrUtil.equals("2", objStroageEnable)) {
         // 获取当前支持 alert 的 agent id
-        Integer supportAlertPromId = configUtil.getSupportAlertPromId(healthyPromServers);
+        Integer supportAlertPromId = configUtil.getSupportAlertPromId(healthyAgents);
         // 调用 agent/cortex 接口 更新 cortex config and rule.yml
-        List<Promserver> globalPromServerList = healthyPromServers.stream().filter(promserver -> Constant.PromserverType.GLOBAL.getValue().equals(promserver.getType())).collect(Collectors.toList());
-        for (Promserver promserver : globalPromServerList) {
-            Boolean isAlert = promserver.getId().equals(supportAlertPromId) ? true : false;
+        List<Agent> globalAgentList = healthyAgents.stream().filter(pojo -> Constant.AgentType.GLOBAL.getValue().equals(pojo.getType())).collect(Collectors.toList());
+        for (Agent agent : globalAgentList) {
+            Boolean isAlert = agent.getId().equals(supportAlertPromId) ? true : false;
             // 生成 cortex 配置模板
-            Map cortexYml = configUtil.generateCortexYml(promserver, globalPromServerList, isAlert);
+            Map cortexYml = configUtil.generateCortexYml(agent, globalAgentList, isAlert);
 
             Map<String, Object> cortexConfigBody = new HashMap<>(4);
             cortexConfigBody.put("config", cortexYml);
-            if ((supportAlertPromId == null || promserver.getId().equals(supportAlertPromId)) && MapUtil.isNotEmpty(alertYmlMap)) {
+            if ((supportAlertPromId == null || agent.getId().equals(supportAlertPromId)) && MapUtil.isNotEmpty(alertYmlMap)) {
                 cortexConfigBody.put("rule", alertYmlMap);
             }
             String result = null;
             String path = "/cortex/config";
             try {
-            	result = AgentUtil.request(promserver, HttpMethod.POST,path, null, cortexConfigBody, String.class);
+            	result = AgentUtil.request(agent, HttpMethod.POST,path, null, cortexConfigBody, String.class);
             } catch (RuntimeException e) {
-            	log.error(e,"request error,path:{},agent:{}",path,Tool.JSONUtil.toJsonStr(promserver));
+            	log.error(e,"request error,path:{},agent:{}",path,Tool.JSONUtil.toJsonStr(agent));
             }
             // 下发失败,更新 prom 状态，造成 conf_event 变更，下个周期继续下发配置
             if (result == null) {
-                configUtil.updatePromServerStatus(promserver, 0);
+                configUtil.updateAgentStatus(agent, 0);
             } else {
-                configUtil.afterRequestApi(path, result, promserver);
+                configUtil.afterRequestApi(path, result, agent);
             }
         }
 
@@ -725,24 +713,24 @@ public class AutoConfigAgentJob extends QuartzJobBean {
     /**
      * 对比 cmd 启动项
      *
-     * @param promserver
+     * @param agent
      * @param sysCmdLineMap
      * @return
      */
-    private boolean compareCmdLineChanges(Promserver promserver, Map<String, String> sysCmdLineMap) {
+    private boolean compareCmdLineChanges(Agent agent, Map<String, String> sysCmdLineMap) {
         String result = null;
         String path ="/prometheus/config";
         try {
-        	result = AgentUtil.requestGet(promserver,path, null, String.class);
+        	result = AgentUtil.requestGet(agent,path, null, String.class);
         } catch (RuntimeException e) {
-        	log.error(e,"request error,agent:{}",Tool.JSONUtil.toJsonStr(promserver));
+        	log.error(e,"request error,agent:{}",Tool.JSONUtil.toJsonStr(agent));
         }
-        // 请求接口失败 返回 false 表示本次启动项对比成功，修改 promserver 状态，造成下次继续执行对比
+        // 请求接口失败 返回 false 表示本次启动项对比成功，修改 agent 状态，造成下次继续执行对比
         if (result == null) {
-            configUtil.updatePromServerStatus(promserver, 0);
+            configUtil.updateAgentStatus(agent, 0);
             return false;
         } else {
-            configUtil.afterRequestApi(path, result, promserver);
+            configUtil.afterRequestApi(path, result, agent);
 
             R resultObj = JSONObject.parseObject(result, R.class);
             if (RCode.SUCCESS.getCode().equals((Integer) resultObj.get("code"))) {

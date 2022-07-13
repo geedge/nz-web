@@ -1,5 +1,6 @@
 package com.nis.modules.panel.service.impl;
 
+import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
@@ -9,7 +10,6 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
@@ -23,37 +23,37 @@ import com.nis.modules.panel.entity.VisualPanel;
 import com.nis.modules.panel.service.VisualChartElementService;
 import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
-import com.nis.modules.promserver.service.LokiserverService;
-import com.nis.modules.promserver.service.PromserverService;
+import com.nis.modules.promserver.service.LokiApiService;
+import com.nis.modules.promserver.service.PromApiService;
 import com.nis.modules.report.job.ReportJobManager;
 import com.nis.modules.stat.service.impl.StatServiceImpl;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
-import com.nis.modules.sys.entity.Timezone;
-import com.nis.modules.sys.service.*;
+import com.nis.modules.sys.service.BasicImportAndExportServices;
+import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysDictService;
+import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.quartz.SchedulerException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpEntity;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
-import org.yaml.snakeyaml.util.UriEncoder;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -95,13 +95,10 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
     private StatServiceImpl statServiceImpl;
 
     @Autowired
-    private PromserverService promserverService;
+    private PromApiService promApiService;
 
     @Autowired
-    private RestTemplate restTemplate;
-
-    @Autowired
-    private LokiserverService lokiserverService;
+    private LokiApiService lokiApiService;
 
     @Autowired
     private SysConfigDao sysConfigDao;
@@ -114,12 +111,6 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
     @Autowired
     private MonitorEndpointService monitorEndpointService;
-
-    @Autowired
-    private SysConfigService configService;
-
-    @Autowired
-    private TimezoneService timezoneService;
 
     @Autowired
     private RedisTemplate redisTemplate;
@@ -704,14 +695,14 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
     }
 
     @Override
-    public void snapshot(HttpServletRequest request, HttpServletResponse response, String format, Integer panelId, Long start, Long end, String language) {
+    public void snapshot(HttpServletResponse response, String format, Integer panelId, Long start, Long end, String language, String vars) {
         VisualPanel panel = this.getById(panelId);
         if (panel == null) {
             throw new NZException(RCode.CHART_PANEL_ISNULL);
         }
 
         // 生成模板
-        String snapshotStr = genSnapshotByTemplate(request, panel, start, end, language);
+        String snapshotStr = this.genSnapshotByTemplate(panel, start, end, language, vars);
 
         format = StrUtil.emptyToDefault(format, "html");
         try {
@@ -726,32 +717,18 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
     }
 
     @Override
-    public String snapshot(String format, Integer panelId, Long start, Long end, String language) {
+    public String snapshot(String format, Integer panelId, Long start, Long end, String language, String vars) {
         VisualPanel panel = this.getById(panelId);
         if (panel == null) {
             throw new NZException(RCode.CHART_PANEL_ISNULL);
         }
 
-        // mock
-        MockHttpServletRequest request = new MockHttpServletRequest();
-        request.setMethod(RequestMethod.GET.name());
-
         // 生成模板
-        String snapshotStr = genSnapshotByTemplate(request, panel, start, end, language);
+        String snapshotStr = this.genSnapshotByTemplate(panel, start, end, language, vars);
         return snapshotStr;
     }
 
-    /**
-     * 生成快照 string
-     *
-     * @param request
-     * @param panel
-     * @param start
-     * @param end
-     * @param language
-     * @return
-     */
-    private String genSnapshotByTemplate(HttpServletRequest request, VisualPanel panel, Long start, Long end, String language) {
+    private String genSnapshotByTemplate(VisualPanel panel, Long start, Long end, String language, String vars) {
         // 计算步长
         String step = getTimeStep(start, end);
         // 封装返回结果
@@ -772,14 +749,15 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             throw new NZException(RCode.CHART_SPAN_ISNULL);
         } else {
             // 封装公共请求参数
-            String queryString = "start=" + start + "&end=" + end + "&step=" + step;
-            Map<String, String> paramData = new HashMap();
-            paramData.put("start", StrUtil.toString(start));
-            paramData.put("end", StrUtil.toString(end));
-            paramData.put("step", step);
-            paramData.put("queryString", queryString);
+            Map<String, String> basicQueryParam = new HashMap();
+            basicQueryParam.put("start", StrUtil.toString(start));
+            basicQueryParam.put("end", StrUtil.toString(end));
+            basicQueryParam.put("step", step);
+
+            List<Map> varList = StrUtil.isNotEmpty(vars) ? JSONObject.parseArray(vars, Map.class) : Tool.ListUtil.empty();
+
             // 将chartsData获取任务装入futureList
-            List<CompletableFuture<Map>> futureList = recursionChartsData(request, chartsList, paramData);
+            List<CompletableFuture<Map>> futureList = this.recursionChartsData(chartsList, basicQueryParam, varList);
             try {
                 Map chartsDataMap = new HashMap();
                 CompletableFuture.allOf((CompletableFuture<?>[]) futureList.toArray(new CompletableFuture[0]))
@@ -812,23 +790,33 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         } catch (IOException e) {
             log.error(e);
         } finally {
-            try {
-                if (reader != null)
-                    reader.close();
-            } catch (IOException e) {
-                log.error(e);
-            }
+            if (reader != null) IoUtil.close(reader);
         }
         return sbf.toString();
     }
 
-    private List<CompletableFuture<Map>> recursionChartsData(HttpServletRequest request,List<VisualChart> chartsList, Map paramData){
+    /**
+     * 根据 vars 渲染 element 表达式
+     *
+     * @param expr
+     * @param varList
+     */
+    private String replaceExprByVars(String expr, List<Map> varList) {
+        if (Tool.CollectionUtil.isEmpty(varList)) return expr;
+        // 将 expr $xxx 变量渲染
+        for (Map<String, String> map : varList) {
+            String name = map.get("name");
+            String value = map.get("value");
+            expr = expr.replaceAll("\\$" + name, value);
+        }
+        return expr;
+    }
+
+    private List<CompletableFuture<Map>> recursionChartsData(List<VisualChart> chartsList, Map basicQueryParam, List<Map> varList) {
         List<CompletableFuture<Map>> futureList = new ArrayList<>();
-        Integer eleIndex;String datasource;
-        for (VisualChart chart:chartsList) {
-            eleIndex = 0;
-            datasource = chart.getDatasource();
-            Map<String, String> chartParam = (HashMap) chart.getParam();
+        for (VisualChart chart : chartsList) {
+            String datasource = chart.getDatasource();
+            Map<String, Object> chartParam = (HashMap) chart.getParam();
             if(StrUtil.equals("system", datasource)) {
                 CompletableFuture<Map> mapCompletableFuture = null;
                 if(StrUtil.equals("assetInfo",chart.getType())){
@@ -857,56 +845,54 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                         dataSource.put("select", selectAry);
                         HashMap analyseMap = new HashMap();
                         analyseMap.put("q", dataSource.toJSONString());
-                        Map paramData2 = new HashMap<>();
-                        paramData2.put("status", "success");
-                        paramData2.put("eleIndex", "0");
-                        paramData2.put("chartId", chart.getId());
-                        paramData2.putAll(statServiceImpl.queryAnalyse(analyseMap));
-                        return paramData2;
+                        Map resultMap = new HashMap<>();
+                        resultMap.put("status", "success");
+                        resultMap.put("eleIndex", "0");
+                        resultMap.put("chartId", chart.getId());
+                        resultMap.putAll(statServiceImpl.queryAnalyse(analyseMap));
+                        return resultMap;
                     });
                 }
                 futureList.add(mapCompletableFuture);
-            }else if(StrUtil.equals("misc", datasource)){
-
-            }else{
+            } else if (StrUtil.equals("misc", datasource)) {
+                // do nothing
+            } else {
+                Integer eleIndex = 0;
                 for (VisualChartElement element : chart.getElements()) {
                     Map<String, String> paramData2 = new HashMap<>();
-                    paramData2.putAll(paramData);
-                    paramData2.put("eleIndex",StrUtil.toString(eleIndex++));
+                    paramData2.putAll(basicQueryParam);
+                    paramData2.put("eleIndex", StrUtil.toString(eleIndex++));
+                    // 将表达式进行变量渲染
+                    String expr = this.replaceExprByVars(element.getExpression(), varList);
+                    paramData2.put("query", expr);
                     switch (datasource) {
                         case "metrics":
-                            paramData2.put("nullType",chartParam.get("nullType"));
+                            paramData2.put("nullType",chartParam.get("nullType").toString());
                             futureList.add(CompletableFuture.supplyAsync(() ->{
-                                // 请求数据
-                                ResponseEntity<byte[]> exchange = promserverService.promServerData(request,null,null,null,"/api/v1/query_range",paramData2.get("step"),null,paramData2.get("queryString") + "&nullType=" + chartParam.get("nullType") + "&query=" + UriEncoder.encode(element.getExpression()));
-                                // 处理返回数据
-                                ByteArrayInputStream bais = new ByteArrayInputStream(exchange.getBody());
-                                Map callMap = promserverService.handleResultData(bais, false, paramData2);
-                                callMap.put("eleIndex", paramData2.get("eleIndex"));
-                                callMap.put("chartId", chart.getId());
-                                Tool.IoUtil.close(bais);
-                                return callMap;
+                                JSONObject jsonObject = promApiService.query_range(HttpEntity.EMPTY, paramData2);
+                                jsonObject.put("eleIndex", paramData2.get("eleIndex"));
+                                jsonObject.put("chartId", chart.getId());
+                                return jsonObject;
                             }));
                             break;
                         case "logs":
-                            paramData2.put("format","1");
-                            futureList.add(CompletableFuture.supplyAsync(() ->{
-                                ResponseEntity<byte[]> exchange = lokiserverService.lokiServerData(request,null,"/loki/api/v1/query_range",null,paramData2.get("queryString") + "&format=1&direction=backward&query=" + UriEncoder.encode(element.getExpression()));
-                                ByteArrayInputStream bais = new ByteArrayInputStream(exchange.getBody());
-                                Map callMap = lokiserverService.handleResultData(bais, paramData2);
-                                callMap.put("eleIndex", paramData2.get("eleIndex"));
-                                callMap.put("chartId", chart.getId());
-                                Tool.IoUtil.close(bais);
-                                return callMap;
+                            paramData2.put("format", "1");
+                            paramData2.put("direction", "backward");
+                            paramData2.put("limit", chartParam.get("limit") == null ? "100" : chartParam.get("limit").toString());
+                            futureList.add(CompletableFuture.supplyAsync(() -> {
+                                JSONObject jsonObject = lokiApiService.query_range(HttpEntity.EMPTY, paramData2);
+                                jsonObject.put("eleIndex", paramData2.get("eleIndex"));
+                                jsonObject.put("chartId", chart.getId());
+                                return jsonObject;
                             }));
                             break;
                         default:break;
                     }
                 }
             }
-            if(Tool.CollUtil.isNotEmpty(chart.getChildren())){
-                List<CompletableFuture<Map>> callables = recursionChartsData(request, chart.getChildren(), paramData);
-                if(Tool.CollUtil.isNotEmpty(callables))
+            if (Tool.CollUtil.isNotEmpty(chart.getChildren())) {
+                List<CompletableFuture<Map>> callables = this.recursionChartsData(chart.getChildren(), basicQueryParam, varList);
+                if (Tool.CollUtil.isNotEmpty(callables))
                     futureList.addAll(callables);
             }
         }

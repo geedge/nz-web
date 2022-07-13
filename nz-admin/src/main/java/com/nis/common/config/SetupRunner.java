@@ -1,34 +1,33 @@
 package com.nis.common.config;
 
-import java.io.File;
-import java.util.List;
-import java.util.Map;
-
+import cn.hutool.core.lang.UUID;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
+import cn.hutool.setting.dialect.Props;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.nis.modules.panel.entity.VisualPanel;
-import com.nis.modules.panel.service.VisualPanelService;
-import com.nis.modules.report.job.ReportJobManager;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.stereotype.Component;
-
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
+import com.nis.modules.panel.entity.VisualPanel;
+import com.nis.modules.panel.service.VisualPanelService;
+import com.nis.modules.report.job.ReportJobManager;
 import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.job.SysBackJobManager;
 import com.nis.modules.sys.service.LicenseService;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.setup.entity.SetupEntity;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.stereotype.Component;
 
-import cn.hutool.core.lang.UUID;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
-import cn.hutool.setting.dialect.Props;
+import java.io.File;
+import java.util.List;
+import java.util.Map;
 
 /**
  * setup初始化操作
@@ -64,6 +63,9 @@ public class SetupRunner implements CommandLineRunner{
     @Autowired
 	ReportJobManager reportJobManager;
 
+	@Autowired
+	SysBackJobManager sysBackJobManager;
+
     @Autowired
 	VisualPanelService visualPanelService;
 	
@@ -92,6 +94,18 @@ public class SetupRunner implements CommandLineRunner{
 			}
 		}
 		log.info("Setup dashboard report job finished");
+
+
+		log.info("Setup sys-backup job begin...");
+		String backupConfigJsonStr = sysConfigService.getValue("backup_config");
+		if (StrUtil.isNotEmpty(backupConfigJsonStr)) {
+			String state = JSONPath.read(backupConfigJsonStr, "state").toString();
+			if (Tool.StrUtil.equalsIgnoreCase("1", StrUtil.nullToDefault(state, "1"))) {
+				sysBackJobManager.createSysBackJob(backupConfigJsonStr);
+			}
+		}
+		log.info("Setup sys-backup job finished");
+
 
 		if (inited == 2) {
 			log.info(" inited = {}	,skip init setup", inited);

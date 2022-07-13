@@ -10,8 +10,8 @@ import com.nis.modules.asset.dao.AssetModelDao;
 import com.nis.modules.asset.dao.DcDao;
 import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.module.dao.MonitorModuleDao;
-import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.promserver.service.PromserverService;
+import com.nis.modules.promserver.entity.Agent;
+import com.nis.modules.promserver.service.AgentService;
 import com.nis.modules.sys.service.SysConfService;
 import io.micrometer.core.instrument.*;
 import io.micrometer.core.instrument.binder.MeterBinder;
@@ -37,7 +37,7 @@ public class NezhaMetrics implements MeterBinder {
     private MonitorModuleDao monitorModuleDao;
 
     @Autowired
-    private PromserverService promserverService;
+    private AgentService agentService;
 
     @Autowired
     private AssetModelDao modelDao;
@@ -93,14 +93,14 @@ public class NezhaMetrics implements MeterBinder {
         /**
          * nz_agent_status
          */
-        List<Promserver> promserverList = promserverService.list();
+        List<Agent> agentList = agentService.list();
         List<Dc> dcList = dcDao.selectList(null);
         Map<Integer, String> idcIdAndNameMap = dcList.stream().collect(Collectors.toMap(Dc::getId, Dc::getName));
 
-        for (int i = 0; i < promserverList.size(); i++) {
-            Promserver promserver = promserverList.get(i);
-            Gauge.builder("nz_agent_status", promserver,value -> promserver.getStatus())
-                    .tags("datacenter", idcIdAndNameMap.get(promserver.getDcId()) == null ? "null" : idcIdAndNameMap.get(promserver.getDcId()), "type", Constant.PromserverType.getPromserverType(promserver.getType()).getName(), "host", promserver.getHost(), "port", promserver.getPort() + "")
+        for (int i = 0; i < agentList.size(); i++) {
+            Agent agent = agentList.get(i);
+            Gauge.builder("nz_agent_status", agent,value -> agent.getStatus())
+                    .tags("datacenter", idcIdAndNameMap.get(agent.getDcId()) == null ? "null" : idcIdAndNameMap.get(agent.getDcId()), "type", Constant.AgentType.getAgentType(agent.getType()).getName(), "host", agent.getHost(), "port", agent.getPort() + "")
                     .description("Prometheus statistics info")
                     .register(meterRegistry);
         }

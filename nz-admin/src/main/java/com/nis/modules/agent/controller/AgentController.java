@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.nis.modules.promserver.service.AgentService;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,8 +31,7 @@ import com.nis.common.utils.RCode;
 import com.nis.common.utils.TemplateUtil;
 import com.nis.common.utils.Tool;
 import com.nis.modules.agent.util.AgentUtil;
-import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.promserver.service.PromserverService;
+import com.nis.modules.promserver.entity.Agent;
 import com.nis.modules.sys.service.SysConfigService;
 
 import cn.hutool.core.io.IORuntimeException;
@@ -41,7 +41,7 @@ import cn.hutool.log.Log;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 
-@RestController
+@RestController("agentManageController")
 @RequestMapping("/agent")
 public class AgentController {
 	private Log log = Log.get();
@@ -53,7 +53,7 @@ public class AgentController {
 	private String sslEnabled;
 
 	@Autowired
-	private PromserverService promserverService;
+	private AgentService agentService;
 
 	@Autowired
 	private SysConfigService sysConfigService;
@@ -137,18 +137,18 @@ public class AgentController {
 	}
 
 	/**
-	 * @Description 将confagent自动注册 为promserver
+	 * @Description 将confagent自动注册 为 agent
 	 * @Author rui
 	 * @Date 2021/4/2
 	 */
 	@PostMapping("/register")
-	@RequiresPermissions({ "promserver:save" })
-	public R autoRegister(HttpServletRequest request, @RequestBody Promserver promserver) {
-		if (Tool.StrUtil.isEmpty(promserver.getHost())) {
-			promserver.setHost(request.getRemoteAddr());
+	@RequiresPermissions({ "agent:save" })
+	public R autoRegister(HttpServletRequest request, @RequestBody Agent agent) {
+		if (Tool.StrUtil.isEmpty(agent.getHost())) {
+			agent.setHost(request.getRemoteAddr());
 		}
 		// 保存 agent
-		Integer id = promserverService.saveOrUpdatePromserver(promserver, false);
+		Integer id = agentService.saveOrUpdateAgent(agent, false);
 		return R.ok().putData("id", id);
 	}
 

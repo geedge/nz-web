@@ -10,8 +10,8 @@ import javax.validation.constraints.NotBlank;
 import java.util.Date;
 
 @Data
-@TableName("prom_server")
-public class Promserver {
+@TableName("agent")
+public class Agent {
 	@TableId
 	private Integer id;
 	@NotBlank(message="参数名不能为空")
@@ -63,20 +63,4 @@ public class Promserver {
 
 	@TableField(exist = false)
 	private Dc dc;
-
-	@Override
-	public String toString() {
-		return "Promserver{" +
-				"id=" + id +
-				", dcId=" + dcId +
-				", host='" + host + '\'' +
-				", type=" + type +
-				", port=" + port +
-				", protocol=" + protocol +
-				", status=" + status +
-				", checkTime=" + checkTime +
-				", statusInfo='" + statusInfo + '\'' +
-				", token='" + token + '\'' +
-				'}';
-	}
 }

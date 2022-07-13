@@ -38,7 +38,7 @@ public interface MonitorEndpointService extends IService<MonitorEndpoint> {
      */
     // List<MonitorEndpoint> getEnableEndpointInfoList();
 
-    // endpoint 列表，包含 asset dc prom_server 数据
+    // endpoint 列表，包含 asset dc 数据
     List<MonitorEndpoint> endpointDetailList();
 
     Integer saveEndpoint(MonitorEndpoint endpoint);

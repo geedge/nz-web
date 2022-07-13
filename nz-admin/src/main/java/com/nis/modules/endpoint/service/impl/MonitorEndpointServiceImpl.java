@@ -6,7 +6,6 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
-
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONException;
@@ -44,8 +43,8 @@ import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
-import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.promserver.service.PromserverService;
+import com.nis.modules.promserver.entity.Agent;
+import com.nis.modules.promserver.service.AgentService;
 import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.entity.SnmpCredential;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
@@ -127,7 +126,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     private SysUserStarredService starredService;
 
     @Autowired
-    private PromserverService promserverService;
+    private AgentService agentService;
 
     @Autowired
     private AssetTalonStatusService assetTalonService;
@@ -170,7 +169,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         if(ToolUtil.isNotEmpty(endpointProm)) {
             String agentId = ToolUtil.toStr(endpointProm.get("" + id));
             if(StrUtil.isNotBlank(agentId))
-                endpoint.setPromserver(promserverService.getById(Integer.valueOf(agentId)));
+                endpoint.setAgent(agentService.getById(Integer.valueOf(agentId)));
         }
         return endpoint;
     }
@@ -628,8 +627,8 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         Map endpointLogsStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
         // 获取agent
         Map endpointProm = redisTemplate.opsForHash().entries(Constant.REDIS_KEY_ENDPOINT_PROM);
-        List<Promserver> promserverList = (List<Promserver>) promserverService.queryPage(MapUtil.newHashMap()).getList();
-        Map<Integer, Promserver> agentMap = promserverList.stream().collect(Collectors.toMap(Promserver::getId, o -> o));
+        List<Agent> promserverList = (List<Agent>) agentService.queryPage(MapUtil.newHashMap()).getList();
+        Map<Integer, Agent> agentMap = promserverList.stream().collect(Collectors.toMap(Agent::getId, o -> o));
 
         for (MonitorEndpoint endpoint : endpointList) {
             List<MonitorEndpointConfig> configsByEndpointId = endpointConfigs.stream().filter(endpointConfig -> endpoint.getId().equals(endpointConfig.getEndpointId())).collect(Collectors.toList());
@@ -665,7 +664,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             if(ToolUtil.isNotEmpty(endpointProm)) {
                 String agentId = ToolUtil.toStr(endpointProm.get("" + endpoint.getId()));
                 if(StrUtil.isNotBlank(agentId))
-                    endpoint.setPromserver(agentMap.get(Integer.valueOf(agentId)));
+                    endpoint.setAgent(agentMap.get(Integer.valueOf(agentId)));
             }
         }
     }
@@ -1702,7 +1701,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                             String agentIdStr = ToolUtil.toStr(endpointProm.get("" + id));
                             if(StrUtil.isNotBlank(agentIdStr)){
                                 Integer agentId = Integer.valueOf(agentIdStr);
-                                Promserver agent = promserverService.getById(Integer.valueOf(agentId));
+                                Agent agent = agentService.getById(Integer.valueOf(agentId));
                                 if(ToolUtil.equals(1, agent.getStatus())){
                                     String federation = sysConfigService.getValueOrDefault(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED, "1");
                                     if(StrUtil.equals("1", federation) && ToolUtil.equals(1, agent.getType())){

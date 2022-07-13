@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.nis.modules.promserver.dao.PromserverDao">
+<mapper namespace="com.nis.modules.promserver.dao.AgentDao">
 
-	<resultMap type="com.nis.modules.promserver.entity.Promserver" id="agentInfoMap">
+	<resultMap type="com.nis.modules.promserver.entity.Agent" id="agentInfoMap">
 	<result property="id" column="id"/>
 	<result property="dcId" column="dc_id"/>
 	<result property="host" column="host"/>
@@ -22,7 +22,7 @@
 	</resultMap>
 
 	<update id="updateStatusInfo">
-		update prom_server set protocol=#{promserver.protocol},status=#{promserver.status},status_info=#{promserver.statusInfo} where id=#{promserver.id}
+		update agent set protocol=#{agent.protocol},status=#{agent.status},status_info=#{agent.statusInfo} where id=#{agent.id}
 	</update>
 
 	<select id="queryList" resultMap="agentInfoMap">
@@ -31,7 +31,7 @@
 			dc.id AS d_id,
 			dc.NAME AS d_name
 		FROM
-			prom_server ps
+			agent ps
 			LEFT JOIN dc dc ON ps.dc_id = dc.id
 		<where>
 			<if test="params.ids != null">

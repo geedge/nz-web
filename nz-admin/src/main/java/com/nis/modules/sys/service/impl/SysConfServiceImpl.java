@@ -14,9 +14,8 @@ import com.nis.modules.agent.service.MonitorEventLogService;
 import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
-import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.promserver.service.PromserverService;
-import com.nis.modules.promserver.utils.HttpClientUtils;
+import com.nis.modules.promserver.entity.Agent;
+import com.nis.modules.promserver.service.AgentService;
 import com.nis.modules.sys.dao.SysConfDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
@@ -41,7 +40,6 @@ import javax.naming.Context;
 import javax.naming.NamingException;
 import javax.naming.directory.InitialDirContext;
 import java.io.IOException;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -102,7 +100,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
     @Autowired
     private SysConfigRedis sysConfigRedis;
     @Autowired
-    private PromserverService promserverService;
+    private AgentService agentService;
     @Autowired
     private AlertMessageService alertMessageService;
     @Autowired
@@ -280,14 +278,14 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
         String seriesUri = "/api/v1/admin/tsdb/delete_series";
         String tombstonesUri = "/api/v1/admin/tsdb/clean_tombstones";
         // 获取正常的监控服务列表
-        List<Promserver> promserverList = promserverService.list(
-                new LambdaQueryWrapper<Promserver>().eq(Promserver::getStatus,1));
-        if(ToolUtil.isNotEmpty(promserverList)){
+        List<Agent> agentList = agentService.list(
+                new LambdaQueryWrapper<Agent>().eq(Agent::getStatus,1));
+        if(ToolUtil.isNotEmpty(agentList)){
             final String key= URLEncoder.encode("{__name__=~'.+'}","UTF-8");
-            promserverList.forEach(promserver -> {
-            	String result = AgentUtil.request(promserver, HttpMethod.POST, seriesUri, String.format("match[]=%s", key), null, String.class);
+            agentList.forEach(agent -> {
+            	String result = AgentUtil.request(agent, HttpMethod.POST, seriesUri, String.format("match[]=%s", key), null, String.class);
             	logger.info("request result: {}",result);
-            	result = AgentUtil.request(promserver, HttpMethod.POST, tombstonesUri, null, null, String.class);
+            	result = AgentUtil.request(agent, HttpMethod.POST, tombstonesUri, null, null, String.class);
             	logger.info("request result: {}",result);
             });
         }

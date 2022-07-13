@@ -23,8 +23,8 @@ import com.nis.modules.asset.service.DcService;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.project.entity.MonitorProject;
-import com.nis.modules.promserver.dao.PromserverDao;
-import com.nis.modules.promserver.entity.Promserver;
+import com.nis.modules.promserver.dao.AgentDao;
+import com.nis.modules.promserver.entity.Agent;
 import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
@@ -62,7 +62,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
     private CabinetDao cabinetDao;
 
     @Autowired
-    private PromserverDao promserverDao;
+    private AgentDao agentDao;
 
     @Autowired
     private SysUserService sysUserService;
@@ -291,9 +291,9 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
             throw new NZException("These dc contain assets and cannot be deleted, Details: " + dcNames.toString(), RCode.DC_ASSETS_EXISTS.getCode());
         }
 
-        // 3. 校验是否包含 promeserver
-        List<Promserver> promservers = promserverDao.selectList(null);
-        Set<Integer> promserverUsedIdcIds = promservers.stream().map(Promserver::getDcId).collect(Collectors.toSet());
+        // 3. 校验是否包含 agent
+        List<Agent> agentList = agentDao.selectList(null);
+        Set<Integer> promserverUsedIdcIds = agentList.stream().map(Agent::getDcId).collect(Collectors.toSet());
 
         idList = Arrays.stream(ids).collect(Collectors.toList());
         idList.retainAll(promserverUsedIdcIds);

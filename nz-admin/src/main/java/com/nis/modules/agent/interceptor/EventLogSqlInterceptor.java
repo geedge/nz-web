@@ -9,14 +9,10 @@ import com.alibaba.druid.sql.parser.ParserException;
 import com.alibaba.druid.stat.TableStat;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
 import com.nis.modules.agent.service.MonitorEventLogService;
-import com.nis.modules.module.entity.MonitorModule;
-import com.nis.modules.module.service.MonitorModuleService;
-import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.promserver.service.PromserverService;
+import com.nis.modules.promserver.entity.Agent;
+import com.nis.modules.promserver.service.AgentService;
 import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.service.SysConfigService;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.plugin.*;
@@ -24,15 +20,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import java.io.Serializable;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.stream.Collectors;
 
 /**
- * mybatis sql 拦截器, 拦截影响 prom_server 数据更新的操作,更新 monitor_event_log 表数据 table :
- * alert_rule alert_severity_conf dc monitor_endpoint prom_server asset_asset
+ * mybatis sql 拦截器, 拦截影响 agent 数据更新的操作,更新 monitor_event_log 表数据 table :
+ * alert_rule alert_severity_conf dc monitor_endpoint agent asset_asset
  * monitor_module sys_config operational: Insert Delete Update
  *
  * @author shizhendong
@@ -46,19 +39,11 @@ public class EventLogSqlInterceptor implements Interceptor {
 
 	@Lazy
 	@Autowired
-	private SysConfigService sysConfigService;
-
-	@Lazy
-	@Autowired
 	private MonitorEventLogService eventLogService;
 
 	@Lazy
 	@Autowired
-	private MonitorModuleService monitorModuleService;
-
-	@Lazy
-	@Autowired
-	private PromserverService promserverService;
+	private AgentService agentService;
 
 	private static final String[] excludes = {
 			"com.nis.modules.alert.dao.AlertHandlerDao.updateCloseExpiredMessageEndAt" };
@@ -92,8 +77,8 @@ public class EventLogSqlInterceptor implements Interceptor {
 					case "monitor_endpoint_config":
 						eventLogService.increment("prometheus", "promtail");
 						break;
-					case "prom_server":
-						this.handlePromServerChange(operationalType.toString(), parameterObject);
+					case "agent":
+						this.handleAgentChange(operationalType.toString(), parameterObject);
 						break;
 					case "asset_asset":
 						eventLogService.increment("prometheus", "blackbox", "promtail");
@@ -117,23 +102,23 @@ public class EventLogSqlInterceptor implements Interceptor {
 	}
 
 	/**
-	 * 处理 promserver , 只有在 dcid type host port status 改变时才会记录 event log
-	 * 
+	 * 处理 agent , 只有在 dcid type host port status 改变时才会记录 event log
+	 *
 	 * @param type
 	 * @param parameterObject
 	 */
-	private void handlePromServerChange(String type, Object parameterObject) {
+	private void handleAgentChange(String type, Object parameterObject) {
 		// 修改时 ， 判断
 		if ("Update".equals(type)) {
-			if (parameterObject instanceof Promserver) {
-				this.comparePromserverDataChange((Promserver) parameterObject);
+			if (parameterObject instanceof Agent) {
+				this.compareAgentDataChange((Agent) parameterObject);
 			}
 
 			if (parameterObject instanceof Map) {
 				for (Map.Entry<String, Object> map : ((Map<String, Object>) parameterObject).entrySet()) {
 					Object value = map.getValue();
-					if (value instanceof Promserver) {
-						this.comparePromserverDataChange((Promserver) value);
+					if (value instanceof Agent) {
+						this.compareAgentDataChange((Agent) value);
 					}
 				}
 			}
@@ -145,8 +130,8 @@ public class EventLogSqlInterceptor implements Interceptor {
 		}
 	}
 
-	private void comparePromserverDataChange(Promserver updateEntity) {
-		Promserver oldEntity = updateEntity.getId() == null ? null : promserverService.getById(updateEntity.getId());
+	private void compareAgentDataChange(Agent updateEntity) {
+		Agent oldEntity = updateEntity.getId() == null ? null : agentService.getById(updateEntity.getId());
 		if (oldEntity != null) {
 			boolean flag = false;
 			if (!oldEntity.getDcId().equals(updateEntity.getDcId()))
@@ -163,7 +148,7 @@ public class EventLogSqlInterceptor implements Interceptor {
 				// 元信息变更 修改 prometheus promtail
 
 				// eventLogService.increment("prometheus", "promtail", "cortex", "loki", "rule");
-				if(updateEntity.getType().equals(Constant.PromserverType.GLOBAL.getValue())) {
+				if(updateEntity.getType().equals(Constant.AgentType.GLOBAL.getValue())) {
 					eventLogService.increment("prometheus", "promtail", "cortex", "loki", "snmp");
 				}else {
 					eventLogService.increment("prometheus", "promtail", "snmp");

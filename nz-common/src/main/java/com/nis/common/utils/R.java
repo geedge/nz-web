@@ -78,13 +78,8 @@ public class R extends HashMap<String, Object> {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public R putDataAll(Map<String,Object> dataAll) {
-		Object data = super.getOrDefault("data", new LinkedHashMap<String, Object>());
-		if( !(data instanceof Map)) {
-			throw new NZException("data putAll error");
-		}
-		((Map<String, Object>)data).putAll(dataAll);;
-		super.put("data", data);
+	public R putAllData(Map m) {
+		super.putAll(m);
 		return this;
 	}
 }

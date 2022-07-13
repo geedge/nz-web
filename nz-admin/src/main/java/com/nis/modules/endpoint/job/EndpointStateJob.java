@@ -2,20 +2,19 @@ package com.nis.modules.endpoint.job;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
-
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.endpoint.dao.MonitorEndpointStateDao;
 import com.nis.modules.endpoint.entity.MonitorEndpointConfig;
 import com.nis.modules.endpoint.entity.MonitorEndpointState;
 import com.nis.modules.endpoint.service.MonitorEndpointConfigService;
 import com.nis.modules.endpoint.service.MonitorEndpointStateService;
-import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.promserver.service.PromserverService;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.promserver.entity.Agent;
+import com.nis.modules.promserver.service.PromApiService;
 import org.apache.commons.lang3.time.StopWatch;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
@@ -23,6 +22,7 @@ import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpEntity;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,10 +36,7 @@ public class EndpointStateJob extends QuartzJobBean {
     private Log log = Log.get();
 
     @Autowired
-    private SysConfigService sysConfigService;
-
-    @Autowired
-    private PromserverService promserverService;
+    private PromApiService promApiService;
 
     @Autowired
     private MonitorEndpointConfigService endpointConfigService;
@@ -85,9 +82,9 @@ public class EndpointStateJob extends QuartzJobBean {
 	@Transactional(rollbackFor = Exception.class)
     public void updateEndpointStatus() {
         // 随机获取一个 Global Prometheus
-        Promserver promserver = promserverService.getOneAvaPromServer(null, null, Constant.PromserverType.GLOBAL.getValue());
-        if (promserver == null) {
-            log.debug("Endpoint 状态为全部为 0 (DOWN),当前暂无可用 promserver");
+        Agent agent = promApiService.getOneAvaliableGlobalAgent();
+        if (agent == null) {
+            log.debug("Endpoint 状态为全部为 0 (DOWN),当前暂无可用 agent");
             this.allMetricsEndpointStateDown();
             return;
         }
@@ -96,7 +93,7 @@ public class EndpointStateJob extends QuartzJobBean {
         List<MonitorEndpointConfig> metricsEndpointConfigList = endpointConfigService.getEndpointConfigInfoListByType(Constant.MonitorConfType.METRICS.getValue());
 
         // up 的 metrics / logs endpoint
-        List<MonitorEndpointState> upMetricsEndpointStateList = this.getUpMetricsEndpointStateList(promserver, metricsEndpointConfigList);
+        List<MonitorEndpointState> upMetricsEndpointStateList = this.getUpMetricsEndpointStateList(metricsEndpointConfigList);
 
         // 处理 Down 掉的 endpoint / 设置对应的状态
         Set<Integer> upMetricsConfId = upMetricsEndpointStateList.stream().map(MonitorEndpointState::getConfigId).collect(Collectors.toSet());
@@ -185,16 +182,11 @@ public class EndpointStateJob extends QuartzJobBean {
     /**
      * 返回 up metrics endpoint state list
      *
-     * @param promserver
      * @param endpointConfigList
      * @return
      */
-    private List<MonitorEndpointState> getUpMetricsEndpointStateList(Promserver promserver, List<MonitorEndpointConfig> endpointConfigList) {
-    	String promPathPrefix = promserverService.getPromPathPrefix();
-        String urlPath = promPathPrefix + "/api/v1/query";
-        String queryString = "query=up";
-
-        Map<Integer, String> metricsEndpointIdAndState = getMetricsEndpointIdAndStateMapByPath(promserver, urlPath, queryString);
+    private List<MonitorEndpointState> getUpMetricsEndpointStateList(List<MonitorEndpointConfig> endpointConfigList) {
+        Map<Integer, String> metricsEndpointIdAndState = getMetricsEndpointIdAndStateMapByPath();
 
         List<MonitorEndpointState> upMetricsEndpointStateList = new ArrayList<>();
         for (Map.Entry<Integer, String> entry : metricsEndpointIdAndState.entrySet()) {
@@ -220,16 +212,11 @@ public class EndpointStateJob extends QuartzJobBean {
         endpointStateService.saveBatch(stateList);
     }
 
-    /**
-     * 根据 url 请求带理接口并返回 endpoint_id / state 数据
-     *
-     * @param promserver
-     * @param urlPath
-     * @param queryString
-     * @return
-     */
-    private Map<Integer, String> getMetricsEndpointIdAndStateMapByPath(Promserver promserver, String urlPath, String queryString) {
-        JSONObject jsonObject = promserverService.requestAgent(promserver, urlPath, queryString);
+    private Map<Integer, String> getMetricsEndpointIdAndStateMapByPath() {
+        Map requestParam = Tool.MapUtil.newHashMap(2);
+        requestParam.put("query", "up");
+
+        JSONObject jsonObject = promApiService.query(HttpEntity.EMPTY, requestParam);
         Map dataMap = (Map) jsonObject.get("data");
         List<Map> resultList = JSONObject.parseArray(JSONObject.toJSONString(dataMap.get("result")), Map.class);
 

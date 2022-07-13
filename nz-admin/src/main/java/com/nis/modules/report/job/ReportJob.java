@@ -1,6 +1,6 @@
 package com.nis.modules.report.job;
 
-import cn.hutool.core.date.DateUnit;
+import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
@@ -12,6 +12,7 @@ import com.nis.common.utils.TemplateUtil;
 import com.nis.common.utils.Tool;
 import com.nis.modules.panel.entity.VisualPanel;
 import com.nis.modules.panel.service.VisualPanelService;
+import com.nis.modules.promserver.service.PromApiService;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysUserService;
@@ -23,6 +24,7 @@ import org.quartz.JobExecutionException;
 import org.quartz.JobKey;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpEntity;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.stereotype.Component;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
@@ -30,10 +32,9 @@ import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 import javax.mail.MessagingException;
 import java.io.File;
 import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.temporal.TemporalAdjusters;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Component
@@ -43,6 +44,17 @@ public class ReportJob extends QuartzJobBean {
     private static final Log log = Log.get();
 
     private static Template template;
+
+    static Map<String, String> SPECIAL_KEY_MAP;
+
+    static {
+        SPECIAL_KEY_MAP = new HashMap<>(8);
+
+        SPECIAL_KEY_MAP.put("label_names", "^label_names\\(\\)\\s*$");
+        SPECIAL_KEY_MAP.put("label_values", "^label_values\\((?:(.+),\\s*)?([a-zA-Z_][a-zA-Z0-9_]*)\\)\\s*$");
+        SPECIAL_KEY_MAP.put("metrics", "^metrics\\((.+)\\)\\s*$");
+        SPECIAL_KEY_MAP.put("query_result", "^query_result\\((.+)\\)\\s*$");
+    }
 
     @Autowired
     private MailUtil mailUtil;
@@ -58,6 +70,9 @@ public class ReportJob extends QuartzJobBean {
 
     @Autowired
     private VisualPanelService visualPanelService;
+
+    @Autowired
+    private PromApiService promApiService;
 
     @Override
     protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
@@ -77,7 +92,12 @@ public class ReportJob extends QuartzJobBean {
 
         // JOB 每天都执行，根据匹配规则，检查本次是否执行
         String configJsonStr = visualPanel.getParam().toString();
-        Boolean isRun = this.checkJobIsRun(configJsonStr);
+        String scheduleType = JSONPath.read(configJsonStr, "report.schedule.type").toString();
+        String stime = JSONPath.read(configJsonStr, "report.schedule.stime").toString();
+        String repeatStr = JSONPath.read(configJsonStr, "report.schedule.repeat").toString();
+        String nums = JSONPath.read(configJsonStr, "report.schedule.nums").toString().replaceAll("\\[|\\]", "");
+
+        Boolean isRun = ReportJobManager.checkJobIsRun(scheduleType, stime, repeatStr, nums);
         if (isRun) {
             log.info("dashboard report notific begin ...");
             String receiversStr = JSONPath.read(configJsonStr, "report.receivers").toString();
@@ -105,15 +125,18 @@ public class ReportJob extends QuartzJobBean {
 
                 String format = "html";
                 String fileName = String.format("%s.%s", visualPanel.getName(), format);
+
+                // 模拟前端实现 组织快照接口 vars 参数
+                List<Map<String, String>> snapshotVars = this.getSnapshotVars(configJsonStr, queryRangeStartAndEndTime);
+                log.info("dashboard report snapshot vars: {}", JSONObject.toJSONString(snapshotVars));
+
+                Long start = queryRangeStartAndEndTime.get("start");
+                Long end = queryRangeStartAndEndTime.get("end");
+
                 for (SysUserEntity user : userList) {
                     // 以用户默认语言生成 快照文件
                     String lang = user.getLang();
-                    String snapshotStr = visualPanelService.snapshot(format, Integer.valueOf(panelId), queryRangeStartAndEndTime.get("start"), queryRangeStartAndEndTime.get("end"), StrUtil.emptyToDefault(lang, "zh"));
-
-                    if (StrUtil.isEmpty(snapshotStr)) {
-                        log.error("dashboard snapshot generate error");
-                        continue;
-                    }
+                    String snapshotStr = visualPanelService.snapshot(format, Integer.valueOf(panelId), start, end, lang, JSONObject.toJSONString(snapshotVars));
 
                     File file = null;
                     try {
@@ -135,80 +158,6 @@ public class ReportJob extends QuartzJobBean {
         } else {
             log.info("dashboard report is not executed, this time does't match the report schedule");
         }
-    }
-
-
-    /**
-     * 根据 startAt 和 report 规则 判断本次是否执行
-     * @param reportScheduleJsonStr
-     * @return
-     */
-    public Boolean checkJobIsRun(String reportScheduleJsonStr) {
-        String scheduleType = JSONPath.read(reportScheduleJsonStr, "report.schedule.type").toString();
-
-        String stime = JSONPath.read(reportScheduleJsonStr, "report.schedule.stime").toString();
-        Date startAt = Tool.DateUtil.parse(stime, "yyyy-MM-dd HH:mm:ss");
-        Date now = new Date();
-
-        String repeatStr = JSONPath.read(reportScheduleJsonStr, "report.schedule.repeat").toString();
-        Integer repeat = Integer.valueOf(StrUtil.emptyToDefault(repeatStr, "1"));
-
-        switch (scheduleType) {
-            // one time
-            case "1": return true;
-            case "2": {// daily
-                if (repeat == 1) return true;
-                // 判断间隔时间
-                long betweenDay = Tool.DateUtil.between(startAt, now, DateUnit.DAY);
-                if (betweenDay % repeat == 0) return true;
-                break;
-            }
-            case "3": {// weekly
-                String nums = JSONPath.read(reportScheduleJsonStr, "report.schedule.nums").toString().replaceAll("\\[|\\]", "");
-                List<Integer> execWeekArray = Arrays.asList(nums.split(",")).stream().mapToInt(Integer::parseInt).sorted().boxed().collect(Collectors.toList());
-
-                // 获取今天周几
-                Calendar cal = Calendar.getInstance();
-                cal.setTime(now);
-                int todayWeek = cal.get(Calendar.DAY_OF_WEEK) - 1;
-                if (todayWeek == 0) todayWeek = 7;
-
-                // startAt 和当前时间在同一周，  符合 周几、周几 执行即可
-                if (Tool.DateUtil.weekOfYear(startAt) == Tool.DateUtil.weekOfYear(now)) {
-                    if (execWeekArray.contains(todayWeek)) return true;
-                } else {
-                    // startAt 和当前时间 不在同一周，根据 repeat + weekly 判断是否执行
-                    if (repeat == 1) {
-                        // 每周都执行 符合 周几、周几 执行即可
-                        if (execWeekArray.contains(todayWeek)) return true;
-                    } else {
-                        // 根据今天是周几，找到 startAt 所在周 周几的日期，差值取模
-                        Date date = this.getSpecifiedWeekByDate(startAt, todayWeek);
-                        long betweenDay = Tool.DateUtil.between(date, now, DateUnit.DAY);
-                        if (betweenDay % (repeat * 7) == 0 && execWeekArray.contains(todayWeek)) return true;
-                    }
-                }
-                break;
-            }
-            case "4": {// monthly
-                Calendar cal = Calendar.getInstance();
-                cal.setTime(now);
-                int dayOfMonth = cal.get(Calendar.DAY_OF_MONTH);
-                String execDayArray = JSONPath.read(reportScheduleJsonStr, "report.schedule.nums").toString();
-                List<String> execDayList = Arrays.asList(execDayArray.split(","));
-
-                if (StrUtil.contains(execDayArray, "-1")) {
-                    LocalDateTime lastDayOfMonth = now.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().with(TemporalAdjusters.lastDayOfMonth());
-                    if (dayOfMonth == lastDayOfMonth.getDayOfMonth()) return true;
-                }
-
-                if (execDayList.contains(dayOfMonth + "")) return true;
-                break;
-            }
-            default:
-                break;
-        }
-        return false;
     }
 
     /**
@@ -239,31 +188,6 @@ public class ReportJob extends QuartzJobBean {
             template = TemplateUtil.stringToTemplate(templateString, "reportEmailTemplate");
         }
         return template;
-    }
-
-
-    /**
-     * 根据传入日期，获取所在周指定周几的 时间
-     * @param date
-     * @param week
-     * @return
-     */
-    public Date getSpecifiedWeekByDate(Date date, Integer week) {
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(date);
-        // 判断要计算的日期是否是周日，如果是则减一天计算周六的，否则会出问题，计算到下一周去了
-        int dayWeek = cal.get(Calendar.DAY_OF_WEEK);
-        if (1 == dayWeek) {
-            cal.add(Calendar.DAY_OF_MONTH, -1);
-        }
-        // 设置一个星期的第一天
-        cal.setFirstDayOfWeek(Calendar.MONDAY);
-        int day = cal.get(Calendar.DAY_OF_WEEK);// 获得当前日期是一个星期的第几天
-        // 根据日历的规则，给当前日期减去星期几与一个星期第一天的差值
-        cal.add(Calendar.DATE, cal.getFirstDayOfWeek() - day);
-        // 获取指定星期的日期
-        cal.add(Calendar.DATE, week - 1);
-        return cal.getTime();
     }
 
     /**
@@ -442,6 +366,265 @@ public class ReportJob extends QuartzJobBean {
         cal.set(Calendar.MINUTE, 0);
         cal.set(Calendar.SECOND, 0);
         return cal.getTimeInMillis() / 1000;
+    }
+
+    private List<Map<String, String>> getSnapshotVars(String paramStr, Map<String, Long> queryParam) {
+        Map map = JSONObject.parseObject(paramStr, Map.class);
+        List<Map> variables = (List<Map>) map.get("variables");
+
+        List<Map<String, String>> snapshotVars = new ArrayList<>();
+        for (Map varMap : variables) {
+            String varJsonStr = JSONObject.toJSONString(varMap);
+            String showStr = JSONPath.read(varJsonStr, "show").toString();
+            showStr = Tool.StrUtil.emptyToDefault(showStr, "true");
+
+            // 与前端同步 不展示的不计算 vars
+            if (!Tool.StrUtil.equals(showStr, "true")) continue;
+
+            List<String> valueList = new ArrayList<>();
+            String type = JSONPath.read(varJsonStr, "type").toString();
+            if (Tool.StrUtil.equals(type, "custom")) {
+                String customOptions = JSONPath.read(varJsonStr, "customOptions").toString();
+                List<String> customOptionList = Arrays.asList(customOptions.split(","));
+                for (String option : customOptionList) {
+                    option = option.trim();
+                    String[] split = option.split(":");
+                    if (split.length == 1) {
+                        valueList.add(option);
+                    } else {
+                        valueList.add(split[1]);
+                    }
+                }
+            } else if (Tool.StrUtil.equals(type, "query")) {
+                String expression = JSONPath.read(varJsonStr, "expression").toString();
+                List<String> promiseListByExpr = this.getPromiseListByExpr(expression, queryParam);
+                Object regexObj = JSONPath.read(varJsonStr, "regex");
+                String regex = regexObj == null ? StrUtil.EMPTY : regexObj.toString();
+                String name = JSONPath.read(varJsonStr, "name").toString();
+                if (!StrUtil.isEmpty(regex)) {
+                    if (regex.charAt(0) == '/') {
+                        regex = regex.substring(1, regex.length());
+                    }
+                    if (regex.charAt(regex.length() - 1) == '/') {
+                        regex = regex.substring(0, regex.length() - 1);
+                    }
+                    // 和前端一致 regenx 后根据 value 去重
+                    List<String> textValueList = Tool.ListUtil.list(false);
+                    for (String str : promiseListByExpr) {
+                        Matcher matcher = Pattern.compile(regex).matcher(str);
+                        if (matcher.find()) {
+                            // regex： asset="(?<text>[^"]+).*asset_id="(?<value>[^"]+)
+                            // String text = matcher.group("text");
+                            try {
+                                // 无法直接获得 Pattern.namedGroups
+                                String value = matcher.group("value");
+                                String text = matcher.group("text");
+                                textValueList.add(value);
+                                // valueList.add(value);
+                            } catch (Exception e) {
+                                valueList.add(str);
+                            }
+                        }
+                    }
+                    if (Tool.CollUtil.isNotEmpty(textValueList)) {
+                        textValueList = textValueList.stream().distinct().collect(Collectors.toList());
+                        valueList.addAll(textValueList);
+                    }
+                } else {
+                    valueList.addAll(promiseListByExpr);
+                }
+            }
+
+            Map m = new HashMap(4);
+            String name = JSONPath.read(varJsonStr, "name").toString();
+            m.put("name", name);
+
+            // 根据 allOption 确定最终值
+            String allOptionStr = JSONPath.read(varJsonStr, "allOption").toString();
+            allOptionStr = Tool.StrUtil.emptyToDefault(allOptionStr, "false");
+
+            if (Tool.StrUtil.equals(allOptionStr, "true")) {
+                // allOption = true  时，变量值 为 .*
+                m.put("value", ".*");
+            } else {
+                // 否则 取第一个值
+                m.put("value", Tool.CollectionUtil.isEmpty(valueList) ? "" : valueList.get(0));
+            }
+            snapshotVars.add(m);
+        }
+        return snapshotVars;
+    }
+
+    /**
+     * 根据表达式查询api并简单处理返回，返回结果后续进行正则校验
+     *
+     * @param expression
+     * @param queryParam
+     * @return
+     */
+    private List<String> getPromiseListByExpr(String expression, Map queryParam) {
+        List<String> promiseList = new ArrayList<>();
+        boolean isLabelNames = Tool.ReUtil.isMatch(SPECIAL_KEY_MAP.get("label_names"), expression);
+        if (isLabelNames) {
+            JSONObject resultMap = promApiService.labels("/api/v1/labels", HttpEntity.EMPTY, queryParam);
+            List<String> labelList = (List<String>) resultMap.get("data");
+
+            promiseList = Tool.CollectionUtil.isEmpty(labelList) ? new ArrayList<>() : labelList;
+            return promiseList;
+        }
+
+        boolean isLabelValues = Tool.ReUtil.isMatch(SPECIAL_KEY_MAP.get("label_values"), expression);
+        if (isLabelValues) {
+            List<String> allGroups = Tool.ReUtil.getAllGroups(Pattern.compile(SPECIAL_KEY_MAP.get("label_values")), expression, false);
+            if (allGroups.size() == 1) {
+                promiseList = this.labelValuesQuery(allGroups.get(0), StrUtil.EMPTY, queryParam);
+            } else if (allGroups.size() == 2) {
+                promiseList = this.labelValuesQuery(allGroups.get(0), allGroups.get(1), queryParam);
+            }
+            return promiseList;
+        }
+
+        boolean isMetrics = Tool.ReUtil.isMatch(SPECIAL_KEY_MAP.get("metrics"), expression);
+        if (isMetrics) {
+            String metricFilterPattern = Tool.ReUtil.getGroup1(SPECIAL_KEY_MAP.get("metrics"), expression);
+            promiseList = this.metricNameQuery(metricFilterPattern, queryParam);
+            return promiseList;
+        }
+
+        boolean isQueryResult = Tool.ReUtil.isMatch(SPECIAL_KEY_MAP.get("query_result"), expression);
+        if (isQueryResult) {
+            String query = Tool.ReUtil.getGroup1(SPECIAL_KEY_MAP.get("query_result"), expression);
+            promiseList = this.queryResultQuery(query, queryParam);
+            return promiseList;
+        }
+
+        // other
+        promiseList = this.metricNameAndLabelsQuery(expression, queryParam);
+        return promiseList;
+    }
+
+    /**
+     * other
+     *
+     * @param expression
+     * @param queryParam
+     * @return
+     */
+    private List metricNameAndLabelsQuery(String expression, Map queryParam) {
+        Map q = Tool.MapUtil.builder().putAll(queryParam).build();
+        q.put("match[]", expression);
+
+        JSONObject resultMap = promApiService.series(HttpEntity.EMPTY, q);
+        List<Map> dataList = (List<Map>) resultMap.get("data");
+
+        if (Tool.CollectionUtil.isEmpty(dataList)) return new ArrayList();
+
+        List<String> list = new ArrayList<>();
+        for (Map<String, String> metricMap : dataList) {
+            String metricsName = metricMap.get("__name__");
+            String text = StrUtil.emptyToDefault(metricsName, "");
+            metricMap.remove("__name__");
+            text += "{";
+            List<String> stringList = new ArrayList<>();
+            metricMap.entrySet().stream().forEach(entry -> {
+                String key = entry.getKey();
+                String value = entry.getValue();
+                stringList.add(key + '=' + '"' + value + '"');
+            });
+            text += stringList.stream().sorted().collect(Collectors.joining(","));
+            text += "}";
+            list.add(text);
+        }
+        return list;
+    }
+
+    /**
+     * query_result(query)
+     *
+     * @param query
+     * @param queryParam
+     * @return
+     */
+    private List queryResultQuery(String query, Map queryParam) {
+        Map q = Tool.MapUtil.builder().putAll(queryParam).build();
+        q.put("query", query);
+
+        JSONObject jsonObject = promApiService.query(HttpEntity.EMPTY, q);
+        Map dataMap = (Map) jsonObject.get("data");
+
+        if (Tool.MapUtil.isEmpty(dataMap)) {
+            return new ArrayList<>();
+        }
+        List<Map> resultObjList = (List<Map>) dataMap.get("result");
+        List<String> queryResultList = new ArrayList();
+        for (Map resultMap : resultObjList) {
+            Map<String, String> metricMap = (Map) resultMap.get("metric");
+            String metricsName = metricMap.get("__name__");
+            String text = StrUtil.emptyToDefault(metricsName, "");
+            metricMap.remove("__name__");
+            text += "{";
+            List<String> stringList = new ArrayList<>();
+            metricMap.entrySet().stream().forEach(entry -> {
+                String key = entry.getKey();
+                String value = entry.getValue();
+                stringList.add(key + '=' + '"' + value + '"');
+            });
+            text += stringList.stream().sorted().collect(Collectors.joining(","));
+            text += "}";
+
+            List<Object> value = (List<Object>) resultMap.get("value");
+            Double t = Double.valueOf(value.get(0).toString());
+            text += " " + value.get(1) + " " + t * 1000;
+            queryResultList.add(text);
+        }
+        return queryResultList;
+    }
+
+
+    /**
+     * metrics(metrics_regex)
+     *
+     * @param metricFilterPattern
+     * @param queryParam
+     * @return
+     */
+    private List metricNameQuery(String metricFilterPattern, Map queryParam) {
+        JSONObject jsonObject = promApiService.labels("/api/v1/label/__name__/values",HttpEntity.EMPTY, queryParam);
+        List<String> metricsList = (List<String>)  jsonObject.get("data");
+
+        if (Tool.CollectionUtil.isEmpty(metricsList)) return new ArrayList();
+        metricsList = metricsList.stream().filter(s -> ReUtil.isMatch(metricFilterPattern, s)).distinct().collect(Collectors.toList());
+        return metricsList;
+    }
+
+    /**
+     * label_values(label) | label_values(metric,label)
+     *
+     * @param metric
+     * @param label
+     * @param queryParam
+     * @return
+     */
+    private List labelValuesQuery(String metric, String label, Map queryParam) {
+        if (StrUtil.isEmpty(metric)) {
+            String url = String.format("/api/v1/label/%s/values", label);
+
+            JSONObject jsonObject = promApiService.labels(url, HttpEntity.EMPTY, queryParam);
+            List<String> labelValueList = (List<String>) jsonObject.get("data");
+
+            labelValueList = Tool.CollectionUtil.isEmpty(labelValueList) ? new ArrayList<>() : labelValueList;
+            return labelValueList;
+        } else {
+            Map q = Tool.MapUtil.builder().putAll(queryParam).build();
+            q.put("match[]", metric);
+
+            JSONObject series = promApiService.series(HttpEntity.EMPTY, q);
+            List<Map> metricList = (List<Map>) series.get("data");
+
+            metricList = Tool.CollectionUtil.isEmpty(metricList) ? new ArrayList<>() : metricList;
+            List<String> labelValueListOfmetric = metricList.stream().filter(m -> m.get(label) != null).map(m -> m.get(label).toString()).distinct().collect(Collectors.toList());
+            return labelValueListOfmetric;
+        }
     }
 
 }

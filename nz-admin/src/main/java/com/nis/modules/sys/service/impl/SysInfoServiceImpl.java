@@ -1,17 +1,14 @@
 package com.nis.modules.sys.service.impl;
 
 import cn.hutool.core.io.IORuntimeException;
-import cn.hutool.core.net.url.UrlBuilder;
-import cn.hutool.core.net.url.UrlPath;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.utils.*;
 import com.nis.modules.agent.util.AgentUtil;
-import com.nis.modules.promserver.dao.PromserverDao;
-import com.nis.modules.promserver.entity.Promserver;
+import com.nis.modules.promserver.dao.AgentDao;
+import com.nis.modules.promserver.entity.Agent;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysInfoService;
@@ -25,11 +22,6 @@ import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.Charset;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -42,7 +34,7 @@ public class SysInfoServiceImpl implements SysInfoService {
     private SysConfigDao sysConfigDao;
 
     @Autowired
-    private PromserverDao promserverDao;
+    private AgentDao agentDao;
 
     @Autowired
     private RedisTemplate redisTemplate;
@@ -83,10 +75,10 @@ public class SysInfoServiceImpl implements SysInfoService {
         componentVersion.put("version", redisVersion.toString());
         componentVersionInfoList.add(componentVersion);
 
-        // ③ prometheus version 随机获取可用promserver
-        List<Promserver> healthyPromserverList = promserverDao.selectList(new QueryWrapper<Promserver>().lambda().eq(true, Promserver::getStatus, 1));
-        if (CollectionUtils.isNotEmpty(healthyPromserverList)) {
-            Promserver server = healthyPromserverList.get(RandomUtils.nextInt(0, healthyPromserverList.size()));
+        // ③ prometheus version 随机获取可用 agent
+        List<Agent> healthyAgentList = agentDao.selectList(new QueryWrapper<Agent>().lambda().eq(true, Agent::getStatus, 1));
+        if (CollectionUtils.isNotEmpty(healthyAgentList)) {
+            Agent server = healthyAgentList.get(RandomUtils.nextInt(0, healthyAgentList.size()));
             String path = "/prometheus/proxy/api/v1/status/buildinfo";
             try {
             	String result = AgentUtil.requestGet(server,path, null, String.class);

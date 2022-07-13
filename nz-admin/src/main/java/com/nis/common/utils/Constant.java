@@ -25,7 +25,7 @@ import cn.hutool.log.Log;
 /**
  * 常量
  *
- * 
+ *
  */
 public class Constant {
 	private final static Log logger = Log.get();
@@ -123,9 +123,9 @@ public class Constant {
 	public static final String REDIS_KEY_ENDPOINT_PROM = "endpoint_prom";
 
 	/**
-	 * 支持告警的 promserver id
+	 * 支持告警的 agent id (prometheus)
 	 */
-	public static final String REDIS_KEY_SUPPORT_ALERT_PROMSERVER_ID = "support_alert_promserver_id";
+	public static final String REDIS_KEY_SUPPORT_ALERT_AGENT_ID = "support_alert_agent_id";
 
 	/**
 	 * 记录
@@ -504,7 +504,7 @@ public class Constant {
 		agentOrderFieldMap.put("id", "ps.id");
 		agentOrderFieldMap.put("type", "ps.type");
 		agentOrderFieldMap.put("status", "ps.status");
-		TABLE_NAME_ORDER_FIELD_MAPPING.put("prom_server", agentOrderFieldMap);
+		TABLE_NAME_ORDER_FIELD_MAPPING.put("agent", agentOrderFieldMap);
 
 		Map<String, String> expreOrderFieldMap = new HashMap<>();
 		expreOrderFieldMap.put("name", "name");
@@ -541,8 +541,8 @@ public class Constant {
 		operationLogOrderFieldMap.put("operation", "sl.operation");
 		operationLogOrderFieldMap.put("type", "sl.type");
 		TABLE_NAME_ORDER_FIELD_MAPPING.put("sys_log", operationLogOrderFieldMap);
-		
-		
+
+
 		Map<String, String> ipamSubnetOrderFieldMap = new HashMap<>();
 		ipamSubnetOrderFieldMap.put("name", "ipam.name");
 		ipamSubnetOrderFieldMap.put("type", "ipam.type");
@@ -646,7 +646,7 @@ public class Constant {
 		}
 	}
 
-	public enum PromserverType {
+	public enum AgentType {
 		GLOBAL("global", 1), PER_DATACENTER("per_datacenter", 2), THANOS_QUERY("thanos_query", 3),
 		THANOS_RULE("thanos_rule", 4), THANOS_SIDECAR("thanos_sidecar", 5), THANOS_STORE("thanos_store", 6),
 		THANOS_COMPACTOR("thanos_compactor", 7), LOKI("loki", 11);
@@ -654,7 +654,7 @@ public class Constant {
 		private String name;
 		private Integer value;
 
-		PromserverType(String name, Integer value) {
+		AgentType(String name, Integer value) {
 			this.value = value;
 			this.name = name;
 		}
@@ -675,8 +675,8 @@ public class Constant {
 			this.name = name;
 		}
 
-		public static PromserverType getPromserverType(Integer value) {
-			for (PromserverType server : PromserverType.values()) {
+		public static AgentType getAgentType(Integer value) {
+			for (AgentType server : AgentType.values()) {
 				if (server.getValue().equals(value)) {
 					return server;
 				}
@@ -831,9 +831,9 @@ public class Constant {
 	public static final String SYSCONFIG_KEY_GENERATOR_PATH = "generator_path";
 	// 配置表中 blackbox 源， 1: global 2: per-datacenter 默认：1
 	public static final String SYSCONFIG_KEY_ASSET_PING_FROM = "asset_ping_from";
-	
+
 	public static final String SYSCONFIG_KEY_ASSET_PING = "asset_ping";
-	
+
 	// 配置表中 配置prometheus是否开启联邦模式，1：开启，0：关闭（界面禁用 添加选择 per-datacenter agent，所有endpoint
 	// 配置信息 hash 分布到 global prometheus）
 	public static final String SYSCONFIG_KEY_PROM_FEDER_ENABLED = "prometheus_federation_enabled";
@@ -1106,7 +1106,11 @@ public class Constant {
 
 	public static final String REPORT_TOPIC_NAME = "report_topic";
 
+	public static final String BACKUP_TOPIC_NAME = "backup_topic";
+
 	public static final String REPORT_JOB_GROUP = "report_job_group";
+
+	public static final String BACKUP_JOB_GROUP = "backup_job_group";
 
 	// sys_config key
 	public static final String REPORT_EMAIL_TEMPLATE = "report_email_template";
@@ -1171,17 +1175,17 @@ public class Constant {
 	public static final String[] IMPORTFILE_TYPE_INTVALUES = {"1", "2", "3"};
 
 	public static final String[] IMPORTFILE_TYPE_STRVALUES = {"xlsx", "xls", "csv", "json"};
-	
+
 	public static final String ENDPOINT_METRICS_STATE_CACHE_KEY = "endpoint_metrics_state";
-	
+
 	public static final String ENDPOINT_LOGS_STATE_CACHE_KEY = "endpoint_logs_state";
-	
-	public static final String ASSET_TALON_STATUS_CACHE_KEY = "asset_talon_status"; 
-	
+
+	public static final String ASSET_TALON_STATUS_CACHE_KEY = "asset_talon_status";
+
 	public static final String AGENT_STATE_CACHE_KEY = "agent_state";
-	
+
 	public static final String SYSCONFIG_KEY_IPAMSUBNET_IMPORT_HEADER="ipam_subnet_import_header";
-	
+
 	public static final String SYSCONFIG_KEY_IPAMSUBNET_EXPORT_HEADER="ipam_subnet_export_header";
 
 	public static final String SYSCONFIG_KEY_IPAMIP_EXPORT_HEADER="ipam_ip_export_header";

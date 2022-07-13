@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.nis.modules.promserver.entity.Promserver;
+import com.nis.modules.promserver.entity.Agent;
 import com.nis.modules.sys.entity.SysUserEntity;
 import lombok.Data;
 
@@ -109,7 +109,7 @@ public class Dc implements Serializable {
     private List alert;
 
     @TableField(exist = false)
-    private Promserver agent;
+    private Agent agent;
 
     /**
      * 是否收藏 0:未收藏 1:已收藏

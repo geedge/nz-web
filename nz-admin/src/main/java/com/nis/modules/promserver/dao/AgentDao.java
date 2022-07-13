@@ -2,7 +2,7 @@ package com.nis.modules.promserver.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.nis.modules.promserver.entity.Promserver;
+import com.nis.modules.promserver.entity.Agent;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -10,9 +10,9 @@ import java.util.List;
 import java.util.Map;
 
 @Mapper
-public interface PromserverDao extends BaseMapper<Promserver>{
+public interface AgentDao extends BaseMapper<Agent>{
 	
-    void updateStatusInfo(@Param("promserver")Promserver promserver);
+    void updateStatusInfo(@Param("agent")Agent agent);
 
-    List<Promserver> queryList(IPage page, @Param("params") Map<String, Object> params);
+    List<Agent> queryList(IPage page, @Param("params") Map<String, Object> params);
 }

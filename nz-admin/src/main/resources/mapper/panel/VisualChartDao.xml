@@ -29,6 +29,7 @@
         <association property="panel" javaType="com.nis.modules.panel.entity.VisualPanel" columnPrefix="panel_">
         	<id property="id" column="id"/>
             <result property="name" column="name"/>
+            <result property="link" column="link"/>
         </association>
         <association property="group" javaType="com.nis.modules.panel.entity.VisualChart" columnPrefix="group_">
         	<id property="id" column="id"/>
@@ -80,6 +81,7 @@
             vce.state AS vce_state,
             vp.id as panel_id,
             vp.name as panel_name,
+            vp.link as panel_link,
             case when vch.var_type=1 then aa.name when vch.var_type=2 then me.name end as var_name
         FROM visual_chart vch
         LEFT JOIN visual_chart_element vce ON vch.id = vce.chart_id
@@ -100,6 +102,7 @@
             vcg.name as group_name,
             vp.id as panel_id,
             vp.name as panel_name,
+            vp.link as panel_link,
             case when vch.var_type=1 then aa.name when vch.var_type=2 then me.name end as var_name
         FROM visual_chart vch
         left join visual_chart vcg on vch.group_id = vcg.id

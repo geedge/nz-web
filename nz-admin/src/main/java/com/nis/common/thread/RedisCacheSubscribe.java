@@ -7,6 +7,7 @@ import javax.servlet.Filter;
 import com.alibaba.fastjson.JSONPath;
 import com.nis.common.utils.Tool;
 import com.nis.modules.report.job.ReportJobManager;
+import com.nis.modules.sys.job.SysBackJobManager;
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.crazycake.shiro.RedisCacheManager;
 import org.crazycake.shiro.RedisSessionDAO;
@@ -55,6 +56,9 @@ public class RedisCacheSubscribe  implements MessageListener{
 
 	@Autowired
 	private ReportJobManager reportJobManager;
+
+	@Autowired
+	private SysBackJobManager sysBackJobManager;
 	
 	@Override
 	public void onMessage(Message message, byte[] pattern) {
@@ -110,6 +114,30 @@ public class RedisCacheSubscribe  implements MessageListener{
 			}
 			log.info("Report consumer message, report finished");
 		}
+
+		// sys backup
+		if (StrUtil.equals(topic, Constant.BACKUP_TOPIC_NAME)) {
+			log.info("Sys-backup consumer message begin ...");
+			log.info("consumer message :{}", value);
+			// 1 开启 0 关闭
+			String state = JSONPath.read(value, "state").toString();
+
+			if (Tool.StrUtil.equalsIgnoreCase("1", StrUtil.nullToDefault(state, "1"))) {
+				try {
+					sysBackJobManager.delJob();
+					sysBackJobManager.createSysBackJob(value);
+				} catch (SchedulerException e) {
+					log.error("report job create or update error", e);
+				}
+			} else {
+				try {
+					sysBackJobManager.delJob();
+				} catch (SchedulerException e) {
+					log.error("delete sys-backup job error", e);
+				}
+			}
+			log.info("Sys-backup consumer message, finished");
+		}
 	}
 
 	@Bean
@@ -120,6 +148,7 @@ public class RedisCacheSubscribe  implements MessageListener{
 	    container.addMessageListener(listenerAdapter, new PatternTopic(Constant.SYSCONFIG_SESSION_TIMEOUT_KEY));
 	    container.addMessageListener(listenerAdapter, new PatternTopic(Constant.SYSCONFIG_SNMP_PORT_KEY));
 		container.addMessageListener(listenerAdapter, new PatternTopic(Constant.REPORT_TOPIC_NAME));
+		container.addMessageListener(listenerAdapter, new PatternTopic(Constant.BACKUP_TOPIC_NAME));
 	    return container;
 	}
 	
