@@ -378,72 +378,66 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void bulkEdit(Map<String, Object> params) {
-        Integer editType = (Integer) params.get("editType");
+        Integer editType = (Integer) params.get("editType"),enable = null;
         List<Integer> ids = (List<Integer>) params.get("ids");
-        List<MonitorEndpointConfig> endpointConfigList;
-        String editTypeStr = "logs";
-        switch(editType) {
-            // 1 metric label 2 metric enable 3 log enable
-            case 1:
-                ValidateUtils.is(params.get("labels")).notNull(RCode.ENDPOINT_LABELS_ISNULL);
-                List<Map<String,Object>> labels = (List<Map<String, Object>>) params.get("labels");
-                if(ToolUtil.isEmpty(labels)) {
-                    break;
-                }
-                endpointConfigList = endpointConfigService.list(new QueryWrapper<MonitorEndpointConfig>().lambda()
-                        .eq(MonitorEndpointConfig::getType, "metrics")
-                        .in(MonitorEndpointConfig::getEndpointId, ids));
-                for (MonitorEndpointConfig endpointConfig : endpointConfigList) {
+        List<Map> labels = null;
+        if(editType == 1){
+            ValidateUtils.is(params.get("labels")).notNull(RCode.ENDPOINT_LABELS_ISNULL);
+            labels = (List<Map>) params.get("labels");
+        } else {
+            if (!Arrays.asList(new Integer[]{0, 1}).contains(params.get("enable"))) {
+                throw new NZException(RCode.ENDPOINT_ENABLED_INVALIDE);
+            }
+            enable = (Integer) params.get("enable");
+        }
+
+        List<MonitorEndpointConfig> endpointConfigList = endpointConfigService.list(new QueryWrapper<MonitorEndpointConfig>().lambda()
+                .eq(MonitorEndpointConfig::getType, editType==3 ? "logs" : "metrics")
+                .in(MonitorEndpointConfig::getEndpointId, ids));
+        for (MonitorEndpointConfig endpointConfig : endpointConfigList) {
+            switch (editType) {
+                case 1: // metric label
                     JSONObject config = JSONObject.parseObject(endpointConfig.getConfig());
                     JSONObject configlabels = config.getJSONObject("labels");
-                    for(Map<String,Object> map : labels) {
-                        ValidateUtils.is(map.get("action")).notNull(RCode.ENDPOINT_LABELS_ACTION_ISNULL)
-                                .and(map.get("key")).notNull(RCode.ENDPOINT_LABELS_KEY_ISNULL);
-                        Integer action = (Integer) map.get("action");
-                        if (ToolUtil.equals(action, 1)) {
-                            configlabels.remove(map.get("key"));
-                        } else if (ToolUtil.equals(action, 0)) {
-                            configlabels.put(String.valueOf(map.get("key")), map.get("value"));
+                    for(Map label : labels) {
+                        ValidateUtils.is(label.get("action")).notNull(RCode.ENDPOINT_LABELS_ACTION_ISNULL)
+                                .and(label.get("key")).notNull(RCode.ENDPOINT_LABELS_KEY_ISNULL);
+                        Integer action = (Integer) label.get("action");
+                        if (ToolUtil.equals(action, 0)) {
+                            configlabels.put(ToolUtil.toStr(label.get("key")), label.get("value"));
+                        } else if (ToolUtil.equals(action, 1)) {
+                            configlabels.remove(label.get("key"));
                         } else {
                             throw new NZException(RCode.ENDPOINT_LABELS_ACTION_INVALIDE);
                         }
                     }
-                    config.put("labels", configlabels);
                     endpointConfig.setConfig(config.toJSONString());
-                }
-                endpointConfigService.updateBatchById(endpointConfigList);
-                break;
-            case 2:
-                editTypeStr = "metrics";
-            case 3:
-                if(!Arrays.asList(new Integer[]{0, 1}).contains(params.get("enable"))){
-                    throw new NZException(RCode.ENDPOINT_ENABLED_INVALIDE);
-                }
-                endpointConfigList = endpointConfigService.list(new QueryWrapper<MonitorEndpointConfig>().lambda()
-                        .eq(MonitorEndpointConfig::getType, editTypeStr)
-                        .in(MonitorEndpointConfig::getEndpointId, ids));
-                for (MonitorEndpointConfig endpointConfig : endpointConfigList) {
-                    endpointConfig.setEnable(Integer.parseInt(String.valueOf(params.get("enable"))));
-                    if(ToolUtil.equals(1, params.get("enable"))){
-                        if(ToolUtil.equals(2, editType)) {
-                            Map configMap = JSONObject.parseObject(JSONObject.toJSONString(endpointConfig), Map.class);
-                            validateEndpointMetrics(configMap);
-                            Map map = JSONObject.parseObject(String.valueOf(configMap.get("config")), Map.class);
-                            if (ToolUtil.isEmpty(map.get("host"))) {
-                                MonitorEndpoint monitorEndpoint = this.getById(endpointConfig.getEndpointId());
-                                AssetAsset asset = assetService.getById(monitorEndpoint.getAssetId());
-                                map.put("host", asset.getManageIp());
-                                endpointConfig.setConfig(JSONObject.toJSONString(map));
-                            }
-                        }else{
-                            validateEndpointLogs(JSONObject.parseObject(JSONObject.toJSONString(endpointConfig), Map.class));
+                    break;
+                case 2 : // metric enable
+                    endpointConfig.setEnable(enable);
+                    // 启用时需进行校验
+                    if (ToolUtil.equals(1, enable)) {
+                        this.validateEndpointMetrics(Tool.BeanUtil.beanToMap(endpointConfig));
+                        // 当 metric host为空时，用 asset manageIp填充
+                        config = JSONObject.parseObject(endpointConfig.getConfig());
+                        if (ToolUtil.isEmpty(config.get("host"))) {
+                            MonitorEndpoint monitorEndpoint = this.getById(endpointConfig.getEndpointId());
+                            AssetAsset asset = assetService.getById(monitorEndpoint.getAssetId());
+                            config.put("host", asset.getManageIp());
+                            endpointConfig.setConfig(config.toJSONString());
                         }
                     }
-                }
-                endpointConfigService.updateBatchById(endpointConfigList);
+                    break;
+                case 3 : // log enable
+                    endpointConfig.setEnable(enable);
+                    // 启用时需进行校验
+                    if (ToolUtil.equals(1, enable)) {
+                        this.validateEndpointLogs(Tool.BeanUtil.beanToMap(endpointConfig));
+                    }
                 break;
-            default:break;
+            }
         }
+        endpointConfigService.updateBatchById(endpointConfigList);
     }
 
     /**
