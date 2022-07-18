@@ -161,6 +161,10 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         } else {
             // 3. 其他类型不进行排序
             panelList = this.baseMapper.queryList(params);
+            for (VisualPanel visualPanel: panelList) {
+                if(ToolUtil.isNotEmpty(visualPanel.getParam()))
+                    visualPanel.setParam(JSONObject.parseObject(String.valueOf(visualPanel.getParam()), Map.class));
+            }
         }
         
         // 查询当前panel下的chart数量并且进行赋值
@@ -169,10 +173,6 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 //        	Integer chartNum = ObjectUtil.isEmpty(chartNums.get(visualPanel.getId()))?0:chartNums.get(visualPanel.getId());
 //        	visualPanel.setChartNum(chartNum);
 //        }
-        for (VisualPanel visualPanel: panelList) {
-            if(ToolUtil.isNotEmpty(visualPanel.getParam()))
-                visualPanel.setParam(JSONObject.parseObject(String.valueOf(visualPanel.getParam()), Map.class));
-        }
         return panelList;
     }
 
@@ -186,6 +186,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
     private List<VisualPanel> getVisualPanelTreeList(List<VisualPanel> panelList, Integer parentId) {
         List<VisualPanel> resultList = new ArrayList<>();
         for (VisualPanel panel : panelList) {
+            if(ToolUtil.isNotEmpty(panel.getParam()) && panel.getParam() instanceof String)
+                panel.setParam(JSONObject.parseObject(String.valueOf(panel.getParam()), Map.class));
             Integer id = panel.getId();
             Integer pid = panel.getPid();
             if (parentId.equals(pid)) {
