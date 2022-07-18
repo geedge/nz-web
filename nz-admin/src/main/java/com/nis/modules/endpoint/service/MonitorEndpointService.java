@@ -5,6 +5,7 @@ import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.project.entity.MonitorProject;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
@@ -69,5 +70,5 @@ public interface MonitorEndpointService extends IService<MonitorEndpoint> {
 
     void bulkEdit(Map<String, Object> params);
 
-    Map<String, Object> diagnose(Integer id);
+    Map<String, Object> diagnose(Integer id, HttpServletRequest request) throws IOException;
 }

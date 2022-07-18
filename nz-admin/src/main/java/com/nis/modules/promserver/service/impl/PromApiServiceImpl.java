@@ -79,7 +79,7 @@ public class PromApiServiceImpl extends ServiceImpl<AgentDao, Agent> implements 
         Agent server = null;
         if (endpointId != null) {
             HashOperations<String, String, String> opsForHash = redisTemplate.opsForHash();
-            String serverId = opsForHash.get(Constant.REDIS_KEY_ENDPOINT_PROM, endpointId);
+            String serverId = opsForHash.get(Constant.REDIS_KEY_ENDPOINT_PROM, endpointId.toString());
             server = this.getById(serverId);
         }
 

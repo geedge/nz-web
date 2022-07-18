@@ -216,9 +216,9 @@ public class MonitorEndpointController {
      */
     @GetMapping( "/endpoint/diagnose/{id}")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ENDPOINT)
-    public R diagnose(@PathVariable("id") Integer id) {
+    public R diagnose(@PathVariable("id") Integer id, HttpServletRequest request) throws IOException {
         ValidateUtils.is(id).notNull(RCode.ENDPOINT_ID_ISNULL);
-        return R.ok(monitorEndpointService.diagnose(id));
+        return R.ok(monitorEndpointService.diagnose(id, request));
     }
 
 }
