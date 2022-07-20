@@ -8,7 +8,7 @@ import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.project.entity.MonitorProject;
-import com.nis.modules.promserver.entity.Agent;
+import com.nis.modules.agent.entity.Agent;
 import lombok.Data;
 
 import java.io.Serializable;

@@ -1,4 +1,4 @@
-package com.nis.modules.promserver.controller;
+package com.nis.modules.agent.controller;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
@@ -11,11 +11,10 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
-import com.nis.modules.promserver.service.LokiApiService;
+import com.nis.modules.agent.service.LokiApiService;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateFormatUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -156,13 +155,19 @@ public class LokiLogController {
 
 	private List<List<Map>> requestLokiApi(List<Map> requestParamList) {
 		List<Callable<JSONObject>> tasks = new ArrayList<>();
-		for (Map requestParam : requestParamList) {
+		for (Map<String, String> requestParam : requestParamList) {
 			Callable task = new Callable() {
 				@Override
 				public JSONObject call() throws Exception {
 					JSONObject jsonObject = null;
 					try {
-						jsonObject = lokiApiService.query_range(HttpEntity.EMPTY, requestParam);
+						String query = requestParam.get("query");
+						String start = requestParam.get("start");
+						String end = requestParam.get("end");
+						String limit = requestParam.get("limit");
+						String interval = requestParam.get("interval");
+						String direction = requestParam.get("direction");
+						jsonObject = lokiApiService.query_range(query, start, end, limit, null, interval, direction, null, null);
 					} catch (Exception e) {
 						log.error(e);
 					}

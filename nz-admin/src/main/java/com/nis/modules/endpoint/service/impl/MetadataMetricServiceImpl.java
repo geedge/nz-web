@@ -5,20 +5,18 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
+import com.nis.modules.agent.service.PromApiService;
 import com.nis.modules.endpoint.entity.MetadataMetric;
 import com.nis.modules.endpoint.service.MetadataMetricService;
-import com.nis.modules.promserver.service.PromApiService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpEntity;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class MetadataMetricServiceImpl implements MetadataMetricService {
@@ -44,12 +42,8 @@ public class MetadataMetricServiceImpl implements MetadataMetricService {
 
 		String queryEndpoint = "{" + Constant.PROMSERVERUP_ENDPOINT_LABEL + "=\"" + endpointId + "\"}";
 
-		Map requestParam = Tool.MapUtil.newHashMap();
-		requestParam.put("agentId", pid);
-		requestParam.put("match_target", queryEndpoint);
-
 		// 发送请求
-		JSONObject result = promApiService.targetsMetadata(HttpEntity.EMPTY, requestParam);
+		JSONObject result = promApiService.targetsMetadata(null, pid.toString(), null, null, queryEndpoint, null, null);
 		if (result != null && "success".equals(result.get("status"))) {
 			JSONArray array = (JSONArray) result.get("data");
 			JSONObject jsonObject;

@@ -14,6 +14,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
+import com.nis.modules.agent.service.LokiApiService;
+import com.nis.modules.agent.service.PromApiService;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.panel.dao.VisualPanelDao;
@@ -23,8 +25,6 @@ import com.nis.modules.panel.entity.VisualPanel;
 import com.nis.modules.panel.service.VisualChartElementService;
 import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
-import com.nis.modules.promserver.service.LokiApiService;
-import com.nis.modules.promserver.service.PromApiService;
 import com.nis.modules.report.job.ReportJobManager;
 import com.nis.modules.stat.service.impl.StatServiceImpl;
 import com.nis.modules.sys.dao.SysConfigDao;
@@ -41,7 +41,6 @@ import org.quartz.SchedulerException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpEntity;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionDefinition;
@@ -814,7 +813,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         return expr;
     }
 
-    private List<CompletableFuture<Map>> recursionChartsData(List<VisualChart> chartsList, Map basicQueryParam, List<Map> varList) {
+    private List<CompletableFuture<Map>> recursionChartsData(List<VisualChart> chartsList, Map<String, String> basicQueryParam, List<Map> varList) {
         List<CompletableFuture<Map>> futureList = new ArrayList<>();
         for (VisualChart chart : chartsList) {
             String datasource = chart.getDatasource();
@@ -860,30 +859,28 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 // do nothing
             } else {
                 Integer eleIndex = 0;
+                String start = basicQueryParam.get("start");
+                String end = basicQueryParam.get("end");
+                String step = basicQueryParam.get("step");
+
                 for (VisualChartElement element : chart.getElements()) {
-                    Map<String, String> paramData2 = new HashMap<>();
-                    paramData2.putAll(basicQueryParam);
-                    paramData2.put("eleIndex", StrUtil.toString(eleIndex++));
+                    String indexStr = StrUtil.toString(eleIndex++);
                     // 将表达式进行变量渲染
                     String expr = this.replaceExprByVars(element.getExpression(), varList);
-                    paramData2.put("query", expr);
                     switch (datasource) {
                         case "metrics":
-                            paramData2.put("nullType",chartParam.get("nullType").toString());
-                            futureList.add(CompletableFuture.supplyAsync(() ->{
-                                JSONObject jsonObject = promApiService.query_range(HttpEntity.EMPTY, paramData2);
-                                jsonObject.put("eleIndex", paramData2.get("eleIndex"));
+                            futureList.add(CompletableFuture.supplyAsync(() -> {
+                                JSONObject jsonObject = promApiService.query_range(expr, start, end, step, chartParam.get("nullType").toString(), null);
+                                jsonObject.put("eleIndex", indexStr);
                                 jsonObject.put("chartId", chart.getId());
                                 return jsonObject;
                             }));
                             break;
                         case "logs":
-                            paramData2.put("format", "1");
-                            paramData2.put("direction", "backward");
-                            paramData2.put("limit", chartParam.get("limit") == null ? "100" : chartParam.get("limit").toString());
+                            String limit = chartParam.get("limit") == null ? "100" : chartParam.get("limit").toString();
                             futureList.add(CompletableFuture.supplyAsync(() -> {
-                                JSONObject jsonObject = lokiApiService.query_range(HttpEntity.EMPTY, paramData2);
-                                jsonObject.put("eleIndex", paramData2.get("eleIndex"));
+                                JSONObject jsonObject = lokiApiService.query_range(expr, start, end, limit, step, null, "backward", "1", null);
+                                jsonObject.put("eleIndex", indexStr);
                                 jsonObject.put("chartId", chart.getId());
                                 return jsonObject;
                             }));

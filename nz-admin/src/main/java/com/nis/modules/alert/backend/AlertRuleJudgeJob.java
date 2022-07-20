@@ -15,9 +15,9 @@ import com.nis.modules.alert.entity.AlertRuleEvalLog;
 import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertRuleEvalLogService;
-import com.nis.modules.promserver.entity.Agent;
-import com.nis.modules.promserver.service.LokiApiService;
-import com.nis.modules.promserver.service.PromApiService;
+import com.nis.modules.agent.entity.Agent;
+import com.nis.modules.agent.service.LokiApiService;
+import com.nis.modules.agent.service.PromApiService;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
@@ -244,17 +244,12 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 			}
 		}
 
-		Map requestParam = Tool.MapUtil.newHashMap(4);
 		JSONObject jsonObject = new JSONObject();
+		String time = queryTime == null ? "" : queryTime.toString();
 		if (type == 1) {
-			requestParam.put("query", expression);
-			requestParam.put("time", queryTime == null ? "" : queryTime);
-			jsonObject = promApiService.query(HttpEntity.EMPTY, requestParam);
+			jsonObject = promApiService.query(expression, time, null);
 		} else if (type == 2) {
-			requestParam.put("query", expression);
-			requestParam.put("limit", 1);
-			requestParam.put("time", queryTime == null ? "" : queryTime);
-			jsonObject = lokiApiService.query(HttpEntity.EMPTY, requestParam);
+			jsonObject = lokiApiService.query(expression, "1", time, null, null, null);
 		}
 		return jsonObject;
 	}

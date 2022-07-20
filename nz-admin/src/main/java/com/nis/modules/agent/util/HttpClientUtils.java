@@ -1,4 +1,4 @@
-package com.nis.modules.promserver.utils;
+package com.nis.modules.agent.util;
 
 import cn.hutool.log.Log;
 

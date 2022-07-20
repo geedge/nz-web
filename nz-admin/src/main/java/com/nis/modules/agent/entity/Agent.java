@@ -1,4 +1,4 @@
-package com.nis.modules.promserver.entity;
+package com.nis.modules.agent.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;

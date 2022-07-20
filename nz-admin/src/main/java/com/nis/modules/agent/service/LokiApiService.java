@@ -1,13 +1,11 @@
-package com.nis.modules.promserver.service;
+package com.nis.modules.agent.service;
 
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.nis.modules.promserver.entity.Agent;
-import org.springframework.http.HttpEntity;
+import com.nis.modules.agent.entity.Agent;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.util.Map;
 
 public interface LokiApiService extends IService<Agent> {
 
@@ -18,11 +16,18 @@ public interface LokiApiService extends IService<Agent> {
      * limit: The max number of entries to return. It defaults to 100. Only applies to query types which produce a stream(log lines) response.
      * time: The evaluation time for the query as a nanosecond Unix epoch or another supported format. Defaults to now.
      * direction: Determines the sort order of logs. Supported values are forward or backward. Defaults to backward.
+     * Custom parameter:
+     * format: The result of restrictions is used to query Alert Message data.
+     * filter: 可选值：1/0,默认：0 resultType = streams  时有效
      *
-     * @param httpEntity
-     * @param requestParam
+     * @param query
+     * @param limit
+     * @param time
+     * @param direction
+     * @param format
+     * @param filter
      */
-    JSONObject query(HttpEntity httpEntity, Map<String, String> requestParam);
+    JSONObject query(String query, String limit, String time, String direction, String format, String filter);
 
     /**
      * GET /loki/api/v1/query_range is used to do a query over a range of time and
@@ -38,11 +43,18 @@ public interface LokiApiService extends IService<Agent> {
      * format: The result of restrictions is used to query Alert Message data.
      * filter: 可选值：1/0,默认：0 resultType = streams  时有效
      *
-     * @param httpEntity
-     * @param requestParam
+     * @param query
+     * @param start
+     * @param end
+     * @param limit
+     * @param step
+     * @param interval
+     * @param direction
+     * @param format
+     * @param filter
      * @return
      */
-    JSONObject query_range(HttpEntity httpEntity, Map<String, String> requestParam);
+    JSONObject query_range(String query, String start, String end, String limit, String step, String interval, String direction, String format, String filter);
 
 
     /**
@@ -53,11 +65,11 @@ public interface LokiApiService extends IService<Agent> {
      * end: The end time for the query as a nanosecond Unix epoch. Defaults to now.
      *
      * @param proxyPath
-     * @param httpEntity
-     * @param requestParam
+     * @param start
+     * @param end
      * @return
      */
-    JSONObject labels(String proxyPath, HttpEntity httpEntity, Map<String, String> requestParam);
+    JSONObject labels(String proxyPath, String start, String end);
 
 
     /**

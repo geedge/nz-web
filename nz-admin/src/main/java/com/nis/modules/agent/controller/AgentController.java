@@ -1,47 +1,35 @@
 package com.nis.modules.agent.controller;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Pattern;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import com.nis.modules.promserver.service.AgentService;
-import org.apache.shiro.authz.annotation.RequiresPermissions;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.nis.common.exception.NZException;
-import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.CommonUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.TemplateUtil;
-import com.nis.common.utils.Tool;
-import com.nis.modules.agent.util.AgentUtil;
-import com.nis.modules.promserver.entity.Agent;
-import com.nis.modules.sys.service.SysConfigService;
-
 import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.net.url.UrlBuilder;
 import cn.hutool.json.JSONObject;
 import cn.hutool.log.Log;
+import com.nis.common.annotation.SysLog;
+import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.*;
+import com.nis.modules.agent.entity.Agent;
+import com.nis.modules.agent.service.AgentService;
+import com.nis.modules.agent.util.AgentUtil;
+import com.nis.modules.sys.service.SysConfigService;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
+import org.springframework.web.bind.annotation.*;
 
-@RestController("agentManageController")
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
+
+@RestController
 @RequestMapping("/agent")
 public class AgentController {
 	private Log log = Log.get();
@@ -57,6 +45,55 @@ public class AgentController {
 
 	@Autowired
 	private SysConfigService sysConfigService;
+
+	/**
+	 * 详情
+	 *
+	 * @param id
+	 * @return
+	 */
+	@GetMapping("/{id}")
+	public R agentDetails(@PathVariable("id") Integer id) {
+		return R.ok(agentService.queryAgentDetails(id));
+	}
+
+	@GetMapping
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROMSERVER)
+	public R list(@RequestParam Map<String, Object> params) {
+		PageUtils page = agentService.queryPage(params);
+		return R.ok(page);
+	}
+
+	@PostMapping
+	@SysLog(operation = OperationEnum.ADD, type = TypeEnum.PROMSERVER)
+	@RequiresPermissions({"agent:save"})
+	public R save(@RequestBody Agent agent) {
+
+		Map map = new HashMap(2);
+		map.put("id", agentService.saveOrUpdateAgent(agent, false));
+		return R.ok(map);
+	}
+
+	@PutMapping
+	@SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.PROMSERVER)
+	@RequiresPermissions({"agent:update"})
+	public R modify(@RequestBody Agent agent) {
+		ValidateUtils.is(agent.getId()).notNull(RCode.AGENT_ID_ISNULL);
+
+		Map map = new HashMap(2);
+		map.put("id", agentService.saveOrUpdateAgent(agent, true));
+		return R.ok(map);
+	}
+
+	@DeleteMapping
+	@SysLog(operation = OperationEnum.DELETE, type = TypeEnum.PROMSERVER)
+	@RequiresPermissions({"agent:delete"})
+	public R remove(String ids) {
+		ValidateUtils.is(ids).notNull(RCode.AGENT_ID_ISNULL);
+		String[] split = ids.split(",");
+		agentService.removeByIds(Arrays.asList(split));
+		return R.ok();
+	}
 
 	/**
 	 * @Description 下载 install.sh脚本

@@ -1,23 +1,18 @@
-package com.nis.modules.promserver.controller;
+package com.nis.modules.agent.controller;
 
-import cn.hutool.core.lang.Pair;
 import cn.hutool.core.util.URLUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
-import com.nis.modules.promserver.service.LokiApiService;
-import com.nis.modules.promserver.utils.AgentProxyApiUtil;
+import com.nis.modules.agent.service.LokiApiService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Map;
 
 @RestController
 @SuppressWarnings("all")
@@ -46,16 +41,15 @@ public class LokiProxyController {
                 String query = request.getParameter("query");
                 ValidateUtils.is(query).notNull(RCode.AGENT_PARAM_QUERY_ISNULL);
 
-                Map<String, String> requestParam = Tool.MapUtil.of(
-                        Pair.of("query", URLUtil.decode(query)),
-                        Pair.of("limit", request.getParameter("limit")),
-                        Pair.of("time", request.getParameter("time")),
-                        Pair.of("direction", request.getParameter("direction")),
-                        Pair.of("format", request.getParameter("format")),
-                        Pair.of("filter", request.getParameter("filter")));
+                String queryStr = URLUtil.decode(query);
+                String limit = request.getParameter("limit");
+                String time = request.getParameter("time");
+                String direction = request.getParameter("direction");
 
-                HttpEntity httpEntity = AgentProxyApiUtil.buildHttpEntity(request);
-                JSONObject resultData = lokiApiService.query(httpEntity, requestParam);
+                String format = request.getParameter("format");
+                String filter = request.getParameter("filter");
+
+                JSONObject resultData = lokiApiService.query(queryStr, limit, time, direction, format, filter);
                 return R.ok().put("status", resultData.get("status")).putAllData(resultData);
             }
             /**
@@ -81,17 +75,16 @@ public class LokiProxyController {
                         .and(start).notNull(RCode.AGENT_PARAM_START_ISNULL)
                         .and(end).notNull(RCode.AGENT_PARAM_END_ISNULL);
 
-                Map<String, String> requestParam = Tool.MapUtil.of(
-                        Pair.of("query", URLUtil.decode(query)),
-                        Pair.of("start", start), Pair.of("end", end),
-                        Pair.of("limit", request.getParameter("limit")),
-                        Pair.of("step", request.getParameter("step")),
-                        Pair.of("direction", request.getParameter("direction")),
-                        Pair.of("format", request.getParameter("format")),
-                        Pair.of("filter", request.getParameter("filter")));
+                String queryStr = URLUtil.decode(query);
+                String limit = request.getParameter("limit");
+                String step = request.getParameter("step");
+                String direction = request.getParameter("direction");
+                String interval = request.getParameter("interval");
 
-                HttpEntity httpEntity = AgentProxyApiUtil.buildHttpEntity(request);
-                JSONObject resultData = lokiApiService.query_range(httpEntity, requestParam);
+                String format = request.getParameter("format");
+                String filter = request.getParameter("filter");
+
+                JSONObject resultData = lokiApiService.query_range(queryStr, start, end, limit, step, interval, direction, format, filter);
                 return R.ok().put("status", resultData.get("status")).putAllData(resultData);
             }
             /**
@@ -102,13 +95,10 @@ public class LokiProxyController {
              *      end: The end time for the query as a nanosecond Unix epoch. Defaults to now.
              */
             case "/loki/api/v1/labels": {
-                Map<String, String> requestParam = Tool.MapUtil.of(
-                        Pair.of("start", request.getParameter("start")),
-                        Pair.of("start", request.getParameter("start")),
-                        Pair.of("end", request.getParameter("end")));
+                String start = request.getParameter("start");
+                String end = request.getParameter("end");
 
-                HttpEntity httpEntity = AgentProxyApiUtil.buildHttpEntity(request);
-                JSONObject resultData = lokiApiService.labels(proxyPath, httpEntity, requestParam);
+                JSONObject resultData = lokiApiService.labels(proxyPath, start, end);
                 return R.ok().put("status", resultData.get("status")).putAllData(resultData);
             }
             default: {
@@ -120,15 +110,11 @@ public class LokiProxyController {
 
     @RequestMapping(value = "/logs/loki/api/v1/label/{label_name}/values")
     public R labelValues(HttpServletRequest request) throws IOException {
-        Map<String, String> requestParam = Tool.MapUtil.of(
-                Pair.of("start", request.getParameter("start")),
-                Pair.of("start", request.getParameter("start")),
-                Pair.of("end", request.getParameter("end")));
-
-        HttpEntity httpEntity = AgentProxyApiUtil.buildHttpEntity(request);
+        String start = request.getParameter("start");
+        String end = request.getParameter("end");
         String proxyPath = request.getServletPath().substring(5);
 
-        JSONObject resultData = lokiApiService.labels(proxyPath, httpEntity, requestParam);
+        JSONObject resultData = lokiApiService.labels(proxyPath, start, end);
         return R.ok().put("status", resultData.get("status")).putAllData(resultData);
     }
 }

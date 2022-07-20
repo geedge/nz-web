@@ -1,8 +1,8 @@
-package com.nis.modules.promserver.service;
+package com.nis.modules.agent.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
-import com.nis.modules.promserver.entity.Agent;
+import com.nis.modules.agent.entity.Agent;
 
 import java.util.Map;
 

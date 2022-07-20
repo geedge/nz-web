@@ -1,4 +1,4 @@
-package com.nis.modules.promserver.service.impl;
+package com.nis.modules.agent.service.impl;
 
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
@@ -13,10 +13,10 @@ import com.nis.common.utils.Constant;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
-import com.nis.modules.promserver.dao.AgentDao;
-import com.nis.modules.promserver.entity.Agent;
-import com.nis.modules.promserver.service.PromApiService;
-import com.nis.modules.promserver.utils.AgentProxyApiUtil;
+import com.nis.modules.agent.dao.AgentDao;
+import com.nis.modules.agent.entity.Agent;
+import com.nis.modules.agent.service.PromApiService;
+import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.sys.service.SysConfService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -25,7 +25,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.http.HttpEntity;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
@@ -37,9 +36,6 @@ import java.util.concurrent.TimeUnit;
 public class PromApiServiceImpl extends ServiceImpl<AgentDao, Agent> implements PromApiService {
 
     private static Log log = Log.get();
-
-    @Autowired
-    private AgentProxyApiUtil agentProxyApiUtil;
 
     @Autowired
     private RedisTemplate redisTemplate;
@@ -103,42 +99,79 @@ public class PromApiServiceImpl extends ServiceImpl<AgentDao, Agent> implements 
         return server;
     }
 
+
+    /**
+     * GET
+     * URL query parameters:
+     *      query=<string>: Prometheus expression query string.
+     *      time=<rfc3339 | unix_timestamp>: Evaluation timestamp. Optional.
+     *      timeout=<duration>: Evaluation timeout. Optional. Defaults to and is capped by the value of the -query.timeout flag.
+     *
+     * @param query
+     * @param time
+     * @param timeout
+     * @return
+     */
     @Override
-    public JSONObject query(HttpEntity httpEntity, Map<String, String> requestParam) {
+    public JSONObject query(String query, String time, String timeout) {
         String proxyPathPrefix = this.getPromApiProxyPathPrefix();
         Agent server = this.getOneAvaliableGlobalAgent();
 
         String url = String.format("%s%s", proxyPathPrefix, "/api/v1/query");
 
-        String query = requestParam.get("query");
-        requestParam.put("query", this.handleQueryExprIntervalVal(query, StrUtil.EMPTY));
+        query = this.handleQueryExprIntervalVal(query, StrUtil.EMPTY);
+        Map<Object, Object> requestParam = Tool.MapUtil.builder()
+                .put("query", query)
+                .put("time", time)
+                .put("timeout", timeout)
+                .build();
 
-        return agentProxyApiUtil.getForObject(server, url, httpEntity, requestParam);
+        return AgentUtil.getForObject(server, url, requestParam);
     }
 
+    /**
+     * GET
+     * URL query parameters:
+     *      query=<string>: Prometheus expression query string.
+     *      start=<rfc3339 | unix_timestamp>: Start timestamp, inclusive.
+     *      end=<rfc3339 | unix_timestamp>: End timestamp, inclusive.
+     *      step=<duration | float>: Query resolution step width in duration format or float number of seconds.
+     *      timeout=<duration>: Evaluation timeout. Optional. Defaults to and is capped by the value of the -query.timeout flag.
+     * Custom parameter:
+     *      nullType=<string>: Automatic filling data type
+     *      filter=<string>: The result of restrictions is used to query Alert Message data.
+     *
+     * @param query
+     * @param start
+     * @param end
+     * @param step
+     * @param nullType
+     * @param filter
+     * @return
+     */
     @Override
-    public JSONObject query_range(HttpEntity httpEntity, Map<String, String> requestParam) {
+    public JSONObject query_range(String query, String start, String end, String step, String nullType, String filter) {
         String proxyPathPrefix = this.getPromApiProxyPathPrefix();
         Agent server = this.getOneAvaliableGlobalAgent();
 
         String url = String.format("%s%s", proxyPathPrefix, "/api/v1/query_range");
 
-        String query = requestParam.get("query");
-        String step = requestParam.get("step");
+        query = this.handleQueryExprIntervalVal(query, step);
 
-        requestParam.put("query", this.handleQueryExprIntervalVal(query, step));
-        JSONObject resultData = agentProxyApiUtil.getForObject(server, url, httpEntity, requestParam);
+        Map<Object, Object> requestParam = Tool.MapUtil.builder()
+                .put("query", query)
+                .put("start", start)
+                .put("end", end)
+                .put("step", step)
+                .build();
+
+        JSONObject resultData = AgentUtil.getForObject(server, url, requestParam);
 
         if ("success".equals(resultData.get("status"))) {
             // 处理缺失时间数据
-            String nullType = requestParam.get("nullType");
             nullType = StrUtil.isEmpty(nullType) ? "connected" : nullType;
 
             if (Tool.MapUtil.isNotEmpty(resultData) && resultData.get("data") != null) {
-                Integer start = Integer.valueOf(requestParam.get("start"));
-                Integer end = Integer.valueOf(requestParam.get("end"));
-
-                String filter = requestParam.get("filter");
                 Map data = (Map) resultData.get("data");
                 JSONArray resultArray = (JSONArray) data.get("result");
                 // 去除 prometheus 返回结果中不符合条件的数据
@@ -159,7 +192,7 @@ public class PromApiServiceImpl extends ServiceImpl<AgentDao, Agent> implements 
                     data.put("result", Collections.emptyList());
                     resultData.put("message", String.format("Configure the maximum number of Series: %s, query the total number of Series: %s", queryMaxSeriesIntVal, resultArray.size()));
                 } else {
-                    data.put("result", addMissingData(nullType, start, end, step, resultArray));
+                    data.put("result", addMissingData(nullType, Integer.valueOf(start), Integer.valueOf(end), step, resultArray));
                 }
                 resultData.put("data", data);
             }
@@ -167,79 +200,193 @@ public class PromApiServiceImpl extends ServiceImpl<AgentDao, Agent> implements 
         return resultData;
     }
 
+    /**
+     * GET
+     * URL query parameters:
+     *      start=<rfc3339 | unix_timestamp>: Start timestamp. Optional.
+     *      end=<rfc3339 | unix_timestamp>: End timestamp. Optional.
+     *      match[]=<series_selector>: Repeated series selector argument that selects the series from which to read the label names. Optional.
+     *
+     * @param path
+     * @param start
+     * @param end
+     * @param matchList
+     * @return
+     */
     @Override
-    public JSONObject labels(String path, HttpEntity httpEntity, Map<String, Object> requestParam) {
+    public JSONObject labels(String path, String start, String end, List<String> matchList) {
         String proxyPathPrefix = this.getPromApiProxyPathPrefix();
         Agent server = this.getOneAvaliableGlobalAgent();
 
         String url = String.format("%s%s", proxyPathPrefix, path);
-        JSONObject resultData = agentProxyApiUtil.getForObject(server, url, httpEntity, requestParam);
+
+        Map<Object, Object> requestParam = Tool.MapUtil.builder()
+                .put("start", start)
+                .put("end", end)
+                .put("match[]", matchList)
+                .build();
+
+        JSONObject resultData = AgentUtil.getForObject(server, url, requestParam);
         return resultData;
     }
 
+    /**
+     * GET
+     * URL query parameters:
+     *      match[]=<series_selector>: Repeated series selector argument that selects the series to return.
+     *          At least one match[] argument must be provided.
+     *      start=<rfc3339 | unix_timestamp>: Start timestamp.
+     *      end=<rfc3339 | unix_timestamp>: End timestamp.
+     *
+     * @param start
+     * @param end
+     * @param matchList
+     * @return
+     */
     @Override
-    public JSONObject series(HttpEntity httpEntity, Map<String, Object> requestParam) {
+    public JSONObject series(String start, String end, List<String> matchList) {
         String proxyPathPrefix = this.getPromApiProxyPathPrefix();
         Agent server = this.getOneAvaliableGlobalAgent();
 
         String url = String.format("%s%s", proxyPathPrefix, "/api/v1/series");
-        JSONObject resultData = agentProxyApiUtil.getForObject(server, url, httpEntity, requestParam);
+
+        Map<Object, Object> requestParam = Tool.MapUtil.builder()
+                .put("start", start)
+                .put("end", end)
+                .put("match[]", matchList)
+                .build();
+
+        JSONObject resultData = AgentUtil.getForObject(server, url, requestParam);
         return resultData;
     }
 
+    /**
+     * GET
+     * URL query parameters:
+     *      state: The state query parameter allows the caller to filter by active or dropped targets,
+     *      (e.g., state=active, state=dropped, state=any). Note that an empty array is still returned for targets that are filtered out. Other values are ignored.
+     * Custom parameter:
+     *      dcId: Datacenter id Optional.
+     *      agentId: Nz agent id
+     *      type: Nz agent type Optional.
+     *      endpointId: Endpoint id.
+     *
+     * @param dcId
+     * @param agentId
+     * @param endpointId
+     * @param type
+     * @param stateList
+     * @param limit
+     * @return
+     */
     @Override
-    public JSONObject targets(HttpEntity httpEntity, Map<String, Object> requestParam) {
+    public JSONObject targets(String dcId, String agentId, String endpointId, String type, List<String> stateList, String limit) {
         // 获取 targets 代理 path
         String agentPath = sysConfService.getValue(Constant.CONFAGENT_PATH);
         String promPathPrefix = String.format("%s%s", agentPath, "/prometheus/proxy");
 
         String url = String.format("%s%s", promPathPrefix, "/api/v1/targets");
 
-        Integer agentId = requestParam.get("agentId") != null ? Integer.valueOf(requestParam.get("agentId").toString()) : null;
-        Integer dcId = requestParam.get("dcId") != null ? Integer.valueOf(requestParam.get("dcId").toString()) : null;
-        Integer endpointId = requestParam.get("endpointId") != null ? Integer.valueOf(requestParam.get("endpointId").toString()) : null;
-        Integer type = requestParam.get("type") != null ? Integer.valueOf(requestParam.get("type").toString()) : null;
+        Integer agentIdInt = StrUtil.isNotEmpty(agentId) ? Integer.valueOf(agentId) : null;
+        Integer dcIdInt = StrUtil.isNotEmpty(dcId) ? Integer.valueOf(dcId) : null;
+        Integer endpointIdInt = StrUtil.isNotEmpty(endpointId) ? Integer.valueOf(endpointId) : null;
+        Integer typeInt = StrUtil.isNotEmpty(type) ? Integer.valueOf(type) : null;
 
-        Agent server = this.getOneAvaPromServer(agentId, dcId, endpointId, type);
+        Agent server = this.getOneAvaPromServer(agentIdInt, dcIdInt, endpointIdInt, typeInt);
 
-        Tool.MapUtil.removeAny(requestParam, "agentId", "dcId", "endpointId", "type");
-        JSONObject resultData = agentProxyApiUtil.getForObject(server, url, httpEntity, requestParam);
+        Map<Object, Object> requestParam = Tool.MapUtil.builder()
+                .put("state", stateList)
+                .put("limit", limit)
+                .build();
+
+        JSONObject resultData = AgentUtil.getForObject(server, url, requestParam);
         return resultData;
     }
 
+    /**
+     * GET
+     * URL query parameters:
+     *      match_target=<label_selectors>: Label selectors that match targets by their label sets. All targets are selected if left empty.
+     *      metric=<string>: A metric name to retrieve metadata for. All metric metadata is retrieved if left empty.
+     *      limit=<number>: Maximum number of targets to match.
+     * Custom parameter:
+     *      dcId: Datacenter id Optional.
+     *      agentId: Nz agent id
+     *      type: Nz agent type Optional.
+     *      endpointId: Endpoint id.
+     *
+     * @param dcId
+     * @param agentId
+     * @param endpointId
+     * @param type
+     * @param matchTarget
+     * @param metric
+     * @param limit
+     * @return
+     */
     @Override
-    public JSONObject targetsMetadata(HttpEntity httpEntity, Map<String, Object> requestParam) {
+    public JSONObject targetsMetadata(String dcId, String agentId, String endpointId, String type, String matchTarget, String metric, String limit) {
         // 获取 /targets/metadata 代理 path
         String agentPath = sysConfService.getValue(Constant.CONFAGENT_PATH);
         String promPathPrefix = String.format("%s%s", agentPath, "/prometheus/proxy");
 
         String url = String.format("%s%s", promPathPrefix, "/api/v1/targets/metadata");
 
-        Integer agentId = requestParam.get("agentId") != null ? Integer.valueOf(requestParam.get("agentId").toString()) : null;
-        Integer dcId = requestParam.get("dcId") != null ? Integer.valueOf(requestParam.get("dcId").toString()) : null;
-        Integer endpointId = requestParam.get("endpointId") != null ? Integer.valueOf(requestParam.get("endpointId").toString()) : null;
-        Integer type = requestParam.get("type") != null ? Integer.valueOf(requestParam.get("type").toString()) : null;
+        Integer agentIdInt = StrUtil.isNotEmpty(agentId) ? Integer.valueOf(agentId) : null;
+        Integer dcIdInt = StrUtil.isNotEmpty(dcId) ? Integer.valueOf(dcId) : null;
+        Integer endpointIdInt = StrUtil.isNotEmpty(endpointId) ? Integer.valueOf(endpointId) : null;
+        Integer typeInt = StrUtil.isNotEmpty(type) ? Integer.valueOf(type) : null;
 
-        Agent server = this.getOneAvaPromServer(agentId, dcId, endpointId, type);
+        Agent server = this.getOneAvaPromServer(agentIdInt, dcIdInt, endpointIdInt, typeInt);
 
-        Tool.MapUtil.removeAny(requestParam, "agentId", "dcId", "endpointId", "type");
-        JSONObject resultData = agentProxyApiUtil.getForObject(server, url, httpEntity, requestParam);
+        Map<Object, Object> requestParam = Tool.MapUtil.builder()
+                .put("match_target", matchTarget)
+                .put("metric", metric)
+                .put("limit", limit)
+                .build();
+
+        JSONObject resultData = AgentUtil.getForObject(server, url, requestParam);
         return resultData;
     }
 
+    /**
+     * GET
+     * URL query parameters:
+     *      limit=<number>: Maximum number of metrics to return.
+     *      metric=<string>: A metric name to filter metadata for. All metric metadata is retrieved if left empty.
+     * Custom parameter:
+     *      dcId: Datacenter id Optional.
+     *      agentId: Nz agent id
+     *      type: Nz agent type Optional.
+     *      endpointId: Endpoint id.
+     *
+     * @param dcId
+     * @param agentId
+     * @param endpointId
+     * @param type
+     * @param metric
+     * @param limit
+     * @return
+     * @link https://prometheus.io/docs/prometheus/latest/querying/api/
+     */
     @Override
-    public JSONObject metadata(HttpEntity httpEntity, Map<String, Object> requestParam) {
+    public JSONObject metadata(String dcId, String agentId, String endpointId, String type, String metric, String limit) {
         String proxyPathPrefix = this.getPromApiProxyPathPrefix();
         String url = String.format("%s%s", proxyPathPrefix, "/api/v1/metadata");
 
-        Integer agentId = requestParam.get("agentId") != null ? Integer.valueOf(requestParam.get("agentId").toString()) : null;
-        Integer dcId = requestParam.get("dcId") != null ? Integer.valueOf(requestParam.get("dcId").toString()) : null;
-        Integer endpointId = requestParam.get("endpointId") != null ? Integer.valueOf(requestParam.get("endpointId").toString()) : null;
-        Integer type = requestParam.get("type") != null ? Integer.valueOf(requestParam.get("type").toString()) : null;
-        Agent server = this.getOneAvaPromServer(agentId, dcId, endpointId, type);
+        Integer agentIdInt = StrUtil.isNotEmpty(agentId) ? Integer.valueOf(agentId) : null;
+        Integer dcIdInt = StrUtil.isNotEmpty(dcId) ? Integer.valueOf(dcId) : null;
+        Integer endpointIdInt = StrUtil.isNotEmpty(endpointId) ? Integer.valueOf(endpointId) : null;
+        Integer typeInt = StrUtil.isNotEmpty(type) ? Integer.valueOf(type) : null;
 
-        Tool.MapUtil.removeAny(requestParam, "agentId", "dcId", "endpointId", "type");
-        JSONObject resultData = agentProxyApiUtil.getForObject(server, url, httpEntity, requestParam);
+        Agent server = this.getOneAvaPromServer(agentIdInt, dcIdInt, endpointIdInt, typeInt);
+
+        Map<Object, Object> requestParam = Tool.MapUtil.builder()
+                .put("metric", metric)
+                .put("limit", limit)
+                .build();
+
+        JSONObject resultData = AgentUtil.getForObject(server, url, requestParam);
         return resultData;
     }
 
@@ -264,7 +411,7 @@ public class PromApiServiceImpl extends ServiceImpl<AgentDao, Agent> implements 
         String promPathPrefix = this.getPromApiProxyPathPrefix();
         String url = String.format("%s%s", promPathPrefix, promPath);
 
-        agentProxyApiUtil.agentApiProxy(server, url, request, response);
+        AgentUtil.agentApiProxy(server, url, request, response);
     }
 
     /**

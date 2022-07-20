@@ -1,4 +1,4 @@
-package com.nis.modules.promserver.service.impl;
+package com.nis.modules.agent.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
@@ -12,9 +12,9 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.asset.service.DcService;
-import com.nis.modules.promserver.dao.AgentDao;
-import com.nis.modules.promserver.entity.Agent;
-import com.nis.modules.promserver.service.AgentService;
+import com.nis.modules.agent.dao.AgentDao;
+import com.nis.modules.agent.entity.Agent;
+import com.nis.modules.agent.service.AgentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;

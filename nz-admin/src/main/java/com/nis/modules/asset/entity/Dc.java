@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.nis.modules.promserver.entity.Agent;
+import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.sys.entity.SysUserEntity;
 import lombok.Data;
 

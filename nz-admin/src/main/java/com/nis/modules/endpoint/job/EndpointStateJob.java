@@ -13,8 +13,8 @@ import com.nis.modules.endpoint.entity.MonitorEndpointConfig;
 import com.nis.modules.endpoint.entity.MonitorEndpointState;
 import com.nis.modules.endpoint.service.MonitorEndpointConfigService;
 import com.nis.modules.endpoint.service.MonitorEndpointStateService;
-import com.nis.modules.promserver.entity.Agent;
-import com.nis.modules.promserver.service.PromApiService;
+import com.nis.modules.agent.entity.Agent;
+import com.nis.modules.agent.service.PromApiService;
 import org.apache.commons.lang3.time.StopWatch;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
@@ -213,10 +213,7 @@ public class EndpointStateJob extends QuartzJobBean {
     }
 
     private Map<Integer, String> getMetricsEndpointIdAndStateMapByPath() {
-        Map requestParam = Tool.MapUtil.newHashMap(2);
-        requestParam.put("query", "up");
-
-        JSONObject jsonObject = promApiService.query(HttpEntity.EMPTY, requestParam);
+        JSONObject jsonObject = promApiService.query("up", null, null);
         Map dataMap = (Map) jsonObject.get("data");
         List<Map> resultList = JSONObject.parseArray(JSONObject.toJSONString(dataMap.get("result")), Map.class);
 

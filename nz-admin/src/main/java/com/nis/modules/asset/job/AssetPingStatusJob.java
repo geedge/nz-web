@@ -14,8 +14,8 @@ import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetPing;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetPingService;
-import com.nis.modules.promserver.entity.Agent;
-import com.nis.modules.promserver.service.PromApiService;
+import com.nis.modules.agent.entity.Agent;
+import com.nis.modules.agent.service.PromApiService;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import org.apache.commons.lang3.time.StopWatch;
@@ -99,15 +99,8 @@ public class AssetPingStatusJob extends QuartzJobBean {
         // 减去 半个 asset ping interval 周期，保证数据的完整性
         long time = (currentTimeMillis - Long.valueOf(assetPingIntervalStr) * 1000 / 2) / 1000;
 
-        Map requestParam = new HashMap(4);
-        requestParam.put("query", "probe_success");
-        requestParam.put("time", time);
-
-        Map<String, String> assetHostAndStateMap = this.getPingMetricsData(requestParam);
-
-        requestParam.put("query", "probe_icmp_duration_seconds{phase='rtt'}");
-        requestParam.put("time", time);
-        Map<String, String> assetHostAndRttMap = this.getPingMetricsData(requestParam);
+        Map<String, String> assetHostAndStateMap = this.getPingMetricsData("probe_success", time);
+        Map<String, String> assetHostAndRttMap = this.getPingMetricsData("probe_icmp_duration_seconds{phase='rtt'}",time);
 
         // 如果当前未查询到数据，更新状态为 down
         if (ToolUtil.isEmpty(assetHostAndStateMap) || ToolUtil.isEmpty(assetHostAndRttMap)) {
@@ -203,11 +196,12 @@ public class AssetPingStatusJob extends QuartzJobBean {
     /**
      * 根据 url 请求带理接口并返回 asset host / state ，rtt 数据
      *
-     * @param requestParam
+     * @param query
+     * @param time
      * @return
      */
-    private Map<String, String> getPingMetricsData(Map requestParam) {
-        JSONObject jsonObject = promApiService.query(HttpEntity.EMPTY, requestParam);
+    private Map<String, String> getPingMetricsData(String query, long time) {
+        JSONObject jsonObject = promApiService.query(query, String.valueOf(time), null);
         Map dataMap = (Map) jsonObject.get("data");
         List<Map> resultList = JSONObject.parseArray(JSONObject.toJSONString(dataMap.get("result")), Map.class);
 

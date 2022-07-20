@@ -12,7 +12,7 @@ import com.nis.common.utils.TemplateUtil;
 import com.nis.common.utils.Tool;
 import com.nis.modules.panel.entity.VisualPanel;
 import com.nis.modules.panel.service.VisualPanelService;
-import com.nis.modules.promserver.service.PromApiService;
+import com.nis.modules.agent.service.PromApiService;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysUserService;
@@ -126,12 +126,12 @@ public class ReportJob extends QuartzJobBean {
                 String format = "html";
                 String fileName = String.format("%s.%s", visualPanel.getName(), format);
 
-                // 模拟前端实现 组织快照接口 vars 参数
-                List<Map<String, String>> snapshotVars = this.getSnapshotVars(configJsonStr, queryRangeStartAndEndTime);
-                log.info("dashboard report snapshot vars: {}", JSONObject.toJSONString(snapshotVars));
-
                 Long start = queryRangeStartAndEndTime.get("start");
                 Long end = queryRangeStartAndEndTime.get("end");
+
+                // 模拟前端实现 组织快照接口 vars 参数
+                List<Map<String, String>> snapshotVars = this.getSnapshotVars(configJsonStr, start, end);
+                log.info("dashboard report snapshot vars: {}", JSONObject.toJSONString(snapshotVars));
 
                 for (SysUserEntity user : userList) {
                     // 以用户默认语言生成 快照文件
@@ -368,7 +368,7 @@ public class ReportJob extends QuartzJobBean {
         return cal.getTimeInMillis() / 1000;
     }
 
-    private List<Map<String, String>> getSnapshotVars(String paramStr, Map<String, Long> queryParam) {
+    private List<Map<String, String>> getSnapshotVars(String paramStr, Long start, Long end) {
         Map map = JSONObject.parseObject(paramStr, Map.class);
         List<Map> variables = (List<Map>) map.get("variables");
 
@@ -397,7 +397,7 @@ public class ReportJob extends QuartzJobBean {
                 }
             } else if (Tool.StrUtil.equals(type, "query")) {
                 String expression = JSONPath.read(varJsonStr, "expression").toString();
-                List<String> promiseListByExpr = this.getPromiseListByExpr(expression, queryParam);
+                List<String> promiseListByExpr = this.getPromiseListByExpr(expression, start, end);
                 Object regexObj = JSONPath.read(varJsonStr, "regex");
                 String regex = regexObj == null ? StrUtil.EMPTY : regexObj.toString();
                 String name = JSONPath.read(varJsonStr, "name").toString();
@@ -459,14 +459,15 @@ public class ReportJob extends QuartzJobBean {
      * 根据表达式查询api并简单处理返回，返回结果后续进行正则校验
      *
      * @param expression
-     * @param queryParam
+     * @param start
+     * @param end
      * @return
      */
-    private List<String> getPromiseListByExpr(String expression, Map queryParam) {
+    private List<String> getPromiseListByExpr(String expression, Long start, Long end) {
         List<String> promiseList = new ArrayList<>();
         boolean isLabelNames = Tool.ReUtil.isMatch(SPECIAL_KEY_MAP.get("label_names"), expression);
         if (isLabelNames) {
-            JSONObject resultMap = promApiService.labels("/api/v1/labels", HttpEntity.EMPTY, queryParam);
+            JSONObject resultMap = promApiService.labels("/api/v1/labels", String.valueOf(start), String.valueOf(end), null);
             List<String> labelList = (List<String>) resultMap.get("data");
 
             promiseList = Tool.CollectionUtil.isEmpty(labelList) ? new ArrayList<>() : labelList;
@@ -477,9 +478,9 @@ public class ReportJob extends QuartzJobBean {
         if (isLabelValues) {
             List<String> allGroups = Tool.ReUtil.getAllGroups(Pattern.compile(SPECIAL_KEY_MAP.get("label_values")), expression, false);
             if (allGroups.size() == 1) {
-                promiseList = this.labelValuesQuery(allGroups.get(0), StrUtil.EMPTY, queryParam);
+                promiseList = this.labelValuesQuery(allGroups.get(0), StrUtil.EMPTY, start, end);
             } else if (allGroups.size() == 2) {
-                promiseList = this.labelValuesQuery(allGroups.get(0), allGroups.get(1), queryParam);
+                promiseList = this.labelValuesQuery(allGroups.get(0), allGroups.get(1), start, end);
             }
             return promiseList;
         }
@@ -487,19 +488,19 @@ public class ReportJob extends QuartzJobBean {
         boolean isMetrics = Tool.ReUtil.isMatch(SPECIAL_KEY_MAP.get("metrics"), expression);
         if (isMetrics) {
             String metricFilterPattern = Tool.ReUtil.getGroup1(SPECIAL_KEY_MAP.get("metrics"), expression);
-            promiseList = this.metricNameQuery(metricFilterPattern, queryParam);
+            promiseList = this.metricNameQuery(metricFilterPattern, start, end);
             return promiseList;
         }
 
         boolean isQueryResult = Tool.ReUtil.isMatch(SPECIAL_KEY_MAP.get("query_result"), expression);
         if (isQueryResult) {
             String query = Tool.ReUtil.getGroup1(SPECIAL_KEY_MAP.get("query_result"), expression);
-            promiseList = this.queryResultQuery(query, queryParam);
+            promiseList = this.queryResultQuery(query);
             return promiseList;
         }
 
         // other
-        promiseList = this.metricNameAndLabelsQuery(expression, queryParam);
+        promiseList = this.metricNameAndLabelsQuery(expression, start, end);
         return promiseList;
     }
 
@@ -507,14 +508,13 @@ public class ReportJob extends QuartzJobBean {
      * other
      *
      * @param expression
-     * @param queryParam
+     * @param start
+     * @param end
      * @return
      */
-    private List metricNameAndLabelsQuery(String expression, Map queryParam) {
-        Map q = Tool.MapUtil.builder().putAll(queryParam).build();
-        q.put("match[]", expression);
-
-        JSONObject resultMap = promApiService.series(HttpEntity.EMPTY, q);
+    private List metricNameAndLabelsQuery(String expression, Long start, Long end) {
+        List<String> matchList = Tool.ListUtil.of(expression);
+        JSONObject resultMap = promApiService.series(String.valueOf(start), String.valueOf(end), matchList);
         List<Map> dataList = (List<Map>) resultMap.get("data");
 
         if (Tool.CollectionUtil.isEmpty(dataList)) return new ArrayList();
@@ -542,14 +542,10 @@ public class ReportJob extends QuartzJobBean {
      * query_result(query)
      *
      * @param query
-     * @param queryParam
      * @return
      */
-    private List queryResultQuery(String query, Map queryParam) {
-        Map q = Tool.MapUtil.builder().putAll(queryParam).build();
-        q.put("query", query);
-
-        JSONObject jsonObject = promApiService.query(HttpEntity.EMPTY, q);
+    private List queryResultQuery(String query) {
+        JSONObject jsonObject = promApiService.query(query, null, null);
         Map dataMap = (Map) jsonObject.get("data");
 
         if (Tool.MapUtil.isEmpty(dataMap)) {
@@ -585,11 +581,12 @@ public class ReportJob extends QuartzJobBean {
      * metrics(metrics_regex)
      *
      * @param metricFilterPattern
-     * @param queryParam
+     * @param start
+     * @param end
      * @return
      */
-    private List metricNameQuery(String metricFilterPattern, Map queryParam) {
-        JSONObject jsonObject = promApiService.labels("/api/v1/label/__name__/values",HttpEntity.EMPTY, queryParam);
+    private List metricNameQuery(String metricFilterPattern, Long start, Long end) {
+        JSONObject jsonObject = promApiService.labels("/api/v1/label/__name__/values", String.valueOf(start), String.valueOf(end), Tool.ListUtil.empty());
         List<String> metricsList = (List<String>)  jsonObject.get("data");
 
         if (Tool.CollectionUtil.isEmpty(metricsList)) return new ArrayList();
@@ -602,23 +599,22 @@ public class ReportJob extends QuartzJobBean {
      *
      * @param metric
      * @param label
-     * @param queryParam
+     * @param start
+     * @param end
      * @return
      */
-    private List labelValuesQuery(String metric, String label, Map queryParam) {
+    private List labelValuesQuery(String metric, String label, Long start, Long end) {
         if (StrUtil.isEmpty(metric)) {
             String url = String.format("/api/v1/label/%s/values", label);
 
-            JSONObject jsonObject = promApiService.labels(url, HttpEntity.EMPTY, queryParam);
+            JSONObject jsonObject = promApiService.labels(url, String.valueOf(start), String.valueOf(end), Tool.ListUtil.empty());
             List<String> labelValueList = (List<String>) jsonObject.get("data");
 
             labelValueList = Tool.CollectionUtil.isEmpty(labelValueList) ? new ArrayList<>() : labelValueList;
             return labelValueList;
         } else {
-            Map q = Tool.MapUtil.builder().putAll(queryParam).build();
-            q.put("match[]", metric);
-
-            JSONObject series = promApiService.series(HttpEntity.EMPTY, q);
+            List<String> matchList = Tool.ListUtil.of(metric);
+            JSONObject series = promApiService.series(String.valueOf(start), String.valueOf(end), matchList);
             List<Map> metricList = (List<Map>) series.get("data");
 
             metricList = Tool.CollectionUtil.isEmpty(metricList) ? new ArrayList<>() : metricList;

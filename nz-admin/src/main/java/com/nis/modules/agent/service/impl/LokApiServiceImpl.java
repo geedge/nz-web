@@ -1,4 +1,4 @@
-package com.nis.modules.promserver.service.impl;
+package com.nis.modules.agent.service.impl;
 
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
@@ -13,16 +13,15 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
-import com.nis.modules.promserver.dao.AgentDao;
-import com.nis.modules.promserver.entity.Agent;
-import com.nis.modules.promserver.service.LokiApiService;
-import com.nis.modules.promserver.service.PromApiService;
-import com.nis.modules.promserver.utils.AgentProxyApiUtil;
+import com.nis.modules.agent.dao.AgentDao;
+import com.nis.modules.agent.entity.Agent;
+import com.nis.modules.agent.service.LokiApiService;
+import com.nis.modules.agent.service.PromApiService;
+import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
@@ -46,9 +45,6 @@ public class LokApiServiceImpl extends ServiceImpl<AgentDao, Agent> implements L
 
 	@Autowired
 	private PromApiService promApiService;
-
-	@Autowired
-	private AgentProxyApiUtil agentProxyApiUtil;
 
 	static Map<Pattern, String> logPatternAndLevelMap = new LinkedHashMap<>();
 
@@ -78,41 +74,105 @@ public class LokApiServiceImpl extends ServiceImpl<AgentDao, Agent> implements L
 		}
 	}
 
+	/**
+	 * GET /loki/api/v1/query allows for doing queries against a single point in time.
+	 * The URL query parameters support the following values:
+	 *      query: The LogQL query to perform
+	 *      limit: The max number of entries to return. It defaults to 100. Only applies to query types which produce a stream(log lines) response.
+	 *      time: The evaluation time for the query as a nanosecond Unix epoch or another supported format. Defaults to now.
+	 *      direction: Determines the sort order of logs. Supported values are forward or backward. Defaults to backward.
+	 * Custom parameter:
+	 *      format: The result of restrictions is used to query Alert Message data.
+	 *      filter: 可选值：1/0,默认：0 resultType = streams  时有效
+	 * @param query
+	 * @param limit
+	 * @param time
+	 * @param direction
+	 * @param format
+	 * @param filter
+	 */
 	@Override
-	public JSONObject query(HttpEntity httpEntity, Map<String, String> requestParam) {
+	public JSONObject query(String query, String limit, String time, String direction, String format, String filter) {
 		Agent server = promApiService.getOneAvaliableGlobalAgent();
 
 		// 请求 prometheus server
 		String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
 		String url = String.format("%s%s%s", agentPath, "/loki/proxy", "/loki/api/v1/query");
 
-		JSONObject resultData = agentProxyApiUtil.getForObject(server, url, httpEntity, requestParam);
-		resultData = this.handleResultData(resultData, requestParam);
+		Map<Object, Object> requestParam = Tool.MapUtil.builder()
+				.put("query", query)
+				.put("limit", limit)
+				.put("time", time)
+				.put("direction", direction)
+				.build();
+
+		JSONObject resultData = AgentUtil.getForObject(server, url, requestParam);
+		resultData = this.handleResultData(resultData, direction, format, filter);
 		return resultData;
 	}
 
+	/**
+	 * GET /loki/api/v1/query_range is used to do a query over a range of time and
+	 * accepts the following query parameters in the URL:
+	 *      query: The LogQL query to perform
+	 *      limit: The max number of entries to return. It defaults to 100. Only applies to query types which produce a stream(log lines) response.
+	 *      start: The start time for the query as a nanosecond Unix epoch or another supported format. Defaults to one hour ago.
+	 *      end: The end time for the query as a nanosecond Unix epoch or another supported format. Defaults to now.
+	 *      step: Query resolution step width in duration format or float number of seconds. duration refers to Prometheus duration strings of the form [0-9]+[smhdwy]. For example, 5m refers to a duration of 5 minutes. Defaults to a dynamic value based on start and end. Only applies to query types which produce a matrix response.
+	 *      interval: This parameter is experimental; see the explanation under Step versus interval. Only return entries at (or greater than) the specified interval, can be a duration format or float number of seconds. Only applies to queries which produce a stream response.
+	 *      direction: Determines the sort order of logs. Supported values are forward or backward. Defaults to backward.
+	 * Custom parameter:
+	 *      format: The result of restrictions is used to query Alert Message data.
+	 *      filter: 可选值：1/0,默认：0 resultType = streams  时有效
+	 *
+	 * @param query
+	 * @param start
+	 * @param end
+	 * @param limit
+	 * @param step
+	 * @param interval
+	 * @param direction
+	 * @param format
+	 * @param filter
+	 * @return
+	 */
 	@Override
-	public JSONObject query_range(HttpEntity httpEntity, Map<String, String> requestParam) {
+	public JSONObject query_range(String query, String start, String end, String limit, String step, String interval, String direction, String format, String filter) {
 		Agent server = promApiService.getOneAvaliableGlobalAgent();
 
 		// 请求 prometheus server
 		String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
 		String url = String.format("%s%s%s", agentPath, "/loki/proxy", "/loki/api/v1/query_range");
 
-		JSONObject resultData = agentProxyApiUtil.getForObject(server, url, httpEntity, requestParam);
-		resultData = this.handleResultData(resultData, requestParam);
+		Map<Object, Object> requestParam = Tool.MapUtil.builder()
+				.put("query", query)
+				.put("start", start)
+				.put("end", end)
+				.put("limit", limit)
+				.put("step", step)
+				.put("direction", direction)
+				.put("interval", interval)
+				.build();
+
+		JSONObject resultData = AgentUtil.getForObject(server, url, requestParam);
+		resultData = this.handleResultData(resultData, direction, format, filter);
 		return resultData;
 	}
 
 	@Override
-	public JSONObject labels(String proxyPath, HttpEntity httpEntity, Map<String, String> requestParam) {
+	public JSONObject labels(String proxyPath, String start, String end) {
 		Agent server = promApiService.getOneAvaliableGlobalAgent();
 
 		// 请求 prometheus server
 		String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
 		String url = String.format("%s%s%s", agentPath, "/loki/proxy", proxyPath);
 
-		return agentProxyApiUtil.getForObject(server, url, httpEntity, requestParam);
+		Map<Object, Object> requestParam = Tool.MapUtil.builder()
+				.put("start", start)
+				.put("end", end)
+				.build();
+
+		return AgentUtil.getForObject(server, url, requestParam);
 	}
 
 
@@ -124,15 +184,13 @@ public class LokApiServiceImpl extends ServiceImpl<AgentDao, Agent> implements L
 		String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
 		String url = String.format("%s%s%s", agentPath, "/loki/proxy", proxyPath);
 
-		agentProxyApiUtil.agentApiProxy(server, url, request, response);
+		AgentUtil.agentApiProxy(server, url, request, response);
 	}
 
-	private JSONObject handleResultData(JSONObject resultData, Map<String, String> requestParam) {
+	private JSONObject handleResultData(JSONObject resultData, String direction, String format, String filter) {
 		if ("success".equals(resultData.get("status"))) {
 			if (Tool.MapUtil.isNotEmpty(resultData) && resultData.get("data") != null) {
-				String formatStr = requestParam.get("format");
-				Integer format = Integer.valueOf(StrUtil.isNotBlank(formatStr) ? formatStr : "0");
-				String filter = requestParam.get("filter");
+				format = StrUtil.emptyToDefault(format, "0");
 
 				Map<String, Object> data = (Map) resultData.get("data");
 				String resultType = (String) data.get("resultType");
@@ -144,7 +202,7 @@ public class LokApiServiceImpl extends ServiceImpl<AgentDao, Agent> implements L
 				}
 
 				// 重新整理数据结构
-				if (format == 1 && "streams".equals(resultType)) {
+				if (format.equals("1") && "streams".equals(resultType)) {
 					List<Map> resultArray = (List<Map>) data.get("result");
 					if (ToolUtil.isEmpty(resultArray)) {
 						data.put("resultType", "streamsFormat");
@@ -161,7 +219,7 @@ public class LokApiServiceImpl extends ServiceImpl<AgentDao, Agent> implements L
 						resultData.put("message", String.format("Configure the maximum number of Series: %s, query the total number of Series: %s", queryMaxSeriesIntVal, valuesList.size()));
 					} else {
 						// labels series
-						handleDataStructure(data, resultArray, requestParam.get("direction"));
+						handleDataStructure(data, resultArray, direction);
 						data.put("resultType", "streamsFormat");
 					}
 					resultData.put("data", data);

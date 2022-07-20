@@ -41,10 +41,9 @@ import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
-import com.nis.modules.promserver.entity.Agent;
-import com.nis.modules.promserver.service.AgentService;
-import com.nis.modules.promserver.service.PromApiService;
-import com.nis.modules.promserver.utils.AgentProxyApiUtil;
+import com.nis.modules.agent.entity.Agent;
+import com.nis.modules.agent.service.AgentService;
+import com.nis.modules.agent.service.PromApiService;
 import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.entity.SnmpCredential;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
@@ -1706,13 +1705,12 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         if(ambientMap != null)
             return ambientMap;
         // 构建请求参数,查询 agent targets 信息
-        Map<String, Object> targetParam = MapUtil.newHashMap();
-        targetParam.put("endpointId", metricsConfigs.getEndpointId());
-        targetParam.put("agentId", agent.getId());
-        targetParam.put("dcId", agent.getDcId());
-        targetParam.put("type", agent.getType());
-        HttpEntity httpEntity = AgentProxyApiUtil.buildHttpEntity(request);
-        JSONObject resultData = promApiService.targets(httpEntity, targetParam);
+        String dcId = agent.getDcId().toString();
+        String agentId =agent.getId().toString();
+        String endpointId = metricsConfigs.getEndpointId().toString();
+        String type =agent.getType().toString();
+
+        JSONObject resultData = promApiService.targets(dcId, agentId, endpointId, type, Tool.ListUtil.empty(), null);
 
         String activeTargetStr = JSONPath.read(resultData.toJSONString(), "data.activeTargets").toString();
         List<Map> activeTargets = JSONArray.parseArray(activeTargetStr, Map.class);

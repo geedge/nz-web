@@ -1,25 +1,22 @@
-package com.nis.modules.promserver.controller;
+package com.nis.modules.agent.controller;
 
-import cn.hutool.core.lang.Pair;
 import cn.hutool.core.util.URLUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
-import com.nis.modules.promserver.service.PromApiService;
-import com.nis.modules.promserver.utils.AgentProxyApiUtil;
+import com.nis.modules.agent.service.PromApiService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -48,13 +45,11 @@ public class PromProxyController {
                 String query = request.getParameter("query");
                 ValidateUtils.is(query).notNull(RCode.AGENT_PARAM_QUERY_ISNULL);
 
-                Map<String, String> requestParam = Tool.MapUtil.of(
-                        Pair.of("query", URLUtil.decode(query)),
-                        Pair.of("time", request.getParameter("time")),
-                        Pair.of("timeout", request.getParameter("timeout")));
+                String queryStr = URLUtil.decode(query);
+                String time = request.getParameter("time");
+                String timeout = request.getParameter("timeout");
 
-                HttpEntity httpEntity = AgentProxyApiUtil.buildHttpEntity(request);
-                JSONObject resultData = promApiService.query(httpEntity, requestParam);
+                JSONObject resultData = promApiService.query(queryStr, time, timeout);
                 return R.ok().put("status", resultData.get("status")).putAllData(resultData);
             }
             /**
@@ -81,18 +76,13 @@ public class PromProxyController {
                         .and(end).notNull(RCode.AGENT_PARAM_END_ISNULL)
                         .and(step).notNull(RCode.AGENT_PARAM_STEP_ISNULL);
 
-                Map<String, String> requestParam = Tool.MapUtil.of(
-                        Pair.of("query", URLUtil.decode(query)),
-                        Pair.of("start", start),
-                        Pair.of("end", end),
-                        Pair.of("step", step));
-
                 // Custom parameter
-                requestParam.put("nullType", request.getParameter("nullType"));
-                requestParam.put("filter", request.getParameter("filter"));
+                String nullType = request.getParameter("nullType");
+                String filter = request.getParameter("filter");
 
-                HttpEntity httpEntity = AgentProxyApiUtil.buildHttpEntity(request);
-                JSONObject resultData = promApiService.query_range(httpEntity, requestParam);
+                String queryStr = URLUtil.decode(query);
+
+                JSONObject resultData = promApiService.query_range(queryStr, start, end, step, nullType, filter);
                 return R.ok().put("status", resultData.get("status")).putAllData(resultData);
             }
             /**
@@ -111,13 +101,10 @@ public class PromProxyController {
                     matchList = Stream.of(matchs).map(s -> URLUtil.decode(s)).collect(Collectors.toList());
                 }
 
-                Map<String, Object> requestParam = Tool.MapUtil.of(
-                        Pair.of("start", request.getParameter("start")),
-                        Pair.of("end", request.getParameter("end")),
-                        Pair.of("match[]", matchList));
+                String start = request.getParameter("start");
+                String end = request.getParameter("end");
 
-                HttpEntity httpEntity = AgentProxyApiUtil.buildHttpEntity(request);
-                JSONObject resultData = promApiService.labels(promPath, httpEntity, requestParam);
+                JSONObject resultData = promApiService.labels(promPath, start, end, matchList);
                 return R.ok().put("status", resultData.get("status")).putAllData(resultData);
             }
             /**
@@ -138,13 +125,10 @@ public class PromProxyController {
                     matchList = Stream.of(matchs).map(s -> URLUtil.decode(s)).collect(Collectors.toList());
                 }
 
-                Map<String, Object> requestParam = Tool.MapUtil.of(
-                        Pair.of("start", request.getParameter("start")),
-                        Pair.of("end", request.getParameter("end")),
-                        Pair.of("match[]", matchList));
+                String start = request.getParameter("start");
+                String end = request.getParameter("end");
 
-                HttpEntity httpEntity = AgentProxyApiUtil.buildHttpEntity(request);
-                JSONObject resultData = promApiService.series(httpEntity, requestParam);
+                JSONObject resultData = promApiService.series(start, end, matchList);
                 return R.ok().put("status", resultData.get("status")).putAllData(resultData);
             }
             /**
@@ -160,16 +144,15 @@ public class PromProxyController {
              *  @link https://prometheus.io/docs/prometheus/latest/querying/api/
              */
             case "/api/v1/targets": {
-                Map<String, Object> requestParam = Tool.MapUtil.of(
-                        Pair.of("dcId", request.getParameter("dcId")),
-                        Pair.of("agentId", request.getParameter("agentId")),
-                        Pair.of("endpointId", request.getParameter("endpointId")),
-                        Pair.of("type", request.getParameter("type")),
-                        Pair.of("state", request.getParameterValues("state") != null ? Arrays.asList(request.getParameterValues("state")) : Tool.ListUtil.empty()),
-                        Pair.of("limit", request.getParameter("limit")));
+                String dcId = request.getParameter("dcId");
+                String agentId = request.getParameter("agentId");
+                String endpointId = request.getParameter("endpointId");
+                String type = request.getParameter("type");
 
-                HttpEntity httpEntity = AgentProxyApiUtil.buildHttpEntity(request);
-                JSONObject resultData = promApiService.targets(httpEntity, requestParam);
+                List<String> stateList = request.getParameterValues("state") != null ? Arrays.asList(request.getParameterValues("state")) : new ArrayList<>();
+                String limit = request.getParameter("limit");
+
+                JSONObject resultData = promApiService.targets(dcId, agentId, endpointId, type, stateList, limit);
                 return R.ok().put("status", resultData.get("status")).putAllData(resultData);
             }
             /**
@@ -185,16 +168,15 @@ public class PromProxyController {
              *  @link https://prometheus.io/docs/prometheus/latest/querying/api/
              */
             case "/api/v1/metadata": {
-                Map<String, Object> requestParam = Tool.MapUtil.of(
-                        Pair.of("dcId", request.getParameter("dcId")),
-                        Pair.of("agentId", request.getParameter("agentId")),
-                        Pair.of("endpointId", request.getParameter("endpointId")),
-                        Pair.of("type", request.getParameter("type")),
-                        Pair.of("metric", request.getParameter("metric")),
-                        Pair.of("limit", request.getParameter("limit")));
+                String dcId = request.getParameter("dcId");
+                String agentId = request.getParameter("agentId");
+                String endpointId = request.getParameter("endpointId");
+                String type = request.getParameter("type");
 
-                HttpEntity httpEntity = AgentProxyApiUtil.buildHttpEntity(request);
-                JSONObject resultData = promApiService.metadata(httpEntity, requestParam);
+                String metric = request.getParameter("metric");
+                String limit = request.getParameter("limit");
+
+                JSONObject resultData = promApiService.metadata(dcId, agentId, endpointId, type, metric, limit);
                 return R.ok().put("status", resultData.get("status")).putAllData(resultData);
             }
             /**
@@ -211,17 +193,16 @@ public class PromProxyController {
              *  @link https://prometheus.io/docs/prometheus/latest/querying/api/
              */
             case "/api/v1/targets/metadata": {
-                Map<String, Object> requestParam = Tool.MapUtil.of(
-                        Pair.of("dcId", request.getParameter("dcId")),
-                        Pair.of("agentId", request.getParameter("agentId")),
-                        Pair.of("endpointId", request.getParameter("endpointId")),
-                        Pair.of("type", request.getParameter("type")),
-                        Pair.of("match_target", request.getParameter("match_target")),
-                        Pair.of("metric", request.getParameter("metric")),
-                        Pair.of("limit", request.getParameter("limit")));
+                String dcId = request.getParameter("dcId");
+                String agentId = request.getParameter("agentId");
+                String endpointId = request.getParameter("endpointId");
+                String type = request.getParameter("type");
 
-                HttpEntity httpEntity = AgentProxyApiUtil.buildHttpEntity(request);
-                JSONObject resultData = promApiService.targetsMetadata(httpEntity, requestParam);
+                String matchTarget = request.getParameter("match_target");
+                String metric = request.getParameter("metric");
+                String limit = request.getParameter("limit");
+
+                JSONObject resultData = promApiService.targetsMetadata(dcId, agentId, endpointId, type, matchTarget, metric, limit);
                 return R.ok().put("status", resultData.get("status")).putAllData(resultData);
             }
             default: {
@@ -235,14 +216,16 @@ public class PromProxyController {
     @RequestMapping(value = "/prom/api/v1/label/{label_name}/values")
     public R labelValues(HttpServletRequest request) throws IOException {
         String[] matchs = request.getParameterValues("match[]");
-        Map<String, Object> requestParam = Tool.MapUtil.of(
-                Pair.of("start", request.getParameter("start")),
-                Pair.of("end", request.getParameter("end")),
-                Pair.of("match[]", matchs == null ? Tool.ListUtil.empty() : Arrays.asList(matchs)));
+        List<String> matchList = Tool.ListUtil.list(false);
+        if (matchs != null) {
+            matchList = Stream.of(matchs).map(s -> URLUtil.decode(s)).collect(Collectors.toList());
+        }
 
-        HttpEntity httpEntity = AgentProxyApiUtil.buildHttpEntity(request);
+        String start = request.getParameter("start");
+        String end = request.getParameter("end");
+
         String promPath = request.getServletPath().substring(5);
-        JSONObject resultData = promApiService.labels(promPath, httpEntity, requestParam);
+        JSONObject resultData = promApiService.labels(promPath, start, end, matchList);
         return R.ok().put("status", resultData.get("status")).putAllData(resultData);
     }
 }

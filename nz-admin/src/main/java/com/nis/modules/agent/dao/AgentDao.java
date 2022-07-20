@@ -1,8 +1,8 @@
-package com.nis.modules.promserver.dao;
+package com.nis.modules.agent.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.nis.modules.promserver.entity.Agent;
+import com.nis.modules.agent.entity.Agent;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 

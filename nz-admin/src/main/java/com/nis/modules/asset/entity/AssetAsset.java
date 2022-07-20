@@ -1,7 +1,7 @@
 package com.nis.modules.asset.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
-import com.nis.modules.promserver.entity.Agent;
+import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.terminal.config.Constants;
 import lombok.Data;
