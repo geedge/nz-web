@@ -62,7 +62,7 @@ public class IpamIpController {
     @DeleteMapping
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.IPAMIP)
     public R ipamIpDelete(@RequestParam Integer... ids) {
-        ValidateUtils.is(ids).notNull(RCode.PANEL_ID_ISNULL);
+        ValidateUtils.is(ids).notNull(RCode.IPAM_IP_ID_ISNULL);
         ipamIpService.delIpamIps(Arrays.asList(ids));
         return R.ok();
     }

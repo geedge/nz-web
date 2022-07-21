@@ -79,7 +79,7 @@ public class IpamSubnetController {
 	@DeleteMapping
 	@SysLog(operation = OperationEnum.DELETE, type = TypeEnum.IPAMSUBNET)
 	public R ipamSubnetDelete(@RequestParam Integer... ids) {
-		ValidateUtils.is(ids).notNull(RCode.PANEL_ID_ISNULL);
+		ValidateUtils.is(ids).notNull(RCode.IPAM_SUBNET_ID_ISNULL);
 		ipamSubnetService.delIpamSubnets(Arrays.asList(ids));
 		return R.ok();
 	}

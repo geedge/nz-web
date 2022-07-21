@@ -278,7 +278,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	    if (unit != null) {
 	        List<Integer> unitList = new ArrayList(Constant.ALERT_RULE_UNIT_MAP.values());
 	        if (unit < Collections.min(unitList) || unit > Collections.max(unitList)) {
-	            throw new NZException(RCode.ALERTRULE_UNIT_INVALIDE);
+	            throw new NZException(RCode.CHART_UNIT_NOTFOUND);
 	        }
 	    }
 	    

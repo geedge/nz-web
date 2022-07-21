@@ -747,7 +747,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         resultMap.put("charts", R.ok(chartPageUtils));
         List<VisualChart> chartsList = (List<VisualChart>) chartPageUtils.getList();
         if (Tool.CollUtil.isEmpty(chartsList)) {
-            throw new NZException(RCode.CHART_SPAN_ISNULL);
+            throw new NZException(RCode.CHART_NOTEXSITS);
         } else {
             // 封装公共请求参数
             Map<String, String> basicQueryParam = new HashMap();
