@@ -74,8 +74,8 @@ public class FlywayConfig implements ApplicationContextAware{
         } catch (FlywayException e) {
             flyway.repair();
             log.error("Flyway migrate error,shutdown service{}", e);
-            // 停止项目运行
-            System.exit(1);
+            // 停止服务,避免systemd服务重启机制,覆盖flyway
+            Tool.RuntimeUtil.exec("systemctl stop nz-web.service");
         }
         
         if(Tool.CollUtil.isNotEmpty(versionUpdateBeans)) {

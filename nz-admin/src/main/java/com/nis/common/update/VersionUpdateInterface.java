@@ -1,6 +1,7 @@
 package com.nis.common.update;
 
 import cn.hutool.log.Log;
+import com.nis.common.utils.Tool;
 
 public interface VersionUpdateInterface {
 	static final Log log = Log.get();
@@ -39,8 +40,8 @@ public interface VersionUpdateInterface {
 
 	default void onException(Exception e) {
 		log.error(e, "version update error,shutdown service");
-		// 停止项目运行
-		System.exit(1);
+		// 停止服务
+		Tool.RuntimeUtil.exec("systemctl stop nz-web.service");
 	}
 	
 	
