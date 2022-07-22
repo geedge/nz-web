@@ -49,6 +49,7 @@ import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.shiro.UnavailableSecurityManagerException;
 import org.snmp4j.smi.TimeTicks;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -252,13 +253,17 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         asset.setAuthPriKey(null);
         asset.setClientPin(null);
 
-        //收藏标识 0：未收藏 1：已收藏
-        int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
-                .eq(SysUserStarredEntity::getTid,asset.getId())
-                .eq(SysUserStarredEntity::getType,"asset")
-                .eq(SysUserStarredEntity::getUid,ShiroUtils.getUserId())
-        );
-        asset.setStarred(count == 0 ? 0 : 1);
+        try{
+            ///收藏标识 0：未收藏 1：已收藏
+            int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
+                    .eq(SysUserStarredEntity::getTid,asset.getId())
+                    .eq(SysUserStarredEntity::getType,"asset")
+                    .eq(SysUserStarredEntity::getUid,ShiroUtils.getUserId())
+            );
+            asset.setStarred(count == 0 ? 0 : 1);
+        }catch (UnavailableSecurityManagerException e){
+            // 快照线程无法获取ShiroSession
+        }
         // 已配置的 module 名单
         asset.setModules(moduleService.queryAssetMoudules(asset.getId()));
         return asset;

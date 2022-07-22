@@ -822,7 +822,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 CompletableFuture<Map> mapCompletableFuture = null;
                 if(StrUtil.equals("assetInfo",chart.getType())){
                     mapCompletableFuture = CompletableFuture.supplyAsync(() -> {
-                        VisualPanel visualPanel = this.queryInfo(chart.getPanelId());
+                        VisualPanel visualPanel = this.getById(chart.getPanelId());
                         R ok = R.ok(assetAssetService.queryAssetInfo(visualPanel.getLink()));
                         ok.put("status", "success");
                         ok.put("eleIndex", "0");
@@ -831,7 +831,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     });
                 }else if(StrUtil.equals("endpointInfo",chart.getType())){
                     mapCompletableFuture = CompletableFuture.supplyAsync(() -> {
-                        VisualPanel visualPanel = this.queryInfo(chart.getPanelId());
+                        VisualPanel visualPanel = this.getById(chart.getPanelId());
                         R ok = R.ok(monitorEndpointService.queryEndpointEntity(visualPanel.getLink()));
                         ok.put("status", "success");
                         ok.put("eleIndex", "0");
@@ -863,30 +863,39 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 String end = basicQueryParam.get("end");
                 String step = basicQueryParam.get("step");
 
-                for (VisualChartElement element : chart.getElements()) {
-                    String indexStr = StrUtil.toString(eleIndex++);
-                    // 将表达式进行变量渲染
-                    String expr = this.replaceExprByVars(element.getExpression(), varList);
-                    switch (datasource) {
-                        case "metrics":
-                            futureList.add(CompletableFuture.supplyAsync(() -> {
-                                JSONObject jsonObject = promApiService.query_range(expr, start, end, step, chartParam.get("nullType").toString(), null);
-                                jsonObject.put("eleIndex", indexStr);
-                                jsonObject.put("chartId", chart.getId());
-                                return jsonObject;
-                            }));
-                            break;
-                        case "logs":
-                            String limit = chartParam.get("limit") == null ? "100" : chartParam.get("limit").toString();
-                            futureList.add(CompletableFuture.supplyAsync(() -> {
-                                JSONObject jsonObject = lokiApiService.query_range(expr, start, end, limit, step, null, "backward", "1", null);
-                                jsonObject.put("eleIndex", indexStr);
-                                jsonObject.put("chartId", chart.getId());
-                                return jsonObject;
-                            }));
-                            break;
-                        default:break;
+                if(Tool.CollUtil.isNotEmpty(chart.getElements())){
+                    for (VisualChartElement element : chart.getElements()) {
+                        String indexStr = StrUtil.toString(eleIndex++);
+                        // 将表达式进行变量渲染
+                        String expr = this.replaceExprByVars(element.getExpression(), varList);
+                        switch (datasource) {
+                            case "metrics":
+                                futureList.add(CompletableFuture.supplyAsync(() -> {
+                                    JSONObject jsonObject = promApiService.query_range(expr, start, end, step, chartParam.get("nullType").toString(), null);
+                                    jsonObject.put("eleIndex", indexStr);
+                                    jsonObject.put("chartId", chart.getId());
+                                    return jsonObject;
+                                }));
+                                break;
+                            case "logs":
+                                String limit = chartParam.get("limit") == null ? "100" : chartParam.get("limit").toString();
+                                futureList.add(CompletableFuture.supplyAsync(() -> {
+                                    JSONObject jsonObject = lokiApiService.query_range(expr, start, end, limit, step, null, "backward", "1", null);
+                                    jsonObject.put("eleIndex", indexStr);
+                                    jsonObject.put("chartId", chart.getId());
+                                    return jsonObject;
+                                }));
+                                break;
+                            default:break;
+                        }
                     }
+                }else{
+                    futureList.add(CompletableFuture.supplyAsync(() -> {
+                        Map emptyElementsMap = Tool.MapUtil.newHashMap();
+                        emptyElementsMap.put("eleIndex", 0);
+                        emptyElementsMap.put("chartId", chart.getId());
+                        return emptyElementsMap;
+                    }));
                 }
             }
             if (Tool.CollUtil.isNotEmpty(chart.getChildren())) {

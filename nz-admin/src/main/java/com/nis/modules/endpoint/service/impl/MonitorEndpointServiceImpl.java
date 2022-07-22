@@ -50,6 +50,7 @@ import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.*;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.shiro.UnavailableSecurityManagerException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -167,13 +168,17 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         endpoint.setConfigs(getEndpointConfigs(endpoint));
 
 
-        // 当前用户收藏状态  1：收藏  0：未收藏
-        int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
-                .eq(SysUserStarredEntity::getTid, endpoint.getId())
-                .eq(SysUserStarredEntity::getType, "endpoint")
-                .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId().intValue())
-        );
-        endpoint.setStarred(count == 0 ? 0 : 1);
+        try{
+            // 当前用户收藏状态  1：收藏  0：未收藏
+            int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
+                    .eq(SysUserStarredEntity::getTid, endpoint.getId())
+                    .eq(SysUserStarredEntity::getType, "endpoint")
+                    .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId().intValue())
+            );
+            endpoint.setStarred(count == 0 ? 0 : 1);
+        }catch (UnavailableSecurityManagerException e){
+            // 快照线程无法获取ShiroSession
+        }
         // 获取agent信息
         Map endpointProm = redisTemplate.opsForHash().entries(Constant.REDIS_KEY_ENDPOINT_PROM);
         if(ToolUtil.isNotEmpty(endpointProm)) {
