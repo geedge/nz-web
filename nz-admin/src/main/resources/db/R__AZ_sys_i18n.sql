@@ -325,15 +325,15 @@ INSERT INTO `sys_i18n` VALUES (464, 'overall.createChart', 'en', 'overall.create
 INSERT INTO `sys_i18n` VALUES (466, 'overall.enabled', 'en', 'overall.enabled', 'Enabled', '\n表头->资产导入/导出/模板下载', '2022-07-21 06:18:50', 1);
 INSERT INTO `sys_i18n` VALUES (467, 'overall.oneHour', 'en', 'overall.oneHour', '1 hour', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (468, 'overall.result.total', 'en', 'overall.result.total', 'Total', '监控/应用实例更多/导入\n', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (469, 'overall.result.successfully', 'en', 'overall.result.successfully', 'Import completed successfully!', '监控/应用实例更多/导入\n', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (469, 'overall.result.successfully', 'en', 'overall.result.successfully', 'Import completed successfully!', '告警/告警规则/更多/导入/msg提示语句; 监控/应用实例/更多/导入/msg提示语句; 监控/应用/更多/导入/msg提示语句; 系统配置/模板/图表模板/更多/导入/msg提示语句；', '2022-07-22 02:23:17', 425);
 INSERT INTO `sys_i18n` VALUES (470, 'overall.result.failedNum', 'en', 'overall.result.failedNum', '{failedNum} out of {total} records failed to import', '{total} 条记录中有 {failedNum} 条导入失败', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (471, 'overall.result.records', 'en', 'overall.result.records', 'records', '\n监控/应用实例\n/', '2022-07-20 02:34:29', 425);
 INSERT INTO `sys_i18n` VALUES (472, 'overall.result.success', 'en', 'overall.result.success', 'Success', '', '2022-07-20 02:38:11', 425);
 INSERT INTO `sys_i18n` VALUES (473, 'overall.result.line', 'en', 'overall.result.line', 'Line {0}:', '', '2022-07-21 01:17:55', 425);
 INSERT INTO `sys_i18n` VALUES (474, 'overall.result.successNum', 'en', 'overall.result.successNum', '{successNum} records imported successfully', '', '2022-07-20 02:38:19', 425);
 INSERT INTO `sys_i18n` VALUES (475, 'overall.result.imported', 'en', 'overall.result.imported', 'You have imported', '	\n监控/应用实例/更多/导入', '2022-07-21 06:12:32', 425);
-INSERT INTO `sys_i18n` VALUES (476, 'overall.result.failed', 'en', 'overall.result.failed', 'Fail', '更多/失败', '2022-07-20 02:40:51', 425);
-INSERT INTO `sys_i18n` VALUES (477, 'overall.result.failedDetail', 'en', 'overall.result.failedDetail', 'Failed Detail', '监控/应用实例/\n', '2022-07-20 02:42:24', 425);
+INSERT INTO `sys_i18n` VALUES (476, 'overall.result.failed', 'en', 'overall.result.failed', 'Fail', '	\n搜索框组件/; 监控/应用组/;', '2022-07-22 02:05:12', 425);
+INSERT INTO `sys_i18n` VALUES (477, 'overall.result.failedDetail', 'en', 'overall.result.failedDetail', 'Failed Detail', '监控/应用实例/更多/导出/失败详情；\n告警/告警规则/更多/导出/失败详情;\n系统配置/SNMP/MIB浏览器/更多/导出/失败详情;\n系统配置/模板/图表模板/更多/导出/失败详情;\n监控/应用/更多/导出/失败详情；;\n\n\n\n', '2022-07-22 01:43:54', 425);
 INSERT INTO `sys_i18n` VALUES (478, 'overall.search', 'en', 'overall.search', 'Search', '系统配置/模板/图标模板/搜索；\n系统配置/模板/表达式模板/搜索；\n全局搜索组件/搜索title\n系统配置/客户端/搜索；', '2022-07-21 09:01:16', 425);
 INSERT INTO `sys_i18n` VALUES (479, 'overall.clearAllSelect', 'en', 'overall.clearAllSelect', 'Clear the selection', '告警/告警规则/更多/导入/清除选择的内容; 监控/应用实例/更多/导入/清除选择的内容; 监控/应用/更多/导入/清除选择的内容; 系统配置/模板/图表模板/更多/导入/清除选择内容；\n', '2022-07-21 09:27:50', 425);
 INSERT INTO `sys_i18n` VALUES (480, 'overall.startTime', 'en', 'overall.startTime', 'Start time', '告警/告警信息/开始时间；\n告警/告警静默/开始时间；\n表头->告警规则导入/导出/模板下载、告警信息导出、', '2022-07-21 06:18:50', 1);
@@ -549,7 +549,7 @@ INSERT INTO `sys_i18n` VALUES (780, 'config.agent.up', 'en', 'config.agent.up', 
 INSERT INTO `sys_i18n` VALUES (781, 'config.exprTemp.exprTempRender', 'en', 'config.exprTemp.exprTempRender', 'expression template render', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (782, 'config.exprTemp.exprTempExport', 'en', 'config.exprTemp.exprTempExport', 'expression template export', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (783, 'config.exprTemp.expressionError', 'en', 'config.exprTemp.expressionError', 'Please fill in the \"expression\" value', '', '2021-11-02 00:00:00', 1);
-                               INSERT INTO `sys_i18n` VALUES (784, 'config.exprTemp.exprTempDown', 'en', 'config.exprTemp.exprTempDown', 'expression template download', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (784, 'config.exprTemp.exprTempDown', 'en', 'config.exprTemp.exprTempDown', 'expression template download', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (785, 'config.exprTemp.expression', 'en', 'config.exprTemp.expression', 'Expression', '告警/告警规则/表达式表头\n；\n表头->表达式模板导入/导出/模板下载', '2022-07-21 06:18:50', 1);
 INSERT INTO `sys_i18n` VALUES (786, 'config.exprTemp.exprTempImportCancel', 'en', 'config.exprTemp.exprTempImportCancel', 'expression template import rollback', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (787, 'config.exprTemp.edit', 'en', 'config.exprTemp.edit', 'Edit expression template', '系统配置/模板/修改表达式模板', '2021-11-02 00:00:00', 1);
@@ -1300,15 +1300,15 @@ INSERT INTO `sys_i18n` VALUES (2044, 'overall.createChart', 'zh', 'overall.creat
 INSERT INTO `sys_i18n` VALUES (2046, 'overall.enabled', 'zh', 'overall.enabled', '启用', '表头->资产导入/导出/模板下载', '2022-07-21 06:18:50', 1);
 INSERT INTO `sys_i18n` VALUES (2047, 'overall.oneHour', 'zh', 'overall.oneHour', '1 小时', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2048, 'overall.result.total', 'zh', 'overall.result.total', '总计', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2049, 'overall.result.successfully', 'zh', 'overall.result.successfully', '导入成功完成!', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2049, 'overall.result.successfully', 'zh', 'overall.result.successfully', '导入成功完成!', '告警/告警规则/更多/导入/msg提示语句; 监控/应用实例/更多/导入/msg提示语句; 监控/应用/更多/导入/msg提示语句; 系统配置/模板/图表模板/更多/导入/msg提示语句；', '2022-07-22 02:23:00', 425);
 INSERT INTO `sys_i18n` VALUES (2050, 'overall.result.failedNum', 'zh', 'overall.result.failedNum', '{total} 条记录中有 {failedNum} 条导入失败', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2051, 'overall.result.records', 'zh', 'overall.result.records', '条记录', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2052, 'overall.result.success', 'zh', 'overall.result.success', '成功', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2053, 'overall.result.line', 'zh', 'overall.result.line', '第{0}行:', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2054, 'overall.result.successNum', 'zh', 'overall.result.successNum', '{successNum} 条记录导入成功', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2054, 'overall.result.successNum', 'zh', 'overall.result.successNum', '{successNum} 条记录导入成功', '监控/应用实例/;\n\n', '2022-07-22 02:18:52', 425);
 INSERT INTO `sys_i18n` VALUES (2055, 'overall.result.imported', 'zh', 'overall.result.imported', '已导入', '	\n监控/应用实例/更多/导入', '2022-07-21 06:12:25', 425);
-INSERT INTO `sys_i18n` VALUES (2056, 'overall.result.failed', 'zh', 'overall.result.failed', '失败', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2057, 'overall.result.failedDetail', 'zh', 'overall.result.failedDetail', '失败详情', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2056, 'overall.result.failed', 'zh', 'overall.result.failed', '失败', '搜索框组件/;\n监控/应用组/;', '2022-07-22 02:05:07', 425);
+INSERT INTO `sys_i18n` VALUES (2057, 'overall.result.failedDetail', 'zh', 'overall.result.failedDetail', '失败详情', '监控/应用实例/更多/导出/失败详情；\n告警/告警规则/更多/导出/失败详情;\n系统配置/SNMP/MIB浏览器/更多/导出/失败详情;\n系统配置/模板/图表模板/更多/导出/失败详情;\n监控/应用/更多/导出/失败详情；;\n\n\n\n', '2022-07-22 01:44:01', 425);
 INSERT INTO `sys_i18n` VALUES (2058, 'overall.search', 'zh', 'overall.search', '搜索', '系统配置/模板/图标模板/搜索； 系统配置/模板/表达式模板/搜索； 全局搜索组件/搜索title 系统配置/客户端/搜索；', '2022-07-21 09:01:23', 425);
 INSERT INTO `sys_i18n` VALUES (2059, 'overall.clearAllSelect', 'zh', 'overall.clearAllSelect', '清除选择的内容', '\n告警/告警规则/更多/导入/清除选择的内容;\n监控/应用实例/更多/导入/清除选择的内容;\n监控/应用/更多/导入/清除选择的内容; \n系统配置/模板/图表模板/更多/导入/清除选择内容；\n\n\n\n', '2022-07-21 09:27:31', 425);
 INSERT INTO `sys_i18n` VALUES (2060, 'overall.startTime', 'zh', 'overall.startTime', '开始时间', '告警/告警信息/开始时间；\n告警/告警静默/开始时间；\n表头->告警规则导入/导出/模板下载、告警信息导出、', '2022-07-21 06:18:50', 1);
@@ -1321,7 +1321,7 @@ INSERT INTO `sys_i18n` VALUES (2067, 'overall.exportAll', 'zh', 'overall.exportA
 INSERT INTO `sys_i18n` VALUES (2068, 'overall.searchCondition', 'zh', 'overall.searchCondition', '搜索条件', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2069, 'overall.importFile', 'zh', 'overall.importFile', '请上传文件', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2070, 'overall.endpointTemplate', 'zh', 'overall.endpointTemplate', '应用实例模板', '监控/应用/\n；\n表头->module导入/导出/模板下载', '2022-07-21 06:18:50', 415);
-INSERT INTO `sys_i18n` VALUES (2072, 'overall.batchDel', 'zh', 'overall.batchDel', '批量删除', '系统配置/SNMP/MIB文件/批量删除； 系统配置/IPAM/批量删除； 告警/告警信息/删除/批量删除； 告警/告警规则》删除》批量删除； 资产/数据中心/删除/批量删除； 资产/数据列表/删除/批量删除； 监控/应用/删除/批量删除； 监控/应用实例/删除/批量删除；', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2072, 'overall.batchDel', 'zh', 'overall.batchDel', '批量删除', '系统配置/SNMP/MIB文件/批量删除； 系统配置/IPAM/批量删除； 告警/告警信息/删除/批量删除； 告警/告警规则/删除/批量删除； 资产/数据中心/删除/批量删除； 资产/数据列表/删除/批量删除； 监控/应用/删除/批量删除； 监控/应用实例/删除/批量删除；', '2022-07-22 02:20:50', 425);
 INSERT INTO `sys_i18n` VALUES (2073, 'overall.metric', 'zh', 'overall.metric', '指标', '	\n告警/告警信息/指标；', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2075, 'overall.createEndpoint', 'zh', 'overall.createEndpoint', '新增应用实例', '', '2022-07-12 03:32:03', 415);
 INSERT INTO `sys_i18n` VALUES (2077, 'overall.dragFileTip', 'zh', 'overall.dragFileTip', '将文件拖到此处', '', '2021-11-02 00:00:00', 1);
@@ -4189,8 +4189,8 @@ INSERT INTO `sys_i18n` VALUES (6426, 'overall.increaseTime', 'en', 'overall.incr
 INSERT INTO `sys_i18n` VALUES (6427, 'overall.increaseTime', 'zh', 'overall.increaseTime', '增加时间', '监控/应用实例/btn', '2022-07-20 06:45:40', 425);
 INSERT INTO `sys_i18n` VALUES (6428, 'overall.showLineChart', 'en', 'overall.showLineChart', 'Show line chart', '监控/应用实例/;\n', '2022-07-20 06:44:46', 425);
 INSERT INTO `sys_i18n` VALUES (6429, 'overall.showLineChart', 'zh', 'overall.showLineChart', '显示折线图', '监控/应用实例/;\n', '2022-07-20 06:44:42', 425);
-INSERT INTO `sys_i18n` VALUES (6431, 'overall.copyText', 'en', 'overall.copyText', 'Copy text', '告警/告警规则/title; 监控/应用实例/title; 系统配置/模板/表达式模板/title;', '2022-07-20 06:42:22', 425);
-INSERT INTO `sys_i18n` VALUES (6433, 'overall.copyText', 'zh', 'overall.copyText', '复制文本', '告警/告警规则/title;\n监控/应用实例/title;\n系统配置/模板/表达式模板/title;\n\n\n', '2022-07-20 06:42:11', 425);
+INSERT INTO `sys_i18n` VALUES (6431, 'overall.copyText', 'en', 'overall.copyText', 'Copy to clipboard', '告警/告警规则/title; 监控/应用实例/title; 系统配置/模板/表达式模板/title;', '2022-07-21 09:56:41', 415);
+INSERT INTO `sys_i18n` VALUES (6433, 'overall.copyText', 'zh', 'overall.copyText', '复制', '告警/告警规则/title;\n监控/应用实例/title;\n系统配置/模板/表达式模板/title;\n\n\n', '2022-07-21 09:56:52', 415);
 INSERT INTO `sys_i18n` VALUES (6435, 'config.terminallog.SessionID', 'en', 'config.terminallog.SessionID', 'Session ID', '管理/审计/终端日志/会话 ID', '2022-07-20 06:38:18', 425);
 INSERT INTO `sys_i18n` VALUES (6437, 'config.terminallog.SessionID', 'zh', 'config.terminallog.SessionID', '会话 ID', '管理/审计/终端日志/会话 ID\n', '2022-07-20 06:38:14', 425);
 INSERT INTO `sys_i18n` VALUES (6439, 'tip.clickNext', 'en', 'tip.clickNext', 'Click 「Next」 to quickly create an ', '', '2022-07-06 06:53:15', 407);
@@ -4379,5 +4379,7 @@ INSERT INTO `sys_i18n` VALUES (6799, 'config.exprTemp.gname', 'en', 'config.expr
 INSERT INTO `sys_i18n` VALUES (6800, 'config.exprTemp.gname', 'zh', 'config.exprTemp.gname', '组名', '表头->表达式模板导入/导出/模板下载', '2022-07-21 06:18:50', 1);
 INSERT INTO `sys_i18n` VALUES (6801, 'config.exprTemp.remark', 'en', 'config.exprTemp.remark', 'Remark', '表头->表达式模板导入/导出/模板下载', '2022-07-21 06:18:50', 1);
 INSERT INTO `sys_i18n` VALUES (6802, 'config.exprTemp.remark', 'zh', 'config.exprTemp.remark', '描述', '表头->表达式模板导入/导出/模板下载', '2022-07-21 06:18:50', 1);
+INSERT INTO `sys_i18n` VALUES (6803, 'profile.confirmPasswordError', 'en', 'profile.confirmPasswordError', 'The two inputs are inconsistent', 'profile/编辑/确认密码错误', '2022-07-22 08:30:34', 1);
+INSERT INTO `sys_i18n` VALUES (6805, 'profile.confirmPasswordError', 'zh', 'profile.confirmPasswordError', '两次输入不一致', 'profile/编辑/确认密码错误', '2022-07-22 08:30:54', 1);
 
 SET FOREIGN_KEY_CHECKS = 1;
