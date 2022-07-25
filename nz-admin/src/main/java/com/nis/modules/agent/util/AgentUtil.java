@@ -1,7 +1,5 @@
 package com.nis.modules.agent.util;
 
-import java.io.File;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
@@ -15,14 +13,6 @@ import cn.hutool.http.Header;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.nis.common.utils.Tool;
-import org.apache.http.Consts;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.mime.HttpMultipartMode;
-import org.apache.http.entity.mime.MultipartEntity;
-import org.apache.http.entity.mime.content.FileBody;
-import org.apache.http.entity.mime.content.StringBody;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpEntity;
@@ -235,43 +225,6 @@ public class AgentUtil {
 		} catch (Exception e) {
 			log.error(e, "agent proxy api error, url: {}", url);
 		}
-	}
-
-	/**
-	 * agent ota 代理接口
-	 *
-	 * @param url
-	 * @param method
-	 * @param token
-	 * @param file
-	 * @param md5
-	 */
-	public static <T> T requestPost(String url, HttpMethod method, String token, File updateFile, String md5){
-		// 创建httpclient对象
-		CloseableHttpClient httpClient = HttpClients.createDefault();
-		// 创建httpPost请求
-		HttpPost httppost = new HttpPost(url);
-		try {
-			MultipartEntity entity = new MultipartEntity(HttpMultipartMode.RFC6532, null, Charset.forName("UTF-8"));
-			// 文件参数
-			FileBody filebody = new FileBody(updateFile);
-			entity.addPart("file", filebody);
-			entity.addPart("md5", new StringBody(md5, Consts.UTF_8));
-			//token
-			httppost.addHeader(HttpHeaders.AUTHORIZATION, token);
-			httppost.setEntity(entity);
-			// 发送请求
-			httpClient.execute(httppost);
-		} catch (IOException e) {
-			log.error("agent update failed",500);
-		} finally {
-			try {
-				httpClient.close();
-			} catch (IOException e) {
-				log.error(e);
-			}
-		}
-		return null;
 	}
 	
 	@Autowired

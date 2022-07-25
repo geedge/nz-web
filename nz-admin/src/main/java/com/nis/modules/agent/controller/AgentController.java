@@ -2,10 +2,8 @@ package com.nis.modules.agent.controller;
 
 import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.net.url.UrlBuilder;
-import cn.hutool.core.thread.ThreadFactoryBuilder;
 import cn.hutool.json.JSONObject;
 import cn.hutool.log.Log;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
@@ -19,22 +17,17 @@ import freemarker.template.TemplateException;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpMethod;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/agent")
@@ -47,24 +40,11 @@ public class AgentController {
 	@Value("${server.ssl.enabled}")
 	private String sslEnabled;
 
-	@Value("${thread.count}")
-	private Integer count;
-
-	static Integer defaultCorePoolSize = 5;
-
-	static ThreadPoolExecutor execPingThreadPoolExecutor;
-
 	@Autowired
 	private AgentService agentService;
 
 	@Autowired
 	private SysConfigService sysConfigService;
-
-	static {
-		execPingThreadPoolExecutor = new ThreadPoolExecutor(defaultCorePoolSize, Integer.MAX_VALUE,
-				0L, TimeUnit.MILLISECONDS,
-				new LinkedBlockingQueue<Runnable>(), new ThreadFactoryBuilder().setNamePrefix("ota-pool-").build());
-	}
 
 	/**
 	 * 详情
@@ -238,86 +218,6 @@ public class AgentController {
 		} else {
 			return R.error(500, "token refresh failed");
 		}
-	}
-
-	@PutMapping("/ota")
-	public R ota(@RequestParam String ids){
-		ValidateUtils.is(ids).notNull(RCode.AGENT_ID_ISNULL);
-		List<String> agentIds = Arrays.asList(ids.split(","));
-		//获取可用的agent
-		List<Agent> agentList = agentService.list(new LambdaQueryWrapper<Agent>().eq(Agent::getStatus, "1").in(Agent::getId, agentIds));
-		if(Tool.CollectionUtil.isEmpty(agentList)){
-			throw new NZException(RCode.AGENT_UNAVAILABLE);
-		}
-		//agent是否全部可用
-		List<Integer> agentIdsList = agentList.stream().map(Agent::getId).collect(Collectors.toList());
-		List<String> agentIdsNotInList = agentIds.stream().filter(id -> !agentIdsList.contains(Integer.valueOf(id))).collect(Collectors.toList());
-		if(Tool.CollectionUtil.isNotEmpty(agentIdsNotInList)){
-			throw new NZException(RCode.AGENT_UNAVAILABLE);
-		}
-
-		//获取agent更新包
-		String json = sysConfigService.getValue("confagent_name");
-		JSONObject confagentNames = Tool.JSONUtil.parseObj(json);
-
-		//配置的正则
-		String agentName = (String) confagentNames.get("centos");
-		Pattern agentPattern = Pattern.compile(agentName);
-		try {
-			File installPathFile = CommonUtils.getResourceFile(installPath);
-			log.info("installPath exist: {},isDir:{}", installPathFile == null ? false : installPathFile.exists(), installPathFile == null ? false : installPathFile.isDirectory());
-			if (installPathFile == null || !installPathFile.isDirectory()) {
-				throw new NZException("update package not exist", 500);
-			}
-
-			File[] listFiles = installPathFile.listFiles((file, name) -> {
-				return agentPattern.matcher(name).find();
-			});
-
-			if (Tool.ArrayUtil.isEmpty(listFiles)) {
-				throw new NZException("update package not exist", 500);
-			}
-			File updateFile = CommonUtils.getResourceFile(listFiles[0].getAbsolutePath());
-
-
-			if (count != null){
-				execPingThreadPoolExecutor.setCorePoolSize(count);
-			}
-
-			for (Agent agent : agentList) {
-				execPingThreadPoolExecutor.execute(new Runnable() {
-					@Override
-					public void run() {
-						String host = agent.getHost();
-						Integer port = agent.getPort();
-						String protocol = agent.getProtocol();
-						String token = agent.getToken();
-						//校验参数
-						ValidateUtils.is(host).notNull(RCode.AGENT_INSTALL_PARAM_MISS).and(token)
-								.notNull(RCode.AGENT_INSTALL_PARAM_MISS).and(port).notNull(RCode.AGENT_INSTALL_PARAM_MISS);
-						protocol = Tool.StrUtil.isBlank(protocol) ? "http" : "https";
-						try {
-							//获取文件md5
-							String updateFileMd5 = Tool.DigestUtil.md5Hex(new FileInputStream(updateFile));
-							//md5加密
-							String md5 = Tool.AesUtil.encrypt(updateFileMd5, Constant.AES_SECRET_KEY);
-							// 拼接url
-							UrlBuilder urlBuilder = UrlBuilder.create();
-							String agentPath = sysConfigService.getValueOrDefault(Constant.CONFAGENT_PATH, "");
-							urlBuilder.setScheme(protocol).setHost(host).setPort(port).appendPath(agentPath).appendPath("ota");
-							log.info("agent ota url : {}", urlBuilder.toString());
-							//发送请求
-							AgentUtil.requestPost(urlBuilder.toString() , HttpMethod.POST , token , updateFile, md5);
-						} catch (Exception e) {
-							log.error("agent update failed",500);
-						}
-					}
-				});
-			}
-		} catch (Exception e) {
-			log.error("agent update failed", 500);
-		}
-		return R.ok();
 	}
 
 }
