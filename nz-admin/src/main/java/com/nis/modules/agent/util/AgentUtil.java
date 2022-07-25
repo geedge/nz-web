@@ -1,37 +1,52 @@
 package com.nis.modules.agent.util;
 
+import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.core.util.URLUtil;
-import cn.hutool.http.Header;
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.parser.Feature;
-import com.nis.common.utils.Tool;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.Feature;
+import com.nis.common.exception.NZException;
+import com.nis.common.utils.CommonUtils;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.Tool;
 import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.sys.service.SysConfigService;
 
 import cn.hutool.core.net.url.UrlBuilder;
 import cn.hutool.core.net.url.UrlPath;
 import cn.hutool.core.net.url.UrlQuery;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.URLUtil;
+import cn.hutool.http.Header;
 import cn.hutool.log.Log;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 @Configuration
 @SuppressWarnings("all")
@@ -40,6 +55,9 @@ public class AgentUtil {
 	private static Log log = Log.get();
 	private static RestTemplate restTemplate;
 	private static SysConfigService sysConfigService;
+
+	@Value("${nezha.installPath:install/}")
+	private String installPath;
 
 	/**
 	 * 加载 cmdTmpl 字符串 并转为 map
@@ -66,7 +84,8 @@ public class AgentUtil {
 	public static <T> T request(Agent server, HttpMethod method, String path, String queryString, Object body,
 			Class<T> responseType) {
 		String agentPath = sysConfigService.getValueOrDefault(Constant.CONFAGENT_PATH, "");
-		path = path.startsWith("/") ? (String.format("%s%s", agentPath,path)) :(String.format("%s/%s", agentPath,path));
+		path = path.startsWith("/") ? (String.format("%s%s", agentPath, path))
+				: (String.format("%s/%s", agentPath, path));
 		String urlString = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
 				.setPort(server.getPort()).setPath(UrlPath.of(path, Charset.forName("UTF-8")))
 				.setQuery(UrlQuery.of(queryString, Charset.forName("UTF-8"))).toString();
@@ -77,8 +96,6 @@ public class AgentUtil {
 		return request(urlString, method, server.getToken(), body, responseType);
 	}
 
-	
-	
 	public static <T> T request(String url, HttpMethod method, String token, Object body, Class<T> responseType) {
 		HttpHeaders headers = new HttpHeaders();
 		headers.add(HttpHeaders.AUTHORIZATION, token);
@@ -93,7 +110,7 @@ public class AgentUtil {
 		return exchange.getBody();
 	}
 
-	public static <T> T requestGet(String url,String token, Class<T> responseType) {
+	public static <T> T requestGet(String url, String token, Class<T> responseType) {
 		HttpHeaders headers = new HttpHeaders();
 		headers.add(HttpHeaders.AUTHORIZATION, token);
 		HttpEntity httpEntity = new HttpEntity(headers);
@@ -111,18 +128,16 @@ public class AgentUtil {
 	 * @return
 	 */
 	public static JSONObject getForObject(Agent server, String url, Map requestParam) {
-		UrlBuilder urlBuilder = UrlBuilder.create()
-				.setScheme(server.getProtocol())
-				.setHost(server.getHost())
-				.setPort(server.getPort())
-				.setPath(UrlPath.of(url, Charset.forName("UTF-8")));
+		UrlBuilder urlBuilder = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
+				.setPort(server.getPort()).setPath(UrlPath.of(url, Charset.forName("UTF-8")));
 
 		UrlQuery urlQuery = new UrlQuery();
 		Iterator<Map.Entry<String, Object>> iterator = ((Map<String, Object>) requestParam).entrySet().iterator();
 		while (iterator.hasNext()) {
 			Map.Entry<String, Object> entry = iterator.next();
 			Object value = entry.getValue();
-			if (value == null) continue;
+			if (value == null)
+				continue;
 			if (value instanceof Collection) {
 				List list = new ArrayList((Collection) value);
 				list.stream().forEach(obj -> urlQuery.add(entry.getKey(), obj.toString()));
@@ -153,6 +168,90 @@ public class AgentUtil {
 		return JSONObject.parseObject(responseEntity.getBody(), JSONObject.class, Feature.OrderedField);
 	}
 
+	/**
+	 * agent ota 升级
+	 * 
+	 * @param agent
+	 * @return
+	 */
+	public String agentOTA(Agent agent) {
+		// 获取agent更新包
+		String json = sysConfigService.getValue("confagent_name");
+		String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
+		UrlBuilder urlBuilder = UrlBuilder.create().setScheme(agent.getProtocol()).setHost(agent.getHost())
+				.setPort(agent.getPort())
+				.setPath(UrlPath.of(String.format("%s%s", agentPath, "/ota"), Charset.forName("UTF-8")));
+		String url = urlBuilder.build();
+		/**
+		 * 1、获取文件，并计算md5
+		 */
+		File rpmFile = this.getAgentRpmFile("centos");
+		// 获取文件md5
+		String updateFileMd5 = Tool.DigestUtil.md5Hex(rpmFile);
+		// md5加密
+		String md5 = Tool.AesUtil.encrypt(updateFileMd5, Constant.AES_SECRET_KEY);
+		/**
+		 * 2、构建post 请求参数
+		 */
+		// 添加 agent token
+		HttpHeaders headers = new HttpHeaders();
+		headers.add(Constant.AUTH_TOKEN_CODE, agent.getToken());
+		MediaType type = MediaType.parseMediaType("multipart/form-data");
+		headers.setContentType(type);
+		// 设置请求体，注意是LinkedMultiValueMap
+		FileSystemResource fileSystemResource = new FileSystemResource(rpmFile);
+		MultiValueMap<String, Object> form = new LinkedMultiValueMap<>();
+		form.add("file", fileSystemResource);
+		form.add("md5", md5);
+		// 用HttpEntity封装整个请求报文
+		HttpEntity<MultiValueMap<String, Object>> files = new HttpEntity<>(form, headers);
+		log.info("agent ota, url: {},file:{},md5:{},agent:{}", url, rpmFile, updateFileMd5,
+				Tool.JSONUtil.toJsonStr(agent));
+		/**
+		 * 3、发送请求
+		 */
+		String result = restTemplate.postForObject(url, files, String.class);
+		if (log.isDebugEnabled()) {
+			log.debug("agent ota result: {}", result);
+		}
+		return result;
+	}
+
+	/**
+	 * 获取 agent rpm file 对象
+	 * 
+	 * @param os 默认：centos
+	 * @return
+	 */
+	public File getAgentRpmFile(String os) {
+		os = Tool.StrUtil.isEmpty(os) ? "centos" : os;
+		String json = sysConfigService.getValue("confagent_name");
+		JSONObject confagentNames = JSONObject.parseObject(json);
+		// 配置的正则
+		String confagentName = (String) confagentNames.get(os);
+		Pattern confagentPattern = Pattern.compile(confagentName);
+		try {
+			File installPathFile = CommonUtils.getResourceFile(installPath);
+			log.info("installPath exist: {},isDir:{}", installPathFile == null ? false : installPathFile.exists(),
+					installPathFile == null ? false : installPathFile.isDirectory());
+			if (installPathFile == null || !installPathFile.isDirectory()) {
+				throw new NZException("file download error", 500);
+			}
+
+			File[] listFiles = installPathFile.listFiles((file, name) -> {
+				return confagentPattern.matcher(name).find();
+			});
+
+			if (Tool.ArrayUtil.isEmpty(listFiles)) {
+				throw new NZException("file download error", 500);
+			}
+			File file = CommonUtils.getResourceFile(listFiles[0].getAbsolutePath());
+			return file;
+		} catch (Exception e) {
+			log.error(e, "agent rpm error");
+			throw new NZException("file download error", 500);
+		}
+	}
 
 	/**
 	 * agent api 代理接口
@@ -162,7 +261,8 @@ public class AgentUtil {
 	 * @param request
 	 * @param response
 	 */
-	public static void agentApiProxy(Agent server, String url, HttpServletRequest request, HttpServletResponse response) {
+	public static void agentApiProxy(Agent server, String url, HttpServletRequest request,
+			HttpServletResponse response) {
 		try {
 			// 重新构造请求参数内容，header body 添加 agent token
 			HttpHeaders headers = new HttpHeaders();
@@ -184,15 +284,13 @@ public class AgentUtil {
 			queryString = StrUtil.isNotBlank(queryString) ? queryString : "";
 			queryString = URLUtil.decode(queryString);
 
-			String urlStr = UrlBuilder.create()
-					.setScheme(server.getProtocol())
-					.setHost(server.getHost())
-					.setPort(server.getPort())
-					.setPath(UrlPath.of(url, Charset.forName("UTF-8")))
+			String urlStr = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
+					.setPort(server.getPort()).setPath(UrlPath.of(url, Charset.forName("UTF-8")))
 					.setQuery(UrlQuery.of(queryString, Charset.forName("UTF-8"))).toString();
 
 			String method = request.getMethod();
-			ResponseEntity<byte[]> exchange = restTemplate.exchange(new URI(urlStr), HttpMethod.resolve(method), httpEntity, byte[].class);
+			ResponseEntity<byte[]> exchange = restTemplate.exchange(new URI(urlStr), HttpMethod.resolve(method),
+					httpEntity, byte[].class);
 
 			int statusCode = exchange.getStatusCodeValue();
 			log.info("agent request url:{}, responseStatus:{}", urlStr, statusCode);
@@ -226,12 +324,12 @@ public class AgentUtil {
 			log.error(e, "agent proxy api error, url: {}", url);
 		}
 	}
-	
+
 	@Autowired
 	public void setRestTemplate(RestTemplate restTemplate) {
 		AgentUtil.restTemplate = restTemplate;
 	}
-	
+
 	@Autowired
 	public void setSysconfigService(SysConfigService sysConfigService) {
 		AgentUtil.sysConfigService = sysConfigService;

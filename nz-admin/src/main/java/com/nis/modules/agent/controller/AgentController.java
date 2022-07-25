@@ -1,33 +1,52 @@
 package com.nis.modules.agent.controller;
 
-import cn.hutool.core.io.IORuntimeException;
-import cn.hutool.core.net.url.UrlBuilder;
-import cn.hutool.json.JSONObject;
-import cn.hutool.log.Log;
-import com.nis.common.annotation.SysLog;
-import com.nis.common.exception.NZException;
-import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.*;
-import com.nis.modules.agent.entity.Agent;
-import com.nis.modules.agent.service.AgentService;
-import com.nis.modules.agent.util.AgentUtil;
-import com.nis.modules.sys.service.SysConfigService;
-import freemarker.template.Template;
-import freemarker.template.TemplateException;
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ThreadPoolExecutor;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Pattern;
+import com.nis.common.annotation.SysLog;
+import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.CommonUtils;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.OperationEnum;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.TemplateUtil;
+import com.nis.common.utils.Tool;
+import com.nis.common.utils.TypeEnum;
+import com.nis.modules.agent.entity.Agent;
+import com.nis.modules.agent.service.AgentService;
+import com.nis.modules.agent.util.AgentUtil;
+import com.nis.modules.sys.service.SysConfigService;
+
+import cn.hutool.core.net.url.UrlBuilder;
+import cn.hutool.log.Log;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
 
 @RestController
 @RequestMapping("/agent")
@@ -46,6 +65,15 @@ public class AgentController {
 	@Autowired
 	private SysConfigService sysConfigService;
 
+	@Autowired
+	private AgentUtil agentUtil;
+	
+	@Value("${nezha.otaConcurrentThreads:5}")
+	private Integer otaConcurrentThreads;
+	/**
+	 * ota 升级线程池
+	 */
+	private ThreadPoolExecutor otaExecutor;
 	/**
 	 * 详情
 	 *
@@ -145,32 +173,13 @@ public class AgentController {
 	public void downloadAgent(HttpServletResponse response,
 			@RequestParam(defaultValue = "centos", required = false) String os) {
 		log.info("download agent package to {}", os);
-		String json = sysConfigService.getValue("confagent_name");
-		JSONObject confagentNames = Tool.JSONUtil.parseObj(json);
-		// 配置的正则
-		String confagentName = (String) confagentNames.get(os);
-		Pattern confagentPattern = Pattern.compile(confagentName);
+		File rpmFile = agentUtil.getAgentRpmFile(os);
 		try {
-			File installPathFile = CommonUtils.getResourceFile(installPath);
-			log.info("installPath exist: {},isDir:{}", installPathFile == null ? false : installPathFile.exists(),
-					installPathFile == null ? false : installPathFile.isDirectory());
-			if (installPathFile == null || !installPathFile.isDirectory()) {
-				throw new NZException("file download error", 500);
-			}
-
-			File[] listFiles = installPathFile.listFiles((file, name) -> {
-				return confagentPattern.matcher(name).find();
-			});
-
-			if (Tool.ArrayUtil.isEmpty(listFiles)) {
-				throw new NZException("file download error", 500);
-			}
-			File file = CommonUtils.getResourceFile(listFiles[0].getAbsolutePath());
-			Tool.ResponseUtil.downloadFile(response, file);
-		} catch (IORuntimeException | IOException e) {
-			log.error("file download error", e);
+			Tool.ResponseUtil.downloadFile(response, rpmFile);
+		} catch (Exception e) {
+			log.error(e,"agent rpm download error");
 			throw new NZException("file download error", 500);
-		}
+		} 
 	}
 
 	/**
@@ -220,4 +229,41 @@ public class AgentController {
 		}
 	}
 
+	@PutMapping("/ota")
+	@RequiresPermissions({"agent:update"})
+	public R ota(String ids) {
+		ValidateUtils.is(ids).notNull(RCode.AGENT_ID_ISNULL);
+		List<String> idList = Tool.ListUtil.toList(ids.split(","));
+		Collection<Agent> agentList = agentService.listByIds(idList);
+		// 检查 agent 是否全部可用
+		agentList.forEach( agent -> {
+			Integer status = agent.getStatus();
+			if(Tool.ObjectUtil.notEqual(status, 1)) {
+				throw new NZException("There is an agent with abnormal state",999);
+			}
+		});
+		//异步调用 agent ota 接口执行升级
+		agentList.forEach(agent -> {
+			this.getOtaExecutor().execute(new Runnable() {
+				@Override
+				public void run() {
+					Thread.currentThread().setName("agent-ota-"+ agent.getId());
+					log.info("ota start");
+					String result = agentUtil.agentOTA(agent);
+					log.info("ota result: {}",result);
+					log.info("ota end");
+				}
+			});
+			log.info("execute agent ota, agent: {}",Tool.JSONUtil.toJsonStr(agent));
+		});
+		return R.ok();
+	}
+	
+	public synchronized ThreadPoolExecutor getOtaExecutor() {
+		if(this.otaExecutor == null) {
+			otaExecutor = Tool.ThreadUtil.newExecutor(1, otaConcurrentThreads);
+		}
+		return otaExecutor;
+	}
+	
 }
