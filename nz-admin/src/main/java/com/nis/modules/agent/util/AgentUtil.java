@@ -13,6 +13,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.URLUtil;
 import cn.hutool.http.Header;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.Feature;
 import com.nis.common.utils.Tool;
 import org.apache.http.Consts;
 import org.apache.http.client.methods.HttpPost;
@@ -159,7 +160,7 @@ public class AgentUtil {
 		if (log.isDebugEnabled()) {
 			log.debug("agent request body:{}", urlStr, responseEntity.getStatusCodeValue(), responseEntity.getBody());
 		}
-		return JSONObject.parseObject(responseEntity.getBody());
+		return JSONObject.parseObject(responseEntity.getBody(), JSONObject.class, Feature.OrderedField);
 	}
 
 
