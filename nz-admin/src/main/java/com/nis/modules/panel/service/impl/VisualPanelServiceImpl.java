@@ -817,6 +817,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         List<CompletableFuture<Map>> futureList = new ArrayList<>();
         for (VisualChart chart : chartsList) {
             String datasource = chart.getDatasource();
+            if (StrUtil.equals("misc", datasource)) {
+                continue;
+            }
             Map<String, Object> chartParam = (HashMap) chart.getParam();
             if(StrUtil.equals("system", datasource)) {
                 CompletableFuture<Map> mapCompletableFuture = null;
@@ -855,8 +858,6 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     });
                 }
                 futureList.add(mapCompletableFuture);
-            } else if (StrUtil.equals("misc", datasource)) {
-                // do nothing
             } else {
                 Integer eleIndex = 0;
                 String start = basicQueryParam.get("start");
@@ -871,18 +872,24 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                         switch (datasource) {
                             case "metrics":
                                 futureList.add(CompletableFuture.supplyAsync(() -> {
-                                    JSONObject jsonObject = promApiService.query_range(expr, start, end, step, chartParam.get("nullType").toString(), null);
-                                    jsonObject.put("eleIndex", indexStr);
-                                    jsonObject.put("chartId", chart.getId());
+                                    JSONObject jsonObject = null;
+                                    try {
+                                        jsonObject = promApiService.query_range(expr, start, end, step, chartParam.get("nullType").toString(), null);
+                                        jsonObject.put("eleIndex", indexStr);
+                                        jsonObject.put("chartId", chart.getId());
+                                    }catch (NZException e){}
                                     return jsonObject;
                                 }));
                                 break;
                             case "logs":
                                 String limit = chartParam.get("limit") == null ? "100" : chartParam.get("limit").toString();
                                 futureList.add(CompletableFuture.supplyAsync(() -> {
-                                    JSONObject jsonObject = lokiApiService.query_range(expr, start, end, limit, step, null, "backward", "1", null);
-                                    jsonObject.put("eleIndex", indexStr);
-                                    jsonObject.put("chartId", chart.getId());
+                                    JSONObject jsonObject = null;
+                                    try {
+                                        jsonObject = lokiApiService.query_range(expr, start, end, limit, step, null, "backward", "1", null);
+                                        jsonObject.put("eleIndex", indexStr);
+                                        jsonObject.put("chartId", chart.getId());
+                                    }catch (NZException e){}
                                     return jsonObject;
                                 }));
                                 break;
