@@ -53,6 +53,7 @@ public class PingController {
 
         String dcIds = (String) params.get("dcIds");
         String timeout = Tool.ObjectUtil.defaultIfEmpty((String) params.get("timeout"), "30");
+        Integer packageSize = NumberUtil.parseInt(Tool.ObjectUtil.defaultIfEmpty((String) params.get("packageSize"), "64"));
 
         List<Dc> dcList = dcService.list(new LambdaQueryWrapper<Dc>().in(Tool.StrUtil.isNotEmpty(dcIds), Dc::getId, Tool.StrUtil.split(dcIds, ',')));
 
@@ -72,7 +73,7 @@ public class PingController {
         List<String> ipList = Tool.StrUtil.split(ips, ',');
         for (Dc dc : futureDcList) {
             for (String ip : ipList) {
-                PingRunnable pingRunnable = new PingRunnable(dc, ip, tid, Long.valueOf(timeout), TimeUnit.SECONDS);
+                PingRunnable pingRunnable = new PingRunnable(dc, ip, tid, Long.valueOf(timeout), TimeUnit.SECONDS, packageSize);
                 pingRunnable.setName(Tool.StrUtil.concat(true, tid, "-", dc.getName()));
                 ThreadUtil.execAsync(pingRunnable);
             }
@@ -157,17 +158,19 @@ public class PingController {
         private String tid;
         private long timeout;
         private TimeUnit timeUnit;
+        private Integer packageSize;
 
         private volatile boolean isWrite = true;
         // 任务运行状态，调用 interrupt() 后，该值为 false
         private volatile boolean isRun = true;
 
-        public PingRunnable(Dc dc, String ips, String tid, long timeout, TimeUnit timeUnit) {
+        public PingRunnable(Dc dc, String ips, String tid, long timeout, TimeUnit timeUnit ,Integer packageSize) {
             this.dc = dc;
             this.ips = ips;
             this.tid = tid;
             this.timeout = timeout;
             this.timeUnit = timeUnit;
+            this.packageSize = packageSize;
         }
 
         @Override
@@ -178,9 +181,9 @@ public class PingController {
                 Agent agent = dc.getAgent();
                 CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
                     String path = "/cmd/ping";
-                    Map<String, List<String>> body = Tool.MapUtil.of(
-                            Pair.of("ips", Tool.StrUtil.split(ips, ','))
-                    );
+                    Map<String, Object> body = Tool.MapUtil.newHashMap();
+                    body.put("ips", Tool.StrUtil.split(ips, ','));
+                    body.put("packetsize", packageSize);
                     String resultJsonStr = AgentUtil.request(agent, HttpMethod.POST, path, null, body, String.class);
                     Object list = JSONPath.read(resultJsonStr, "data.list");
                     log.info("host: {}, path: {}, result: {}", agent.getHost(), path, resultJsonStr);
