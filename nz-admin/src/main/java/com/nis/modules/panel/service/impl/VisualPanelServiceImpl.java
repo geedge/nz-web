@@ -1434,6 +1434,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             panel.setCreateBy(ShiroUtils.getUserId().intValue());
             panel.setSeq(seqUUID);
             panel.setWeight(panelWeight);
+            panel.setUts(System.currentTimeMillis());
 
             List<String> saveList = Arrays.asList(savePanelNames.split("/"));
             int size = saveList.size();
