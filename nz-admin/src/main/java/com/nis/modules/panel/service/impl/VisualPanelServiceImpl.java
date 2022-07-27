@@ -817,6 +817,14 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         List<CompletableFuture<Map>> futureList = new ArrayList<>();
         for (VisualChart chart : chartsList) {
             String datasource = chart.getDatasource();
+            if (StrUtil.equals("misc",datasource)){
+                if (Tool.CollUtil.isNotEmpty(chart.getChildren())) {
+                    List<CompletableFuture<Map>> callables = this.recursionChartsData(chart.getChildren(), basicQueryParam, varList);
+                    if (Tool.CollUtil.isNotEmpty(callables))
+                        futureList.addAll(callables);
+                }
+                continue;
+            }
             Map<String, Object> chartParam = (HashMap) chart.getParam();
             if(StrUtil.equals("system", datasource)) {
                 CompletableFuture<Map> mapCompletableFuture = null;
@@ -900,13 +908,6 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                         emptyElementsMap.put("chartId", chart.getId());
                         return emptyElementsMap;
                     }));
-                }
-            }
-            if (StrUtil.equals("misc", datasource)) {
-                if (Tool.CollUtil.isNotEmpty(chart.getChildren())) {
-                    List<CompletableFuture<Map>> callables = this.recursionChartsData(chart.getChildren(), basicQueryParam, varList);
-                    if (Tool.CollUtil.isNotEmpty(callables))
-                        futureList.addAll(callables);
                 }
             }
         }
