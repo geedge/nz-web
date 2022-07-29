@@ -388,6 +388,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 	@Override
 	public SysUserEntity queryUserInfo(Long userId) {
 		SysUserEntity user = this.getById(userId);
+		if (Tool.ObjectUtil.isEmpty(user)) {
+			throw new NZException(RCode.SYS_USER_NOT_EXIST);
+		}
 		//获取用户所属的角色列表
 		List<Integer> roleIdList = sysUserRoleService.queryRoleIdList(userId.intValue());
 		List<SysRoleEntity> roles = sysRoleService.list(new QueryWrapper<SysRoleEntity>().lambda().in(SysRoleEntity::getId, roleIdList));

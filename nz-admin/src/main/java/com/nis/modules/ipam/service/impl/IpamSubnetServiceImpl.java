@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nis.common.utils.*;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
@@ -29,13 +30,6 @@ import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.CommonUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.StringUtils;
-import com.nis.common.utils.ToolUtil;
 import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.asset.service.DcService;
 import com.nis.modules.ipam.dao.IpamSubnetDao;
@@ -75,6 +69,9 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 	@Override
 	public IpamSubnet queryInfo(Integer id) {
 		IpamSubnet ipamSubnet = ipamSubnetDao.selectById(id);
+		if(Tool.ObjectUtil.isEmpty(ipamSubnet)){
+			throw new NZException(RCode.IPAM_SUBNET_INTERVAL_ERROR);
+		}
 		Dc dc = dcService.getById(ipamSubnet.getDcId());
 		ipamSubnet.setDc(dc);
 		ipamSubnet.setUsed(0);

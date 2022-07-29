@@ -55,6 +55,9 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
     public IpamIp ipamIpInfo(Integer id) {
 
         IpamIp ipamIp = this.getById(id);
+        if (Tool.ObjectUtil.isEmpty(ipamIp)) {
+            throw new NZException(RCode.IPAM_IP_INTERVAL_ERROR);
+        }
         Integer subnetId = ipamIp.getSubnetId();
         IpamSubnet ipamSubnet = ipamSubnetService.getById(subnetId);
         ipamIp.setIpamSubnet(ipamSubnet);
