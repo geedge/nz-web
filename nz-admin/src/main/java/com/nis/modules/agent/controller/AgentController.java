@@ -15,6 +15,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -74,6 +76,10 @@ public class AgentController {
 	 * ota 升级线程池
 	 */
 	private ThreadPoolExecutor otaExecutor;
+
+	@Autowired
+	private RedisTemplate redisTemplate;
+
 	/**
 	 * 详情
 	 *
@@ -256,6 +262,19 @@ public class AgentController {
 			});
 			log.info("execute agent ota, agent: {}",Tool.JSONUtil.toJsonStr(agent));
 		});
+		return R.ok();
+	}
+
+	@PutMapping("/resetConfig")
+	@RequiresPermissions({"agent:update"})
+	public R resetConfig() {
+		HashOperations opsForHash = redisTemplate.opsForHash();
+		Map<String, String> confEvent = opsForHash.entries(Constant.REDIS_KEY_CONF_EVENT);
+		if(!Tool.MapUtil.isNotEmpty(confEvent)) {
+			return R.error(500, "confEvent is empty");
+		}
+		log.info("confEvent: {}", Tool.JSONUtil.toJsonStr(confEvent));
+		opsForHash.delete(Constant.REDIS_KEY_CONF_EVENT,confEvent.keySet().toArray());
 		return R.ok();
 	}
 	
