@@ -4,20 +4,14 @@ import cn.hutool.core.date.DateTime;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONPath;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
-import com.nis.modules.report.config.ReportConstant;
 import org.quartz.*;
-import org.quartz.impl.matchers.GroupMatcher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import java.time.DayOfWeek;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.temporal.TemporalAdjusters;
-import java.util.Calendar;
-import java.util.*;
+import java.util.Date;
 
 @Component
 public class ReportJobManager {
@@ -28,19 +22,12 @@ public class ReportJobManager {
     @Lazy
     private Scheduler scheduler;
 
-    public static final JobKey getJobKey(String jobName, String jobGroup) {
+    public JobKey getJobKey(String jobName, String jobGroup) {
         return JobKey.jobKey(jobName, jobGroup);
     }
 
-    /**
-     * 创建调度
-     *
-     * @param reportScheduleJsonStr report schedule config json str
-     * @param jobGroup              jobGroup panelId
-     * @throws SchedulerException
-     */
-    public void createReportJob(String reportScheduleJsonStr, String jobGroup) throws SchedulerException {
-        log.info("ReportJobManager create job,job group: {}", jobGroup);
+    public void createReportJob(String reportScheduleJsonStr, String jobName) throws SchedulerException {
+        log.info("ReportJobManager create job,job name: {}", jobName);
 
         String scheduleType = JSONPath.read(reportScheduleJsonStr, "report.schedule.type").toString();
         String stime = JSONPath.read(reportScheduleJsonStr, "report.schedule.stime").toString();
@@ -53,44 +40,48 @@ public class ReportJobManager {
         // job 已结束，不再创建
         Date now = new Date();
         if (endAt != null && !now.before(endAt)) {
-            log.info("Report endtime is before current time,job is over.panelId:{}", jobGroup);
+            log.info("Report endtime is before current time,job is over. panelId:{}", jobName);
             return;
         }
 
-        String repeatStr = JSONPath.read(reportScheduleJsonStr, "report.schedule.repeat").toString();
-        Integer repeat = Integer.valueOf(StrUtil.emptyToDefault(repeatStr, "1"));
-
-        JobDataMap jobDataMap = new JobDataMap();
-        jobDataMap.put(ReportConstant.REPORT_JOB_DATAMAP, reportScheduleJsonStr);
+        JobKey jobKey = this.getJobKey(jobName, Constant.REPORT_JOB_GROUP);
+        JobDetail jobDetail = JobBuilder.newJob(ReportJob.class).withIdentity(jobKey).storeDurably().build();
 
         switch (scheduleType) {
             case "1": {// one time
-                JobKey jobKey = getJobKey(ReportConstant.REPORT_JOB_NAME, jobGroup);
                 SimpleTrigger simpleTrigger = TriggerBuilder.newTrigger().forJob(jobKey).withIdentity(jobKey.getName(), jobKey.getGroup())
                         .withSchedule(SimpleScheduleBuilder.simpleSchedule())
                         .startNow().startAt(startAt).endAt(endAt).build();
-                JobDetail jobDetail = JobBuilder.newJob(ReportJob.class).withIdentity(jobKey).setJobData(jobDataMap).storeDurably().build();
                 scheduler.scheduleJob(jobDetail, simpleTrigger);
                 break;
             }
-            case "2": {// daily
-                makeDailyJobAndStart(jobGroup, jobDataMap, startAt, endAt, repeat);
-                break;
-            }
-            case "3": {// weekly.
-                String nums = JSONPath.read(reportScheduleJsonStr, "report.schedule.nums").toString().replaceAll("\\[|\\]", "");
-                int[] execWeekArray = Arrays.asList(nums.split(",")).stream().mapToInt(Integer::parseInt).sorted().toArray();
-
-                makeWeeklyJobAndStart(jobGroup, jobDataMap, startAt, endAt, execWeekArray, repeat);
-                break;
-            }
+            case "2": // daily
+            case "3": // weekly
             case "4": {// monthly
-                String execDayArray = JSONPath.read(reportScheduleJsonStr, "report.schedule.nums").toString();
-                makeMonthlyJobAndStart(jobGroup, jobDataMap, startAt, endAt, execDayArray);
+                // 创建每天执行的定时任务，在定时任务中判定是否执行
+                SimpleScheduleBuilder simpleScheduleBuilder = SimpleScheduleBuilder.simpleSchedule()
+                        .withIntervalInHours(24)
+                        .repeatForever();
+                SimpleTrigger simpleTrigger = TriggerBuilder.newTrigger().forJob(jobKey).withIdentity(jobKey.getName(), jobKey.getGroup())
+                        .withSchedule(simpleScheduleBuilder)
+                        .startNow().startAt(startAt).endAt(endAt).build();
+                scheduler.scheduleJob(jobDetail, simpleTrigger);
+                break;
             }
             default:
                 break;
         }
+    }
+
+    /**
+     * 根据 jobkey 查询 JOB 是否存在，存在则删除
+     * @param panelId
+     * @throws SchedulerException
+     */
+    public void delJobByName(String panelId) throws SchedulerException {
+        JobKey jobKey = this.getJobKey(panelId, Constant.REPORT_JOB_GROUP);
+        boolean b = scheduler.checkExists(jobKey);
+        if (b) scheduler.deleteJob(jobKey);
     }
 
     /**
@@ -103,7 +94,7 @@ public class ReportJobManager {
      * @param repeat
      * @throws SchedulerException
      */
-    public void makeDailyJobAndStart(String jobGroup, JobDataMap jobDataMap, DateTime startAt, DateTime endAt, Integer repeat) throws SchedulerException {
+    /*public void makeDailyJobAndStart(String jobGroup, JobDataMap jobDataMap, DateTime startAt, DateTime endAt, Integer repeat) throws SchedulerException {
         JobKey jobKey = getJobKey(ReportConstant.REPORT_JOB_NAME, jobGroup);
 
         SimpleScheduleBuilder simpleScheduleBuilder = SimpleScheduleBuilder.simpleSchedule()
@@ -115,8 +106,7 @@ public class ReportJobManager {
 
         JobDetail jobDetail = JobBuilder.newJob(ReportJob.class).withIdentity(jobKey).setJobData(jobDataMap).storeDurably().build();
         scheduler.scheduleJob(jobDetail, simpleTrigger);
-    }
-
+    }*/
 
     /**
      * 每隔几周的 周一，周三、、、 执行
@@ -129,7 +119,7 @@ public class ReportJobManager {
      * @param repeat
      * @throws SchedulerException
      */
-    public void makeWeeklyJobAndStart(String jobGroup, JobDataMap jobDataMap, DateTime startAt, DateTime endAt, int[] execWeekArray, Integer repeat) throws SchedulerException {
+   /* public void makeWeeklyJobAndStart(String jobGroup, JobDataMap jobDataMap, DateTime startAt, DateTime endAt, int[] execWeekArray, Integer repeat) throws SchedulerException {
         SimpleScheduleBuilder simpleScheduleBuilder = SimpleScheduleBuilder.simpleSchedule()
                 .withIntervalInHours(24 * 7 * repeat)// 每搁几周执行一次
                 .repeatForever();
@@ -170,7 +160,7 @@ public class ReportJobManager {
             JobDetail jobDetail = JobBuilder.newJob(ReportJob.class).withIdentity(jobKey).setJobData(jobDataMap).storeDurably().build();
             scheduler.scheduleJob(jobDetail, simpleTrigger);
         }
-    }
+    }*/
 
     /**
      * 每月指定日期执行 -1 表示最后一天 'L'
@@ -182,7 +172,7 @@ public class ReportJobManager {
      * @param execDayArray
      * @throws SchedulerException
      */
-    public void makeMonthlyJobAndStart(String jobGroup, JobDataMap jobDataMap, DateTime startAt, DateTime endAt, String execDayArray) throws SchedulerException {
+    /*public void makeMonthlyJobAndStart(String jobGroup, JobDataMap jobDataMap, DateTime startAt, DateTime endAt, String execDayArray) throws SchedulerException {
         // 每月几号执行
         List<String> cronExpreLiost = new ArrayList<>();
         if (StrUtil.contains(execDayArray, "-1")) {
@@ -206,22 +196,5 @@ public class ReportJobManager {
             JobDetail jobDetail = JobBuilder.newJob(ReportJob.class).withIdentity(jobKey).setJobData(jobDataMap).storeDurably().build();
             scheduler.scheduleJob(jobDetail, cronTrigger);
         }
-    }
-
-
-    /**
-     * 根据 group 查找 Job,找到关闭 Job
-     *
-     * @param panelId
-     * @throws SchedulerException
-     */
-    public void findJobAndDelByGroup(String panelId) throws SchedulerException {
-        // 新增|修改 JOB  先删后增
-        Set<JobKey> jobKeys = scheduler.getJobKeys(GroupMatcher.groupEquals(panelId));
-        if (Tool.CollectionUtil.isNotEmpty(jobKeys)) {
-            for (JobKey key : jobKeys) {
-                scheduler.deleteJob(key);
-            }
-        }
-    }
+    }*/
 }

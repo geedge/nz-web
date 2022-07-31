@@ -24,7 +24,6 @@ import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.promserver.service.LokiserverService;
 import com.nis.modules.promserver.service.PromserverService;
-import com.nis.modules.report.config.ReportConstant;
 import com.nis.modules.report.job.ReportJobManager;
 import com.nis.modules.stat.service.impl.StatServiceImpl;
 import com.nis.modules.sys.dao.SysConfigDao;
@@ -36,11 +35,11 @@ import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-import com.nis.modules.topic.service.TopicService;
 import org.apache.commons.collections.CollectionUtils;
 import org.quartz.SchedulerException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -118,7 +117,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
     private MonitorEndpointService monitorEndpointService;
 
     @Autowired
-    private TopicService topicService;
+    private RedisTemplate redisTemplate;
 
     @Autowired
     private ReportJobManager reportJobManager;
@@ -236,7 +235,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         try {
             // 删除 Report job
             for (Integer panelId : allPanelIds) {
-                reportJobManager.findJobAndDelByGroup(panelId.toString());
+                reportJobManager.delJobByName(panelId.toString());
             }
         } catch (SchedulerException e) {
             log.error("Delete dashboard report job error", e);
@@ -471,7 +470,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             publishMap.put("panelId", panel.getId());
             publishMap.putAll(JSONObject.parseObject(panel.getParam().toString(), Map.class));
 
-            topicService.publishMessage(ReportConstant.REPORT_TOPIC_NAME, publishMap);
+            redisTemplate.convertAndSend(Constant.REPORT_TOPIC_NAME, JSONObject.toJSONString(publishMap));
         }
     }
 
@@ -514,7 +513,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             publishMap.put("panelId", panel.getId());
             publishMap.putAll(newParamMap);
 
-            topicService.publishMessage(ReportConstant.REPORT_TOPIC_NAME, publishMap);
+            redisTemplate.convertAndSend(Constant.REPORT_TOPIC_NAME, JSONObject.toJSONString(publishMap));
         }
     }
 
@@ -652,7 +651,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             publishMap.put("panelId", panel.getId());
             publishMap.putAll(JSONObject.parseObject(panel.getParam().toString(), Map.class));
 
-            topicService.publishMessage(ReportConstant.REPORT_TOPIC_NAME, publishMap);
+            redisTemplate.convertAndSend(Constant.REPORT_TOPIC_NAME, JSONObject.toJSONString(publishMap));
         }
 
         //  复制panel 下的 charts
