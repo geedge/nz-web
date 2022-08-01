@@ -13,12 +13,13 @@ import com.nis.common.exception.NZException;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
+import com.nis.modules.agent.entity.Agent;
+import com.nis.modules.agent.service.AgentService;
 import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.asset.service.DcService;
-import com.nis.modules.agent.entity.Agent;
-import com.nis.modules.agent.service.AgentService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.bind.annotation.*;
@@ -34,6 +35,12 @@ import java.util.concurrent.TimeoutException;
 public class PingController {
 
     private final static Log log = Log.get();
+
+    /**
+     * ping job timeout (seconds) 默认五分钟
+     */
+    @Value("${tool.ping.job.timeout:300}")
+    private Long timeout;
 
     @Autowired
     private AgentService agentService;
@@ -52,8 +59,6 @@ public class PingController {
         if (Tool.StrUtil.isEmpty(ips)) throw new NZException(RCode.TOOL_PING_IP_ISNULL);
 
         String dcIds = (String) params.get("dcIds");
-        String timeout = Tool.ObjectUtil.defaultIfEmpty((String) params.get("timeout"), "30");
-        Integer packageSize = NumberUtil.parseInt(Tool.ObjectUtil.defaultIfEmpty((String) params.get("packageSize"), "64"));
 
         List<Dc> dcList = dcService.list(new LambdaQueryWrapper<Dc>().in(Tool.StrUtil.isNotEmpty(dcIds), Dc::getId, Tool.StrUtil.split(dcIds, ',')));
 
@@ -69,11 +74,27 @@ public class PingController {
             futureDcList.add(dc);
         }
 
+        Map<String, Object> requestParam = Tool.MapUtil.newHashMap();
+
+        String packageSize = Tool.ObjectUtil.defaultIfEmpty((String) params.get("packageSize"), "64");
+        String count = Tool.ObjectUtil.defaultIfEmpty((String) params.get("count"), "4");
+        String pingCmdTimeout = Tool.ObjectUtil.defaultIfEmpty((String) params.get("timeout"), "100");
+        String concurrent = Tool.ObjectUtil.defaultIfEmpty((String) params.get("concurrent"), "10");
+
+        requestParam.put("packetsize", packageSize);
+        requestParam.put("count", count);
+        requestParam.put("timeout", pingCmdTimeout);
+        requestParam.put("concurrent", concurrent);
+
         String tid = UUID.randomUUID().toString();
         List<String> ipList = Tool.StrUtil.split(ips, ',');
         for (Dc dc : futureDcList) {
             for (String ip : ipList) {
-                PingRunnable pingRunnable = new PingRunnable(dc, ip, tid, Long.valueOf(timeout), TimeUnit.SECONDS, packageSize);
+                Map<String, Object> map = Tool.MapUtil.newHashMap();
+                map.putAll(requestParam);
+                map.put("ips", Tool.StrUtil.split(ip, ','));
+
+                PingRunnable pingRunnable = new PingRunnable(dc, tid, Long.valueOf(timeout), TimeUnit.SECONDS, map);
                 pingRunnable.setName(Tool.StrUtil.concat(true, tid, "-", dc.getName()));
                 ThreadUtil.execAsync(pingRunnable);
             }
@@ -154,23 +175,21 @@ public class PingController {
 
     public class PingRunnable extends Thread {
         private Dc dc;
-        private String ips;
         private String tid;
         private long timeout;
         private TimeUnit timeUnit;
-        private Integer packageSize;
+        private Map<String, Object> requestBody;
 
         private volatile boolean isWrite = true;
         // 任务运行状态，调用 interrupt() 后，该值为 false
         private volatile boolean isRun = true;
 
-        public PingRunnable(Dc dc, String ips, String tid, long timeout, TimeUnit timeUnit ,Integer packageSize) {
+        public PingRunnable(Dc dc, String tid, long timeout, TimeUnit timeUnit, Map<String, Object> requestBody) {
             this.dc = dc;
-            this.ips = ips;
             this.tid = tid;
             this.timeout = timeout;
             this.timeUnit = timeUnit;
-            this.packageSize = packageSize;
+            this.requestBody = requestBody;
         }
 
         @Override
@@ -181,10 +200,7 @@ public class PingController {
                 Agent agent = dc.getAgent();
                 CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
                     String path = "/cmd/ping";
-                    Map<String, Object> body = Tool.MapUtil.newHashMap();
-                    body.put("ips", Tool.StrUtil.split(ips, ','));
-                    body.put("packetsize", packageSize);
-                    String resultJsonStr = AgentUtil.request(agent, HttpMethod.POST, path, null, body, String.class);
+                    String resultJsonStr = AgentUtil.request(agent, HttpMethod.POST, path, null, requestBody, String.class);
                     Object list = JSONPath.read(resultJsonStr, "data.list");
                     log.info("host: {}, path: {}, result: {}", agent.getHost(), path, resultJsonStr);
                     // 由于 future.cancel 在任务已经运行状态下，不一定能取消，所以在写 redis 前增加判断
@@ -218,10 +234,10 @@ public class PingController {
                 } catch (TimeoutException e) {
                     boolean cancel = future.cancel(true);
                     isWrite = false;
-                    log.error(String.format("%s agent ping %s timeout, Task cancel status: %s", agent.getName(), ips, cancel));
+                    log.error(String.format("%s agent ping %s timeout, Task cancel status: %s", agent.getName(), requestBody.get("ips").toString(), cancel));
 
                     if (isRun) {
-                        log.info(String.format("%s agent ping %s timeout, Timeout data write to redis", agent.getName(), ips));
+                        log.info(String.format("%s agent ping %s timeout, Timeout data write to redis", agent.getName(), requestBody.get("ips").toString()));
                         // 超时也需要向 redis 中写入 timeout 消息
                         Map agentMap = Tool.MapUtil.newHashMap(4);
                         agentMap.put("id", agent.getId());
@@ -230,7 +246,7 @@ public class PingController {
                         Map dcMap = Tool.MapUtil.newHashMap(4);
                         dcMap.put("id", dc.getId());
                         dcMap.put("name", dc.getName());
-                        List<String> timeOutIpList = Tool.StrUtil.split(ips, ',');
+                        List<String> timeOutIpList = (List<String>) requestBody.get("ips");
                         List<Map> list = Tool.ListUtil.list(false);
                         for (String timeOutIp : timeOutIpList) {
                             Map timeoutInfoMap = Tool.MapUtil.of(
@@ -249,7 +265,7 @@ public class PingController {
                         }
                         redisTemplate.opsForList().leftPush(Tool.StrUtil.concat(true, "test_ping_result_", tid), JSONObject.toJSONString(list));
                     } else {
-                        log.info(String.format("%s agent ping %s timeout, But the thread is interrupted, and the timeout data is not write to redis.", agent.getName(), ips));
+                        log.info(String.format("%s agent ping %s timeout, But the thread is interrupted, and the timeout data is not write to redis.", agent.getName(), requestBody.get("ips").toString()));
                     }
                 }
             } else {
@@ -259,7 +275,7 @@ public class PingController {
                     Map dcMap = Tool.MapUtil.newHashMap(4);
                     dcMap.put("id", dc.getId());
                     dcMap.put("name", dc.getName());
-                    List<String> ipList = Tool.StrUtil.split(ips, ',');
+                    List<String> ipList = (List<String>) requestBody.get("ips");
                     List<Map> list = Tool.ListUtil.list(false);
                     for (String ip : ipList) {
                         Map noAgentInfo = Tool.MapUtil.of(
