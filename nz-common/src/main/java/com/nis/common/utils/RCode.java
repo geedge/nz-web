@@ -869,6 +869,7 @@ public enum RCode {
 	IPAM_SUBNET_MASK_ERROR(723010,"Ipamsubnet mask error, allow ipv4(0~32),ipv6(64-128)"),
 	IPAM_SUBNET_DC_ISNULL(721011,"Ipamsubnet datacenter can not be null"),
 	IPAM_SUBNET_INTERVAL_ERROR(723012,"Ipamsubnet interval already exists"),
+    IPAM_SUBNET_NAME_ERROR(731013,"Ipamsubnet name already exists"),
 
     /**
      * IpamIp 相关
@@ -884,6 +885,7 @@ public enum RCode {
     IPAM_IP_MAC_ERROR(731009,"Ipamip mac error, mac repeat"),
     IPAM_IP_SUBNET_ADDR_ERROR(731010,"Ipamip addr error, ip addr different subnet addr "),
     IPAM_IP_MAC_ADDR_ERROR(731011,"Ipamip mac and addr exist"),
+    IPAM_IP_NAME_ERROR(731012,"Ipamip name already exists"),
 
 
     /**

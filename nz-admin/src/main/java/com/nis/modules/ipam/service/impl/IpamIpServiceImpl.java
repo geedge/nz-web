@@ -152,7 +152,7 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
         return resultMap;
     }
 
-    private int saveIpamIpsFromImportDataList(List<Map<Integer, String>> importDataList, List<Map> failDetails, ArrayList<String> headerInfos, String seqUUID) throws AddressStringException {
+    private int saveIpamIpsFromImportDataList(List<Map<Integer, String>> importDataList, List<Map> failDetails, ArrayList<String> headerInfos, String seqUUID) throws AddressStringException, UnknownHostException {
         int successNum = 0;
         for (int i = 0; i < importDataList.size(); i++) {
             int dataFromExcelRowNum = i + 1;
@@ -163,6 +163,12 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
             if (StringUtils.isEmpty(name)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.IPAM_IP_NAME_ISNULL.getMsg());
+            }else {
+                IpamIp ipamIp = ipamIpDao.selectOne(new LambdaQueryWrapper<IpamIp>().eq(IpamIp::getName, name));
+                if (Tool.ObjectUtil.isNotEmpty(ipamIp)) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.IPAM_IP_NAME_ERROR.getMsg());
+                }
             }
 
             String subnetName = dataMap.get(1);
@@ -190,19 +196,20 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.IPAM_IP_ADDR_ERROR.getMsg());
                 }
-                if (!IPUtils.isInRange(addr,StrUtil.builder(ipamSubnet.getAddr(), StrUtil.SLASH, ipamSubnet.getMask().toString()).toString())){
+                //检查ip是否在子网内
+                CIDRUtils cidrUtils = new CIDRUtils(StrUtil.builder(ipamSubnet.getAddr(),StrUtil.SLASH,ipamSubnet.getMask().toString()).toString());
+                if (!cidrUtils.isInRange(addr)){
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.IPAM_IP_SUBNET_ADDR_ERROR.getMsg());
                 }
             }
 
             String mac = dataMap.get(3);
-            if (StringUtils.isEmpty(mac)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.IPAM_IP_MAC_ISNULL.getMsg());
-            }else if(!CommonUtils.checkMac(mac)){
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum,failDetails,headerInfos.get(3),RCode.IPAM_IP_MAC_ERROR.getMsg());
+            if (StringUtils.isNotEmpty(mac)) {
+                if(!CommonUtils.checkMac(mac)){
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum,failDetails,headerInfos.get(3),RCode.IPAM_IP_MAC_ERROR.getMsg());
+                }
             }
 
             // 校验ip之前是否有创建或者包含
@@ -212,18 +219,23 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
                 this.addFailDetail(dataFromExcelRowNum,failDetails,headerInfos.get(2),RCode.IPAM_IP_INTERVAL_ERROR.getMsg());
             }
 
-            String assdtName = dataMap.get(4);
+            String assetName = dataMap.get(4);
             Integer assetId = null;
-            if(StringUtils.isEmpty(assdtName)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.IPAM_IP_ASSET_ISNULL.getMsg());
+            Integer state = null;
+            if(StringUtils.isEmpty(assetName)) {
+                //资产不存在 当前IP为未分配状态
+                state = 1;
             }else {
-                AssetAsset assetAsset = asset.getOne(new QueryWrapper<AssetAsset>().lambda().eq(AssetAsset::getName, assdtName));
+                AssetAsset assetAsset = asset.getOne(new QueryWrapper<AssetAsset>().lambda().eq(AssetAsset::getName, assetName));
                 if(org.springframework.util.ObjectUtils.isEmpty(assetAsset)) {
                     saveFlag = false;
+                    //资产不存在 当前IP为未分配状态
+                    state = 1;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.IPAM_IP_ASSET_ISNULL.getMsg());
                 }else {
+                    //资产存在 当前IP为已分配状态
                     assetId= assetAsset.getId();
+                    state = 3;
                 }
             }
 
@@ -239,7 +251,7 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
                     ipamIp.setAssetId(assetId);
                     ipamIp.setRemark(remark);
                     ipamIp.setSeq(seqUUID);
-                    ipamIp.setState(1);
+                    ipamIp.setState(state);
                     ipamIp.setUts(new Date().getTime());
                     this.save(ipamIp);
                     successNum++;
