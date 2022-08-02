@@ -14,6 +14,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.*;
+import com.nis.modules.ipam.dao.IpamIpDao;
+import com.nis.modules.ipam.entity.IpamIp;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
@@ -66,6 +68,9 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 	@Autowired
 	private SysUserStarredService starredService;
 
+	@Autowired
+	private IpamIpDao ipamIpDao;
+
 	@Override
 	public IpamSubnet queryInfo(Integer id) {
 		IpamSubnet ipamSubnet = ipamSubnetDao.selectById(id);
@@ -74,7 +79,9 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 		}
 		Dc dc = dcService.getById(ipamSubnet.getDcId());
 		ipamSubnet.setDc(dc);
-		ipamSubnet.setUsed(0);
+		//查询使用数量
+		Integer used = ipamIpDao.selectCount(new LambdaQueryWrapper<IpamIp>().eq(IpamIp::getSubnetId, ipamSubnet.getId()));
+		ipamSubnet.setUsed(used);
 		//收藏判断
 		int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
 				.eq(SysUserStarredEntity::getTid,ipamSubnet.getId())
@@ -101,8 +108,6 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 
 		IPage page = new Query(IpamSubnet.class).getPage(params);
 		List<IpamSubnet> result = ipamSubnetDao.queryPage(page,params);
-		
-		result.stream().forEach(o -> o.setUsed(0));
 		page.setRecords(result);
         return new PageUtils(page);
 	}
@@ -114,7 +119,7 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 		.and(ipamSubnet.getAddr()).notNull(RCode.IPAM_SUBNET_ADDR_ISNULL)
 		.and(ipamSubnet.getMask()).notNull(RCode.IPAM_SUBNET_MASK_ISNULL)
 		.and(ipamSubnet.getDcId()).notNull(RCode.IPAM_SUBNET_DCID_ISNULL);
-		
+
 		// 校验ip地址格式 以及掩码值
 		boolean ipFormat = true;
 		boolean maskFormat = true;
