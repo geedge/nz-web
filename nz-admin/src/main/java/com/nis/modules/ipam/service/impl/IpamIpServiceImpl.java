@@ -11,6 +11,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
+import com.nis.modules.asset.dao.AssetAssetDao;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.ipam.dao.IpamIpDao;
@@ -51,6 +52,9 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
     @Autowired
     private BasicImportAndExportServices basicImportAndExportServices;
 
+    @Autowired
+    private AssetAssetDao assetAssetDao;
+
     @Override
     public IpamIp ipamIpInfo(Integer id) {
 
@@ -83,7 +87,18 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Integer saveOrModifyIpamSubnet(IpamIp ipamIp) throws UnknownHostException {
-        ValidateUtils.is(ipamIp.getAddr()).notNull(RCode.IPAM_IP_ADDR_ISNULL);
+        ValidateUtils.is(ipamIp.getAddr()).notNull(RCode.IPAM_IP_ADDR_ISNULL)
+                .and(ipamIp.getName()).notNull(RCode.IPAM_IP_NAME_ISNULL);
+
+        //判断name是否重复
+        IpamIp selectOne = ipamIpDao.selectOne(new LambdaQueryWrapper<IpamIp>().eq(IpamIp::getName, ipamIp.getName()));
+        if ((Tool.ObjectUtil.isEmpty(ipamIp.getId()) && Tool.ObjectUtil.isNotEmpty(selectOne)) || (Tool.ObjectUtil.isNotEmpty(ipamIp.getId()) && !selectOne.getId().equals(ipamIp.getId()))) {
+            throw new NZException(RCode.IPAM_IP_NAME_ERROR);
+        }
+        AssetAsset assetAsset = assetAssetDao.selectOne(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getManageIp, ipamIp.getAddr()));
+        if (Tool.ObjectUtil.isNotEmpty(assetAsset)) {
+            ipamIp.setAssetId(assetAsset.getId());
+        }
 
         //校验ip
         if (!(CommonUtils.checkIpv4(ipamIp.getAddr()) || CommonUtils.checkIpv6(ipamIp.getAddr()))){

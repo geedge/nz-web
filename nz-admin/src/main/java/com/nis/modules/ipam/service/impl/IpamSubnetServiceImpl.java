@@ -120,6 +120,11 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 		.and(ipamSubnet.getMask()).notNull(RCode.IPAM_SUBNET_MASK_ISNULL)
 		.and(ipamSubnet.getDcId()).notNull(RCode.IPAM_SUBNET_DCID_ISNULL);
 
+		IpamSubnet one = ipamSubnetDao.selectOne(new LambdaQueryWrapper<IpamSubnet>().eq(IpamSubnet::getName, ipamSubnet.getName()));
+		if ((Tool.ObjectUtil.isEmpty(ipamSubnet.getId()) && Tool.ObjectUtil.isNotEmpty(one)) || (Tool.ObjectUtil.isNotEmpty(ipamSubnet.getId()) && !one.getId().equals(ipamSubnet.getId()))) {
+			throw new NZException(RCode.IPAM_SUBNET_NAME_ERROR);
+		}
+
 		// 校验ip地址格式 以及掩码值
 		boolean ipFormat = true;
 		boolean maskFormat = true;
@@ -236,7 +241,13 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
             if (StringUtils.isEmpty(name)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.IPAM_SUBNET_NAME_ISNULL.getMsg());
-            }
+            }else {
+				IpamSubnet ipamSubnet = ipamSubnetDao.selectOne(new LambdaQueryWrapper<IpamSubnet>().eq(IpamSubnet::getName, name));
+				if(ObjectUtil.isNotEmpty(ipamSubnet)) {
+					saveFlag = false;
+					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.IPAM_SUBNET_NAME_ERROR.getMsg());
+				}
+			}
 
             String type = dataMap.get(1);
             if(StringUtils.isEmpty(type)) {
