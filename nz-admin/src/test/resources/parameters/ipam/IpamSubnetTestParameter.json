@@ -1,7 +1,7 @@
 {
   "------------------ POST  /ipam/subnet data---------------------": "note",
   "saveIpamSubnet_success": {
-    "name": "IpamSubnetTest",
+    "name": "IpamSubnetTest10",
     "type": 4,
     "dcId": 1,
     "addr": "192.168.64.1",
@@ -31,7 +31,7 @@
     "cap": 256
   },
   "saveIpamSubnet_checkTypeCorrect": {
-    "name": "IpamSubnetTest",
+    "name": "IpamSubnetTest7",
     "type": 5,
     "dcId": 1,
     "addr": "192.168.40.1",
@@ -51,7 +51,7 @@
     "cap": 256
   },
   "saveIpamSubnet_checkDcCorrect": {
-    "name": "IpamSubnetTest",
+    "name": "IpamSubnetTest5",
     "type": 4,
     "dcId": 100,
     "addr": "192.168.60.1",
@@ -71,7 +71,7 @@
     "cap": 256
   },
   "saveIpamSubnet_checkV4AddrCorrect": {
-    "name": "IpamSubnetTest",
+    "name": "IpamSubnetTest6",
     "type": 4,
     "dcId": 1,
     "addr": "192.168.40.300",
@@ -81,7 +81,7 @@
     "cap": 256
   },
   "saveIpamSubnet_checkV6AddrCorrect": {
-    "name": "IpamSubnetTest",
+    "name": "IpamSubnetTest7",
     "type": 6,
     "dcId": 1,
     "addr": "0000:0000:0000:0000:0000:0000:c0a8",
@@ -101,7 +101,7 @@
     "cap": 256
   },
   "saveIpamSubnet_checkV4MaskCorrect": {
-    "name": "IpamSubnetTest",
+    "name": "IpamSubnetTest1",
     "type": 4,
     "dcId": 1,
     "addr": "192.168.40.1",
@@ -111,7 +111,7 @@
     "cap": 256
   },
   "saveIpamSubnet_checkV6MaskCorrect": {
-    "name": "IpamSubnetTest",
+    "name": "IpamSubnetTest7",
     "type": 6,
     "dcId": 1,
     "addr": "0000:0000:0000:0000:0000:0000:c0a8:2801",
@@ -123,7 +123,7 @@
   "------------------ PUT  /ipam/subnet data---------------------": "note",
   "updateIpamSubnet_success": {
     "id": 2,
-    "name": "IpamSubnetTest",
+    "name": "IpamSubnetTest9",
     "type": 4,
     "dcId": 1,
     "addr": "192.168.70.1",
