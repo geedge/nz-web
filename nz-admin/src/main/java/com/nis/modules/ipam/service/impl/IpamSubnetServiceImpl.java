@@ -121,7 +121,8 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 		.and(ipamSubnet.getDcId()).notNull(RCode.IPAM_SUBNET_DCID_ISNULL);
 
 		IpamSubnet one = ipamSubnetDao.selectOne(new LambdaQueryWrapper<IpamSubnet>().eq(IpamSubnet::getName, ipamSubnet.getName()));
-		if ((Tool.ObjectUtil.isEmpty(ipamSubnet.getId()) && Tool.ObjectUtil.isNotEmpty(one)) || (Tool.ObjectUtil.isNotEmpty(ipamSubnet.getId()) && !one.getId().equals(ipamSubnet.getId()))) {
+		if ((Tool.ObjectUtil.isEmpty(ipamSubnet.getId()) && Tool.ObjectUtil.isNotEmpty(one))
+				|| (Tool.ObjectUtil.isNotEmpty(ipamSubnet.getId()) && Tool.ObjectUtil.isNotEmpty(one) && !one.getId().equals(ipamSubnet.getId()))) {
 			throw new NZException(RCode.IPAM_SUBNET_NAME_ERROR);
 		}
 

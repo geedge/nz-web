@@ -92,7 +92,8 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
 
         //判断name是否重复
         IpamIp selectOne = ipamIpDao.selectOne(new LambdaQueryWrapper<IpamIp>().eq(IpamIp::getName, ipamIp.getName()));
-        if ((Tool.ObjectUtil.isEmpty(ipamIp.getId()) && Tool.ObjectUtil.isNotEmpty(selectOne)) || (Tool.ObjectUtil.isNotEmpty(ipamIp.getId()) && !selectOne.getId().equals(ipamIp.getId()))) {
+        if ((Tool.ObjectUtil.isEmpty(ipamIp.getId()) && Tool.ObjectUtil.isNotEmpty(selectOne))
+                || (Tool.ObjectUtil.isNotEmpty(ipamIp.getId()) && Tool.ObjectUtil.isNotEmpty(selectOne) && !selectOne.getId().equals(ipamIp.getId()))) {
             throw new NZException(RCode.IPAM_IP_NAME_ERROR);
         }
         AssetAsset assetAsset = assetAssetDao.selectOne(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getManageIp, ipamIp.getAddr()));
