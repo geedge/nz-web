@@ -68,7 +68,8 @@ public class NZExceptionHandler {
 	@ResponseStatus(value=HttpStatus.BAD_REQUEST)
 	public R handleDuplicateKeyException(DuplicateKeyException e, HttpServletRequest request){
 		logger.error(e,"Request uri: {}", request.getRequestURI());
-		return R.error(RCode.SYS_DB_DUPLICATERECORD);
+		String msg = sysI18nService.queryValueByName(RCode.SYS_DB_DUPLICATERECORD.getCode().toString());
+		return R.error(RCode.SYS_DB_DUPLICATERECORD.getCode(), msg);
 	}
 
 	@ExceptionHandler(AuthorizationException.class)
