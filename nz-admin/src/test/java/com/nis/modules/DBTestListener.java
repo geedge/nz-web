@@ -38,7 +38,7 @@ public class DBTestListener extends AbstractTestExecutionListener {
         // 设置是否输出日志，null不输出日志，不设置自动将日志输出到控制台
         runner.setLogWriter(null);
 
-        File dbdirs = new File("src/test/resources/db");
+        File dbdirs = new File("src/test/resources/testdb");
         for (File file : dbdirs.listFiles()) {
             try {
                 log.info("sql file: {}, sql name: {}", file, file.getName());

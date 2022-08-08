@@ -887,6 +887,20 @@ public enum RCode {
     IPAM_IP_MAC_ADDR_ERROR(731011,"Ipamip mac and addr exist"),
     IPAM_IP_NAME_ERROR(731012,"Ipamip name already exists"),
 
+    /**
+     * Record rule 相关
+     */
+    RECORD_RULE_ID_ISNULL(741001,"Record rule id can not be null"),
+    RECORD_RULE_NAME_ISNULL(741002,"Record rule name can not be null"),
+    RECORD_RULE_TYPE_ISNULL(741003,"Record rule type can not be null"),
+    RECORD_RULE_EXPR_ISNULL(741004,"Record rule expr can not be null"),
+    RECORD_RULE_LABELS_ISNULL(741005,"Record rule labels can not be null"),
+    RECORD_RULE_STATE_ISNULL(741005,"Record rule state can not be null"),
+    RECORD_RULE_NAME_EXIST(742001,"Record rule name already exists"),
+    RECORD_RULE_BUILD_IN_EXIST(740001,"Record rule built-in allows deletion"),
+    RECORD_RULE_TYPE_ERROR(743001,"Record rule type error"),
+    RECORD_RULE_STATE_ERROR(743001,"Record rule state error"),
+
 
     /**
      * Tool

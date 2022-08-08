@@ -15,6 +15,7 @@ import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.project.service.MonitorProjectService;
+import com.nis.modules.alert.service.RecordRuleService;
 import com.nis.modules.sys.dao.SysUserStarredDao;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.SysUserStarredService;
@@ -56,6 +57,9 @@ public class SysUserStarredImpl extends ServiceImpl<SysUserStarredDao, SysUserSt
 
     @Autowired
     private VisualChartService visualChartService;
+
+    @Autowired
+    private RecordRuleService recordRuleService;
 
     @Override
     public List<SysUserStarredEntity> queryStarred(String type) {
@@ -130,6 +134,9 @@ public class SysUserStarredImpl extends ServiceImpl<SysUserStarredDao, SysUserSt
                         break;
                     case "chart":
                         sysUserStarredEntity.setName(visualChartService.getById(tid).getName());
+                        break;
+                    case "recordRule":
+                        sysUserStarredEntity.setName(recordRuleService.getById(tid).getName());
                         break;
                 }
             }

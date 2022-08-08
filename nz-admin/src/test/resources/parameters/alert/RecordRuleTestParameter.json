@@ -1,0 +1,103 @@
+{
+  "------------------ get  /record/rule data---------------------": "note",
+  "queryRecordRuleListByParams_success": {
+    "pageNo": null,
+    "pageSize": null,
+    "starred": 0,
+    "type": 1,
+    "state": 1,
+    "name": "test",
+    "buildIn": 0,
+    "ids": "1,2,3",
+    "expr": "up"
+  },
+  "queryRecordRuleListByParams_notExist": {
+    "pageNo": null,
+    "pageSize": null,
+    "starred": 0,
+    "type": 1,
+    "state": 1,
+    "name": "english",
+    "buildIn": 0,
+    "ids": "1,2,3",
+    "expr": "english"
+  },
+  "------------------ POST  /record/rule data---------------------": "note",
+  "addRecordRule_success": {
+    "name": "nz-web-rule",
+    "type": 1,
+    "expr": "nz_status",
+    "inr": 1,
+    "state": 1,
+    "labels": "{up:1,down:2,unknown:3}"
+  },
+  "addRecordRule_nameIsNull": {
+    "type": 1,
+    "expr": "nz_up",
+    "inr": 1,
+    "state": 1,
+    "labels": "{up:1,down:2,unknown:3}"
+  },
+  "addRecordRule_typeIsNull": {
+    "name": "nz-up",
+    "expr": "nz_up",
+    "inr": 1,
+    "state": 1,
+    "labels": "{up:1,down:2,unknown:3}"
+  },
+  "addRecordRule_labelsIsNull": {
+    "name": "nz-up",
+    "expr": "nz_up",
+    "inr": 1,
+    "state": 1,
+    "type": 1
+  },
+  "addRecordRule_stateIsNull": {
+    "name": "nz-up",
+    "expr": "nz_up",
+    "inr": 1,
+    "type": 1,
+    "labels": "{up:1,down:2,unknown:3}"
+  },
+  "addRecordRule_typeIsError": {
+    "name": "nz-up",
+    "expr": "nz_up",
+    "inr": 1,
+    "state": 1,
+    "labels": "{up:1,down:2,unknown:3}",
+    "type": 3
+  },
+  "addRecordRule_stateIsError": {
+    "name": "nz-up",
+    "expr": "nz_up",
+    "inr": 1,
+    "state": 2,
+    "labels": "{up:1,down:2,unknown:3}",
+    "type": 1
+  },
+  "------------------ PUT  /record/rule data---------------------": "note",
+  "updateRecordRule_success": {
+    "id": 3,
+    "name": "nz-web-rule-update",
+    "type": 1,
+    "expr": "nz_status",
+    "inr": 1,
+    "state": 1,
+    "labels": "{up:1,down:2,unknown:3}"
+  },
+  "updateRecordRule_idIsNull": {
+    "name": "nz-web-rule-update-idIsNull",
+    "type": 1,
+    "expr": "nz_status",
+    "inr": 1,
+    "state": 1,
+    "labels": "{up:1,down:2,unknown:3}"
+  },
+  "------------------ DELETE  /record/rule data---------------------": "note",
+  "deleteRecordRule_success": {
+    "ids": "5,6"
+  },
+  "deleteRecordRule_buildIn": {
+    "ids": "4"
+  }
+}
