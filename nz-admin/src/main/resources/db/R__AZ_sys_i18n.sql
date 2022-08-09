@@ -4381,5 +4381,25 @@ INSERT INTO `sys_i18n` VALUES (6801, 'config.exprTemp.remark', 'en', 'config.exp
 INSERT INTO `sys_i18n` VALUES (6802, 'config.exprTemp.remark', 'zh', 'config.exprTemp.remark', '描述', '表头->表达式模板导入/导出/模板下载', '2022-07-21 06:18:50', 1);
 INSERT INTO `sys_i18n` VALUES (6803, 'profile.confirmPasswordError', 'en', 'profile.confirmPasswordError', 'The two inputs are inconsistent', 'profile/编辑/确认密码错误', '2022-07-22 08:30:34', 1);
 INSERT INTO `sys_i18n` VALUES (6805, 'profile.confirmPasswordError', 'zh', 'profile.confirmPasswordError', '两次输入不一致', 'profile/编辑/确认密码错误', '2022-07-22 08:30:54', 1);
+INSERT INTO `sys_i18n` VALUES (6806, '741001', 'en', 'RECORD_RULE_ID_ISNULL', 'Record rule id can not be null', '', '2022-08-09 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6807, '741001', 'zh', 'RECORD_RULE_ID_ISNULL', '记录规则id不能为空', '', '2022-08-09 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6808, '741002', 'en', 'RECORD_RULE_NAME_ISNULL', 'Record rule name can not be null', '', '2022-08-09 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6809, '741002', 'zh', 'RECORD_RULE_NAME_ISNULL', '记录规则名称不能为空', '', '2022-08-09 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6810, '741003', 'en', 'RECORD_RULE_TYPE_ISNULL', 'Record rule type can not be null', '', '2022-08-09 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6811, '741003', 'zh', 'RECORD_RULE_TYPE_ISNULL', '记录规则类型不能为空', '', '2022-08-09 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6812, '741004', 'en', 'RECORD_RULE_EXPR_ISNULL', 'Record rule expr can not be null', '', '2022-08-09 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6813, '741004', 'zh', 'RECORD_RULE_EXPR_ISNULL', '记录规则表达式不能为空', '', '2022-08-09 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6814, '741005', 'en', 'RECORD_RULE_LABELS_ISNULL', 'Record rule labels can not be null', '', '2022-08-09 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6815, '741005', 'zh', 'RECORD_RULE_LABELS_ISNULL', '记录规则标签不能为空', '', '2022-08-09 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6816, '741006', 'en', 'RECORD_RULE_STATE_ISNULL', 'Record rule state can not be null', '', '2022-08-09 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6817, '741006', 'zh', 'RECORD_RULE_STATE_ISNULL', '记录规则状态不能为空', '', '2022-08-09 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6818, '742001', 'en', 'RECORD_RULE_NAME_EXIST', 'Record rule name already exists', '', '2022-08-09 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6819, '742001', 'zh', 'RECORD_RULE_NAME_EXIST', '记录规则名称已经存在', '', '2022-08-09 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6820, '740001', 'en', 'RECORD_RULE_BUILD_IN_EXIST', 'Record rule built-in allows deletion', '', '2022-08-09 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6821, '740001', 'zh', 'RECORD_RULE_BUILD_IN_EXIST', '内置记录规则不允许删除', '', '2022-08-09 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6822, '743001', 'en', 'RECORD_RULE_TYPE_ERROR', 'Record rule type error', '', '2022-08-09 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6823, '743001', 'zh', 'RECORD_RULE_TYPE_ERROR', '记录规则类型错误', '', '2022-08-09 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6824, '743002', 'en', 'RECORD_RULE_STATE_ERROR', 'Record state type error', '', '2022-08-09 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6825, '743002', 'zh', 'RECORD_RULE_STATE_ERROR', '记录规则状态错误', '', '2022-08-09 00:00:00', 1);
 
 SET FOREIGN_KEY_CHECKS = 1;
