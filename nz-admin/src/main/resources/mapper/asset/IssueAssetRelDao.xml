@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.nis.modules.asset.dao.IssueAssetRelDao">
+
+    <select id="queryAssetList" resultMap="com.nis.modules.asset.dao.AssetAssetDao.assetMap">
+        SELECT
+            asset.*
+        FROM
+            issue_asset_rel issue
+                LEFT JOIN asset_asset asset ON issue.asset_id = asset.id
+        WHERE
+            issue.issue_id = #{issueId}
+    </select>
+
+</mapper>

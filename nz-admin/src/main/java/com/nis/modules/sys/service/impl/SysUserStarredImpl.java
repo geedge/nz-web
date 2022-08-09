@@ -10,6 +10,7 @@ import com.nis.common.utils.Tool;
 import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.DcService;
+import com.nis.modules.asset.service.IssueRecordService;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.panel.service.VisualChartService;
@@ -60,6 +61,9 @@ public class SysUserStarredImpl extends ServiceImpl<SysUserStarredDao, SysUserSt
 
     @Autowired
     private RecordRuleService recordRuleService;
+
+    @Autowired
+    private IssueRecordService issueRecordService;
 
     @Override
     public List<SysUserStarredEntity> queryStarred(String type) {
@@ -137,6 +141,9 @@ public class SysUserStarredImpl extends ServiceImpl<SysUserStarredDao, SysUserSt
                         break;
                     case "recordRule":
                         sysUserStarredEntity.setName(recordRuleService.getById(tid).getName());
+                        break;
+                    case "issueRecord":
+                        sysUserStarredEntity.setName(issueRecordService.getById(tid).getName());
                         break;
                 }
             }

@@ -1,0 +1,138 @@
+{
+  "------------------ get  /issue data---------------------": "note",
+  "queryIssueRecordListByParams_success": {
+    "pageNo": null,
+    "pageSize": null,
+    "starred": 0,
+    "type": 1,
+    "state": 1,
+    "name": "4",
+    "ids": "1,2,3",
+    "assetName": "T9K"
+  },
+  "queryIssueRecordListByParams_notExist": {
+    "pageNo": null,
+    "pageSize": null,
+    "starred": 0,
+    "type": 1,
+    "state": 1,
+    "name": "4",
+    "ids": "1,2,3",
+    "assetName": "111"
+  },
+  "queryIssueRecordType": {
+    "name": null
+  },
+  "------------------ POST  /issue data---------------------": "note",
+  "addIssueRecord_success": {
+    "name": "Server down",
+    "content": "ddd",
+    "state": 7,
+    "aid": 1,
+    "rid": 1,
+    "type": 666,
+    "priority": 3
+  },
+  "addIssueRecord_nameIsNull": {
+    "content": "ddd",
+    "state": 7,
+    "aid": 1,
+    "rid": 1,
+    "type": 666,
+    "priority": 3
+  },
+  "addIssueRecord_typeIsNull": {
+    "name": "Server around",
+    "content": "ddd",
+    "state": 7,
+    "aid": 1,
+    "rid": 1,
+    "priority": 3
+  },
+  "addIssueRecord_contentIsNull": {
+    "name": "Server around",
+    "state": 7,
+    "aid": 1,
+    "rid": 1,
+    "type": 666,
+    "priority": 3
+  },
+  "addIssueRecord_stateIsNull": {
+    "name": "Server around",
+    "content": "ddd",
+    "aid": 1,
+    "rid": 1,
+    "type": 666,
+    "priority": 3
+  },
+  "addIssueRecord_ridIsNull": {
+    "name": "Server around",
+    "content": "ddd",
+    "state": 7,
+    "aid": 1,
+    "type": 666,
+    "priority": 3
+  },
+  "addIssueRecord_aidIsNull": {
+    "name": "Server around",
+    "content": "ddd",
+    "state": 7,
+    "rid": 1,
+    "type": 666,
+    "priority": 3
+  },
+  "addIssueRecord_name_duplicate": {
+    "name": "Server up",
+    "content": "ddd",
+    "state": 7,
+    "aid": 1,
+    "rid": 1,
+    "type": 666,
+    "priority": 3
+  },
+  "addIssueRecord_stateIsError": {
+    "name": "Server around",
+    "content": "ddd",
+    "state": 8,
+    "aid": 1,
+    "rid": 1,
+    "type": 666,
+    "priority": 3
+  },
+  "addIssueRecord_priorityIsError": {
+    "name": "Server around",
+    "content": "ddd",
+    "state": 7,
+    "aid": 1,
+    "rid": 1,
+    "type": 666,
+    "priority": 4
+  },
+  "------------------ PUT  /issue data---------------------": "note",
+  "updateIssueRecord_success": {
+    "id": 1,
+    "name": "Server between",
+    "content": "ddd",
+    "state": 7,
+    "aid": 1,
+    "rid": 1,
+    "type": 666,
+    "priority": 3,
+    "assetIds": [
+      3
+    ]
+  },
+  "updateIssueRecord_idIsNull": {
+    "name": "Server around",
+    "content": "ddd",
+    "state": 8,
+    "aid": 1,
+    "rid": 1,
+    "type": 666,
+    "priority": 3
+  },
+  "------------------ DELETE  /issue data---------------------": "note",
+  "deleteIssueRecord_success": {
+    "ids": "2,3"
+  }
+}

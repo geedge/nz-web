@@ -260,6 +260,16 @@ public enum RCode {
     ASSET_STATE_ID_ISNULL(311034,"Asset state id can not be empty"),
     ASSET_STATE_NOTFOUND(316035,"Asset state not found"),
     ASSET_TYPE_ID_ISNULL(311036,"Asset type id can not be empty"),
+    ISSUE_ID_ISNULL(311037,"Issue id can not be empty"),
+    ISSUE_NAME_DUPLICATE(312038,"Issue name duplicate"),
+    ISSUE_NAME_ISNULL(311039,"Issue name can not be empty"),
+    ISSUE_TYPE_ISNULL(311040,"Issue type can not be empty"),
+    ISSUE_CONTENT_ISNULL(311041,"Issue content can not be empty"),
+    ISSUE_STATE_ISNULL(311042,"Issue state can not be empty"),
+    ISSUE_RID_ID_ISNULL(311043,"Issue reporter id can not be empty"),
+    ISSUE_AID_ID_ISNULL(311044,"Issue assignee id can not be empty"),
+    ISSUE_STATE_INVALID(315045,"Issue state is invalid"),
+    ISSUE_PRIORITY_INVALID(315046,"Issue priority is invalid"),
 
     /**
      * ASSET_MODEL
