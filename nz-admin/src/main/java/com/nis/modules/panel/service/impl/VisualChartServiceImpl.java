@@ -521,6 +521,11 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 
 		List<Integer> idList = new ArrayList<>(Arrays.asList(ids));
 
+		// 删除 Endpoint modules 引用的 chart templates
+		monitorModuleService.deleteModuleChartTemps(idList);
+		// 删除 Asset models 引用的 chart templates
+		assetModelService.deleteModelChartTemps(idList);
+
 		// 如果删除 ids 中 type 为 group ，则补充 group 包含的 chart ids
 		List<VisualChart> childrenCharts = this.list(new LambdaQueryWrapper<VisualChart>().in(VisualChart::getGroupId, Arrays.asList(ids)));
         if(CollectionUtils.isNotEmpty(childrenCharts)){

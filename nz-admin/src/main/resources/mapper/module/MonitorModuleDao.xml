@@ -118,4 +118,17 @@
             me.asset_id = #{assetId}
     </select>
 
+    <!-- 示例 UPDATE monitor_module SET chart_ids = TRIM(BOTH ',' FROM REPLACE(REPLACE(CONCAT(',',chart_ids,','),',111111,',','),',222222,',',')) WHERE chart_ids != '' -->
+    <update id="deleteModuleChartTemps">
+        UPDATE monitor_module SET chart_ids =
+        <foreach collection="list" item="item" index="index" open="TRIM(BOTH ',' FROM " separator="(" close="(">
+            REPLACE
+        </foreach>
+        CONCAT(',',chart_ids,',')
+        <foreach collection="list" item="item" index="index" open="," separator=",',')," close=",','))">
+            CONCAT(',',#{item},',')
+        </foreach>
+        WHERE chart_ids != ''
+    </update>
+
 </mapper>
