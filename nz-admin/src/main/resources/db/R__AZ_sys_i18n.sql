@@ -4483,5 +4483,11 @@ INSERT INTO `sys_i18n` VALUES (6986, '743001', 'en', 'RECORD_RULE_TYPE_ERROR', '
 INSERT INTO `sys_i18n` VALUES (6987, '743001', 'zh', 'RECORD_RULE_TYPE_ERROR', '记录规则类型错误', '', '2022-08-09 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (6988, '743002', 'en', 'RECORD_RULE_STATE_ERROR', 'Record state type error', '', '2022-08-09 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (6989, '743002', 'zh', 'RECORD_RULE_STATE_ERROR', '记录规则状态错误', '', '2022-08-09 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (6991, 'issue_record', 'en', 'issue_record', 'Issues', '', '2022-08-11 03:50:19', 415);
+INSERT INTO `sys_i18n` VALUES (6993, 'issue_record', 'zh', 'issue_record', '问题', '', '2022-08-11 03:18:51', 415);
+INSERT INTO `sys_i18n` VALUES (6995, 'overall.createIssue', 'en', 'overall.createIssue', 'New issue', '', '2022-08-11 03:22:38', 415);
+INSERT INTO `sys_i18n` VALUES (6997, 'overall.createIssue', 'zh', 'overall.createIssue', '新增问题', '', '2022-08-11 03:22:54', 415);
+INSERT INTO `sys_i18n` VALUES (6999, 'issue.reporter', 'en', 'issue.reporter', 'Reporter', '', '2022-08-11 03:52:17', 415);
+INSERT INTO `sys_i18n` VALUES (7001, 'issue.reporter', 'zh', 'issue.reporter', '报告人', '', '2022-08-11 03:53:06', 415);
 
 SET FOREIGN_KEY_CHECKS = 1;

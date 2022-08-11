@@ -3,7 +3,7 @@
  */
 
 
- 
+
 delete from sys_menu;
 
 INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (1, 'dashboard', 'dashboard', 'dashboard.title', 0, '', 1, '/panel', 1, 'nz-icon nz-icon-menu-dashboard', '', 1);
@@ -162,3 +162,13 @@ INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type
 INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (2251, 'ipam_edit', 'ipam_edit', 'buttons.edit', 2249, '', 2, '', 1, '', '', 1);
 INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (2252, 'ipam_delete', 'ipam_delete', 'buttons.delete', 2249, '', 2, '', 1, '', '', 1);
 INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (2253, 'ipam_view', 'ipam_view', 'buttons.view', 2249, '', 2, '', 0, '', '', 1);
+INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (2255, 'Record rule', 'record_rule', 'record_rule', 10, '', 1, '/recordRule', 4, '', '', 1);
+INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (2257, 'Record rule Add', 'record_rule_add', 'buttons.add', 2255, '', 2, '', 2, '', '', 1);
+INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (2259, 'Record rule Edit', 'record_rule_edit', 'buttons.edit', 2255, '', 2, '', 3, '', '', 1);
+INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (2261, 'Record rule View', 'record_rule_view', 'buttons.view', 2255, '', 2, '', 1, '', '', 1);
+INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (2263, 'Record rule Delete', 'record_rule_delete', 'buttons.delete', 2255, '', 2, '', 4, '', '', 1);
+INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (2264, 'Issue record', 'issue_record', 'issue_record', 10, '', 1, '/issue', 4, '', '', 1);
+INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (2265, 'Issue record Add', 'issue_record_add', 'buttons.add', 2264, '', 2, '', 2, '', '', 1);
+INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (2266, 'Issue record Edit', 'issue_record_edit', 'buttons.edit', 2264, '', 2, '', 3, '', '', 1);
+INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (2267, 'Issue record View', 'issue_record_view', 'buttons.view', 2264, '', 2, '', 1, '', '', 1);
+INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (2268, 'Issue record Delete', 'issue_record_delete', 'buttons.delete', 2264, '', 2, '', 4, '', '', 1);
