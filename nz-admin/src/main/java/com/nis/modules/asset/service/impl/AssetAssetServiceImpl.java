@@ -1,5 +1,7 @@
 package com.nis.modules.asset.service.impl;
 
+import cn.hutool.core.collection.ListUtil;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
@@ -65,8 +67,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -488,26 +488,6 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             	assetPing = JSON.parseObject((String)object,AssetPing.class);
             }
             asset.setPingInfo(assetPing);
-
-
-            // clientstate
-//            if (ToolUtil.isNotEmpty(asset.getClientState())) {
-//                switch (asset.getClientState()) {
-//                    case 1:// ok
-//                        break;
-//                    case 3: { // 认证失败
-//                        asset.setClientState(-1);
-//                        break;
-//                    }
-//                    case 2:  // 超时
-//                    case 4: {// 未知错误
-//                        asset.setClientState(0); // 认证失败
-//                        break;
-//                    }
-//                    default:
-//                        asset.setClientState(null);
-//                }
-//            }
         }
     }
 
@@ -620,19 +600,6 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             }
         }
 
-        // account
-       /* List<Integer> accountIds = asset.getAccounts();
-        if (CollectionUtils.isNotEmpty(accountIds)) {
-            List<AssetAccount> assetAccounts = accountService.list();
-            List<Integer> idList = assetAccounts.stream().map(AssetAccount::getId).collect(Collectors.toList());
-
-            List<Integer> templateAccountIds = new ArrayList<>(accountIds);
-            templateAccountIds.removeAll(idList);
-            if (CollectionUtils.isNotEmpty(templateAccountIds)) {
-                throw new NZException("The account information was not found. Details: " + templateAccountIds.toString(), RCode.ASSET_ACCOUNT_NOT_FOUND.getCode());
-            }
-        }*/
-
         // fields
         List<AssetFieldMeta> fields = asset.getFields();
         if (CollectionUtils.isNotEmpty(fields)) {
@@ -680,7 +647,12 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         }
     }
 
-    public boolean validateUSizeForImport(Integer start, Integer end, Cabinet cab) {
+    /**
+     * 校验U位置占用情况
+     * 补充 isUpdate 参数
+     * @return
+     */
+    public boolean validateUSizeForImport(Integer start, Integer end, Cabinet cab, String assetName, boolean isUpdate) {
         // 所有位置 从1开始到uSize
         Integer[] allPosition = new Integer[cab.getuSize()];
         for (int i = 0; i < allPosition.length; i++) {
@@ -689,10 +661,32 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         // 已经占用的位置
         Set<Integer> occList = new HashSet<>();
+
+        // 修改的情况下，处理同机柜修改情况
+        Integer oldCabinetId = null;
+        Integer pid = null;
+        if (isUpdate) {
+            // 同机柜修改的情况  需要将自身节点补充到所属机柜的位置中去  再次重新计算可用位置
+            if (StrUtil.isNotEmpty(assetName)) {
+                AssetAsset assetEntity = this.getOne(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getName, assetName));
+                if (assetEntity != null) {
+                    oldCabinetId = assetEntity.getCabinetId();
+                    pid = assetEntity.getPid();
+                }
+            }
+        }
+
+        // 修改标识   pid = -1, 代表原来是宿主机
+        boolean updateFlag = oldCabinetId != null && oldCabinetId.equals(cab.getId()) && pid != null && pid.equals(-1);
+
         if (CollectionUtils.isEmpty(cab.getAssets())) {
             return true;
         } else {
             for (AssetAsset nodeInfo : cab.getAssets()) {
+                // 修改的情况下 不记录当前占用位置
+                if (updateFlag && nodeInfo.getName().equals(assetName) || nodeInfo.getPid() != -1) {
+                    continue;
+                }
                 if (nodeInfo.getCabinetStart() != null && nodeInfo.getCabinetEnd() != null) {
                     for (int i = nodeInfo.getCabinetStart(); i < nodeInfo.getCabinetEnd(); i++) {
                         occList.add(i);
@@ -983,14 +977,23 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // 保存 asset 关联数据
         this.saveAssetRelData(asset);
 
-        // 修改后处理asset ping数据 删除缓存和数据库中的数据
-        assetPingService.remove(new QueryWrapper<AssetPing>().lambda().eq(AssetPing::getAssetId, asset.getId()));
-        redisTemplate.opsForHash().delete(Constant.SYSCONFIG_KEY_ASSET_PING, asset.getId().toString());
-
-        // 修改后处理asset talon status数据 删除缓存和数据库中的数据
-        assetTalonStatusService.removeById(asset.getId());
-        redisTemplate.opsForHash().delete(Constant.ASSET_TALON_STATUS_CACHE_KEY, asset.getId().toString());
+        // 修改后处理 ping & Talon 数据
+        this.afterUpdateAsset(asset.getId());
         return asset.getId();
+    }
+
+    /**
+     * 修改后处理asset ping数据 删除缓存和数据库中的数据
+     * 修改后处理asset talon status数据 删除缓存和数据库中的数据
+     *
+     * @param assetId
+     */
+    private void afterUpdateAsset(Integer assetId) {
+        assetPingService.remove(new QueryWrapper<AssetPing>().lambda().eq(AssetPing::getAssetId, assetId));
+        redisTemplate.opsForHash().delete(Constant.SYSCONFIG_KEY_ASSET_PING, assetId.toString());
+
+        assetTalonStatusService.removeById(assetId);
+        redisTemplate.opsForHash().delete(Constant.ASSET_TALON_STATUS_CACHE_KEY, assetId.toString());
     }
 
     /**
@@ -1276,7 +1279,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     	Map<String,String> sshResult = JSONObject.parseObject(sshCommondResult, Map.class);
     	for(Map.Entry<String, String> entrySet: sshResult.entrySet()) {
     		//查询数据库是否已经存在数据
-        	AssetFeature result = assetFeatureMap.get(asset.getId()+entrySet.getKey()+Constant.ACCOUNT_SSH_PROTOCOL);;
+        	AssetFeature result = assetFeatureMap.get(asset.getId()+entrySet.getKey()+Constant.ACCOUNT_SSH_PROTOCOL);
         	if(ToolUtil.isEmpty(result)) {
         		result = new AssetFeature();
         	}
@@ -1571,23 +1574,26 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     }
 
     @Override
-    public Map importAssetsData(MultipartFile multipartFile) throws IOException {
+    public Map importAssetsData(MultipartFile multipartFile, Map<String, Object> params) throws IOException {
         String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_ASSET_ASSET_EXPORT_HEADER);
         Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
         List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
 
-        List<Map> failDetails = new ArrayList<>();
-        String seqUUID = UUID.randomUUID().toString();
+        String seq = UUID.randomUUID().toString();
+        params.put("seq", seq);
 
         int totalNum = importDataList.size();
-        int successNum = this.saveAssetsFromImportDataList(importDataList, failDetails, new ArrayList<>(exportHeaderMap.keySet()), seqUUID);
+        int successNum = this.saveAssetsFromImportDataList(importDataList, new ArrayList<>(exportHeaderMap.keySet()), params);
+
+        // 读取导入错误信息
+        List<Map> failDetailList = basicImportAndExportServices.readImportErrMsgAndRemoveKey(Tool.StrUtil.concat(true, "asset_import_", seq));
 
         Map resultMap = new HashMap(8);
-        resultMap.put("seq", seqUUID);
+        resultMap.put("seq", seq);
         resultMap.put("totalNum", totalNum);
         resultMap.put("successNum", successNum);
         resultMap.put("failNum", totalNum - successNum);
-        resultMap.put("failDetail", CommonUtils.handleImportFailDetails(failDetails));
+        resultMap.put("failDetail", failDetailList);
         return resultMap;
     }
 
@@ -1674,226 +1680,169 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         return chartIdWithAssetEntity;
     }
 
-    private int saveAssetsFromImportDataList(List<Map<Integer, String>> importDataList, List<Map> failDetails, List<String> headerInfos, String seqUUID) {
-        List<AssetAsset> assetList = this.list();
-        Map<String, AssetAsset> assetNameAndEntityMap = assetList.stream().collect(Collectors.toMap(AssetAsset::getName, Function.identity()));
-        List<String> assetSnList = assetList.stream().map(AssetAsset::getSn).collect(Collectors.toList());
-        List<String> assetIpList = assetList.stream().map(AssetAsset::getManageIp).collect(Collectors.toList());
+    private int saveAssetsFromImportDataList(List<Map<Integer, String>> importDataList, List<String> headerInfos, Map<String, Object> params) {
+        String seq = params.get("seq").toString();
+        String errMsgRedisKey = Tool.StrUtil.concat(true, "asset_import_", seq);
 
-        List<Dc> dcList = dcService.list();
-        Map<String, Dc> dcNameAndEntityMap = dcList.stream().collect(Collectors.toMap(Dc::getName, Function.identity()));
+        // 创建导入校验对象
+        ImportValidateUtil validateUtil = ImportValidateUtil.builder()
+                .errMsgRedisKey(errMsgRedisKey)
+                .build();
 
-        List<Cabinet> cabinetList = cabinetDao.getCabinetWithAssetPositionInfo();
+        // 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
+        String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
+        boolean isUpdate = StrUtil.equals("1", existed);
 
-        List<AssetBrand> brandList = brandService.list();
-        Map<String, AssetBrand> brandNameAndEntityMap = brandList.stream().collect(Collectors.toMap(AssetBrand::getName, Function.identity()));
-
-        List<AssetModel> modelList = modelService.list();
-        Map<Integer, List<AssetModel>> brandIdAndModelListMap = modelList.stream().collect(Collectors.groupingBy(AssetModel::getBrandId));
-        Map<Integer, Integer> modelIdAndUsizeMap = modelList.stream().collect(Collectors.toMap(AssetModel::getId, AssetModel::getUsize));
-
-        List<AssetStateConf> stateConfList = stateConfService.list();
-        Map<String, AssetStateConf> stateNameAndEntityMap = stateConfList.stream().collect(Collectors.toMap(AssetStateConf::getName, Function.identity()));
-
-        List<AssetTypeConf> typeConfList = typeConfService.list();
-        Map<String, AssetTypeConf> typeNameAndEntityMap = typeConfList.stream().collect(Collectors.toMap(AssetTypeConf::getName, Function.identity()));
-        Map<Integer, AssetTypeConf> typeIdAndEntityMap = typeConfList.stream().collect(Collectors.toMap(AssetTypeConf::getId, Function.identity()));
-
-        SysConfigEntity defaultCabinetUsizeConfig = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_DEFAULT_CABINETU));
-        Integer defaultCabinetUsize = Integer.parseInt(defaultCabinetUsizeConfig.getParamValue());
-
-        // 配置信息获取  asset chart template
-        SysConfigEntity assetChartConfig = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_CHART_TPL));
-        VisualChart chartTemplate = JSONObject.parseObject(assetChartConfig.getParamValue(), VisualChart.class);
+        String defaultCabinetUsizeStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_DEFAULT_CABINETU);
+        Integer defaultCabinetUsize = Integer.parseInt(defaultCabinetUsizeStr);
 
         int successNum = 0;
         // 处理 excel 数据，将含宿主机资产排到前面
         List<Map<Integer, String>> handleImportData = this.handleImportData(importDataList);
         for (int i = 0; i < handleImportData.size(); i++) {
-            int dataFromExcelRowNum = i + 1;
-            Map saveEntitys = new HashMap();
-            boolean saveFlag = true;
+            Integer lineNum = i + 1;
+            Map saveEntitys = Tool.MapUtil.newHashMap();
             Map<Integer, String> dataMap = handleImportData.get(i);
-            // name
-            String name = dataMap.get(0);
-            if (StringUtils.isEmpty(name)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.ASSET_NAME_ISNULL.getMsg());
-            } else {
-                // NAME 重复校验
-                if (assetNameAndEntityMap.get(name) != null) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.ASSET_NAME_DUPLICATE.getMsg());
-                }
+            // name， 以 name作为索引 标识该条记录是否存在
+            String assetName = dataMap.get(0);
+            validateUtil.validateRequired(assetName, lineNum, headerInfos.get(0));
+            boolean indexDuplicate = validateUtil.validateIndexDuplicate("asset_asset", "name", assetName, isUpdate, lineNum, headerInfos.get(0));
+            // 索引列重复 & 忽略标识，提示忽略本行
+            if (BooleanUtil.and(indexDuplicate, StrUtil.equals("2", existed))) {
+                validateUtil.ignoreThisRow(lineNum, headerInfos.get(0));
+                continue;
             }
 
-            // sn
             String sn = dataMap.get(1);
-            if (StringUtils.isEmpty(sn)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.ASSET_SN_ISNULL.getMsg());
-            } else {
-                // sn 重复校验
-                if (assetSnList.contains(sn)) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.ASSET_SN_DUPLICATE.getMsg());
-                }
-            }
+            validateUtil.validateRequired(sn, lineNum, headerInfos.get(1));
+            validateUtil.validateDuplicate("asset_asset", "sn", sn, assetName, isUpdate, lineNum, headerInfos.get(1));
 
-            // ip
-            String host = dataMap.get(3);
-            if (StringUtils.isEmpty(host)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.ASSET_MANAGEIP_ISNULL.getMsg());
-            } else {
-                // ip 唯一校验
-                if (assetIpList.contains(host)) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.ASSET_MANAGEIP_DUPLICATE.getMsg());
-                } else {
-                    if (!host.matches(Constant.REGEX_IP)) {
-                        saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.ASSET_MANAGEIP_FORMAT.getMsg());
-                    }
-                }
-            }
+            String manageIp = dataMap.get(3);
+            validateUtil.validateRequired(manageIp, lineNum, headerInfos.get(3));
+            validateUtil.validateRegex(manageIp, Constant.REGEX_IP, lineNum, headerInfos.get(3));
+            validateUtil.validateDuplicate("asset_asset", "manage_ip", manageIp, assetName, isUpdate, lineNum, headerInfos.get(3));
 
-            // type
-            AssetTypeConf typeConf = null;
+            // state conf 不自动添加
+            String stateName = dataMap.get(10);
+            validateUtil.validateRequired(stateName, lineNum, headerInfos.get(10));
+            validateUtil.validateRelObjExits("asset_state_conf", "name", stateName, false, lineNum, headerInfos.get(10));
+
+            // type conf 不自动添加
             String typeName = dataMap.get(11);
-            if (StringUtils.isEmpty(typeName)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11), RCode.TYPECONF_NAME_ISNULL.getMsg());
-            } else {
-                // type 未找到
-                typeConf = typeNameAndEntityMap.get(typeName);
-                if (typeConf == null) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11), RCode.TYPECONF_NOT_FOUND.getMsg());
-                }
-            }
+            validateUtil.validateRequired(typeName, lineNum, headerInfos.get(11));
+            validateUtil.validateRelObjExits("asset_type_conf", "name", typeName, false, lineNum, headerInfos.get(11));
 
-            // brand  model
-            Integer brandId = null, modelId = null;
+            // brand & model  自动添加
             String brandName = dataMap.get(4);
-            if (StringUtils.isEmpty(brandName)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ASSET_BRAND_NAME_ISNULL.getMsg());
-            } else {
-                brandId = this.validateBrand(brandName, brandNameAndEntityMap, seqUUID, saveEntitys);
+            validateUtil.validateRequired(brandName, lineNum, headerInfos.get(4));
+
+            Boolean brandExist = validateUtil.validateRelObjExits("asset_brand", "name", brandName, true, lineNum, headerInfos.get(4));
+            if (!brandExist) {
+                AssetBrand brand = new AssetBrand();
+                brand.setName(brandName);
+                saveEntitys.put("brand", brand);
             }
             String modelName = dataMap.get(5);
-            if (StringUtils.isEmpty(modelName)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.ASSET_MODELNAME_ISNULL.getMsg());
-            } else {
-                modelId = this.validateModel(brandId, modelName, brandIdAndModelListMap, seqUUID, saveEntitys, Tool.ObjectUtil.isNull(typeConf) ? null : typeConf.getId());
-            }
+            validateUtil.validateRequired(modelName, lineNum, headerInfos.get(5));
 
-            // state
-            String stateName = dataMap.get(10);
-            AssetStateConf stateConf = null;
-            if (StringUtils.isEmpty(stateName)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(10), RCode.STATECONF_NAME_ISNULL.getMsg());
-            } else {
-                // state 未找到
-                stateConf = stateNameAndEntityMap.get(stateName);
-                if (stateConf == null) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(10), RCode.STATECONF_NOT_FOUND.getMsg());
-                }
-            }
+            String dcName = dataMap.get(6);
+            validateUtil.validateRequired(dcName, lineNum, headerInfos.get(6));
 
-            // 虚拟机宿主
             String parentName = dataMap.get(2);
-            Integer start = null, end = null, cabinetId = null, dcId = null;
-            AssetAsset parentAsset = null;
-            if (StringUtils.isNotEmpty(parentName)) {// 虚拟机 parentname 不为空
-                parentAsset = assetNameAndEntityMap.get(parentName);
-                if (parentAsset == null) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.ASSET_PARENT_NOT_EXIST.getMsg());
+            // asset U size 不得小于关联 model usize ;   default model usize = 1
+            Integer modelUsize = 1;
+            if (!brandExist) {
+                // brand 不存在, model 肯定也不在
+                AssetModel model = new AssetModel();
+                model.setName(modelName);
+                saveEntitys.put("model", model);
+            } else {
+                // model name: 相同 brand 下 model name 唯一，不同 brand 下 model name 可以重复！！！
+                AssetBrand brand = brandService.getOne(new LambdaQueryWrapper<AssetBrand>().eq(AssetBrand::getName, brandName));
+                AssetModel model = modelService.getOne(new LambdaQueryWrapper<AssetModel>().eq(AssetModel::getName, modelName).eq(AssetModel::getBrandId, brand.getId()));
+                if (model == null) {
+                    model = new AssetModel();
+                    model.setBrandId(brand.getId());
+                    model.setName(modelName);
+                    saveEntitys.put("model", model);
                 } else {
-                    // 校验是否宿主机支持挂载
-                    AssetTypeConf parentAssetTypeConf = typeIdAndEntityMap.get(parentAsset.getTypeId());
-                    if (parentAssetTypeConf.getVmh().equals(0)) {
-                        saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.ASSET_NOT_SUPPORT_MOUNTING.getMsg());
+                    modelUsize = model.getUsize();
+                    if (StrUtil.isEmpty(parentName)) {
+                        // 宿主机 校验 model type 和 asset type 是否一致
+                        Integer modelTypeId = model.getTypeId();
+                        AssetTypeConf typeConf = typeConfService.getOne(new LambdaQueryWrapper<AssetTypeConf>().eq(AssetTypeConf::getName, typeName));
+                        if (typeConf != null && !typeConf.getId().equals(modelTypeId))
+                            validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_MATCH.setParam(headerInfos.get(5), headerInfos.get(11)));
                     }
                 }
-                // 校验当前 asset 是否可以选择宿主机
-                if (typeConf != null && typeConf.getVm().equals(0)) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.ASSET_NOT_SUPPORT_MOUNTING.getMsg());
+            }
+
+            if (StrUtil.isNotEmpty(parentName)) {
+                AssetAsset parentAsset = this.getOne(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getName, parentName));
+                if (parentAsset == null) {
+                    validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_RELATED_OBJ_NOT_EXIST.setParam(headerInfos.get(2)));
+                } else { // 校验是否宿主机支持挂载
+                    AssetTypeConf parentAssetTypeConf = typeConfService.getById(parentAsset.getTypeId());
+                    if (parentAssetTypeConf.getVmh().equals(0))
+                        validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_SUPPORT.setParam(headerInfos.get(2)));
                 }
-            } else {
-                String dcName = dataMap.get(6);
-                if (StringUtils.isEmpty(dcName)) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.DC_NAME_ISNULL.getMsg());
-                } else {
-                    dcId = this.validateDc(dcName, dcNameAndEntityMap, seqUUID, saveEntitys);
+                // 校验当前填写 asset 是否可以选择宿主机
+                AssetTypeConf typeConf = typeConfService.getOne(new LambdaQueryWrapper<AssetTypeConf>().eq(AssetTypeConf::getName, typeName));
+                if (typeConf != null && typeConf.getVm().equals(0))
+                    validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_SUPPORT.setParam(headerInfos.get(2)));
+            }
+
+            String cabinetName = dataMap.get(7);
+            Integer start = null, end = null;
+            if (StrUtil.isEmpty(parentName)) {
+                Boolean dcExist = validateUtil.validateRelObjExits("dc", "name", dcName, true, lineNum, headerInfos.get(6));
+                if (!dcExist) {
+                    Dc dc = new Dc();
+                    dc.setName(dcName);
+                    saveEntitys.put("dc", dc);
                 }
 
-                // 虚拟机 vm info 校验 / 虚拟机必须选择宿主
-                if (typeConf !=null && typeConf.getVm().equals(1) && StringUtils.isEmpty(parentName)) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.ASSET_NOT_SELECT_PARENT.getMsg());
-                }
-                // parent Name 为 null , 当前是 宿主机 ， 并且前面没有发生错误，校验 cabinet start end 相关数据
-                if (saveFlag) {
-                    String cabinetName = dataMap.get(7);
+                // 虚拟机必须选择宿主
+                AssetTypeConf typeConf = typeConfService.getOne(new LambdaQueryWrapper<AssetTypeConf>().eq(AssetTypeConf::getName, typeName));
+                if (typeConf != null && typeConf.getVm().equals(1))
+                    validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_SUPPORT.setParam(headerInfos.get(2)));
+
+                // 当前是 宿主机，校验 cabinet start end
+                if (StrUtil.isNotEmpty(cabinetName)) {
                     String cabinetStart = dataMap.get(8);
                     String cabinetEnd = dataMap.get(9);
-                    if (StringUtils.isNotEmpty(cabinetStart) && StringUtils.isNotEmpty(cabinetEnd)) {
-                        start = this.getIntValFromStr(cabinetStart);
-                        if (start == null) {
-                            saveFlag = false;
-                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), RCode.ASSET_CABINETSTART_INVALIDE.getMsg());
-                        }
-                        end = this.getIntValFromStr(cabinetEnd);
-                        if (end == null) {
-                            saveFlag = false;
-                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(9), RCode.ASSET_CABINETEND_INVALIDE.getMsg());
-                        }
+
+                    if (StrUtil.isAllNotEmpty(cabinetStart, cabinetEnd)) {
+                        start = validateUtil.validateInteger(cabinetStart, lineNum, headerInfos.get(8));
+                        end = validateUtil.validateInteger(cabinetEnd, lineNum, headerInfos.get(9));
+                        end = end != null ? end + 1 : null; // cabinet end 处理
                     }
-                    Integer modelUsize = modelIdAndUsizeMap.get(modelId);
-                    modelUsize = ToolUtil.isEmpty(modelUsize) ? 1 : modelUsize;
-                    boolean posttionFlag = start != null && end != null;
-                    if (dcId != null && StringUtils.isNotEmpty(cabinetName)) { // dc已存在，不需要添加
-                        Cabinet cabinet = this.validateCabinet(cabinetName, dcId, cabinetList, seqUUID, saveEntitys, defaultCabinetUsize);
-                        cabinetId = cabinet.getId();
-                        boolean cabinetExitFlag = cabinet.getId() != null;
-                        if (posttionFlag) {
-                            end = end + 1;
-                            Integer cabinetUsize = cabinetExitFlag ? cabinet.getuSize() : defaultCabinetUsize;
-                            if (start < 0 || end < 0 || start >= end || start > cabinetUsize || end > cabinetUsize + 1) { // 基本信息校验
-                                saveFlag = false;
-                                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), RCode.ASSET_POSITION_INVALID.getMsg());
-                            } else if ((end - start) < modelUsize) { // 关联 model usize 校验
-                                saveFlag = false;
-                                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), RCode.ASSET_POSITION_MISMATCH.getMsg());
-                            } else { // 校验通过 ， 开始校验占用位置
-                                if (cabinetExitFlag) {// 机柜存在开始校验位置
-                                    boolean flag = this.validateUSizeForImport(start, end, cabinet);
-                                    if (!flag) {
-                                        saveFlag = false;
-                                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), RCode.ASSET_POSITION_OCCUPY.getMsg());
-                                    }
-                                }
+
+                    if (dcExist) {
+                        Dc dc = dcService.getOne(new LambdaQueryWrapper<Dc>().eq(Dc::getName, dcName));
+                        Cabinet cabinet = this.validateCabinet(cabinetName, dc.getId(), defaultCabinetUsize, saveEntitys);
+                        if (Tool.ObjectUtil.isAllNotEmpty(start, end)) {
+                            Integer cabinetUsize = cabinet.getuSize();
+                            if (start < 0 || end < 0 || start >= end || start > cabinetUsize || end > cabinetUsize + 1) {
+                                validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(headerInfos.get(8)));
+                            } else if ((end - start) < modelUsize) {
+                                validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(headerInfos.get(8)));
+                            } else {
+                                boolean flag = this.validateUSizeForImport(start, end, cabinet, assetName, isUpdate);
+                                if (!flag)
+                                    validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(headerInfos.get(8)));
                             }
                         }
-                    } else if (dcId == null && StringUtils.isNotEmpty(cabinetName)) { // dc不存在
-                        this.saveEntityAddCabEntity(saveEntitys, cabinetName, defaultCabinetUsize, seqUUID);
-                        if (posttionFlag) {
-                            end = end + 1;
-                            if (start < 0 || end < 0 || start >= end || start > defaultCabinetUsize || end > defaultCabinetUsize + 1) { // 基本信息校验
-                                saveFlag = false;
-                                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), RCode.ASSET_POSITION_INVALID.getMsg());
-                            } else if ((end - start) < modelUsize) { // 关联 model usize 校验
-                                saveFlag = false;
-                                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), RCode.ASSET_POSITION_MISMATCH.getMsg());
+                    } else {
+                        // dc 不存在, cabinet 肯定也不在
+                        Cabinet cabinet = new Cabinet();
+                        cabinet.setName(cabinetName);
+                        saveEntitys.put("cabinet", cabinet);
+                        if (Tool.ObjectUtil.isAllNotEmpty(start, end)) {
+                            if (start < 0 || end < 0 || start >= end || start > defaultCabinetUsize || end > defaultCabinetUsize + 1) {
+                                validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(headerInfos.get(8)));
+                            } else if ((end - start) < modelUsize) {
+                                validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(headerInfos.get(8)));
                             }
                         }
                     }
@@ -1901,122 +1850,112 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             }
 
             String purchaseDate = dataMap.get(12);
-            if (StringUtils.isNotEmpty(purchaseDate)) {
-                if (!DateUtil.isValidDate(purchaseDate, "yyyy-MM-dd")) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(12), RCode.ASSET_PURCHASEDATE_FORMAT.getMsg());
-                }
-            }
+            validateUtil.validateDateFormat(purchaseDate, "yyyy-MM-dd", lineNum, headerInfos.get(12));
 
             String fieldsStr = dataMap.get(13);
-            if (StringUtils.isNotEmpty(fieldsStr)) {
-                saveEntitys.put("fields", this.getFieldsByFieldsStr(fieldsStr, seqUUID));
+            if (StrUtil.isNotEmpty(fieldsStr)) {
+                saveEntitys.put("fields", this.getFieldsByFieldsStr(fieldsStr, seq));
             }
-            
-            
+
             String authProtocolPort = dataMap.get(14);
-            if(StringUtils.isNotEmpty(authProtocolPort)){
-                if (!CommonUtils.checkPort(authProtocolPort)) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(14), RCode.ACCOUNT_PORT_ERROR.getMsg());
-                }
-            }
+            validateUtil.validatePort(authProtocolPort, lineNum, headerInfos.get(14));
+
             String authType = dataMap.get(15);
-            if(StringUtils.isNotEmpty(authType)){
-                if (!"1".equalsIgnoreCase(authType) && !"2".equalsIgnoreCase(authType)) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(15), RCode.ACCOUNT_AUTHTYPE_INVALIDE.getMsg());
-                }
-            }
+            validateUtil.validateEnumValArr(authType, Tool.ListUtil.of("1", "2"), lineNum, headerInfos.get(15));
+
             String authUsername = dataMap.get(16);
             String authPin = dataMap.get(17);
             String authPriKey = dataMap.get(18);
             String authUserTip = dataMap.get(19);
             String authPinTip = dataMap.get(20);
-            if(ObjectUtil.equals(authType, "1")) {
-            	if(ObjectUtil.isEmpty(authUsername)) {
-            		saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(16), RCode.ASSET_AUTHUSERNAME_ISNULL.getMsg());
-            	}else if(ObjectUtil.isEmpty(authPin)) {
-            		saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(17), RCode.ASSET_AUTHPIN_ISNULL.getMsg());
-            	}
-            }else if(ObjectUtil.equals(authType, "2")) {
-            	if(ObjectUtil.isEmpty(authPriKey)) {
-            		saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(18), RCode.ASSET_AUTHPRIKEY_ISNULL.getMsg());
-            	}
+            if (StrUtil.equals("1", authType)) {
+                validateUtil.validateRequired(authUsername, lineNum, headerInfos.get(16));
+                validateUtil.validateRequired(authPin, lineNum, headerInfos.get(17));
+            } else if (StrUtil.equals("2", authType)) {
+                validateUtil.validateRequired(authPriKey, lineNum, headerInfos.get(18));
             }
 
-            Integer snmpCredentialId = null;
             String snmpCredentialName = dataMap.get(21);
-            if(StringUtils.isNotEmpty(snmpCredentialName)){
-                SnmpCredential snmpCredential = snmpCredentialService.getOne(new LambdaQueryWrapper<SnmpCredential>().eq(SnmpCredential::getName, snmpCredentialName));
-                if(snmpCredential == null){
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(21), RCode.SNMP_CREDENTIAL_NOT_FOUND.getMsg());
-                }else{
-                    snmpCredentialId = snmpCredential.getId();
-                }
+            if (StrUtil.isNotEmpty(snmpCredentialName)) {
+                validateUtil.validateRelObjExits("snmp_credential", "name", snmpCredentialName, false, lineNum, headerInfos.get(21));
             }
-
             String clientUser = dataMap.get(22);
             String clientPin = dataMap.get(23);
             String clientToken = dataMap.get(24);
+
             String clientPort = dataMap.get(25);
-            if (StringUtils.isNotEmpty(clientPort)) {
-                if (!CommonUtils.checkPort(clientPort)) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(25), RCode.ASSET_CLIENTPORT_ERROR.getMsg());
-                }
-            }
+            validateUtil.validatePort(clientPort, lineNum, headerInfos.get(25));
+
             String clientEnable = dataMap.get(26);
-            if (StrUtil.isNotEmpty(clientEnable)) {
-                if (!StrUtil.equals("0", clientEnable) && !StrUtil.equals("1", clientEnable)) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(26), RCode.TYPECONF_CLIENTENABLE_INCORRECT.getMsg());
-                }
-                // client enable 为 1 时 token 必填
-                if (StrUtil.equals("1", clientEnable) && StrUtil.isEmpty(clientToken)) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(26), RCode.ASSET_CLIENT_TOKEN_ISNULL.getMsg());
-                }
+            validateUtil.validateEnumValArr(clientEnable, ListUtil.of("0", "1"), lineNum, headerInfos.get(26));
+            if (StrUtil.equals("1", clientEnable)) {
+                validateUtil.validateRequired(clientToken, lineNum, headerInfos.get(24));
             }
 
-            // 前面没有报错
-            if (saveFlag) {
+            // 遇到错误是否继续导入，可选值： 0：不继续    1：继续    默认值：1
+            String ignoreError = Tool.ObjectUtil.defaultIfEmpty((String) params.get("ignoreError"), "1");
+
+            List<Map> errMsgForThisLine = basicImportAndExportServices.readImportErrMsgForThisLine(errMsgRedisKey, lineNum);
+            if (BooleanUtil.and(Tool.StrUtil.equals("0", ignoreError), Tool.CollUtil.isNotEmpty(errMsgForThisLine))) {
+                break;
+            }
+
+            if (Tool.CollUtil.isEmpty(errMsgForThisLine)) {
+                AssetTypeConf typeConf = typeConfService.getOne(new LambdaQueryWrapper<AssetTypeConf>().eq(AssetTypeConf::getName, typeName));
+                AssetStateConf stateConf = stateConfService.getOne(new LambdaQueryWrapper<AssetStateConf>().eq(AssetStateConf::getName, stateName));
+                saveEntitys.put("typeConf", typeConf);
+
                 AssetAsset asset = new AssetAsset();
-                asset.setName(name);
+                asset.setName(assetName);
                 asset.setSn(sn);
                 asset.setTypeId(typeConf.getId());
                 asset.setStateId(stateConf.getId());
                 asset.setPurchaseDate(StringUtils.isEmpty(purchaseDate) ? null : purchaseDate);
                 asset.setCreateAt(new Date());
                 asset.setCreateBy(ShiroUtils.getUserId());
-                asset.setManageIp(host);
-                asset.setSeq(seqUUID);
-                asset.setDcId(dcId);
-                asset.setBrandId(brandId);
-                asset.setModelId(modelId);
-                asset.setCabinetId(cabinetId);
+                asset.setManageIp(manageIp);
+                if (saveEntitys.get("dc") == null) {
+                    Dc dc = dcService.getOne(new LambdaQueryWrapper<Dc>().eq(Dc::getName, dcName));
+                    asset.setDcId(dc.getId());
+                }
+                if (saveEntitys.get("brand") == null) {
+                    AssetBrand brand = brandService.getOne(new LambdaQueryWrapper<AssetBrand>().eq(AssetBrand::getName, brandName));
+                    asset.setBrandId(brand.getId());
+                }
+                if (saveEntitys.get("model") == null) {
+                    AssetBrand brand = brandService.getOne(new LambdaQueryWrapper<AssetBrand>().eq(AssetBrand::getName, brandName));
+                    AssetModel model = modelService.getOne(new LambdaQueryWrapper<AssetModel>().eq(AssetModel::getName, modelName).eq(AssetModel::getBrandId, brand.getId()));
+                    asset.setModelId(model.getId());
+                }
+                if (BooleanUtil.and(StrUtil.isNotEmpty(cabinetName), saveEntitys.get("cabinet") == null)) {
+                    Dc dc = dcService.getOne(new LambdaQueryWrapper<Dc>().eq(Dc::getName, dcName));
+                    Cabinet cabinet = cabinetService.getOne(new LambdaQueryWrapper<Cabinet>().eq(Cabinet::getName, cabinetName).eq(Cabinet::getDcId, dc.getId()));
+                    asset.setCabinetId(cabinet.getId());
+                }
+                if (StrUtil.isNotEmpty(snmpCredentialName)) {
+                    SnmpCredential snmpCredential = snmpCredentialService.getOne(new LambdaQueryWrapper<SnmpCredential>().eq(SnmpCredential::getName, snmpCredentialName));
+                    asset.setSnmpCredentialId(snmpCredential.getId());
+                }
                 asset.setCabinetStart(start);
                 asset.setCabinetEnd(end);
                 asset.setAuthProtocolPort(StringUtils.isNotEmpty(authProtocolPort) ? Integer.valueOf(authProtocolPort) : null);
                 asset.setAuthType(StringUtils.isNotEmpty(authType) ? Integer.valueOf(authType) : null);
                 asset.setAuthUsername(authUsername);
                 asset.setAuthPin(StringUtils.isNotEmpty(authPin) ? Base64.getEncoder().encodeToString(authPin.getBytes()) : null);
-                asset.setAuthPriKey(authPriKey);
+                asset.setAuthPriKey(StrUtil.isEmpty(authPriKey) ? null : authPriKey);
                 asset.setAuthUserTip(authUserTip);
                 asset.setAuthPinTip(authPinTip);
-                asset.setSnmpCredentialId(snmpCredentialId);
-                if (parentAsset == null) {
+                if (StrUtil.isEmpty(parentName)) {
                     asset.setPid(-1);
                 } else {
+                    AssetAsset parentAsset = this.getOne(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getName, parentName));
                     asset.setPid(parentAsset.getId());
                     asset.setDcId(parentAsset.getDcId());
                     asset.setCabinetId(parentAsset.getCabinetId());
                     asset.setCabinetStart(parentAsset.getCabinetStart());
                     asset.setCabinetEnd(parentAsset.getCabinetEnd());
+                    asset.setBrandId(parentAsset.getBrandId());
+                    asset.setModelId(parentAsset.getModelId());
                 }
                 asset.setClientUser(ObjectUtil.defaultIfEmpty(clientUser, null));
                 asset.setClientPin(ObjectUtil.defaultIfEmpty(clientPin, null));
@@ -2027,14 +1966,12 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 saveEntitys.put("asset", asset);
                 TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
                 try {
-                    // 调用入库方法
-                    Map updateMap = this.saveRowData(saveEntitys,chartTemplate);
+                    this.saveOrUpdateRowData(saveEntitys, params);
                     dataSourceTransactionManager.commit(transactionStatus);
-                    this.updateImportAssetRelatedInfo(updateMap, assetNameAndEntityMap, assetSnList, assetIpList, dcNameAndEntityMap, brandNameAndEntityMap, brandIdAndModelListMap, cabinetList);
                     successNum++;
                 } catch (TransactionException e) {
                     dataSourceTransactionManager.rollback(transactionStatus);
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, "System", e.getMessage());
+                    validateUtil.recordImportAttrErr(lineNum, RCode.ERROR);
                     logger.error("回滚事务失败,错误信息:" + e);
                 }
             }
@@ -2042,7 +1979,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         return successNum;
     }
 
-    private List<AssetFieldValue> getFieldsByFieldsStr(String fieldsStr, String seqUUID) {
+    private List<AssetFieldValue> getFieldsByFieldsStr(String fieldsStr, String seq) {
         List<AssetFieldValue> valueList = new ArrayList<>();
         List<String> list = Arrays.asList(fieldsStr.split("\n"));
         for (String str : list) {
@@ -2056,29 +1993,22 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                     meta.setName(metaKey);
                     meta.setGroupId("1");
                     meta.setParam("{}");
-                    meta.setSeq(seqUUID);
+                    meta.setSeq(seq);
                     assetFieldMetaService.save(meta);
                 }
                 AssetFieldValue value = new AssetFieldValue();
                 value.setMetaId(meta.getId());
                 value.setValue(split[1]);
-                value.setSeq(seqUUID);
+                value.setSeq(seq);
                 valueList.add(value);
             }
         }
         return valueList;
     }
 
-    private void saveEntityAddCabEntity(Map saveEntitys, String cabinetName, Integer defaultCabinetUsize, String seqUUID) {
-        Cabinet cabinet = new Cabinet();
-        cabinet.setName(cabinetName);
-        cabinet.setuSize(defaultCabinetUsize);
-        cabinet.setSeq(seqUUID);
-        saveEntitys.put("cabinet", cabinet);
-    }
-
-
-    private Cabinet validateCabinet(String cabinetName, Integer dcId, List<Cabinet> cabinetList, String seqUUID, Map saveEntitys, Integer defaultCabinetUsize) {
+    private Cabinet validateCabinet(String cabinetName, Integer dcId, Integer defaultCabinetUsize, Map saveEntitys) {
+        // 返回机柜信息中包含所属的资产 起始位置 数据
+        List<Cabinet> cabinetList = cabinetDao.getCabinetWithAssetPositionInfo();
         Cabinet cabinet = new Cabinet();
         boolean flag = false;
         for (Cabinet entity : cabinetList) {
@@ -2094,110 +2024,74 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             cabinet.setName(cabinetName);
             cabinet.setDcId(dcId);
             cabinet.setuSize(defaultCabinetUsize);
-            cabinet.setSeq(seqUUID);
             saveEntitys.put("cabinet", cabinet);
         }
         return cabinet;
     }
 
-    private Integer getIntValFromStr(String cabinetStart) {
-        try {
-            return Integer.parseInt(cabinetStart);
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
+    /**
+     * 保存这一行内的需要创建的对象
+     *
+     * @param saveEntitys
+     * @param params
+     */
+    public void saveOrUpdateRowData(Map saveEntitys, Map<String, Object> params) {
+        String seq = params.get("seq").toString();
 
-    private void updateImportAssetRelatedInfo(Map updateMap, Map<String, AssetAsset> assetNameAndEntityMap, List<String> assetSnList, List<String> assetIpList, Map<String, Dc> dcNameAndEntityMap, Map<String, AssetBrand> brandNameAndEntityMap, Map<Integer, List<AssetModel>> brandIdAndModelListMap, List<Cabinet> cabinetList) {
-        Dc updateIdc = (Dc) updateMap.get("dc");
-        if (updateIdc != null) {
-            dcNameAndEntityMap.put(updateIdc.getName(), updateIdc);
-        }
-
-        AssetBrand updateBrand = (AssetBrand) updateMap.get("brand");
-        if (updateBrand != null) {
-            brandNameAndEntityMap.put(updateBrand.getName(), updateBrand);
-        }
-
-        AssetModel updateModel = (AssetModel) updateMap.get("model");
-        if (updateModel != null) {
-            Integer brandId = updateModel.getBrandId();
-            List<AssetModel> modelList = brandIdAndModelListMap.get(brandId);
-            modelList = CollectionUtils.isEmpty(modelList) ? new ArrayList<>() : modelList;
-            modelList.add(updateModel);
-            brandIdAndModelListMap.put(brandId, modelList);
-        }
-
-        Cabinet updateCabinet = (Cabinet) updateMap.get("cabinet");
-        if (updateCabinet != null) {
-            cabinetList.add(updateCabinet);
-        }
-        AssetAsset updateAsset = (AssetAsset) updateMap.get("asset");
-        if (updateAsset != null) {
-            assetSnList.add(updateAsset.getSn());
-            assetIpList.add(updateAsset.getManageIp());
-            assetNameAndEntityMap.put(updateAsset.getName(), updateAsset);
-            if (updateAsset.getCabinetStart() != null && updateAsset.getCabinetEnd() != null) {
-                // 更新cabinetList中对应的关系
-                for (Cabinet cabinet : cabinetList) {
-                    if (cabinet.getId().equals(updateAsset.getCabinetId())) {
-                        if (CollectionUtils.isEmpty(cabinet.getAssets())) {
-                            cabinet.setAssets(new ArrayList<>());
-                        }
-                        cabinet.getAssets().add(updateAsset);
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    public Map saveRowData(Map saveEntitys,VisualChart chartTemplate) {
-        Map updateMap = new HashMap();
-        // DC
         Dc dc = (Dc) saveEntitys.get("dc");
-        // Cabinet
         Cabinet cabinet = (Cabinet) saveEntitys.get("cabinet");
+        String defaultCabinetUsizeStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_DEFAULT_CABINETU);
+        Integer defaultCabinetUsize = Integer.parseInt(defaultCabinetUsizeStr);
         if (dc == null && cabinet != null) {
+            cabinet.setSeq(seq);
+            cabinet.setuSize(defaultCabinetUsize);
             cabinetService.save(cabinet);
-            updateMap.put("cabinet", cabinet);
         }
         if (dc != null) {
+            String mapCenterConfigJsonStr = sysConfigService.getValue("map_center_config");
+            Map<String, Object> map = JSONObject.parseObject(mapCenterConfigJsonStr, Map.class);
+            String longitude = (String) map.get("longitude");
+            String latitude = (String) map.get("latitude");
+            dc.setLongitude(StrUtil.isNotEmpty(longitude) ? Double.valueOf(longitude) : null);
+            dc.setLatitude(StrUtil.isNotEmpty(latitude) ? Double.valueOf(latitude) : null);
+            dc.setX(1);
+            dc.setY(1);
+            dc.setState(Constant.SWITCH_OPEN.toUpperCase());
+            dc.setSeq(seq);
             dcService.save(dc);
             if (cabinet != null) {
                 cabinet.setDcId(dc.getId());
+                cabinet.setSeq(seq);
+                cabinet.setuSize(defaultCabinetUsize);
                 cabinetService.save(cabinet);
-                updateMap.put("cabinet", cabinet);
             }
-            updateMap.put("dc", dc);
         }
 
-        // brand
         AssetBrand brand = (AssetBrand) saveEntitys.get("brand");
-        // model
         AssetModel model = (AssetModel) saveEntitys.get("model");
-        if (brand == null && model != null) {
-            modelService.save(model);
-            updateMap.put("model", model);
-        }
+        AssetTypeConf typeConf = (AssetTypeConf) saveEntitys.get("typeConf");
 
+        if (brand == null && model != null) {
+            model.setSeq(seq);
+            model.setTypeId(typeConf.getId());
+            modelService.save(model);
+        }
         if (brand != null) {
+            brand.setSeq(seq);
             brandService.save(brand);
             if (model != null) {
                 model.setBrandId(brand.getId());
+                model.setSeq(seq);
+                model.setTypeId(typeConf.getId());
                 modelService.save(model);
-                updateMap.put("model", model);
             }
-            updateMap.put("brand", brand);
         }
 
         // asset
         AssetAsset asset = (AssetAsset) saveEntitys.get("asset");
-
         if (asset.getBrandId() == null && brand != null) {
             asset.setBrandId(brand.getId());
         }
-
         if (asset.getModelId() == null && model != null) {
             asset.setModelId(model.getId());
         }
@@ -2207,20 +2101,71 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         if (asset.getCabinetId() == null && cabinet != null) {
             asset.setCabinetId(cabinet.getId());
         }
-        this.save(asset);
-        // 新增时需要新增 panel chart
-		chartService.saveRelPanelAndChart(Constant.PanelType.ASSET.getValue(), asset.getId(), asset.getSeq(), chartTemplate);
-		// 新增 asset 时，新增 关联 Model charts
-        this.saveAssetModelChartsWhenInsert(asset);
+        asset.setSeq(seq);
 
-		// fields
-		List<AssetFieldValue> fields = (List<AssetFieldValue>) saveEntitys.get("fields");
-		if (CollectionUtils.isNotEmpty(fields)) {
-		    fields.forEach(assetFieldValue -> assetFieldValue.setAssetId(asset.getId()));
-		    assetFieldValueService.saveBatch(fields);
-		}
-        updateMap.put("asset", asset);
-        return updateMap;
+        // 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore   在此只需要处理更新即可
+        String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
+        AssetAsset oldAsset = this.getOne(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getName, asset.getName()));
+        if (StrUtil.equals("1", existed) && oldAsset != null) {
+            // 更新 & 同步
+            asset.setId(oldAsset.getId());
+            if (asset.getPid() == null || asset.getPid().equals(-1)) {
+                // 宿主机
+                asset.setPid(-1);
+                List<AssetAsset> babyAssets = this.list(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getPid, asset.getId()));
+                if (CollectionUtils.isNotEmpty(babyAssets)) {
+                    for (AssetAsset pojo : babyAssets) {
+                        pojo.setDcId(asset.getDcId());
+                        pojo.setCabinetId(asset.getCabinetId());
+                        pojo.setCabinetStart(asset.getCabinetStart());
+                        pojo.setCabinetEnd(asset.getCabinetEnd());
+                    }
+                    this.saveOrUpdateBatch(babyAssets);
+                }
+            }
+            asset.setUpdateAt(new Date());
+            asset.setUpdateBy(ShiroUtils.getUserId());
+            this.updateById(asset);
+
+            // 如果修改了Model, 处理关联 charts 变化
+            if (!oldAsset.getModelId().equals(asset.getModelId())) {
+                this.updateModelCharts(asset);
+            }
+
+            // 修改后处理 ping & Talon 数据
+            this.afterUpdateAsset(asset.getId());
+
+            // 是否同步更新关联的dashboard，可选值： 0：不同步  1：同步  默认值：1
+            String syncDashboard = Tool.ObjectUtil.defaultIfEmpty((String) params.get("syncDashboard"), "1");
+            if (StrUtil.equals("1", syncDashboard)) {
+                VisualPanel assetPanel = panelService.getOne(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, Constant.PanelType.ASSET.getValue()).eq(VisualPanel::getLink, asset.getId()));
+                Map<String, Object> map = Tool.MapUtil.newHashMap(2);
+                map.put("panelId", assetPanel.getId());
+                chartService.syncTmpl(map);
+            }
+            // 是否同步更新关联的endpoint，可选值：  0：不同步  1：同步  默认值：1
+            String syncEndpoint = Tool.ObjectUtil.defaultIfEmpty((String) params.get("syncEndpoint"), "1");
+            if (StrUtil.equals("1", syncEndpoint)) {
+                List<MonitorEndpoint> endpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getAssetId, asset.getId()));
+                if (Tool.CollUtil.isNotEmpty(endpointList)) {
+                    monitorEndpointService.syncTmpl(Collections.emptyList(), Collections.emptyList(), ListUtil.of(asset.getId()));
+                }
+            }
+        } else {
+            this.save(asset);
+            // 新增 asset panel chart
+            this.saveAssetChartsWhenInsert(asset);
+            // 新增 关联 Model charts
+            this.saveAssetModelChartsWhenInsert(asset);
+        }
+
+        // 如果没有指定 meta, 则视为删除，先删后增
+        assetFieldValueService.remove(new LambdaQueryWrapper<AssetFieldValue>().eq(AssetFieldValue::getAssetId, asset.getId()));
+        List<AssetFieldValue> fields = (List<AssetFieldValue>) saveEntitys.get("fields");
+        if (CollectionUtils.isNotEmpty(fields)) {
+            fields.forEach(assetFieldValue -> assetFieldValue.setAssetId(asset.getId()));
+            assetFieldValueService.saveBatch(fields);
+        }
     }
 
     private List<Map<Integer, String>> handleImportData(List<Map<Integer, String>> importDataList) {
@@ -2234,76 +2179,6 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         importDataList.removeAll(list);
         list.addAll(importDataList);
         return list;
-    }
-
-
-    private Integer validateDc(String dcName, Map<String, Dc> dcNameAndEntityMap, String seqUUID, Map saveEntitys) {
-        Dc dc = dcNameAndEntityMap.get(dcName);
-        if (dc == null) {
-            dc = new Dc();
-            dc.setName(dcName);
-            dc.setState(Constant.SWITCH_OPEN.toUpperCase());
-            dc.setSeq(seqUUID);
-            saveEntitys.put("dc", dc);
-        }
-        return dc.getId();
-    }
-
-    private List<String> getPortListByPattern(String portStr, Pattern portPattern) {
-        Matcher matcher = portPattern.matcher(portStr);
-        List<String> portInfos = new ArrayList<>();
-        while (matcher.find()) {
-            portInfos.add(matcher.group());
-        }
-        return portInfos;
-    }
-
-
-    private Integer validateModel(Integer brandId, String modelName, Map<Integer, List<AssetModel>> brandIdAndModelListMap, String seqUUID, Map saveEntitys, Integer typeId) {
-        // brand 不存在,model肯定也不在
-        if (brandId == null) {
-            AssetModel model = new AssetModel();
-            model.setName(modelName);
-            model.setSeq(seqUUID);
-            model.setUsize(1);
-            model.setTypeId(typeId);
-            saveEntitys.put("model", model);
-            return model.getId();
-        } else {
-            List<AssetModel> modelList = brandIdAndModelListMap.get(brandId);
-            modelList = CollectionUtils.isEmpty(modelList) ? new ArrayList<>() : modelList;
-            AssetModel getModelByName = modelList.stream().filter(model -> model.getName().equals(modelName)).findAny().orElse(null);
-            if (getModelByName == null) {
-                AssetModel model = new AssetModel();
-                model.setBrandId(brandId);
-                model.setName(modelName);
-                model.setSeq(seqUUID);
-                model.setUsize(1);
-                model.setTypeId(typeId);
-                saveEntitys.put("model", model);
-                return model.getId();
-            } else {
-                return getModelByName.getId();
-            }
-        }
-    }
-
-    private Integer validateBrand(String brandName, Map<String, AssetBrand> brandNameAndEntityMap, String seqUUID, Map saveEntitys) {
-        AssetBrand brand = brandNameAndEntityMap.get(brandName);
-        if (brand == null) {
-            brand = new AssetBrand();
-            brand.setName(brandName);
-            brand.setSeq(seqUUID);
-            saveEntitys.put("brand", brand);
-        }
-        return brand.getId();
-    }
-
-    private void addFailDetail(int i, List<Map> failDetails, String headerInfo, String msg) {
-        Map failDetail = new HashMap(4);
-        failDetail.put("lineNo", i);
-        failDetail.put("errorMsg", headerInfo + ": " + msg);
-        failDetails.add(failDetail);
     }
 
     private List<List<String>> handleExportDataList(List<AssetAsset> list) {

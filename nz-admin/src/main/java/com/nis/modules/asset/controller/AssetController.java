@@ -262,7 +262,7 @@ public class AssetController {
     @PostMapping("/asset/import")
     @SysLog(operation = OperationEnum.IMPORT,type = TypeEnum.ASSET)
     @RequiresPermissions({"asset:save"})
-    public R importAssetsData(MultipartFile excelFile, HttpServletRequest request) throws IOException {
+    public R importAssetsData(MultipartFile excelFile, HttpServletRequest request, @RequestParam Map<String, Object> params) throws IOException {
         String language = request.getHeader(Constant.LANGUAGE);
         ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL);
         // 校验 LANGUAGE
@@ -270,7 +270,7 @@ public class AssetController {
             throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
         }
 
-        Map info = assetAssetService.importAssetsData(excelFile);
+        Map info = assetAssetService.importAssetsData(excelFile, params);
         return R.ok(info);
     }
 

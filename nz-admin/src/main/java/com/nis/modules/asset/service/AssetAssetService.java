@@ -51,7 +51,7 @@ public interface AssetAssetService extends IService<AssetAsset> {
 
     void export(HttpServletResponse response, Map<String, Object> params) throws IOException;
 
-    Map importAssetsData(MultipartFile excelFile) throws IOException;
+    Map importAssetsData(MultipartFile excelFile, Map<String, Object> params) throws IOException;
 
     void cancelImport(String seq);
 

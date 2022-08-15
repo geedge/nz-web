@@ -13,6 +13,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
+import com.nis.modules.sys.dao.BasicMapper;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysI18nService;
 import org.apache.commons.io.IOUtils;
@@ -23,6 +24,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -31,6 +33,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class BasicImportAndExportServicesImpl implements BasicImportAndExportServices {
@@ -39,6 +42,12 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
 
     @Autowired
     private SysI18nService sysI18nService;
+
+    @Autowired
+    private BasicMapper basicMapper;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     @Override
     public Map<String, String> getI18nHeaderMap(String sysHeaderJsonStr) {
@@ -255,5 +264,41 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
                 break;
             }
         }
+    }
+
+    @Override
+    public List queryList(String tableName, String colName, String value) {
+        List<Object> objectList = basicMapper.selectList(tableName, colName, value);
+        return objectList;
+    }
+
+    @Override
+    public List<Map> readImportErrMsgAndRemoveKey(String key) {
+        List<Map> failDetailList = Collections.emptyList();
+        try {
+            log.info("read import error message,key: " + key);
+            // 读取错误信息
+            List<String> datas = redisTemplate.opsForList().range(key, 0, -1);
+            failDetailList = datas.stream().map(data -> JSONObject.parseObject(data, Map.class)).collect(Collectors.toList());
+            log.info("read import error message, content: " + JSONObject.toJSONString(failDetailList));
+
+            // 删除 key
+            redisTemplate.delete(key);
+        } catch (Exception e) {
+            log.error("read import error message error", e);
+        }
+        return failDetailList;
+    }
+
+    @Override
+    public List<Map> readImportErrMsgForThisLine(String errMsgRedisKey, Integer lineNum) {
+        List<String> errMsgList = redisTemplate.opsForList().range(errMsgRedisKey, 0, -1);
+
+        List<Map> list = errMsgList.stream()
+                .map(data -> JSONObject.parseObject(data, Map.class))
+                .filter(map -> lineNum.equals((Integer) map.get("lineNo")))
+                .collect(Collectors.toList());
+
+        return list;
     }
 }

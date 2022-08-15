@@ -834,6 +834,15 @@ public enum RCode {
     EXCELFILE_HEADER_LANGUAGE_ISNULL(905, "Language can not be empty"),
     EXCELFILE_IMPORT_ERROR(906, "File import error"),
     UNDO_IMPORT_SEQ_ISNULL(907, "Undo import sequence number cannot be empty"),
+    IMPORT_FIELD_REQUIRED(908, "{0} Required"),
+    IMPORT_FIELD_DUPLICATE(909, "{0} Duplicate"),
+    IMPORT_FORMAT_ERROR(910, "{0} Format error"),
+    IMPORT_RELATED_OBJ_NOT_EXIST(911, "{0} Related content does not exist"),
+    IMPORT_ENUM_VALUE_ERROR(912, "{0} Not in enum value list"),
+    IMPORT_IGNORE(913, "Duplicate {0}, ignore the data in this row"),
+    IMPORT_NOT_SUPPORT(914, "{0} Configuration not support"),
+    IMPORT_NOT_WITHIN_REASON(915, "{0} Not within reason"),
+    IMPORT_NOT_MATCH(916, "{0} does not match {1} configuration"),
 
 
     /**
@@ -919,8 +928,8 @@ public enum RCode {
     TOOL_TRACEROUTE_IP_ISNULL(741001, "Traceroute ip can not be empty"),
 
     ERROR(999, "error"); //通用错误/未知错误
-	
-	
+
+
 	private RCode(Integer code, String msg) {
 		this.code = code;
 		this.msg = msg;
