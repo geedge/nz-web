@@ -116,16 +116,16 @@ public class IssueRecordServiceImpl extends ServiceImpl<IssueRecordDao, IssueRec
 
         for (IssueRecord issueRecord : issueList) {
             if (ToolUtil.isNotEmpty(issueRecord.getCid())) {
-                issueRecord.setCreateUser(userIdAndEntityMap.get(issueRecord.getCid()));
+                issueRecord.setCreateUser(userIdAndEntityMap.get(issueRecord.getCid().longValue()));
             }
             if (ToolUtil.isNotEmpty(issueRecord.getUid())) {
-                issueRecord.setUpdateUser(userIdAndEntityMap.get(issueRecord.getUid()));
+                issueRecord.setUpdateUser(userIdAndEntityMap.get(issueRecord.getUid().longValue()));
             }
             if (ToolUtil.isNotEmpty(issueRecord.getRid())) {
-                issueRecord.setReporter(userIdAndEntityMap.get(issueRecord.getRid()));
+                issueRecord.setReporter(userIdAndEntityMap.get(issueRecord.getRid().longValue()));
             }
             if (ToolUtil.isNotEmpty(issueRecord.getAid())) {
-                issueRecord.setAssignee(userIdAndEntityMap.get(issueRecord.getAid()));
+                issueRecord.setAssignee(userIdAndEntityMap.get(issueRecord.getAid().longValue()));
             }
         }
     }
