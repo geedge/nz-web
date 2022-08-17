@@ -7,6 +7,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -34,4 +35,6 @@ public interface AssetModelService extends IService<AssetModel> {
     void export(HttpServletResponse response, Map<String, Object> params) throws IOException;
 
     void cancelImport(String seq);
+
+    void deleteModelChartTemps(List<Integer> asList);
 }

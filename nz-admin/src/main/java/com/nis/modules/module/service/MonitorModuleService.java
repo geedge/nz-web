@@ -40,4 +40,6 @@ public interface MonitorModuleService extends IService<MonitorModule> {
     List<Dc> getDcListByModuleId(Integer moduleId);
 
     String queryAssetMoudules(Integer assetId);
+
+    void deleteModuleChartTemps(List<Integer> chartIdList);
 }

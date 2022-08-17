@@ -27,4 +27,6 @@ public interface MonitorModuleDao extends BaseMapper<MonitorModule> {
     List<Dc> queryDcListByModuleId(@Param("moduleId") Integer moduleId);
 
     String queryAssetMoudules(@Param("assetId") Integer assetId);
+
+    void deleteModuleChartTemps(List<Integer> chartIdList);
 }
