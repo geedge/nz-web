@@ -22,4 +22,9 @@ public class IssueAssetRelServiceImpl extends ServiceImpl<IssueAssetRelDao, Issu
         return issueAssetRelDao.queryAssetList(issueId);
     }
 
+    @Override
+    public List<Integer> queryAssetsIds(Integer issueId) {
+        return issueAssetRelDao.queryAssetIds(issueId);
+    }
+
 }

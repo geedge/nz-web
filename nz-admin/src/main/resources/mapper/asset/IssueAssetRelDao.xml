@@ -13,4 +13,12 @@
             issue.issue_id = #{issueId}
     </select>
 
+    <select id="queryAssetIds" resultType="java.lang.Integer">
+        SELECT
+            asset_id
+        FROM
+            issue_asset_rel
+        WHERE issue_id = #{issueId}
+    </select>
+
 </mapper>

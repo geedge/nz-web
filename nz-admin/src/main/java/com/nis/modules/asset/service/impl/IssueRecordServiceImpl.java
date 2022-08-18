@@ -75,6 +75,7 @@ public class IssueRecordServiceImpl extends ServiceImpl<IssueRecordDao, IssueRec
             issueRecord.setAssignee(userEntity);
         }
         // 相关资产
+        issueRecord.setAssetIds(issueAssetRelService.queryAssetsIds(id));
         issueRecord.setAssets(issueAssetRelService.queryAssetsByIssueId(id));
         // 收藏标识 0：未收藏 1：已收藏
         int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()

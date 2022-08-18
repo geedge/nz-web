@@ -13,4 +13,6 @@ public interface IssueAssetRelService extends IService<IssueAssetRel> {
 
     List<AssetAsset> queryAssetsByIssueId(Integer issueId);
 
+    List<Integer> queryAssetsIds(Integer issueId);
+
 }

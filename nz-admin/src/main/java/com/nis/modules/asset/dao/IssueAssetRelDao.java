@@ -16,4 +16,6 @@ import java.util.List;
 public interface IssueAssetRelDao extends BaseMapper<IssueAssetRel> {
 
     List<AssetAsset> queryAssetList(Integer issueId);
+
+    List<Integer> queryAssetIds(Integer issueId);
 }
