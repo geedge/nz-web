@@ -51,10 +51,12 @@ public interface DcService extends IService<Dc> {
     Integer updateDc(Dc dc);
 
     /**
-     * 删除
+     * dc 删除方法
+     * @param force 0：存在关联数据时，删除失败 1：存在关联数据时，同时删除关联数据 默认：0
      * @param ids
+     * @return
      */
-    void delete(Integer... ids);
+    List<Map> delete(Integer force, Integer... ids);
 
     void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException;
 

@@ -20,6 +20,8 @@ import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.CabinetService;
 import com.nis.modules.asset.service.DcService;
+import com.nis.modules.endpoint.entity.MonitorEndpoint;
+import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
@@ -68,6 +70,9 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
 
     @Autowired
     private SysUserStarredService starredService;
+
+    @Autowired
+    private MonitorEndpointService monitorEndpointService;
 
     /**
      * 校验 cabinet 相关信息
@@ -229,33 +234,104 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void deleteByIds(Integer... ids) {
-        List<AssetAsset> assets = assetAssetService.list();
+    public List<Map> deleteByIds(Integer force, Integer... ids) {
+        List<Map> delRelObjectMsgList = Tool.ListUtil.list(true);
 
-        // asset 使用的 cabinet
-        Set<Integer> assetUsedCabinetIds = assets.stream().filter(asset -> {
-            if (ToolUtil.isNotEmpty(asset.getCabinetId())) {
-                return true;
-            }
-            return false;
-        }).map(AssetAsset::getCabinetId).collect(Collectors.toSet());
-
-        List<Integer> idList = Arrays.stream(ids).collect(Collectors.toList());
-        idList.retainAll(assetUsedCabinetIds);
-        if (CollectionUtils.isNotEmpty(idList)) {
-            List<String> cabNames = this.listByIds(idList).stream().map(Cabinet::getName).collect(Collectors.toList());
-            throw new NZException("These cabinets contain assets and cannot be deleted, Details: " + cabNames.toString(), RCode.DC_CABINET_ASSETS_EXISTS.getCode());
+        List<Integer> idList = new ArrayList<>(Arrays.asList(ids));
+        List<Cabinet> delCabinets = this.list(new LambdaQueryWrapper<Cabinet>().in(Cabinet::getId, idList));
+        if (Tool.CollUtil.isEmpty(delCabinets)) {
+            return delRelObjectMsgList;
         }
 
-        // 删除
-        this.removeByIds(Arrays.asList(ids));
+        delCabinets.forEach(cabinetEntity -> {
+            Map<Object, Object> relObjectInfoMap = this.getCabinetDelRelObjectInfoMap(cabinetEntity);
+            if (Tool.CollUtil.isNotEmpty(relObjectInfoMap)) {
+                delRelObjectMsgList.add(relObjectInfoMap);
+            }
+        });
 
-        // 删删除用户收藏数据
+        force = Tool.ObjectUtil.defaultIfNull(force, 0);
+        switch (force) {
+            case 0: {// 0：存在关联数据时，删除失败
+                if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
+                    return delRelObjectMsgList;
+                }
+            }
+            case 1:  // 1：存在关联数据时，同时删除关联数据
+                break;
+            default:
+                throw new NZException(RCode.ASSET_FORCE_INVALIDE);
+        }
+
+        // 删除自身和关联内容
+        // cabinet
+        this.removeByIds(idList);
+
+        // asset & endpoint
+        List<AssetAsset> assetList = assetAssetService.list(new LambdaQueryWrapper<AssetAsset>().in(AssetAsset::getCabinetId, idList));
+        if (Tool.CollUtil.isNotEmpty(assetList)) {
+            Integer[] removeAssetIdList = assetList.stream().map(AssetAsset::getId).toArray(n -> new Integer[n]);
+            assetAssetService.deleteAsset(1, removeAssetIdList);
+        }
+
+        // starred
         starredService.remove(
                 new LambdaQueryWrapper<SysUserStarredEntity>()
                         .eq(SysUserStarredEntity::getType, "cabinet")
-                        .in(SysUserStarredEntity::getTid, ids)
+                        .in(SysUserStarredEntity::getTid, idList)
         );
+        return delRelObjectMsgList;
+    }
+
+    /**
+     * 获取 cabinet 删除提示关联信息：
+     *      asset
+     *        endpoint
+     * @return
+     */
+    private Map<Object, Object> getCabinetDelRelObjectInfoMap(Cabinet cabinet) {
+        List<Map> relatesList = Tool.ListUtil.list(true);
+
+        // asset & endpoint
+        List<AssetAsset> assetList = assetAssetService.list(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getCabinetId, cabinet.getId()));
+        if (Tool.CollUtil.isNotEmpty(assetList)) {
+            List<Integer> assetIdList = assetList.stream().map(AssetAsset::getId).collect(Collectors.toList());
+            List<MonitorEndpoint> endpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().in(MonitorEndpoint::getAssetId, assetIdList));
+
+            for (AssetAsset asset : assetList) {
+                List<MonitorEndpoint> endpointListByAssetId = endpointList.stream().filter(endpoint -> asset.getId().equals(endpoint.getAssetId())).collect(Collectors.toList());
+                List<Map> relatesEndpointList = Tool.ListUtil.list(true);
+                for (MonitorEndpoint endpoint : endpointListByAssetId) {
+                    Map<Object, Object> map = Tool.MapUtil.builder()
+                            .put("id", endpoint.getId())
+                            .put("name", endpoint.getName())
+                            .put("type", "endpoint")
+                            .build();
+                    relatesEndpointList.add(map);
+                }
+
+                Map<Object, Object> map = Tool.MapUtil.builder()
+                        .put("id", asset.getId())
+                        .put("name", asset.getName())
+                        .put("type", "asset")
+                        .build();
+                if (Tool.CollUtil.isNotEmpty(relatesEndpointList))
+                    map.put("relates", relatesEndpointList);
+                relatesList.add(map);
+            }
+        }
+
+        if (Tool.CollUtil.isNotEmpty(relatesList)) {
+            Map<Object, Object> delRelObjectMap = Tool.MapUtil.builder()
+                    .put("id", cabinet.getId())
+                    .put("name", cabinet.getName())
+                    .put("type", "cabinet")
+                    .put("relates", relatesList)
+                    .build();
+
+            return delRelObjectMap;
+        }
+        return Tool.MapUtil.empty();
     }
 
     @Override

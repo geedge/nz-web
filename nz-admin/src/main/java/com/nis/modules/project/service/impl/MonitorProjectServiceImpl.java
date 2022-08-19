@@ -22,11 +22,11 @@ import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -147,32 +147,110 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void delete(Integer... ids) {
-        List<MonitorProject> list = this.list();
+    public List<Map> delete(Integer force, Integer... ids) {
+        List<Map> delRelObjectMsgList = Tool.ListUtil.list(true);
 
-        // 1. 内置的 配置不允许删除
-        List<Integer> buildInIdList = list.stream().filter(assetTypeConf -> assetTypeConf.getBuildIn().equals(1)).map(MonitorProject::getId).collect(Collectors.toList());
-        buildInIdList.retainAll(Arrays.asList(ids));
-        if (CollectionUtils.isNotEmpty(buildInIdList)) {
-            throw new NZException("These projects are built-in and cannot be deleted. Details: " + buildInIdList.toString(), RCode.PROJECT_BUILDIN_CAN_NOT_REMOVE.getCode());
+        List<Integer> idList = new ArrayList<>(Arrays.asList(ids));
+        List<MonitorProject> delProjects = this.list(new LambdaQueryWrapper<MonitorProject>().in(MonitorProject::getId, idList));
+        if (Tool.CollUtil.isEmpty(delProjects)) {
+            return delRelObjectMsgList;
         }
 
-        // 2. 包含 module 不允许删除
-        List<MonitorModule> moduleList = monitorModuleService.list();
-        List<Integer> usedProjectIdList = moduleList.stream().map(MonitorModule::getProjectId).distinct().collect(Collectors.toList());
-        usedProjectIdList.retainAll(Arrays.asList(ids));
-        if (CollectionUtils.isNotEmpty(usedProjectIdList)) {
-            throw new NZException("These projects have been used by modules and cannot be deleted. Details: " + usedProjectIdList.toString(), RCode.PROJECT_REMOVE_ERROR.getCode());
+        // 内置 project 不能删除
+        List<Integer> buildInIdList = delProjects.stream().filter(monitorProject -> monitorProject.getBuildIn().equals(1)).map(MonitorProject::getId).collect(Collectors.toList());
+        if (Tool.CollUtil.isNotEmpty(buildInIdList)) {
+            throw new NZException(RCode.PROJECT_BUILDIN_CAN_NOT_REMOVE.setParam(buildInIdList.toString()));
         }
 
-        // 删除
-        this.removeByIds(Arrays.asList(ids));
+        delProjects.forEach(projectEntity -> {
+            Map<Object, Object> relObjectInfoMap = this.getProjectDelRelObjectInfoMap(projectEntity);
+            if (Tool.CollUtil.isNotEmpty(relObjectInfoMap)) {
+                delRelObjectMsgList.add(relObjectInfoMap);
+            }
+        });
 
-        //删除收藏
-        starredService.remove(new LambdaQueryWrapper<SysUserStarredEntity>().eq(SysUserStarredEntity::getType,"project").in(SysUserStarredEntity::getTid,ids));
+        force = Tool.ObjectUtil.defaultIfNull(force, 0);
+        switch (force) {
+            case 0: {// 0：存在关联数据时，删除失败
+                if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
+                    return delRelObjectMsgList;
+                }
+            }
+            case 1:  // 1：存在关联数据时，同时删除关联数据
+                break;
+            default:
+                throw new NZException(RCode.ASSET_FORCE_INVALIDE);
+        }
 
-        // 删除告警消息
-        alertMessageService.removeByProjectIds(Arrays.asList(ids));
+        // 删除自身和关联内容
+        // project
+        this.removeByIds(idList);
+
+        // module & endpoint force = 1
+        List<MonitorModule> removeModuleList = monitorModuleService.list(new LambdaQueryWrapper<MonitorModule>().in(MonitorModule::getProjectId, idList));
+        if(Tool.CollUtil.isNotEmpty(removeModuleList)){
+            Integer[] removeModuleIdList = removeModuleList.stream().map(MonitorModule::getId).toArray(n -> new Integer[n]);
+            monitorModuleService.removeModules(1, removeModuleIdList);
+        }
+
+        // starred
+        starredService.remove(new LambdaQueryWrapper<SysUserStarredEntity>()
+                .eq(SysUserStarredEntity::getType, "project")
+                .in(SysUserStarredEntity::getTid, idList));
+
+        // alert
+        alertMessageService.removeByProjectIds(idList);
+        return delRelObjectMsgList;
+    }
+
+
+    /**
+     * 获取 project 删除提示关联信息：
+     *      module
+     *      endpoint
+     * @return
+     */
+    private Map<Object, Object> getProjectDelRelObjectInfoMap(MonitorProject project) {
+        List<Map> relatesList = Tool.ListUtil.list(true);
+
+        // module
+        List<MonitorModule> moduleList = monitorModuleService.list(new LambdaQueryWrapper<MonitorModule>().eq(MonitorModule::getProjectId, project.getId()));
+        if (Tool.CollUtil.isNotEmpty(moduleList)) {
+            for (MonitorModule module : moduleList) {
+                Map<Object, Object> map = Tool.MapUtil.builder()
+                        .put("id", module.getId())
+                        .put("name", module.getName())
+                        .put("type", "module")
+                        .build();
+                relatesList.add(map);
+            }
+
+            // endpoint
+            List<Integer> moduleIdList = moduleList.stream().map(MonitorModule::getId).collect(Collectors.toList());
+            List<MonitorEndpoint> endpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().in(MonitorEndpoint::getModuleId, moduleIdList));
+            if (Tool.CollUtil.isNotEmpty(endpointList)) {
+                for (MonitorEndpoint endpoint : endpointList) {
+                    Map<Object, Object> map = Tool.MapUtil.builder()
+                            .put("id", endpoint.getId())
+                            .put("name", endpoint.getName())
+                            .put("type", "endpoint")
+                            .build();
+                    relatesList.add(map);
+                }
+            }
+        }
+
+        if (Tool.CollUtil.isNotEmpty(relatesList)) {
+            Map<Object, Object> delRelObjectMap = Tool.MapUtil.builder()
+                    .put("id", project.getId())
+                    .put("name", project.getName())
+                    .put("type", "project")
+                    .put("relates", relatesList)
+                    .build();
+
+            return delRelObjectMap;
+        }
+        return Tool.MapUtil.empty();
     }
 
     @Override

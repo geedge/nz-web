@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.asset.entity.AssetBrand;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -22,5 +23,11 @@ public interface AssetBrandService extends IService<AssetBrand> {
 
     void updateBrand(AssetBrand brand);
 
-    void delete(Integer... ids);
+    /**
+     * AssetBrand
+     * @param force 0：存在关联数据时，删除失败 1：存在关联数据时，同时删除关联数据 默认：0
+     * @param ids
+     * @return
+     */
+    List<Map> delete(Integer force, Integer... ids);
 }

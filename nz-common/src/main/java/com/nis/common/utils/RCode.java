@@ -133,7 +133,7 @@ public enum RCode {
      */
     PROJECT_ID_ISNULL(211000, "Project id can not be empty"),
     PROJECT_NAME_ISNULL(211001, "Project name can not be empty"),
-    PROJECT_BUILDIN_CAN_NOT_REMOVE(217002, "This project is built-in and cannot be deleted"),
+    PROJECT_BUILDIN_CAN_NOT_REMOVE(217002, "These projects are built-in and cannot be deleted. Details: {0}"),
     PROJECT_NAME_TOO_LONG(213003, "Project name too long"),
     PROJECT_REMARK_TOO_LONG(213004, "Project remark too long"),
     PROJECT_NAME_DUPLICATE(212005, "Project name is duplicate"),
@@ -149,6 +149,7 @@ public enum RCode {
     PROJECT_BUILDIN_CAN_NOT_EDIT(217015, "The built-in project does not allow editing"),
     PROJECT_ICON_BASE64_VALUEERROR(214016, "The base64 value must be 0 and 1"),
     PROJECT_ICON_BIG_ERROR(214017,"Topo icon file is too big ,Please contact your administrator to modify the database configuration : max_allowed_packet"),
+    PROJECT_RELOBJ_CAN_NOT_REMOVE(217018, "Project have associated data and cannot be deleted"),
 
 
     /**
@@ -156,7 +157,7 @@ public enum RCode {
      */
     MODULE_AUTHPROTOCOL_INVALID(224001,"Auth protocol must be SHA or MD5"),
     MODULE_AUTHSECURITYLEVEL_INVALID(224002,"Security level must be one of authPriv, authNoPriv or noAuthNoPriv"),
-    MODULE_BUILDIN_CAN_NOT_REMOVE(227003,"This module is built-in and cannot be deleted"),
+    MODULE_BUILDIN_CAN_NOT_REMOVE(227003,"These modules are built-in and cannot be deleted. Details: {0}"),
     MODULE_CONFIGS_FORMAT(223004,"Module configs must be JSON format"),
     MODULE_CONFIGS_ISNULL(221005,"Module configs can not be empty"),
     MODULE_CONFIGS_TYPE_DUPLICATE(222006,"Module config type is duplicate"),
@@ -193,6 +194,7 @@ public enum RCode {
     MODULE_CONFIG_RELABEL_TARGETLABEL_ISNULL(221037,"Module config relabel target_label is null"),
     MODULE_CONFIG_RELABEL_REGEX_ISNULL(221038,"Module config relabel regex is null"),
     MODULE_CONFIG_RELABEL_REPLACEMENT_ISNULL(221039,"Module config relabel replacement is null"),
+    MODULE_RELOBJ_CAN_NOT_REMOVE(227040, "Module have associated data and cannot be deleted"),
 
     /**
      * endpoint
@@ -220,6 +222,7 @@ public enum RCode {
     ENDPOINT_TYPE_ISNULL(231021,"Endpoint type can not be empty"),
     ENDPOINT_PORT_ISNULL(231022,"Endpoint port can not be empty"),
     ENDPOINT_LABELNAME_FORMAT_ERROR(233023,"Expressions label key does not comply with Prometheus labelname format"),
+    ENDPOINT_RELOBJ_CAN_NOT_REMOVE(237024, "Endpoint have associated data and cannot be deleted"),
 
     /**
      * assets菜单项相关
@@ -260,16 +263,8 @@ public enum RCode {
     ASSET_STATE_ID_ISNULL(311034,"Asset state id can not be empty"),
     ASSET_STATE_NOTFOUND(316035,"Asset state not found"),
     ASSET_TYPE_ID_ISNULL(311036,"Asset type id can not be empty"),
-    ISSUE_ID_ISNULL(311037,"Issue id can not be empty"),
-    ISSUE_NAME_DUPLICATE(312038,"Issue name duplicate"),
-    ISSUE_NAME_ISNULL(311039,"Issue name can not be empty"),
-    ISSUE_TYPE_ISNULL(311040,"Issue type can not be empty"),
-    ISSUE_CONTENT_ISNULL(311041,"Issue content can not be empty"),
-    ISSUE_STATE_ISNULL(311042,"Issue state can not be empty"),
-    ISSUE_RID_ID_ISNULL(311043,"Issue reporter id can not be empty"),
-    ISSUE_AID_ID_ISNULL(311044,"Issue assignee id can not be empty"),
-    ISSUE_STATE_INVALID(315045,"Issue state is invalid"),
-    ISSUE_PRIORITY_INVALID(315046,"Issue priority is invalid"),
+    ASSET_RELOBJ_CAN_NOT_REMOVE(317037, "Asset have associated data and cannot be deleted"),
+    ASSET_FORCE_INVALIDE(314038,"Force param must be 0 or 1"),
 
     /**
      * ASSET_MODEL
@@ -283,6 +278,7 @@ public enum RCode {
     ASSET_MODEL_NOTFOUND(326007,"Asset model not found"),
     ASSET_MODEL_OID_DUPLICATE(322008,"OID duplicate"),
     ASSET_MODEL_OID_INCORRECT(323009,"OID format is incorrect"),
+    ASSET_MODEL_RELOBJ_CAN_NOT_REMOVE(317037, "Asset model have associated data and cannot be deleted"),
 
     /**
      * Account
@@ -348,6 +344,7 @@ public enum RCode {
     ASSET_BRAND_NAME_DUPLICATE(362003, "Asset brand name is duplicate"),
     ASSET_BRAND_BEUSED_CAN_NOT_REMOVE(367004, "This brand is already used and cannot be deleted"),
     ASSET_BRAND_NOT_CONTAIN_MODEL(366005, "This model is not included under this brand"),
+    ASSET_BRAND_RELOBJ_CAN_NOT_REMOVE(367006, "Asset brand have associated data and cannot be deleted"),
 
     /**
      * ASSET_FIELD_META
@@ -372,6 +369,20 @@ public enum RCode {
     ASSET_FIELD_GROUP_NAME_ISNULL(381002,"Asset field group name can not be empty"),
     ASSET_FIELD_GROUP_NAME_DUPLICATE(382003,"Asset field group name can not duplicate"),
 
+
+    /**
+     * Asset Issue
+     */
+    ISSUE_ID_ISNULL(391000, "Issue id can not be empty"),
+    ISSUE_NAME_DUPLICATE(392001, "Issue name duplicate"),
+    ISSUE_NAME_ISNULL(391002, "Issue name can not be empty"),
+    ISSUE_TYPE_ISNULL(391003, "Issue type can not be empty"),
+    ISSUE_CONTENT_ISNULL(391004, "Issue content can not be empty"),
+    ISSUE_STATE_ISNULL(391005, "Issue state can not be empty"),
+    ISSUE_RID_ID_ISNULL(391006, "Issue reporter id can not be empty"),
+    ISSUE_AID_ID_ISNULL(391007, "Issue assignee id can not be empty"),
+    ISSUE_STATE_INVALID(395008, "Issue state is invalid"),
+    ISSUE_PRIORITY_INVALID(395009, "Issue priority is invalid"),
 
     /**
      * alerts菜单栏相关
@@ -587,6 +598,8 @@ public enum RCode {
     DC_X_MINIMUM(535032,"Dc x is a minimum of 1"),
     DC_Y_ALREADYINUSE(535033,"Dc y is already in use"),
     DC_Y_MINIMUM(535034,"Dc y is a minimum of 1"),
+    DC_RELOBJ_CAN_NOT_REMOVE(537035, "Dc have associated data and cannot be deleted"),
+    CABINET_RELOBJ_CAN_NOT_REMOVE(537037, "Cabinet have associated data and cannot be deleted"),
 
 
     /**
@@ -740,6 +753,7 @@ public enum RCode {
     SYS_ROLE_NAME_CANNOT_MODIFY(587006, "The name of the built-in role cannot be modified"),
     SYS_ROLE_CANNOT_DELETE(587007, "Built-in roles cannot be deleted"),
     SYS_ROLE_REMOVE_ERROR(587008,"These roles contains user can't remove roles"),
+    SYS_ROLE_RELOBJ_CAN_NOT_REMOVE(587009, "Role have associated data and cannot be deleted"),
 
 
     /**
@@ -889,6 +903,7 @@ public enum RCode {
 	IPAM_SUBNET_DC_ISNULL(721011,"Ipamsubnet datacenter can not be null"),
 	IPAM_SUBNET_INTERVAL_ERROR(723012,"Ipamsubnet interval already exists"),
     IPAM_SUBNET_NAME_ERROR(723013,"Ipamsubnet name already exists"),
+    IPAM_SUBNET_RELOBJ_CAN_NOT_REMOVE(587009, "Ipamsubnet have associated data and cannot be deleted"),
 
     /**
      * IpamIp 相关

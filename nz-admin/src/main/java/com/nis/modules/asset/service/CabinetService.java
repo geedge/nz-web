@@ -7,6 +7,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -46,10 +47,12 @@ public interface CabinetService extends IService<Cabinet> {
     Integer updateCabinet(Cabinet cabinet);
 
     /**
-     * 删除
+     * cabinet 删除方法
+     * @param force 0：存在关联数据时，删除失败 1：存在关联数据时，同时删除关联数据 默认：0
      * @param ids
+     * @return
      */
-    void deleteByIds(Integer... ids);
+    List<Map> deleteByIds(Integer force, Integer... ids);
 
     /**
      * 机柜u位查询

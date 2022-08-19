@@ -417,39 +417,97 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void removeModules(Integer... ids) {
-        List<MonitorModule> list = this.list();
+    public List<Map> removeModules(Integer force, Integer... ids) {
+        List<Map> delRelObjectMsgList = Tool.ListUtil.list(true);
 
-        // 1. 内置的 配置不允许删除
-        List<Integer> buildInIdList = list.stream().filter(assetTypeConf -> assetTypeConf.getBuildIn().equals(1)).map(MonitorModule::getId).collect(Collectors.toList());
-        buildInIdList.retainAll(Arrays.asList(ids));
-        if (CollectionUtils.isNotEmpty(buildInIdList)) {
-            throw new NZException("These modules are built-in and cannot be deleted. Details: " + buildInIdList.toString(), RCode.MODULE_BUILDIN_CAN_NOT_REMOVE.getCode());
+        List<Integer> idList = new ArrayList<>(Arrays.asList(ids));
+        List<MonitorModule> delModules = this.list(new LambdaQueryWrapper<MonitorModule>().in(MonitorModule::getId, idList));
+        if (Tool.CollUtil.isEmpty(delModules)) {
+            return delRelObjectMsgList;
         }
 
-        // 2. 含有 endpoint 的 module 不允许删除
-        List<MonitorEndpoint> monitorEndpointList = monitorEndpointService.list();
-        List<Integer> userModuleIdList = monitorEndpointList.stream().map(MonitorEndpoint::getModuleId).distinct().collect(Collectors.toList());
-        userModuleIdList.retainAll(Arrays.asList(ids));
-        if (CollectionUtils.isNotEmpty(userModuleIdList)) {
-            throw new NZException("These modules have been used by endpoints and cannot be deleted. Details: " + userModuleIdList.toString(), RCode.MODULE_REMOVE_ERROR.getCode());
+        // 内置 module 不能删除
+        List<Integer> buildInIdList = delModules.stream().filter(monitorModule -> monitorModule.getBuildIn().equals(1)).map(MonitorModule::getId).collect(Collectors.toList());
+        if (Tool.CollUtil.isNotEmpty(buildInIdList)) {
+            throw new NZException(RCode.MODULE_BUILDIN_CAN_NOT_REMOVE.setParam(buildInIdList.toString()));
         }
 
-        // 删除 module 时 删除topo图中 节点和连线
-        List<MonitorModule> modules = this.list(new QueryWrapper<MonitorModule>().lambda().in(MonitorModule::getId, ids));
-        if (CollectionUtils.isEmpty(modules)) {
-            return;
+        delModules.forEach(moduleEntity -> {
+            Map<Object, Object> relObjectInfoMap = this.getModuleEntityDelRelObjectInfoMap(moduleEntity);
+            if (Tool.CollUtil.isNotEmpty(relObjectInfoMap)) {
+                delRelObjectMsgList.add(relObjectInfoMap);
+            }
+        });
+
+        force = Tool.ObjectUtil.defaultIfNull(force, 0);
+        switch (force) {
+            case 0: {// 0：存在关联数据时，删除失败
+                if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
+                    return delRelObjectMsgList;
+                }
+            }
+            case 1:  // 1：存在关联数据时，同时删除关联数据
+                break;
+            default:
+                throw new NZException(RCode.ASSET_FORCE_INVALIDE);
         }
-        topoService.removeTopoConfigNodeAndLineByModules(modules);
 
-        // 删除
-        this.removeByIds(Arrays.asList(ids));
+        // 删除自身和关联内容
+        // module
+        this.removeByIds(idList);
 
-        //删除收藏
-        starredService.remove(new LambdaQueryWrapper<SysUserStarredEntity>().eq(SysUserStarredEntity::getType,"module").in(SysUserStarredEntity::getTid,Arrays.asList(ids)));
+        // endpoint
+        List<MonitorEndpoint> endpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().in(MonitorEndpoint::getModuleId, idList));
+        if (Tool.CollUtil.isNotEmpty(endpointList)) {
+            List<Integer> delEndpointIdList = endpointList.stream().map(MonitorEndpoint::getId).collect(Collectors.toList());
+            monitorEndpointService.deleteEndpointByIds(delEndpointIdList);
+        }
 
-        //删除alert相关信息
-        alertMessageService.removeByModuleIds(Arrays.asList(ids));
+        // topo config
+        topoService.removeTopoConfigNodeAndLineByModules(delModules);
+
+        // starred
+        starredService.remove(new LambdaQueryWrapper<SysUserStarredEntity>()
+                .eq(SysUserStarredEntity::getType, "module")
+                .in(SysUserStarredEntity::getTid, idList));
+
+        // alert
+        alertMessageService.removeByModuleIds(idList);
+        return delRelObjectMsgList;
+    }
+
+    /**
+     * 获取 module 删除提示关联信息：
+     * endpoint
+     *
+     * @return
+     */
+    private Map<Object, Object> getModuleEntityDelRelObjectInfoMap(MonitorModule module) {
+        List<Map> relatesList = Tool.ListUtil.list(true);
+
+        // endpoint
+        List<MonitorEndpoint> endpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getModuleId, module.getId()));
+        if (Tool.CollUtil.isNotEmpty(endpointList)) {
+            for (MonitorEndpoint endpoint : endpointList) {
+                Map<Object, Object> map = Tool.MapUtil.builder()
+                        .put("id", endpoint.getId())
+                        .put("name", endpoint.getName())
+                        .put("type", "endpoint")
+                        .build();
+                relatesList.add(map);
+            }
+        }
+        if (Tool.CollUtil.isNotEmpty(relatesList)) {
+            Map<Object, Object> delRelObjectMap = Tool.MapUtil.builder()
+                    .put("id", module.getId())
+                    .put("name", module.getName())
+                    .put("type", "module")
+                    .put("relates", relatesList)
+                    .build();
+
+            return delRelObjectMap;
+        }
+        return Tool.MapUtil.empty();
     }
 
     private Map handleGenerateParam(String snmpCredentialsId, String moduleConfigs) {

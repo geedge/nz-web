@@ -17,6 +17,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -73,11 +74,23 @@ public class AssetBrandModelController {
     @DeleteMapping("/asset/brand")
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ASSETBRAND)
     @RequiresPermissions({"asset:brand:delete"})
-    public R deleteAssetBrands(@RequestParam Integer... ids) {
+    public R deleteAssetBrands(@RequestParam(required = false) Integer force, Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.ASSET_BRAND_ID_ISNULL);
 
-        brandService.delete(ids);
-        return R.ok();
+        List<Map> delRelObjectMsgList = brandService.delete(force, ids);
+
+        force = Tool.ObjectUtil.defaultIfNull(force, 0);
+        switch (force) {
+            case 0: {// 0：存在关联数据时，删除失败
+                if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
+                    return R.error(RCode.ASSET_BRAND_RELOBJ_CAN_NOT_REMOVE).putData("list", delRelObjectMsgList);
+                }
+            }
+            case 1: // 1：存在关联数据时，同时删除关联数据
+            default:
+                break;
+        }
+        return R.ok().putData("list", delRelObjectMsgList);
     }
 
     @GetMapping("/asset/model/{id}")
@@ -124,11 +137,23 @@ public class AssetBrandModelController {
     @DeleteMapping("/asset/model")
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.MODEL)
     @RequiresPermissions({"asset:model:delete"})
-    public R deleteAssetModels(@RequestParam Integer... ids) {
+    public R deleteAssetModels(@RequestParam(required = false) Integer force, Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.ASSET_MODELID_ISNULL);
 
-        modelService.delete(ids);
-        return R.ok();
+        List<Map> delRelObjectMsgList = modelService.delete(force, ids);
+
+        force = Tool.ObjectUtil.defaultIfNull(force, 0);
+        switch (force) {
+            case 0: {// 0：存在关联数据时，删除失败
+                if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
+                    return R.error(RCode.ASSET_MODEL_RELOBJ_CAN_NOT_REMOVE).putData("list", delRelObjectMsgList);
+                }
+            }
+            case 1: // 1：存在关联数据时，同时删除关联数据
+            default:
+                break;
+        }
+        return R.ok().putData("list", delRelObjectMsgList);
     }
 
 

@@ -17,6 +17,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 
@@ -112,11 +113,23 @@ public class DcController {
     @DeleteMapping
     @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.DATACENTER)
     @RequiresPermissions({"dc:delete"})
-    public R deleteDcByIds(@RequestParam Integer ... ids) {
+    public R deleteDcByIds(@RequestParam(required = false) Integer force, Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.DC_ID_ISNULL);
 
-        dcService.delete(ids);
-        return R.ok();
+        List<Map> delRelObjectMsgList = dcService.delete(force, ids);
+
+        force = Tool.ObjectUtil.defaultIfNull(force, 0);
+        switch (force) {
+            case 0: {// 0：存在关联数据时，删除失败
+                if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
+                    return R.error(RCode.DC_RELOBJ_CAN_NOT_REMOVE).putData("list", delRelObjectMsgList);
+                }
+            }
+            case 1: // 1：存在关联数据时，同时删除关联数据
+            default:
+                break;
+        }
+        return R.ok().putData("list", delRelObjectMsgList);
     }
 
 
@@ -255,11 +268,23 @@ public class DcController {
     @DeleteMapping("/cabinet")
     @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.CABINET)
     @RequiresPermissions({"cabinet:delete"})
-    public R deleteCabinetByIds(@RequestParam Integer ... ids) {
+    public R deleteCabinetByIds(@RequestParam(required = false) Integer force, Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.DC_CABINETID_ISNULL);
 
-        cabinetService.deleteByIds(ids);
-        return R.ok();
+        List<Map> delRelObjectMsgList = cabinetService.deleteByIds(force, ids);
+
+        force = Tool.ObjectUtil.defaultIfNull(force, 0);
+        switch (force) {
+            case 0: {// 0：存在关联数据时，删除失败
+                if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
+                    return R.error(RCode.CABINET_RELOBJ_CAN_NOT_REMOVE).putData("list", delRelObjectMsgList);
+                }
+            }
+            case 1: // 1：存在关联数据时，同时删除关联数据
+            default:
+                break;
+        }
+        return R.ok().putData("list", delRelObjectMsgList);
     }
 
 

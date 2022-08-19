@@ -17,6 +17,7 @@ import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -55,6 +56,7 @@ public class TopoServiceImpl extends ServiceImpl<TopoDao, Topo> implements TopoS
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void removeTopoConfigNodeAndLineByModules(List<MonitorModule> modules) {
         Set<Integer> projectIds = modules.stream().map(MonitorModule::getProjectId).collect(Collectors.toSet());
         List<Topo> topos = this.list(new QueryWrapper<Topo>().lambda().in(Topo::getProjectId, projectIds));

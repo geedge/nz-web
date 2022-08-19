@@ -16,6 +16,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -99,10 +100,23 @@ public class MonitorModuleController {
     @DeleteMapping("/module")
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.MODULE)
     @RequiresPermissions({"module:delete"})
-    public R remove(@RequestParam Integer... ids) {
+    public R remove(@RequestParam(required = false) Integer force, Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.MODULE_ID_ISNULL);
-        monitorModuleService.removeModules(ids);
-        return R.ok();
+
+        List<Map> delRelObjectMsgList = monitorModuleService.removeModules(force, ids);
+
+        force = Tool.ObjectUtil.defaultIfNull(force, 0);
+        switch (force) {
+            case 0: {// 0：存在关联数据时，删除失败
+                if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
+                    return R.error(RCode.MODULE_RELOBJ_CAN_NOT_REMOVE).putData("list", delRelObjectMsgList);
+                }
+            }
+            case 1: // 1：存在关联数据时，同时删除关联数据
+            default:
+                break;
+        }
+        return R.ok().putData("list", delRelObjectMsgList);
     }
 
 

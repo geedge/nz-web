@@ -1,52 +1,44 @@
 package com.nis.modules.ipam.service.impl;
 
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import javax.servlet.http.HttpServletResponse;
-
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.nis.common.utils.*;
-import com.nis.modules.ipam.dao.IpamIpDao;
-import com.nis.modules.ipam.entity.IpamIp;
-import com.nis.modules.sys.entity.SysUserStarredEntity;
-import com.nis.modules.sys.service.SysUserStarredService;
-import com.nis.modules.sys.shiro.ShiroUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.ObjectUtils;
-import org.springframework.web.multipart.MultipartFile;
-
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.asset.service.DcService;
+import com.nis.modules.ipam.dao.IpamIpDao;
 import com.nis.modules.ipam.dao.IpamSubnetDao;
+import com.nis.modules.ipam.entity.IpamIp;
 import com.nis.modules.ipam.entity.IpamSubnet;
 import com.nis.modules.ipam.service.IpamSubnetService;
+import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
-
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import com.nis.modules.sys.service.SysUserStarredService;
+import com.nis.modules.sys.shiro.ShiroUtils;
 import inet.ipaddr.AddressStringException;
 import inet.ipaddr.IPAddress;
 import inet.ipaddr.IPAddressString;
 import inet.ipaddr.IncompatibleAddressException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.ObjectUtils;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet> implements IpamSubnetService {
@@ -180,17 +172,89 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 
 	@Override
 	@Transactional(rollbackFor = Exception.class)
-	public void delIpamSubnets(List<Integer> ids) {
-		ipamSubnetDao.deleteBatchIds(ids);
+	public List<Map> delIpamSubnets(Integer force, List<Integer> idList) {
+		List<Map> delRelObjectMsgList = Tool.ListUtil.list(true);
 
-		// 删除用户收藏数据
+		List<IpamSubnet> delIpamSubnets = this.list(new LambdaQueryWrapper<IpamSubnet>().in(IpamSubnet::getId, idList));
+		if (Tool.CollUtil.isEmpty(delIpamSubnets)) {
+			return delRelObjectMsgList;
+		}
+
+		delIpamSubnets.forEach(ipamSubnet -> {
+			Map<Object, Object> relObjectInfoMap = this.getIpamSubnetDelRelObjectInfoMap(ipamSubnet);
+			if (Tool.CollUtil.isNotEmpty(relObjectInfoMap)) {
+				delRelObjectMsgList.add(relObjectInfoMap);
+			}
+		});
+
+		force = Tool.ObjectUtil.defaultIfNull(force, 0);
+		switch (force) {
+			case 0: {// 0：存在关联数据时，删除失败
+				if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
+					return delRelObjectMsgList;
+				}
+			}
+			case 1:  // 1：存在关联数据时，同时删除关联数据
+				break;
+			default:
+				throw new NZException(RCode.ASSET_FORCE_INVALIDE);
+		}
+
+		// 删除自身和关联内容
+		// ipamSubnet
+		ipamSubnetDao.deleteBatchIds(idList);
+
+		// ipam ip
+		List<IpamIp> ipamIpList = ipamIpDao.selectList(new LambdaQueryWrapper<IpamIp>().in(IpamIp::getSubnetId, idList));
+		if (Tool.CollUtil.isNotEmpty(ipamIpList)) {
+			List<Integer> removeIpamIdList = ipamIpList.stream().map(IpamIp::getId).collect(Collectors.toList());
+			ipamIpDao.deleteBatchIds(removeIpamIdList);
+		}
+
+		// starred
 		starredService.remove(
 				new LambdaQueryWrapper<SysUserStarredEntity>()
 						.eq(SysUserStarredEntity::getType, "ipamSubnet")
-						.in(SysUserStarredEntity::getTid, ids)
+						.in(SysUserStarredEntity::getTid, idList)
 		);
+		return delRelObjectMsgList;
 	}
-	
+
+	/**
+	 * 获取 subnet 删除提示关联信息：
+	 * ipam ip detail
+	 *
+	 * @return
+	 */
+	private Map<Object, Object> getIpamSubnetDelRelObjectInfoMap(IpamSubnet subnet) {
+		List<Map> relatesList = Tool.ListUtil.list(true);
+
+		// ipam ip
+		List<IpamIp> ipamIpList = ipamIpDao.selectList(new LambdaQueryWrapper<IpamIp>().eq(IpamIp::getSubnetId, subnet.getId()));
+		if (Tool.CollUtil.isNotEmpty(ipamIpList)) {
+			for (IpamIp ipamIp : ipamIpList) {
+				Map<Object, Object> map = Tool.MapUtil.builder()
+						.put("id", ipamIp.getId())
+						.put("name", ipamIp.getName())
+						.put("type", "ipamIp")
+						.build();
+				relatesList.add(map);
+			}
+		}
+
+		if (Tool.CollUtil.isNotEmpty(relatesList)) {
+			Map<Object, Object> delRelObjectMap = Tool.MapUtil.builder()
+					.put("id", subnet.getId())
+					.put("name", subnet.getName())
+					.put("type", "ipamSubnet")
+					.put("relates", relatesList)
+					.build();
+
+			return delRelObjectMap;
+		}
+		return Tool.MapUtil.empty();
+	}
+
 	@Override
 	public void getTemplateByLanguage(HttpServletResponse response,String format) throws IOException{
 		String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_IPAMSUBNET_IMPORT_HEADER);

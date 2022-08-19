@@ -12,11 +12,7 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.sys.dao.SysMenuDao;
 import com.nis.modules.sys.dao.SysRoleDao;
-import com.nis.modules.sys.entity.SysMenuEntity;
-import com.nis.modules.sys.entity.SysRoleEntity;
-import com.nis.modules.sys.entity.SysRoleMenuEntity;
-import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.entity.SysUserRoleEntity;
+import com.nis.modules.sys.entity.*;
 import com.nis.modules.sys.service.*;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
@@ -209,30 +205,94 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void deleteBatch(Integer[] roleIds) {
-        // 内置角色不允许删除
-        List<SysRoleEntity> buildInList = this.list(new LambdaQueryWrapper<SysRoleEntity>().eq(SysRoleEntity::getBuildIn, 1));
-        List<Integer> buildInRoleIdList = buildInList.stream().map(SysRoleEntity::getId).collect(Collectors.toList());
-        for (Integer roleId : roleIds) {
-            if (buildInRoleIdList.contains(roleId))
-                throw new NZException(RCode.SYS_ROLE_CANNOT_DELETE);
+    public List<Map> deleteBatch(Integer force, Integer... roleIds) {
+        List<Map> delRelObjectMsgList = Tool.ListUtil.list(true);
+
+        List<Integer> idList = new ArrayList<>(Arrays.asList(roleIds));
+        List<SysRoleEntity> delRoles = this.list(new LambdaQueryWrapper<SysRoleEntity>().in(SysRoleEntity::getId, idList));
+        if (Tool.CollUtil.isEmpty(delRoles)) {
+            return delRelObjectMsgList;
         }
 
-        // 角色关联用户不允许删除
-        List<SysUserRoleEntity> roleAndUsers = sysUserRoleService.list();
-        List<Integer> roleAndUserIds = roleAndUsers.stream().map(SysUserRoleEntity::getRoleId).distinct().collect(Collectors.toList());
-        roleAndUserIds.retainAll(Arrays.asList(roleIds));
-        if (CollectionUtils.isNotEmpty(roleAndUserIds)) {
-            throw new NZException("These roles have been used by users and cannot be deleted. Details: " + roleAndUserIds.toString(), RCode.SYS_ROLE_REMOVE_ERROR.getCode());
+        // 内置 role 不能删除
+        List<Integer> buildInIdList = delRoles.stream().filter(role -> role.getBuildIn().equals(1)).map(SysRoleEntity::getId).collect(Collectors.toList());
+        if (Tool.CollUtil.isNotEmpty(buildInIdList)) {
+            throw new NZException(RCode.SYS_ROLE_CANNOT_DELETE);
         }
-        
-        // 删除角色
-        this.removeByIds(Arrays.asList(roleIds));
 
-        // 删除角色与菜单关联
+
+        delRoles.forEach(roleEntity -> {
+            Map<Object, Object> relObjectInfoMap = this.getRoleDelRelObjectInfoMap(roleEntity);
+            if (Tool.CollUtil.isNotEmpty(relObjectInfoMap)) {
+                delRelObjectMsgList.add(relObjectInfoMap);
+            }
+        });
+
+        force = Tool.ObjectUtil.defaultIfNull(force, 0);
+        switch (force) {
+            case 0: {// 0：存在关联数据时，删除失败
+                if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
+                    return delRelObjectMsgList;
+                }
+            }
+            case 1:  // 1：存在关联数据时，同时删除关联数据
+                break;
+            default:
+                throw new NZException(RCode.SYS_ROLE_RELOBJ_CAN_NOT_REMOVE);
+        }
+
+        // 删除自身和关联内容
+        // role
+        this.removeByIds(idList);
+
+        // user
+        List<SysUserRoleEntity> userRoleRelList = sysUserRoleService.list(new LambdaQueryWrapper<SysUserRoleEntity>().in(SysUserRoleEntity::getRoleId, idList));
+        if (Tool.CollUtil.isNotEmpty(userRoleRelList)) {
+            String delUserIds = userRoleRelList.stream().map(SysUserRoleEntity::getUserId).map(String::valueOf).collect(Collectors.joining(","));
+            sysUserService.deleteUsers(delUserIds);
+        }
+
+        // role_menu
         sysRoleMenuService.deleteBatch(roleIds);
 
-        // 删除角色与用户关联
+        // role_user
         sysUserRoleService.deleteBatch(roleIds);
+        return delRelObjectMsgList;
+    }
+
+
+    /**
+     * 获取 role 删除提示关联信息：
+     * user
+     *
+     * @return
+     */
+    private Map<Object, Object> getRoleDelRelObjectInfoMap(SysRoleEntity role) {
+        List<Map> relatesList = Tool.ListUtil.list(true);
+
+        // user
+        List<SysUserEntity> sysUserList = sysUserService.getUserListByRoleId(role.getId());
+        if (Tool.CollUtil.isNotEmpty(sysUserList)) {
+            for (SysUserEntity user : sysUserList) {
+                Map<Object, Object> map = Tool.MapUtil.builder()
+                        .put("id", user.getId())
+                        .put("name", user.getName())
+                        .put("type", "user")
+                        .build();
+                relatesList.add(map);
+            }
+        }
+
+        if (Tool.CollUtil.isNotEmpty(relatesList)) {
+            Map<Object, Object> delRelObjectMap = Tool.MapUtil.builder()
+                    .put("id", role.getId())
+                    .put("name", role.getName())
+                    .put("type", "role")
+                    .put("relates", relatesList)
+                    .build();
+
+            return delRelObjectMap;
+        }
+        return Tool.MapUtil.empty();
     }
 }

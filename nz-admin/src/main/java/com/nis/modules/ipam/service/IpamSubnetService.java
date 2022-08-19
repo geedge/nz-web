@@ -22,9 +22,15 @@ public interface IpamSubnetService extends IService<IpamSubnet> {
 	PageUtils queryPage(Map<String,Object> params);
 		
 	Integer saveOrModifyIpamSubnet(IpamSubnet ipamSubnet) throws AddressStringException, IncompatibleAddressException;
-	
-	void delIpamSubnets(List<Integer> ids);
-		
+
+	/**
+	 * IpamSubnet 删除方法
+	 * @param force 0：存在关联数据时，删除失败 1：存在关联数据时，同时删除关联数据 默认：0
+	 * @param ids
+	 * @return
+	 */
+	List<Map> delIpamSubnets(Integer force, List<Integer> ids);
+
 	void getTemplateByLanguage(HttpServletResponse response,String format) throws IOException;
 	
 	Map importIpamSubnetData(MultipartFile excelFile) throws IOException,AddressStringException, IncompatibleAddressException ;

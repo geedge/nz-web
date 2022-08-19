@@ -21,6 +21,8 @@ import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetBrandService;
 import com.nis.modules.asset.service.AssetModelService;
 import com.nis.modules.asset.service.AssetTypeConfService;
+import com.nis.modules.endpoint.entity.MonitorEndpoint;
+import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
@@ -29,7 +31,6 @@ import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.sun.jmx.snmp.SnmpOid;
-import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
@@ -83,6 +84,9 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
 
     @Autowired
     private SysUserStarredService starredService;
+
+    @Autowired
+    private MonitorEndpointService monitorEndpointService;
 
     @Override
     public AssetModel queryModelInfo(Integer id) {
@@ -244,24 +248,103 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void delete(Integer... ids) {
-        // 1. 已被 asset 引用的型号信息不允许删除
-        List<AssetAsset> assetList = assetAssetService.list();
-        List<Integer> assetUseModelIdList = assetList.stream().map(AssetAsset::getModelId).distinct().collect(Collectors.toList());
+    public List<Map> delete(Integer force, Integer... ids) {
+        List<Map> delRelObjectMsgList = Tool.ListUtil.list(true);
 
-        assetUseModelIdList.retainAll(Arrays.asList(ids));
-        if (CollectionUtils.isNotEmpty(assetUseModelIdList)) {
-            throw new NZException("These models have been used by assets and cannot be deleted. Details: " + assetUseModelIdList.toString(), RCode.ASSET_MODELRELATED_ASSET.getCode());
+        List<Integer> idList = new ArrayList<>(Arrays.asList(ids));
+        List<AssetModel> delAssetModels = this.list(new LambdaQueryWrapper<AssetModel>().in(AssetModel::getId, idList));
+        if (Tool.CollUtil.isEmpty(delAssetModels)) {
+            return delRelObjectMsgList;
         }
 
-        // 删除
-        this.removeByIds(Arrays.asList(ids));
+        delAssetModels.forEach(modelEntity -> {
+            Map<Object, Object> relObjectInfoMap = this.getAssetModelDelRelObjectInfoMap(modelEntity);
+            if (Tool.CollUtil.isNotEmpty(relObjectInfoMap)) {
+                delRelObjectMsgList.add(relObjectInfoMap);
+            }
+        });
 
-        //删除starred
+        force = Tool.ObjectUtil.defaultIfNull(force, 0);
+        switch (force) {
+            case 0: {// 0：存在关联数据时，删除失败
+                if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
+                    return delRelObjectMsgList;
+                }
+            }
+            case 1:  // 1：存在关联数据时，同时删除关联数据
+                break;
+            default:
+                throw new NZException(RCode.ASSET_FORCE_INVALIDE);
+        }
+
+        // 删除自身和关联内容
+        // model
+        this.removeByIds(idList);
+
+        // asset & endpoint
+        List<AssetAsset> assetList = assetAssetService.list(new LambdaQueryWrapper<AssetAsset>().in(AssetAsset::getModelId, idList));
+        if (Tool.CollUtil.isNotEmpty(assetList)) {
+            Integer[] removeAssetIdList = assetList.stream().map(AssetAsset::getId).toArray(n -> new Integer[n]);
+            assetAssetService.deleteAsset(1, removeAssetIdList);
+        }
+
+        // starred
         starredService.remove(new LambdaQueryWrapper<SysUserStarredEntity>()
-                .eq(SysUserStarredEntity::getType,"assetModel")
-                .in(SysUserStarredEntity::getTid,Arrays.asList(ids))
+                .eq(SysUserStarredEntity::getType, "assetModel")
+                .in(SysUserStarredEntity::getTid, idList)
         );
+        return delRelObjectMsgList;
+    }
+
+    /**
+     * 获取 model 删除提示关联信息：
+     *      asset
+     *        endpoint
+     * @return
+     */
+    private Map<Object, Object> getAssetModelDelRelObjectInfoMap(AssetModel model) {
+        List<Map> relatesList = Tool.ListUtil.list(true);
+
+        // asset & endpoint
+        List<AssetAsset> assetList = assetAssetService.list(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getModelId, model.getId()));
+        if (Tool.CollUtil.isNotEmpty(assetList)) {
+            List<Integer> assetIdList = assetList.stream().map(AssetAsset::getId).collect(Collectors.toList());
+            List<MonitorEndpoint> endpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().in(MonitorEndpoint::getAssetId, assetIdList));
+
+            for (AssetAsset asset : assetList) {
+                List<MonitorEndpoint> endpointListByAssetId = endpointList.stream().filter(endpoint -> asset.getId().equals(endpoint.getAssetId())).collect(Collectors.toList());
+                List<Map> relatesEndpointList = Tool.ListUtil.list(true);
+                for (MonitorEndpoint endpoint : endpointListByAssetId) {
+                    Map<Object, Object> map = Tool.MapUtil.builder()
+                            .put("id", endpoint.getId())
+                            .put("name", endpoint.getName())
+                            .put("type", "endpoint")
+                            .build();
+                    relatesEndpointList.add(map);
+                }
+
+                Map<Object, Object> map = Tool.MapUtil.builder()
+                        .put("id", asset.getId())
+                        .put("name", asset.getName())
+                        .put("type", "asset")
+                        .build();
+                if (Tool.CollUtil.isNotEmpty(relatesEndpointList))
+                    map.put("relates", relatesEndpointList);
+                relatesList.add(map);
+            }
+        }
+
+        if (Tool.CollUtil.isNotEmpty(relatesList)) {
+            Map<Object, Object> delRelObjectMap = Tool.MapUtil.builder()
+                    .put("id", model.getId())
+                    .put("name", model.getName())
+                    .put("type", "model")
+                    .put("relates", relatesList)
+                    .build();
+
+            return delRelObjectMap;
+        }
+        return Tool.MapUtil.empty();
     }
 
     @Override

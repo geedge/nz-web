@@ -29,6 +29,7 @@ import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.entity.MonitorEndpointState;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.endpoint.service.MonitorEndpointStateService;
+import com.nis.modules.ipam.service.IpamIpService;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.panel.entity.VisualChart;
@@ -172,6 +173,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
     @Autowired
     private SysUserStarredService starredService;
+
+    @Autowired
+    private IpamIpService ipamIpService;
 
     @SuppressWarnings("unchecked")
     @Override
@@ -1038,63 +1042,146 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         }
     }
 
+    /**
+     * asset 删除方法
+     * asset 删除提示关联内容：
+     *      baby asset
+     *      endpoint
+     * @param force 0：存在关联数据时，删除失败 1：存在关联数据时，同时删除关联数据 默认：0
+     * @return
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void deleteAsset(Integer... ids) {
+    public List<Map> deleteAsset(Integer force, Integer... ids) {
+        List<Map> delRelObjectMsgList = Tool.ListUtil.list(true);
+
         List<Integer> idList = new ArrayList<>(Arrays.asList(ids));
-        // 宿主机 虚拟机
         List<AssetAsset> delAssets = this.list(new LambdaQueryWrapper<AssetAsset>().in(AssetAsset::getId, idList));
-        List<AssetAsset> delInnerAssets = this.list(new LambdaQueryWrapper<AssetAsset>().in(AssetAsset::getPid, idList));
+        if (Tool.CollUtil.isEmpty(delAssets)) {
+            return delRelObjectMsgList;
+        }
 
-        Set<String> delAssetHosts = delAssets.stream().map(AssetAsset::getManageIp).collect(Collectors.toSet());
-        Set<String> delInnerAssetHosts = delInnerAssets.stream().map(AssetAsset::getManageIp).collect(Collectors.toSet());
-        delAssetHosts.addAll(delInnerAssetHosts);
+        // 通过 pid 关联的虚拟机，关联内容也展示这些 asset 关联的对象信息
+        List<AssetAsset> delChildrenAssets = this.list(new LambdaQueryWrapper<AssetAsset>().in(AssetAsset::getPid, idList));
+        delAssets.addAll(delChildrenAssets);
 
-        List<Integer> delInnerAssetIds = delInnerAssets.stream().map(AssetAsset::getId).collect(Collectors.toList());
-        idList.addAll(delInnerAssetIds);
+        delAssets.forEach(assetEntity -> {
+            Map<Object, Object> relObjectInfoMap = this.getAssetDelRelObjectInfoMap(assetEntity);
+            if (Tool.CollUtil.isNotEmpty(relObjectInfoMap)) {
+                delRelObjectMsgList.add(relObjectInfoMap);
+            }
+        });
 
-        // 删除 asset
-        this.removeByIds(idList);
+        force = Tool.ObjectUtil.defaultIfNull(force, 0);
+        switch (force) {
+            case 0: {// 0：存在关联数据时，删除失败
+                if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
+                    return delRelObjectMsgList;
+                }
+            }
+            case 1:  // 1：存在关联数据时，同时删除关联数据
+                break;
+            default:
+                throw new NZException(RCode.ASSET_FORCE_INVALIDE);
+        }
 
-        //删除starred
-        starredService.remove(new LambdaQueryWrapper<SysUserStarredEntity>()
-                .eq(SysUserStarredEntity::getType,"asset")
-                .in(SysUserStarredEntity::getTid,idList)
-        );
+        // 删除自身和关联内容
+        // 需要删除的 asset id list
+        List<Integer> removeAssetIdList = delAssets.stream().map(AssetAsset::getId).collect(Collectors.toList());
 
-        // 删除 endponiet
-        List<MonitorEndpoint> endpoints = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().in(MonitorEndpoint::getAssetId, idList));
-        if (CollectionUtils.isNotEmpty(endpoints)) {
-            List<Integer> endpointIds = endpoints.stream().map(MonitorEndpoint::getId).collect(Collectors.toList());
+        // asset
+        this.removeByIds(removeAssetIdList);
+
+        // endponiet
+        List<MonitorEndpoint> endpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().in(MonitorEndpoint::getAssetId, removeAssetIdList));
+        if (Tool.CollUtil.isNotEmpty(endpointList)) {
+            List<Integer> endpointIds = endpointList.stream().map(MonitorEndpoint::getId).collect(Collectors.toList());
             monitorEndpointService.deleteEndpointByIds(endpointIds);
         }
 
-        // 删除 alert
-        alertMessageService.removeByAssetIds(idList);
-
-        // 删除 assetPing
-        List<String> deleteList = idList.stream().map(id-> id.toString()).collect(Collectors.toList());
-        if (CollectionUtils.isNotEmpty(delAssetHosts)) {
-            assetPingService.remove(new LambdaQueryWrapper<AssetPing>().in(AssetPing::getHost, delAssetHosts));
-            // 删除缓存中的数据
-            redisTemplate.opsForHash().delete(Constant.SYSCONFIG_KEY_ASSET_PING, deleteList.toArray());
-        }
-
-        // 删除 field
-        assetFieldValueService.remove(new LambdaQueryWrapper<AssetFieldValue>().in(AssetFieldValue::getAssetId, idList));
-
-        // 删除关联的 panel chart  chartElement信息
-        List<VisualPanel> panels = panelService.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, Constant.PanelType.ASSET.getValue()).in(VisualPanel::getLink, ids));
-        if (CollectionUtils.isNotEmpty(panels)) {
-            Set<Integer> panelIds = panels.stream().map(VisualPanel::getId).collect(Collectors.toSet());
+        // panel chart chartElement
+        List<VisualPanel> panelList = panelService.list(new LambdaQueryWrapper<VisualPanel>()
+                .eq(VisualPanel::getType, Constant.PanelType.ASSET.getValue())
+                .in(VisualPanel::getLink, removeAssetIdList));
+        if (Tool.CollUtil.isNotEmpty(panelList)) {
+            Set<Integer> panelIds = panelList.stream().map(VisualPanel::getId).collect(Collectors.toSet());
             panelService.delPanelsAndChartInfoByPanelIds(panelIds);
         }
-        // 删除 关联通过 chart temp 创建的 charts
-        chartService.remove(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getVarType, 1).in(VisualChart::getVarId, idList));
-        
-        // 删除assetTalonStatus中的数据以及缓存中的数据信息
-        assetTalonStatusService.removeByIds(idList);
-        redisTemplate.opsForHash().delete(Constant.ASSET_TALON_STATUS_CACHE_KEY, deleteList.toArray());
+
+        // chart : create by asset chart tmplate
+        chartService.remove(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getVarType, 1).in(VisualChart::getVarId, removeAssetIdList));
+
+        // alert
+        alertMessageService.removeByAssetIds(removeAssetIdList);
+
+        // asset Ping
+        List<String> removeRelInRedisIdList = removeAssetIdList.stream().map(id -> id.toString()).collect(Collectors.toList());
+        assetPingService.remove(new LambdaQueryWrapper<AssetPing>().in(AssetPing::getAssetId, removeAssetIdList));
+        redisTemplate.opsForHash().delete(Constant.SYSCONFIG_KEY_ASSET_PING, removeRelInRedisIdList.toArray());
+
+        // asset Talon
+        assetTalonStatusService.removeByIds(removeAssetIdList);
+        redisTemplate.opsForHash().delete(Constant.ASSET_TALON_STATUS_CACHE_KEY, removeRelInRedisIdList.toArray());
+
+        // field
+        assetFieldValueService.remove(new LambdaQueryWrapper<AssetFieldValue>().in(AssetFieldValue::getAssetId, removeAssetIdList));
+
+        // starred
+        starredService.remove(new LambdaQueryWrapper<SysUserStarredEntity>()
+                .eq(SysUserStarredEntity::getType, "asset")
+                .in(SysUserStarredEntity::getTid, removeAssetIdList)
+        );
+        return delRelObjectMsgList;
+    }
+
+    /**
+     * 获取 asset 删除提示关联信息：
+     *      baby asset
+     *      endpoint
+     * @return
+     */
+    private Map<Object, Object> getAssetDelRelObjectInfoMap(AssetAsset asset) {
+        List<Map> relatesList = Tool.ListUtil.list(true);
+
+        // children Asset
+        List<AssetAsset> childrenAssetList = this.list(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getPid, asset.getId()));
+
+        // 虚拟机
+        if (Tool.CollUtil.isNotEmpty(childrenAssetList)) {
+            for (AssetAsset chasset : childrenAssetList) {
+                Map<Object, Object> map = Tool.MapUtil.builder()
+                        .put("id", chasset.getId())
+                        .put("name", chasset.getName())
+                        .put("type", "asset")
+                        .build();
+                relatesList.add(map);
+            }
+        }
+
+        // endpoint
+        List<MonitorEndpoint> endpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getAssetId, asset.getId()));
+        if (Tool.CollUtil.isNotEmpty(endpointList)) {
+            for (MonitorEndpoint endpoint : endpointList) {
+                Map<Object, Object> map = Tool.MapUtil.builder()
+                        .put("id", endpoint.getId())
+                        .put("name", endpoint.getName())
+                        .put("type", "endpoint")
+                        .build();
+                relatesList.add(map);
+            }
+        }
+
+        if(Tool.CollUtil.isNotEmpty(relatesList)){
+            Map<Object, Object> delRelObjectMap = Tool.MapUtil.builder()
+                    .put("id", asset.getId())
+                    .put("name", asset.getName())
+                    .put("type", "asset")
+                    .put("relates", relatesList)
+                    .build();
+
+            return delRelObjectMap;
+        }
+        return Tool.MapUtil.empty();
     }
 
     /*@Override

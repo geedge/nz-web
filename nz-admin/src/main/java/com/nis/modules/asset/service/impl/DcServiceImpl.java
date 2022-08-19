@@ -11,20 +11,26 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
+import com.nis.modules.agent.dao.AgentDao;
+import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
-import com.nis.modules.asset.dao.AssetAssetDao;
 import com.nis.modules.asset.dao.CabinetDao;
 import com.nis.modules.asset.dao.DcDao;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.Cabinet;
 import com.nis.modules.asset.entity.Dc;
+import com.nis.modules.asset.service.AssetAssetService;
+import com.nis.modules.asset.service.CabinetService;
 import com.nis.modules.asset.service.DcService;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
+import com.nis.modules.endpoint.service.MonitorEndpointService;
+import com.nis.modules.ipam.entity.IpamIp;
+import com.nis.modules.ipam.entity.IpamSubnet;
+import com.nis.modules.ipam.service.IpamIpService;
+import com.nis.modules.ipam.service.IpamSubnetService;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.project.entity.MonitorProject;
-import com.nis.modules.agent.dao.AgentDao;
-import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
@@ -56,7 +62,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
     private static Log log = Log.get();
 
     @Autowired
-    private AssetAssetDao assetDao;
+    private AssetAssetService assetService;
 
     @Autowired
     private CabinetDao cabinetDao;
@@ -85,6 +91,18 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
     @Autowired
     private SysUserStarredService starredService;
 
+    @Autowired
+    private MonitorEndpointService monitorEndpointService;
+
+    @Autowired
+    private CabinetService cabinetService;
+
+    @Autowired
+    private IpamSubnetService ipamSubnetService;
+
+    @Autowired
+    private IpamIpService ipamIpService;
+
     @Override
     public Dc queryDcDetails(Integer id) {
         Dc dc = this.getById(id);
@@ -107,7 +125,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
         List<Map<String, Object>> alert = statService.getSeverityStatByRuleMsgCount(Tool.MapUtil.empty(), ruleIdAndAlertCountMap);
         dc.setAlert(alert);
 
-        Integer assetNum = assetDao.selectCount(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getDcId, dc.getId()));
+        Integer assetNum = assetService.count(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getDcId, dc.getId()));
         dc.setAssetNum(assetNum);
 
         //收藏判断
@@ -268,52 +286,183 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void delete(Integer... ids) {
-        // 1. 校验是否包含 cabinet
-        List<Cabinet> cabinets = cabinetDao.selectList(null);
-        Set<Integer> cabinetUsedIdcIds = cabinets.stream().map(Cabinet::getDcId).collect(Collectors.toSet());
+    public List<Map> delete(Integer force, Integer... ids) {
+        List<Map> delRelObjectMsgList = Tool.ListUtil.list(true);
 
-        List<Integer> idList = Arrays.stream(ids).collect(Collectors.toList());
-        idList.retainAll(cabinetUsedIdcIds);
-        if (CollectionUtils.isNotEmpty(idList)) {
-            List<String> dcNames = this.listByIds(idList).stream().map(Dc::getName).collect(Collectors.toList());
-            throw new NZException("These dc contain cabinets and cannot be deleted, Details: " + dcNames.toString(), RCode.DC_CABINETS_EXISTS.getCode());
+        List<Integer> idList = new ArrayList<>(Arrays.asList(ids));
+        List<Dc> delDcs = this.list(new LambdaQueryWrapper<Dc>().in(Dc::getId, idList));
+        if (Tool.CollUtil.isEmpty(delDcs)) {
+            return delRelObjectMsgList;
         }
 
-        // 2. 校验是否包含 asset
-        List<AssetAsset> assets = assetDao.selectList(null);
-        Set<Integer> assetUsedIdcIds = assets.stream().map(AssetAsset::getDcId).collect(Collectors.toSet());
+        delDcs.forEach(dcEntity -> {
+            Map<Object, Object> relObjectInfoMap = this.getDcDelRelObjectInfoMap(dcEntity);
+            if (Tool.CollUtil.isNotEmpty(relObjectInfoMap)) {
+                delRelObjectMsgList.add(relObjectInfoMap);
+            }
+        });
 
-        idList = Arrays.stream(ids).collect(Collectors.toList());
-        idList.retainAll(assetUsedIdcIds);
-        if (CollectionUtils.isNotEmpty(idList)) {
-            List<String> dcNames = this.listByIds(idList).stream().map(Dc::getName).collect(Collectors.toList());
-            throw new NZException("These dc contain assets and cannot be deleted, Details: " + dcNames.toString(), RCode.DC_ASSETS_EXISTS.getCode());
+        force = Tool.ObjectUtil.defaultIfNull(force, 0);
+        switch (force) {
+            case 0: {// 0：存在关联数据时，删除失败
+                if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
+                    return delRelObjectMsgList;
+                }
+            }
+            case 1:  // 1：存在关联数据时，同时删除关联数据
+                break;
+            default:
+                throw new NZException(RCode.ASSET_FORCE_INVALIDE);
         }
 
-        // 3. 校验是否包含 agent
-        List<Agent> agentList = agentDao.selectList(null);
-        Set<Integer> promserverUsedIdcIds = agentList.stream().map(Agent::getDcId).collect(Collectors.toSet());
+        // 删除自身和关联内容
+        // dc
+        this.removeByIds(idList);
 
-        idList = Arrays.stream(ids).collect(Collectors.toList());
-        idList.retainAll(promserverUsedIdcIds);
-        if (CollectionUtils.isNotEmpty(idList)) {
-            List<String> dcNames = this.listByIds(idList).stream().map(Dc::getName).collect(Collectors.toList());
-            throw new NZException("These dc contain prometheus servers and cannot be deleted, Details: " + dcNames.toString(), RCode.DC_CABINETS_EXISTS.getCode());
+        // cabinet
+        List<Cabinet> cabinetList = cabinetService.list(new LambdaQueryWrapper<Cabinet>().in(Cabinet::getDcId, idList));
+        if (Tool.CollUtil.isNotEmpty(cabinetList)) {
+            Integer[] removeCabinetIdList = cabinetList.stream().map(Cabinet::getId).toArray(n -> new Integer[n]);
+            cabinetService.deleteByIds(1, removeCabinetIdList);
         }
 
-        // 4. 删除
-        this.removeByIds(Arrays.asList(ids));
+        // asset & endpoint
+        List<AssetAsset> assetList = assetService.list(new LambdaQueryWrapper<AssetAsset>().in(AssetAsset::getDcId, idList));
+        if (Tool.CollUtil.isNotEmpty(assetList)) {
+            Integer[] removeAssetIdList = assetList.stream().map(AssetAsset::getId).toArray(n -> new Integer[n]);
+            assetService.deleteAsset(1, removeAssetIdList);
+        }
 
-        // 5. 删除 alert
-        alertMessageService.removeByDcIds(Arrays.asList(ids));
+        // agent
+        agentDao.delete(new LambdaQueryWrapper<Agent>().in(Agent::getDcId, idList));
 
-        // 删删除用户收藏数据
+        // alert
+        alertMessageService.removeByDcIds(idList);
+
+        // ipam subnet & ipam ip
+        List<IpamSubnet> ipamSubnetList = ipamSubnetService.list(new LambdaQueryWrapper<IpamSubnet>().in(IpamSubnet::getDcId, idList));
+        if (Tool.CollUtil.isNotEmpty(ipamSubnetList)) {
+            List<Integer> removeIpamSubnetIdList = ipamSubnetList.stream().map(IpamSubnet::getId).collect(Collectors.toList());
+            ipamSubnetService.delIpamSubnets(1, removeIpamSubnetIdList);
+        }
+
+        // starred
         starredService.remove(
                 new LambdaQueryWrapper<SysUserStarredEntity>()
                         .eq(SysUserStarredEntity::getType, "datacenter")
-                        .in(SysUserStarredEntity::getTid, ids)
+                        .in(SysUserStarredEntity::getTid, idList)
         );
+        return delRelObjectMsgList;
+    }
+
+    /**
+     * 获取 dc 删除提示关联信息：
+     *      cabinet
+     *      agent
+     *      Ipam Subnet
+     *        ipam ip
+     *      asset
+     *        endpoint
+     * @return
+     */
+    private Map<Object, Object> getDcDelRelObjectInfoMap(Dc dc) {
+        List<Map> relatesList = Tool.ListUtil.list(true);
+
+        // cabinet
+        List<Cabinet> cabinetList = cabinetDao.selectList(new LambdaQueryWrapper<Cabinet>().eq(Cabinet::getDcId, dc.getId()));
+        if (Tool.CollUtil.isNotEmpty(cabinetList)) {
+            for (Cabinet cabinet : cabinetList) {
+                Map<Object, Object> map = Tool.MapUtil.builder()
+                        .put("id", cabinet.getId())
+                        .put("name", cabinet.getName())
+                        .put("type", "cabinet")
+                        .build();
+                relatesList.add(map);
+            }
+        }
+
+        // agent
+        List<Agent> agentList = agentDao.selectList(new LambdaQueryWrapper<Agent>().eq(Agent::getDcId, dc.getId()));
+        if (Tool.CollUtil.isNotEmpty(agentList)) {
+            for (Agent agent : agentList) {
+                Map<Object, Object> map = Tool.MapUtil.builder()
+                        .put("id", agent.getId())
+                        .put("name", agent.getName())
+                        .put("type", "agent")
+                        .build();
+                relatesList.add(map);
+            }
+        }
+
+        // ipam subnet & ipam ip detail
+        List<IpamSubnet> ipamSubnetList = ipamSubnetService.list(new LambdaQueryWrapper<IpamSubnet>().eq(IpamSubnet::getDcId, dc.getId()));
+        if (Tool.CollUtil.isNotEmpty(ipamSubnetList)) {
+            List<Integer> ipamSubnetIdList = ipamSubnetList.stream().map(IpamSubnet::getId).collect(Collectors.toList());
+            List<IpamIp> ipamIpList = ipamIpService.list(new LambdaQueryWrapper<IpamIp>().in(IpamIp::getSubnetId, ipamSubnetIdList));
+
+            for (IpamSubnet ipamSubnet : ipamSubnetList) {
+                List<IpamIp> ipamIpListBySubnetId = ipamIpList.stream().filter(ipamIp -> ipamSubnet.getId().equals(ipamIp.getSubnetId())).collect(Collectors.toList());
+                List<Map> relatesEndpointList = Tool.ListUtil.list(true);
+                for (IpamIp ipamIp : ipamIpListBySubnetId) {
+                    Map<Object, Object> map = Tool.MapUtil.builder()
+                            .put("id", ipamIp.getId())
+                            .put("name", ipamIp.getName())
+                            .put("type", "ipamIp")
+                            .build();
+                    relatesEndpointList.add(map);
+                }
+
+                Map<Object, Object> map = Tool.MapUtil.builder()
+                        .put("id", ipamSubnet.getId())
+                        .put("name", ipamSubnet.getName())
+                        .put("type", "ipamSubnet")
+                        .build();
+                if (Tool.CollUtil.isNotEmpty(relatesEndpointList))
+                    map.put("relates", relatesEndpointList);
+                relatesList.add(map);
+            }
+        }
+
+        // asset & endpoint
+        List<AssetAsset> assetList = assetService.list(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getDcId, dc.getId()));
+        if (Tool.CollUtil.isNotEmpty(assetList)) {
+            List<Integer> assetIdList = assetList.stream().map(AssetAsset::getId).collect(Collectors.toList());
+            List<MonitorEndpoint> endpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().in(MonitorEndpoint::getAssetId, assetIdList));
+
+            for (AssetAsset asset : assetList) {
+                List<MonitorEndpoint> endpointListByAssetId = endpointList.stream().filter(endpoint -> asset.getId().equals(endpoint.getAssetId())).collect(Collectors.toList());
+                List<Map> relatesEndpointList = Tool.ListUtil.list(true);
+                for (MonitorEndpoint endpoint : endpointListByAssetId) {
+                    Map<Object, Object> map = Tool.MapUtil.builder()
+                            .put("id", endpoint.getId())
+                            .put("name", endpoint.getName())
+                            .put("type", "endpoint")
+                            .build();
+                    relatesEndpointList.add(map);
+                }
+
+                Map<Object, Object> map = Tool.MapUtil.builder()
+                        .put("id", asset.getId())
+                        .put("name", asset.getName())
+                        .put("type", "asset")
+                        .build();
+                if (Tool.CollUtil.isNotEmpty(relatesEndpointList))
+                    map.put("relates", relatesEndpointList);
+                relatesList.add(map);
+            }
+        }
+
+        if (Tool.CollUtil.isNotEmpty(relatesList)) {
+            Map<Object, Object> delRelObjectMap = Tool.MapUtil.builder()
+                    .put("id", dc.getId())
+                    .put("name", dc.getName())
+                    .put("type", "dc")
+                    .put("relates", relatesList)
+                    .build();
+
+            return delRelObjectMap;
+        }
+        return Tool.MapUtil.empty();
     }
 
     @Override
@@ -499,7 +648,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
     @Override
     public List<AssetAsset> getAssetListByDcId(Integer dcId) {
         ValidateUtils.is(dcId).notNull(RCode.DC_ID_ISNULL);
-        List<AssetAsset> assetList = assetDao.selectList(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getDcId, dcId));
+        List<AssetAsset> assetList = assetService.list(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getDcId, dcId));
         return assetList;
     }
 

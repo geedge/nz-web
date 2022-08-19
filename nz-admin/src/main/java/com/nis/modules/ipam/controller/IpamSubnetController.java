@@ -78,10 +78,23 @@ public class IpamSubnetController {
 
 	@DeleteMapping
 	@SysLog(operation = OperationEnum.DELETE, type = TypeEnum.IPAMSUBNET)
-	public R ipamSubnetDelete(@RequestParam Integer... ids) {
+	public R ipamSubnetDelete(@RequestParam(required = false) Integer force, Integer... ids) {
 		ValidateUtils.is(ids).notNull(RCode.IPAM_SUBNET_ID_ISNULL);
-		ipamSubnetService.delIpamSubnets(Arrays.asList(ids));
-		return R.ok();
+
+		List<Map> delRelObjectMsgList = ipamSubnetService.delIpamSubnets(force, Arrays.asList(ids));
+
+		force = Tool.ObjectUtil.defaultIfNull(force, 0);
+		switch (force) {
+			case 0: {// 0：存在关联数据时，删除失败
+				if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
+					return R.error(RCode.IPAM_SUBNET_RELOBJ_CAN_NOT_REMOVE).putData("list", delRelObjectMsgList);
+				}
+			}
+			case 1: // 1：存在关联数据时，同时删除关联数据
+			default:
+				break;
+		}
+		return R.ok().putData("list", delRelObjectMsgList);
 	}
 	
 	@GetMapping("/template")
