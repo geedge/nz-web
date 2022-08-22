@@ -5,15 +5,13 @@ import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
-import com.alibaba.fastjson.JSONObject;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysI18nService;
 import lombok.Builder;
 import lombok.Data;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.data.redis.core.RedisTemplate;
 
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -22,54 +20,54 @@ import java.util.stream.Collectors;
 /**
  * 项目导入校验工具类、
  * 可根据需要自行补充校验方法
- * 校验后将错误信息保存至 redis list 中
  */
 @Data
 @Builder
-@Lazy
 public class ImportValidateUtil {
-
-    private static RedisTemplate redisTemplate;
 
     private static SysI18nService sysI18nService;
 
     private static BasicImportAndExportServices basicImportAndExportServices;
 
     static {
-        redisTemplate = (RedisTemplate) SpringContextUtils.getBean("redisTemplate");
         sysI18nService = SpringContextUtils.getBean(SysI18nService.class);
         basicImportAndExportServices = SpringContextUtils.getBean(BasicImportAndExportServices.class);
     }
 
-    private String errMsgRedisKey;
+    // 错误提示表头信息
+    private List<String> headerInfos;
+
+    // 存储导入错误信息
+    private final ThreadLocal<List<Map<String, String>>> threadLocal = new ThreadLocal();
 
     /**
      * 此行忽略并重置错误信息，只提示忽略本行
      *
      * @param lineNum
-     * @param header
+     * @param headerIndex
      */
-    public void ignoreThisRow(Integer lineNum, String header) {
+    public void ignoreThisRow(Integer lineNum, int headerIndex) {
         // 删除之前的错误信息
-        List<String> errMsgList = redisTemplate.opsForList().range(errMsgRedisKey, 0, -1);
+        List<Map<String, String>> errMsgList = threadLocal.get();
+        errMsgList = Tool.CollUtil.isEmpty(errMsgList) ? Tool.ListUtil.list(true) : errMsgList;
 
-        errMsgList = errMsgList.stream().filter(str -> {
-            Map map = JSONObject.parseObject(str, Map.class);
-            if (!lineNum.equals((Integer) map.get("lineNo"))) {
+        errMsgList = errMsgList.stream().filter(map -> {
+            String lineNo = map.get("lineNo");
+            if (!Tool.StrUtil.equals(Tool.StrUtil.toString(lineNum), lineNo)) {
                 return true;
             }
             return false;
         }).collect(Collectors.toList());
 
         // 先删
-        redisTemplate.delete(errMsgRedisKey);
-
+        threadLocal.remove();
         if (Tool.CollUtil.isNotEmpty(errMsgList)) {
             // 后增
-            redisTemplate.opsForList().rightPushAll(errMsgRedisKey, errMsgList);
+            threadLocal.set(errMsgList);
         }
 
         // 提示忽略
+        String header = headerInfos.get(headerIndex);
         this.recordImportAttrErr(lineNum, RCode.IMPORT_IGNORE.setParam(header));
     }
 
@@ -77,10 +75,11 @@ public class ImportValidateUtil {
      * 校验 value 必填
      * @param value
      * @param lineNum
-     * @param header
+     * @param headerIndex
      */
-    public void validateRequired(Object value, int lineNum, String header) {
+    public void validateRequired(Object value, int lineNum, int headerIndex) {
         if (ObjectUtil.isEmpty(value)) {
+            String header = headerInfos.get(headerIndex);
             this.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_REQUIRED.setParam(header));
         }
     }
@@ -90,10 +89,11 @@ public class ImportValidateUtil {
      *
      * @return
      */
-    public boolean validateIndexDuplicate(String tableName, String colName, String value, boolean isUpdate, int lineNum, String header) {
+    public boolean validateIndexDuplicate(String tableName, String colName, String value, boolean isUpdate, int lineNum, int headerIndex) {
         List list = basicImportAndExportServices.queryList(tableName, colName, value);
 
         if (Tool.CollectionUtil.isNotEmpty(list) && !isUpdate) {
+            String header = headerInfos.get(headerIndex);
             this.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_DUPLICATE.setParam(header));
             return true;
         }
@@ -105,7 +105,7 @@ public class ImportValidateUtil {
      * 校验其他属性是否重复
      * 根据 index & isUpdate 修改时校验是否重复
      */
-    public void validateDuplicate(String tableName, String colName, String value, String index, boolean isUpdate, int lineNum, String header) {
+    public void validateDuplicate(String tableName, String colName, String value, String index, boolean isUpdate, int lineNum, int headerIndex) {
         List<Map<String, Object>> list = basicImportAndExportServices.queryList(tableName, colName, value);
 
         if (isUpdate) {
@@ -116,19 +116,24 @@ public class ImportValidateUtil {
                 flag = true;
             }
 
-            if (!flag)
+            if (!flag){
+                String header = headerInfos.get(headerIndex);
                 this.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_DUPLICATE.setParam(header));
+            }
         } else {
-            if (Tool.CollectionUtil.isNotEmpty(list))
+            if (Tool.CollectionUtil.isNotEmpty(list)){
+                String header = headerInfos.get(headerIndex);
                 this.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_DUPLICATE.setParam(header));
+            }
         }
     }
 
     /**
      * 根据正则校验内容是否匹配
      */
-    public void validateRegex(String value, String regex, int lineNum, String header) {
+    public void validateRegex(String value, String regex, int lineNum, int headerIndex) {
         if (!ReUtil.isMatch(regex, value)) {
+            String header = headerInfos.get(headerIndex);
             this.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(header));
         }
     }
@@ -137,9 +142,10 @@ public class ImportValidateUtil {
     /**
      * 校验是否是数字格式
      */
-    public Integer validateInteger(String value, int lineNum, String header) {
+    public Integer validateInteger(String value, int lineNum, int headerIndex) {
         boolean isInt = Tool.NumberUtil.isInteger(value);
         if (!isInt) {
+            String header = headerInfos.get(headerIndex);
             this.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(header));
             return null;
         } else {
@@ -151,11 +157,12 @@ public class ImportValidateUtil {
     /**
      * 校验时间数据是否符合指定格式
      */
-    public void validateDateFormat(String value, String pattern, int lineNum, String header) {
+    public void validateDateFormat(String value, String pattern, int lineNum, int headerIndex) {
         if (StrUtil.isNotEmpty(value)) {
             try {
                 Date date = DateUtils.parseDate(value, new String[]{pattern});
             } catch (ParseException e) {
+                String header = headerInfos.get(headerIndex);
                 this.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(header));
             }
         }
@@ -165,9 +172,10 @@ public class ImportValidateUtil {
     /**
      * 校验端口是否符合规范
      */
-    public void validatePort(String port, int lineNum, String header) {
+    public void validatePort(String port, int lineNum, int headerIndex) {
         if (StrUtil.isNotEmpty(port)) {
             if (!CommonUtils.checkPort(port)) {
+                String header = headerInfos.get(headerIndex);
                 this.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(header));
             }
         }
@@ -176,9 +184,10 @@ public class ImportValidateUtil {
     /**
      * 校验内容是否在 枚举数组内
      */
-    public void validateEnumValArr(String value, List<String> enumList, int lineNum, String header) {
+    public void validateEnumValArr(String value, List<String> enumList, int lineNum, int headerIndex) {
         if (BooleanUtil.and(StrUtil.isNotEmpty(value), CollectionUtil.isNotEmpty(enumList))) {
             if (!enumList.contains(value)) {
+                String header = headerInfos.get(headerIndex);
                 this.recordImportAttrErr(lineNum, RCode.IMPORT_ENUM_VALUE_ERROR.setParam(header));
             }
         }
@@ -189,7 +198,7 @@ public class ImportValidateUtil {
      *
      * @allowAutoCreate 自动添加时为true: 不存在也不记录错误信息
      */
-    public Boolean validateRelObjExits(String tableName, String colName, String value, Boolean allowAutoCreate, int lineNum, String header) {
+    public Boolean validateRelObjExits(String tableName, String colName, String value, Boolean allowAutoCreate, int lineNum, int headerIndex) {
         List list = basicImportAndExportServices.queryList(tableName, colName, value);
 
         // 允许自动创建,只返回是否存在标识，不记录错误信息
@@ -199,6 +208,7 @@ public class ImportValidateUtil {
         } else {
             if (Tool.CollectionUtil.isEmpty(list)) {
                 // 不存在
+                String header = headerInfos.get(headerIndex);
                 this.recordImportAttrErr(lineNum, RCode.IMPORT_RELATED_OBJ_NOT_EXIST.setParam(header));
                 return false;
             }
@@ -208,9 +218,23 @@ public class ImportValidateUtil {
 
     /**
      * 记录错误信息
+     * rCode.param 支持填写 导入属性下标，自动转换为可读表头信息
      */
     public void recordImportAttrErr(int lineNum, RCode rCode) {
-        String msg = sysI18nService.queryValue(Tool.StrUtil.toString(rCode), rCode.getParam());
+        Object[] param = rCode.getParam();
+        List rCodeParamList = new ArrayList();
+        if (Tool.ObjectUtil.isNotEmpty(param)) {
+            for (Object o : param) {
+                boolean isNumber = Tool.NumberUtil.isNumber(o.toString());
+                if (isNumber) {
+                    String s = headerInfos.get(Integer.valueOf(o.toString()));
+                    rCodeParamList.add(s);
+                } else {
+                    rCodeParamList.add(o);
+                }
+            }
+        }
+        String msg = sysI18nService.queryValue(Tool.StrUtil.toString(rCode), rCodeParamList.toArray());
 
         if (Tool.StrUtil.isEmpty(msg)) {
             msg = sysI18nService.queryValueByName(Tool.StrUtil.toString(rCode));
@@ -220,11 +244,48 @@ public class ImportValidateUtil {
             msg = rCode.getMsg();
         }
 
-        Map failDetail = Tool.MapUtil.newHashMap(4);
-        failDetail.put("lineNo", lineNum);
-        failDetail.put("errorMsg", msg);
+        Map failDetail = Tool.MapUtil.builder()
+                .put("lineNo", StrUtil.toString(lineNum))
+                .put("errorMsg", msg).build();
 
-        redisTemplate.opsForList().rightPush(errMsgRedisKey, Tool.JSONUtil.toJsonStr(failDetail));
+        List<Map<String, String>> errMsgList = threadLocal.get();
+        errMsgList = Tool.CollUtil.isEmpty(errMsgList) ? Tool.ListUtil.list(true) : errMsgList;
+        errMsgList.add(failDetail);
+
+        threadLocal.set(errMsgList);
     }
 
+
+    /**
+     * 获取导入错误信息
+     *
+     * @return
+     */
+    public List<Map<String, String>> getImportErrMsg() {
+        List<Map<String, String>> errMsgList = threadLocal.get();
+        errMsgList = Tool.CollUtil.isEmpty(errMsgList) ? Tool.ListUtil.list(true) : errMsgList;
+
+        threadLocal.remove();
+        return errMsgList;
+    }
+
+    /**
+     * 指定行号，返回该行错误信息
+     *
+     * @param lineNum
+     * @return
+     */
+    public List<Map<String, String>> getImportErrMsgForThisLine(Integer lineNum) {
+        List<Map<String, String>> errMsgList = threadLocal.get();
+        errMsgList = Tool.CollUtil.isEmpty(errMsgList) ? Tool.ListUtil.list(true) : errMsgList;
+
+        List<Map<String, String>> list = errMsgList.stream().filter(map -> {
+            String lineNo = map.get("lineNo");
+            if (Tool.StrUtil.equals(Tool.StrUtil.toString(lineNum), lineNo)) {
+                return true;
+            }
+            return false;
+        }).collect(Collectors.toList());
+        return list;
+    }
 }

@@ -272,33 +272,4 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
         return objectList;
     }
 
-    @Override
-    public List<Map> readImportErrMsgAndRemoveKey(String key) {
-        List<Map> failDetailList = Collections.emptyList();
-        try {
-            log.info("read import error message,key: " + key);
-            // 读取错误信息
-            List<String> datas = redisTemplate.opsForList().range(key, 0, -1);
-            failDetailList = datas.stream().map(data -> JSONObject.parseObject(data, Map.class)).collect(Collectors.toList());
-            log.info("read import error message, content: " + JSONObject.toJSONString(failDetailList));
-
-            // 删除 key
-            redisTemplate.delete(key);
-        } catch (Exception e) {
-            log.error("read import error message error", e);
-        }
-        return failDetailList;
-    }
-
-    @Override
-    public List<Map> readImportErrMsgForThisLine(String errMsgRedisKey, Integer lineNum) {
-        List<String> errMsgList = redisTemplate.opsForList().range(errMsgRedisKey, 0, -1);
-
-        List<Map> list = errMsgList.stream()
-                .map(data -> JSONObject.parseObject(data, Map.class))
-                .filter(map -> lineNum.equals((Integer) map.get("lineNo")))
-                .collect(Collectors.toList());
-
-        return list;
-    }
 }

@@ -26,18 +26,4 @@ public interface BasicImportAndExportServices {
      */
     List<Map<String, Object>> queryList(String tableName, String colName, String value);
 
-    /**
-     * 读取导入错误信息，读取后删除redis key
-     * @param key
-     * @return
-     */
-    List<Map> readImportErrMsgAndRemoveKey(String key);
-
-    /**
-     * 指定行号，返回该行错误信息
-     * @param errMsgRedisKey
-     * @param lineNum
-     * @return
-     */
-    List<Map> readImportErrMsgForThisLine(String errMsgRedisKey, Integer lineNum);
 }

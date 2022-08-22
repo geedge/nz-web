@@ -1072,7 +1072,6 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             }
         });
 
-        force = Tool.ObjectUtil.defaultIfNull(force, 0);
         switch (force) {
             case 0: {// 0：存在关联数据时，删除失败
                 if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
@@ -1669,17 +1668,20 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         String seq = UUID.randomUUID().toString();
         params.put("seq", seq);
 
-        int totalNum = importDataList.size();
-        int successNum = this.saveAssetsFromImportDataList(importDataList, new ArrayList<>(exportHeaderMap.keySet()), params);
+        // 表头信息 国际化之后的
+        List<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
 
-        // 读取导入错误信息
-        List<Map> failDetailList = basicImportAndExportServices.readImportErrMsgAndRemoveKey(Tool.StrUtil.concat(true, "asset_import_", seq));
+        int totalNum = importDataList.size();
+        List<Map<String, String>> failDetailList = this.saveAssetsFromImportDataList(importDataList, headerInfos, params);
+
+        // 从错误信息中获取失败导入行数量
+        int failNum = (int) failDetailList.stream().map(map -> Integer.valueOf(map.get("lineNo"))).distinct().count();
 
         Map resultMap = new HashMap(8);
         resultMap.put("seq", seq);
         resultMap.put("totalNum", totalNum);
-        resultMap.put("successNum", successNum);
-        resultMap.put("failNum", totalNum - successNum);
+        resultMap.put("successNum", totalNum - failNum);
+        resultMap.put("failNum", failNum);
         resultMap.put("failDetail", failDetailList);
         return resultMap;
     }
@@ -1767,15 +1769,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         return chartIdWithAssetEntity;
     }
 
-    private int saveAssetsFromImportDataList(List<Map<Integer, String>> importDataList, List<String> headerInfos, Map<String, Object> params) {
-        String seq = params.get("seq").toString();
-        String errMsgRedisKey = Tool.StrUtil.concat(true, "asset_import_", seq);
-
-        // 创建导入校验对象
-        ImportValidateUtil validateUtil = ImportValidateUtil.builder()
-                .errMsgRedisKey(errMsgRedisKey)
-                .build();
-
+    private List<Map<String, String>> saveAssetsFromImportDataList(List<Map<Integer, String>> importDataList, List<String> headerInfos, Map<String, Object> params) {
         // 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
         String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
         boolean isUpdate = StrUtil.equals("1", existed);
@@ -1783,7 +1777,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         String defaultCabinetUsizeStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_DEFAULT_CABINETU);
         Integer defaultCabinetUsize = Integer.parseInt(defaultCabinetUsizeStr);
 
-        int successNum = 0;
+        // 创建导入校验对象
+        ImportValidateUtil validateUtil = ImportValidateUtil.builder()
+                .headerInfos(headerInfos)
+                .build();
         // 处理 excel 数据，将含宿主机资产排到前面
         List<Map<Integer, String>> handleImportData = this.handleImportData(importDataList);
         for (int i = 0; i < handleImportData.size(); i++) {
@@ -1791,51 +1788,51 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             Map saveEntitys = Tool.MapUtil.newHashMap();
             Map<Integer, String> dataMap = handleImportData.get(i);
             // name， 以 name作为索引 标识该条记录是否存在
-            String assetName = dataMap.get(0);
-            validateUtil.validateRequired(assetName, lineNum, headerInfos.get(0));
-            boolean indexDuplicate = validateUtil.validateIndexDuplicate("asset_asset", "name", assetName, isUpdate, lineNum, headerInfos.get(0));
+            String assetName = dataMap.get(AssetImportEnum.NAME.getIndex());
+            validateUtil.validateRequired(assetName, lineNum, AssetImportEnum.NAME.getIndex());
+            boolean indexDuplicate = validateUtil.validateIndexDuplicate("asset_asset", "name", assetName, isUpdate, lineNum, AssetImportEnum.NAME.getIndex());
             // 索引列重复 & 忽略标识，提示忽略本行
             if (BooleanUtil.and(indexDuplicate, StrUtil.equals("2", existed))) {
-                validateUtil.ignoreThisRow(lineNum, headerInfos.get(0));
+                validateUtil.ignoreThisRow(lineNum, AssetImportEnum.NAME.getIndex());
                 continue;
             }
 
-            String sn = dataMap.get(1);
-            validateUtil.validateRequired(sn, lineNum, headerInfos.get(1));
-            validateUtil.validateDuplicate("asset_asset", "sn", sn, assetName, isUpdate, lineNum, headerInfos.get(1));
+            String sn = dataMap.get(AssetImportEnum.SN.getIndex());
+            validateUtil.validateRequired(sn, lineNum, AssetImportEnum.SN.getIndex());
+            validateUtil.validateDuplicate("asset_asset", "sn", sn, assetName, isUpdate, lineNum, AssetImportEnum.SN.getIndex());
 
-            String manageIp = dataMap.get(3);
-            validateUtil.validateRequired(manageIp, lineNum, headerInfos.get(3));
-            validateUtil.validateRegex(manageIp, Constant.REGEX_IP, lineNum, headerInfos.get(3));
-            validateUtil.validateDuplicate("asset_asset", "manage_ip", manageIp, assetName, isUpdate, lineNum, headerInfos.get(3));
+            String manageIp = dataMap.get(AssetImportEnum.MANAGE_IP.getIndex());
+            validateUtil.validateRequired(manageIp, lineNum, AssetImportEnum.MANAGE_IP.getIndex());
+            validateUtil.validateRegex(manageIp, Constant.REGEX_IP, lineNum, AssetImportEnum.MANAGE_IP.getIndex());
+            validateUtil.validateDuplicate("asset_asset", "manage_ip", manageIp, assetName, isUpdate, lineNum, AssetImportEnum.MANAGE_IP.getIndex());
 
             // state conf 不自动添加
-            String stateName = dataMap.get(10);
-            validateUtil.validateRequired(stateName, lineNum, headerInfos.get(10));
-            validateUtil.validateRelObjExits("asset_state_conf", "name", stateName, false, lineNum, headerInfos.get(10));
+            String stateName = dataMap.get(AssetImportEnum.STATE.getIndex());
+            validateUtil.validateRequired(stateName, lineNum, AssetImportEnum.STATE.getIndex());
+            validateUtil.validateRelObjExits("asset_state_conf", "name", stateName, false, lineNum, AssetImportEnum.STATE.getIndex());
 
             // type conf 不自动添加
-            String typeName = dataMap.get(11);
-            validateUtil.validateRequired(typeName, lineNum, headerInfos.get(11));
-            validateUtil.validateRelObjExits("asset_type_conf", "name", typeName, false, lineNum, headerInfos.get(11));
+            String typeName = dataMap.get(AssetImportEnum.TYPE.getIndex());
+            validateUtil.validateRequired(typeName, lineNum, AssetImportEnum.TYPE.getIndex());
+            validateUtil.validateRelObjExits("asset_type_conf", "name", typeName, false, lineNum, AssetImportEnum.TYPE.getIndex());
 
             // brand & model  自动添加
-            String brandName = dataMap.get(4);
-            validateUtil.validateRequired(brandName, lineNum, headerInfos.get(4));
+            String brandName = dataMap.get(AssetImportEnum.BRAND.getIndex());
+            validateUtil.validateRequired(brandName, lineNum, AssetImportEnum.BRAND.getIndex());
 
-            Boolean brandExist = validateUtil.validateRelObjExits("asset_brand", "name", brandName, true, lineNum, headerInfos.get(4));
+            Boolean brandExist = validateUtil.validateRelObjExits("asset_brand", "name", brandName, true, lineNum, AssetImportEnum.BRAND.getIndex());
             if (!brandExist) {
                 AssetBrand brand = new AssetBrand();
                 brand.setName(brandName);
                 saveEntitys.put("brand", brand);
             }
-            String modelName = dataMap.get(5);
-            validateUtil.validateRequired(modelName, lineNum, headerInfos.get(5));
+            String modelName = dataMap.get(AssetImportEnum.MODEL.getIndex());
+            validateUtil.validateRequired(modelName, lineNum, AssetImportEnum.MODEL.getIndex());
 
-            String dcName = dataMap.get(6);
-            validateUtil.validateRequired(dcName, lineNum, headerInfos.get(6));
+            String dcName = dataMap.get(AssetImportEnum.DC.getIndex());
+            validateUtil.validateRequired(dcName, lineNum, AssetImportEnum.DC.getIndex());
 
-            String parentName = dataMap.get(2);
+            String parentName = dataMap.get(AssetImportEnum.PARENT.getIndex());
             // asset U size 不得小于关联 model usize ;   default model usize = 1
             Integer modelUsize = 1;
             if (!brandExist) {
@@ -1859,7 +1856,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                         Integer modelTypeId = model.getTypeId();
                         AssetTypeConf typeConf = typeConfService.getOne(new LambdaQueryWrapper<AssetTypeConf>().eq(AssetTypeConf::getName, typeName));
                         if (typeConf != null && !typeConf.getId().equals(modelTypeId))
-                            validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_MATCH.setParam(headerInfos.get(5), headerInfos.get(11)));
+                            validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_MATCH.setParam(AssetImportEnum.MODEL.getIndex(), AssetImportEnum.TYPE.getIndex()));
                     }
                 }
             }
@@ -1867,22 +1864,22 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             if (StrUtil.isNotEmpty(parentName)) {
                 AssetAsset parentAsset = this.getOne(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getName, parentName));
                 if (parentAsset == null) {
-                    validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_RELATED_OBJ_NOT_EXIST.setParam(headerInfos.get(2)));
+                    validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_RELATED_OBJ_NOT_EXIST.setParam(AssetImportEnum.PARENT.getIndex()));
                 } else { // 校验是否宿主机支持挂载
                     AssetTypeConf parentAssetTypeConf = typeConfService.getById(parentAsset.getTypeId());
                     if (parentAssetTypeConf.getVmh().equals(0))
-                        validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_SUPPORT.setParam(headerInfos.get(2)));
+                        validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_SUPPORT.setParam(AssetImportEnum.PARENT.getIndex()));
                 }
                 // 校验当前填写 asset 是否可以选择宿主机
                 AssetTypeConf typeConf = typeConfService.getOne(new LambdaQueryWrapper<AssetTypeConf>().eq(AssetTypeConf::getName, typeName));
                 if (typeConf != null && typeConf.getVm().equals(0))
-                    validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_SUPPORT.setParam(headerInfos.get(2)));
+                    validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_SUPPORT.setParam(AssetImportEnum.PARENT.getIndex()));
             }
 
-            String cabinetName = dataMap.get(7);
+            String cabinetName = dataMap.get(AssetImportEnum.CABINET.getIndex());
             Integer start = null, end = null;
             if (StrUtil.isEmpty(parentName)) {
-                Boolean dcExist = validateUtil.validateRelObjExits("dc", "name", dcName, true, lineNum, headerInfos.get(6));
+                Boolean dcExist = validateUtil.validateRelObjExits("dc", "name", dcName, true, lineNum, AssetImportEnum.DC.getIndex());
                 if (!dcExist) {
                     Dc dc = new Dc();
                     dc.setName(dcName);
@@ -1892,16 +1889,16 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 // 虚拟机必须选择宿主
                 AssetTypeConf typeConf = typeConfService.getOne(new LambdaQueryWrapper<AssetTypeConf>().eq(AssetTypeConf::getName, typeName));
                 if (typeConf != null && typeConf.getVm().equals(1))
-                    validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_SUPPORT.setParam(headerInfos.get(2)));
+                    validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_SUPPORT.setParam(AssetImportEnum.PARENT.getIndex()));
 
                 // 当前是 宿主机，校验 cabinet start end
                 if (StrUtil.isNotEmpty(cabinetName)) {
-                    String cabinetStart = dataMap.get(8);
-                    String cabinetEnd = dataMap.get(9);
+                    String cabinetStart = dataMap.get(AssetImportEnum.U_START.getIndex());
+                    String cabinetEnd = dataMap.get(AssetImportEnum.U_END.getIndex());
 
                     if (StrUtil.isAllNotEmpty(cabinetStart, cabinetEnd)) {
-                        start = validateUtil.validateInteger(cabinetStart, lineNum, headerInfos.get(8));
-                        end = validateUtil.validateInteger(cabinetEnd, lineNum, headerInfos.get(9));
+                        start = validateUtil.validateInteger(cabinetStart, lineNum, AssetImportEnum.U_START.getIndex());
+                        end = validateUtil.validateInteger(cabinetEnd, lineNum, AssetImportEnum.U_END.getIndex());
                         end = end != null ? end + 1 : null; // cabinet end 处理
                     }
 
@@ -1911,13 +1908,13 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                         if (Tool.ObjectUtil.isAllNotEmpty(start, end)) {
                             Integer cabinetUsize = cabinet.getuSize();
                             if (start < 0 || end < 0 || start >= end || start > cabinetUsize || end > cabinetUsize + 1) {
-                                validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(headerInfos.get(8)));
+                                validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(AssetImportEnum.U_START.getIndex()));
                             } else if ((end - start) < modelUsize) {
-                                validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(headerInfos.get(8)));
+                                validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(AssetImportEnum.U_START.getIndex()));
                             } else {
                                 boolean flag = this.validateUSizeForImport(start, end, cabinet, assetName, isUpdate);
                                 if (!flag)
-                                    validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(headerInfos.get(8)));
+                                    validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(AssetImportEnum.U_START.getIndex()));
                             }
                         }
                     } else {
@@ -1927,62 +1924,62 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                         saveEntitys.put("cabinet", cabinet);
                         if (Tool.ObjectUtil.isAllNotEmpty(start, end)) {
                             if (start < 0 || end < 0 || start >= end || start > defaultCabinetUsize || end > defaultCabinetUsize + 1) {
-                                validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(headerInfos.get(8)));
+                                validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(AssetImportEnum.U_START.getIndex()));
                             } else if ((end - start) < modelUsize) {
-                                validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(headerInfos.get(8)));
+                                validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(AssetImportEnum.U_START.getIndex()));
                             }
                         }
                     }
                 }
             }
 
-            String purchaseDate = dataMap.get(12);
-            validateUtil.validateDateFormat(purchaseDate, "yyyy-MM-dd", lineNum, headerInfos.get(12));
+            String purchaseDate = dataMap.get(AssetImportEnum.PURCHASE_DATE.getIndex());
+            validateUtil.validateDateFormat(purchaseDate, "yyyy-MM-dd", lineNum, AssetImportEnum.PURCHASE_DATE.getIndex());
 
-            String fieldsStr = dataMap.get(13);
+            String fieldsStr = dataMap.get(AssetImportEnum.TAG.getIndex());
             if (StrUtil.isNotEmpty(fieldsStr)) {
-                saveEntitys.put("fields", this.getFieldsByFieldsStr(fieldsStr, seq));
+                saveEntitys.put("fields", this.getFieldsByFieldsStr(fieldsStr, params.get("seq").toString()));
             }
 
-            String authProtocolPort = dataMap.get(14);
-            validateUtil.validatePort(authProtocolPort, lineNum, headerInfos.get(14));
+            String authProtocolPort = dataMap.get(AssetImportEnum.AUTH_PROTOCOL_PORT.getIndex());
+            validateUtil.validatePort(authProtocolPort, lineNum, AssetImportEnum.AUTH_PROTOCOL_PORT.getIndex());
 
-            String authType = dataMap.get(15);
-            validateUtil.validateEnumValArr(authType, Tool.ListUtil.of("1", "2"), lineNum, headerInfos.get(15));
+            String authType = dataMap.get(AssetImportEnum.AUTH_TYPE.getIndex());
+            validateUtil.validateEnumValArr(authType, Tool.ListUtil.of("1", "2"), lineNum, AssetImportEnum.AUTH_TYPE.getIndex());
 
-            String authUsername = dataMap.get(16);
-            String authPin = dataMap.get(17);
-            String authPriKey = dataMap.get(18);
-            String authUserTip = dataMap.get(19);
-            String authPinTip = dataMap.get(20);
+            String authUsername = dataMap.get(AssetImportEnum.AUTH_USER_NAME.getIndex());
+            String authPin = dataMap.get(AssetImportEnum.AUTH_PIN.getIndex());
+            String authPriKey = dataMap.get(AssetImportEnum.AUTH_PRI_KEY.getIndex());
+            String authUserTip = dataMap.get(AssetImportEnum.AUTH_USER_TIP.getIndex());
+            String authPinTip = dataMap.get(AssetImportEnum.AUTH_PIN_TIP.getIndex());
             if (StrUtil.equals("1", authType)) {
-                validateUtil.validateRequired(authUsername, lineNum, headerInfos.get(16));
-                validateUtil.validateRequired(authPin, lineNum, headerInfos.get(17));
+                validateUtil.validateRequired(authUsername, lineNum, AssetImportEnum.AUTH_USER_NAME.getIndex());
+                validateUtil.validateRequired(authPin, lineNum, AssetImportEnum.AUTH_PIN.getIndex());
             } else if (StrUtil.equals("2", authType)) {
-                validateUtil.validateRequired(authPriKey, lineNum, headerInfos.get(18));
+                validateUtil.validateRequired(authPriKey, lineNum, AssetImportEnum.AUTH_PRI_KEY.getIndex());
             }
 
-            String snmpCredentialName = dataMap.get(21);
+            String snmpCredentialName = dataMap.get(AssetImportEnum.SNMP_CREDENTIAL.getIndex());
             if (StrUtil.isNotEmpty(snmpCredentialName)) {
-                validateUtil.validateRelObjExits("snmp_credential", "name", snmpCredentialName, false, lineNum, headerInfos.get(21));
+                validateUtil.validateRelObjExits("snmp_credential", "name", snmpCredentialName, false, lineNum, AssetImportEnum.SNMP_CREDENTIAL.getIndex());
             }
-            String clientUser = dataMap.get(22);
-            String clientPin = dataMap.get(23);
-            String clientToken = dataMap.get(24);
+            String clientUser = dataMap.get(AssetImportEnum.CLIENT_USER.getIndex());
+            String clientPin = dataMap.get(AssetImportEnum.CLIENT_PIN.getIndex());
+            String clientToken = dataMap.get(AssetImportEnum.CLIENT_TOKEN.getIndex());
 
-            String clientPort = dataMap.get(25);
-            validateUtil.validatePort(clientPort, lineNum, headerInfos.get(25));
+            String clientPort = dataMap.get(AssetImportEnum.CLIENT_PORT.getIndex());
+            validateUtil.validatePort(clientPort, lineNum, AssetImportEnum.CLIENT_PORT.getIndex());
 
-            String clientEnable = dataMap.get(26);
-            validateUtil.validateEnumValArr(clientEnable, ListUtil.of("0", "1"), lineNum, headerInfos.get(26));
+            String clientEnable = dataMap.get(AssetImportEnum.CLIENT_ENABLE.getIndex());
+            validateUtil.validateEnumValArr(clientEnable, ListUtil.of("0", "1"), lineNum, AssetImportEnum.CLIENT_ENABLE.getIndex());
             if (StrUtil.equals("1", clientEnable)) {
-                validateUtil.validateRequired(clientToken, lineNum, headerInfos.get(24));
+                validateUtil.validateRequired(clientToken, lineNum, AssetImportEnum.CLIENT_TOKEN.getIndex());
             }
 
             // 遇到错误是否继续导入，可选值： 0：不继续    1：继续    默认值：1
             String ignoreError = Tool.ObjectUtil.defaultIfEmpty((String) params.get("ignoreError"), "1");
 
-            List<Map> errMsgForThisLine = basicImportAndExportServices.readImportErrMsgForThisLine(errMsgRedisKey, lineNum);
+            List<Map<String, String>> errMsgForThisLine = validateUtil.getImportErrMsgForThisLine(lineNum);
             if (BooleanUtil.and(Tool.StrUtil.equals("0", ignoreError), Tool.CollUtil.isNotEmpty(errMsgForThisLine))) {
                 break;
             }
@@ -2001,24 +1998,6 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 asset.setCreateAt(new Date());
                 asset.setCreateBy(ShiroUtils.getUserId());
                 asset.setManageIp(manageIp);
-                if (saveEntitys.get("dc") == null) {
-                    Dc dc = dcService.getOne(new LambdaQueryWrapper<Dc>().eq(Dc::getName, dcName));
-                    asset.setDcId(dc.getId());
-                }
-                if (saveEntitys.get("brand") == null) {
-                    AssetBrand brand = brandService.getOne(new LambdaQueryWrapper<AssetBrand>().eq(AssetBrand::getName, brandName));
-                    asset.setBrandId(brand.getId());
-                }
-                if (saveEntitys.get("model") == null) {
-                    AssetBrand brand = brandService.getOne(new LambdaQueryWrapper<AssetBrand>().eq(AssetBrand::getName, brandName));
-                    AssetModel model = modelService.getOne(new LambdaQueryWrapper<AssetModel>().eq(AssetModel::getName, modelName).eq(AssetModel::getBrandId, brand.getId()));
-                    asset.setModelId(model.getId());
-                }
-                if (BooleanUtil.and(StrUtil.isNotEmpty(cabinetName), saveEntitys.get("cabinet") == null)) {
-                    Dc dc = dcService.getOne(new LambdaQueryWrapper<Dc>().eq(Dc::getName, dcName));
-                    Cabinet cabinet = cabinetService.getOne(new LambdaQueryWrapper<Cabinet>().eq(Cabinet::getName, cabinetName).eq(Cabinet::getDcId, dc.getId()));
-                    asset.setCabinetId(cabinet.getId());
-                }
                 if (StrUtil.isNotEmpty(snmpCredentialName)) {
                     SnmpCredential snmpCredential = snmpCredentialService.getOne(new LambdaQueryWrapper<SnmpCredential>().eq(SnmpCredential::getName, snmpCredentialName));
                     asset.setSnmpCredentialId(snmpCredential.getId());
@@ -2034,6 +2013,24 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 asset.setAuthPinTip(authPinTip);
                 if (StrUtil.isEmpty(parentName)) {
                     asset.setPid(-1);
+                    if (saveEntitys.get("dc") == null) {
+                        Dc dc = dcService.getOne(new LambdaQueryWrapper<Dc>().eq(Dc::getName, dcName));
+                        asset.setDcId(dc.getId());
+                    }
+                    if (BooleanUtil.and(StrUtil.isNotEmpty(cabinetName), saveEntitys.get("cabinet") == null)) {
+                        Dc dc = dcService.getOne(new LambdaQueryWrapper<Dc>().eq(Dc::getName, dcName));
+                        Cabinet cabinet = cabinetService.getOne(new LambdaQueryWrapper<Cabinet>().eq(Cabinet::getName, cabinetName).eq(Cabinet::getDcId, dc.getId()));
+                        asset.setCabinetId(cabinet != null ? cabinet.getId() : null);
+                    }
+                    if (saveEntitys.get("brand") == null) {
+                        AssetBrand brand = brandService.getOne(new LambdaQueryWrapper<AssetBrand>().eq(AssetBrand::getName, brandName));
+                        asset.setBrandId(brand.getId());
+                    }
+                    if (saveEntitys.get("model") == null) {
+                        AssetBrand brand = brandService.getOne(new LambdaQueryWrapper<AssetBrand>().eq(AssetBrand::getName, brandName));
+                        AssetModel model = modelService.getOne(new LambdaQueryWrapper<AssetModel>().eq(AssetModel::getName, modelName).eq(AssetModel::getBrandId, brand.getId()));
+                        asset.setModelId(model.getId());
+                    }
                 } else {
                     AssetAsset parentAsset = this.getOne(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getName, parentName));
                     asset.setPid(parentAsset.getId());
@@ -2055,15 +2052,15 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 try {
                     this.saveOrUpdateRowData(saveEntitys, params);
                     dataSourceTransactionManager.commit(transactionStatus);
-                    successNum++;
                 } catch (TransactionException e) {
                     dataSourceTransactionManager.rollback(transactionStatus);
                     validateUtil.recordImportAttrErr(lineNum, RCode.ERROR);
-                    logger.error("回滚事务失败,错误信息:" + e);
+                    logger.error("Asset import roll back the transaction failure", e);
                 }
             }
         }
-        return successNum;
+        // 返回错误信息
+        return validateUtil.getImportErrMsg();
     }
 
     private List<AssetFieldValue> getFieldsByFieldsStr(String fieldsStr, String seq) {
