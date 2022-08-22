@@ -85,22 +85,19 @@ public class SysRoleController extends AbstractController {
 	@DeleteMapping
 	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.SYSTEM)
 	@RequiresPermissions("sys:role:delete")
-	public R delete(@RequestParam(required = false) Integer force, Integer... ids) {
+	public R delete(@RequestParam(required = false, defaultValue = "0") Integer force, Integer... ids) {
 		ValidateUtils.is(ids).notNull(RCode.SYS_ROLE_ID_ISNULL);
 
 		List<Map> delRelObjectMsgList = sysRoleService.deleteBatch(force, ids);
-
-		force = Tool.ObjectUtil.defaultIfNull(force, 0);
 		switch (force) {
 			case 0: {// 0：存在关联数据时，删除失败
 				if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
-					return R.error(RCode.ASSET_MODEL_RELOBJ_CAN_NOT_REMOVE).putData("list", delRelObjectMsgList);
+					return R.error(RCode.SYS_ROLE_RELOBJ_CAN_NOT_REMOVE).putData("list", delRelObjectMsgList);
 				}
 			}
 			case 1: // 1：存在关联数据时，同时删除关联数据
 			default:
-				break;
+				return R.ok().putData("list", delRelObjectMsgList);
 		}
-		return R.ok().putData("list", delRelObjectMsgList);
 	}
 }

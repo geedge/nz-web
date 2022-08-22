@@ -164,12 +164,10 @@ public class AssetController {
     @DeleteMapping("/asset")
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ASSET)
     @RequiresPermissions({"asset:delete"})
-    public R deleteAsset(@RequestParam(required = false) Integer force, Integer... ids) {
+    public R deleteAsset(@RequestParam(required = false, defaultValue = "0") Integer force, Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.ASSET_ID_ISNULL);
 
         List<Map> delRelObjectMsgList = assetAssetService.deleteAsset(force, ids);
-
-        force = Tool.ObjectUtil.defaultIfNull(force, 0);
         switch (force) {
             case 0: {// 0：存在关联数据时，删除失败
                 if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
@@ -178,9 +176,8 @@ public class AssetController {
             }
             case 1: // 1：存在关联数据时，同时删除关联数据
             default:
-                break;
+                return R.ok().putData("list", delRelObjectMsgList);
         }
-        return R.ok().putData("list", delRelObjectMsgList);
     }
 
 

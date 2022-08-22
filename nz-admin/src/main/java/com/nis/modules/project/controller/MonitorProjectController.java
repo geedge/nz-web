@@ -103,12 +103,10 @@ public class MonitorProjectController extends AbstractController {
     @DeleteMapping("/project")
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.PROJECT)
     @RequiresPermissions({"project:delete"})
-    public R deleteProjects(@RequestParam(required = false) Integer force, Integer... ids) {
+    public R deleteProjects(@RequestParam(required = false, defaultValue = "0") Integer force, Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.PROJECT_ID_ISNULL);
 
         List<Map> delRelObjectMsgList = monitorProjectService.delete(force, ids);
-
-        force = Tool.ObjectUtil.defaultIfNull(force, 0);
         switch (force) {
             case 0: {// 0：存在关联数据时，删除失败
                 if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
@@ -117,9 +115,8 @@ public class MonitorProjectController extends AbstractController {
             }
             case 1: // 1：存在关联数据时，同时删除关联数据
             default:
-                break;
+                return R.ok().putData("list", delRelObjectMsgList);
         }
-        return R.ok().putData("list", delRelObjectMsgList);
     }
 
     /**

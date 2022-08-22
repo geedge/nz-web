@@ -74,12 +74,10 @@ public class AssetBrandModelController {
     @DeleteMapping("/asset/brand")
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ASSETBRAND)
     @RequiresPermissions({"asset:brand:delete"})
-    public R deleteAssetBrands(@RequestParam(required = false) Integer force, Integer... ids) {
+    public R deleteAssetBrands(@RequestParam(required = false, defaultValue = "0") Integer force, Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.ASSET_BRAND_ID_ISNULL);
 
         List<Map> delRelObjectMsgList = brandService.delete(force, ids);
-
-        force = Tool.ObjectUtil.defaultIfNull(force, 0);
         switch (force) {
             case 0: {// 0：存在关联数据时，删除失败
                 if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
@@ -88,9 +86,8 @@ public class AssetBrandModelController {
             }
             case 1: // 1：存在关联数据时，同时删除关联数据
             default:
-                break;
+                return R.ok().putData("list", delRelObjectMsgList);
         }
-        return R.ok().putData("list", delRelObjectMsgList);
     }
 
     @GetMapping("/asset/model/{id}")
@@ -137,12 +134,10 @@ public class AssetBrandModelController {
     @DeleteMapping("/asset/model")
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.MODEL)
     @RequiresPermissions({"asset:model:delete"})
-    public R deleteAssetModels(@RequestParam(required = false) Integer force, Integer... ids) {
+    public R deleteAssetModels(@RequestParam(required = false, defaultValue = "0") Integer force, Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.ASSET_MODELID_ISNULL);
 
         List<Map> delRelObjectMsgList = modelService.delete(force, ids);
-
-        force = Tool.ObjectUtil.defaultIfNull(force, 0);
         switch (force) {
             case 0: {// 0：存在关联数据时，删除失败
                 if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
@@ -151,9 +146,8 @@ public class AssetBrandModelController {
             }
             case 1: // 1：存在关联数据时，同时删除关联数据
             default:
-                break;
+                return R.ok().putData("list", delRelObjectMsgList);
         }
-        return R.ok().putData("list", delRelObjectMsgList);
     }
 
 
