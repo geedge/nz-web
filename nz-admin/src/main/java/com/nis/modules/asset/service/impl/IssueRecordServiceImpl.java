@@ -1,6 +1,7 @@
 package com.nis.modules.asset.service.impl;
 
 import cn.hutool.core.util.StrUtil;
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -8,8 +9,10 @@ import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.asset.dao.IssueRecordDao;
+import com.nis.modules.asset.entity.IssueActivity;
 import com.nis.modules.asset.entity.IssueAssetRel;
 import com.nis.modules.asset.entity.IssueRecord;
+import com.nis.modules.asset.service.IssueActivityService;
 import com.nis.modules.asset.service.IssueAssetRelService;
 import com.nis.modules.asset.service.IssueRecordService;
 import com.nis.modules.sys.dao.SysUserDao;
@@ -43,6 +46,8 @@ public class IssueRecordServiceImpl extends ServiceImpl<IssueRecordDao, IssueRec
 
     @Autowired
     private IssueAssetRelService issueAssetRelService;
+    @Autowired
+    private IssueActivityService issueActivityService;
 
     @Autowired
     private SysUserStarredService starredService;
@@ -169,6 +174,8 @@ public class IssueRecordServiceImpl extends ServiceImpl<IssueRecordDao, IssueRec
         issueRecord.setUid(ShiroUtils.getUserId().intValue());
         // 保存
         this.save(issueRecord);
+        // 问题动态更新
+        this.saveIssueActivityChange(issueRecord, null);
         // 保存关联关系
         if(Tool.CollectionUtil.isNotEmpty(issueRecord.getAssetIds())){
             List<IssueAssetRel> issueAssetRelList = new ArrayList<>();
@@ -191,8 +198,11 @@ public class IssueRecordServiceImpl extends ServiceImpl<IssueRecordDao, IssueRec
         // 设置属性值
         issueRecord.setUts(System.currentTimeMillis());
         issueRecord.setUid(ShiroUtils.getUserId().intValue());
+        IssueRecord oldIssueRecord = this.getById(issueRecord.getId());
         // 修改
         this.updateById(issueRecord);
+        // 问题动态更新
+        this.saveIssueActivityChange(issueRecord, oldIssueRecord);
         // 先删除之前的asset关联
         issueAssetRelService.remove(new LambdaQueryWrapper<IssueAssetRel>().eq(IssueAssetRel::getIssueId, issueRecord.getId()));
         // 保存asset关联
@@ -232,6 +242,30 @@ public class IssueRecordServiceImpl extends ServiceImpl<IssueRecordDao, IssueRec
             list = issueList.stream().filter(issue -> StrUtil.isNotBlank(issue.getType())).map(IssueRecord::getType).distinct().collect(Collectors.toList());
         }
         return list;
+    }
+
+    /**
+     * 问题新增修改时，记录 原配置内容 及 新配置内容到 问题动态表
+     * @param newIssueRecord
+     * @param oldIssueRecord
+     */
+    public void saveIssueActivityChange(IssueRecord newIssueRecord, IssueRecord oldIssueRecord){
+        IssueActivity issueActivity = new IssueActivity();
+        issueActivity.setCts(System.currentTimeMillis());
+        issueActivity.setUts(System.currentTimeMillis());
+        issueActivity.setCid(ShiroUtils.getUserId().intValue());
+        issueActivity.setUid(ShiroUtils.getUserId().intValue());
+        issueActivity.setIssueId(newIssueRecord.getId());
+        issueActivity.setType(1);
+        Map content = Tool.MapUtil.newHashMap();
+        if(ToolUtil.isNotEmpty(oldIssueRecord)){
+            content.put("old", oldIssueRecord);
+            newIssueRecord.setCts(oldIssueRecord.getCts());
+            newIssueRecord.setCid(oldIssueRecord.getCid());
+        }
+        content.put("new", newIssueRecord);
+        issueActivity.setContent(JSONObject.toJSONString(content));
+        issueActivityService.save(issueActivity);
     }
 
 }

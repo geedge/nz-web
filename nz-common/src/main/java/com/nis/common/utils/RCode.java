@@ -383,6 +383,10 @@ public enum RCode {
     ISSUE_AID_ID_ISNULL(391007, "Issue assignee id can not be empty"),
     ISSUE_STATE_INVALID(395008, "Issue state is invalid"),
     ISSUE_PRIORITY_INVALID(395009, "Issue priority is invalid"),
+    ISSUE_ACTIVITY_ID_ISNULL(391010, "Issue activity id can not be empty"),
+    ISSUE_ACTIVITY_CONTENT_ISNULL(391011, "Issue activity content can not be empty"),
+    ISSUE_ACTIVITY_ONLYOWN_COMMENTS(397012, "Issue activity only can operate own comments"),
+    ISSUE_ACTIVITY_TYPE_ISNULL(391013, "Issue activity type can not be empty"),
 
     /**
      * alerts菜单栏相关

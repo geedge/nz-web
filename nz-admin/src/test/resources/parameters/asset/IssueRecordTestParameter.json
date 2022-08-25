@@ -134,5 +134,70 @@
   "------------------ DELETE  /issue data---------------------": "note",
   "deleteIssueRecord_success": {
     "ids": "2,3"
+  },
+
+
+  "------------------ get  /issue/activity data---------------------": "note",
+  "queryIssueActivityListByParams_success": {
+    "pageNo": null,
+    "pageSize": null,
+    "type": 2,
+    "issueId": 1
+  },
+  "queryIssueActivityListByParams_issueIdIsNull": {
+    "pageNo": null,
+    "pageSize": null,
+    "type": 2
+  },
+  "queryIssueActivityListByParams_typeIsNull": {
+    "pageNo": null,
+    "pageSize": null,
+    "issueId": 1
+  },
+  "------------------ POST  /issue/activity data---------------------": "note",
+  "addIssueActivity_success": {
+    "issueId": "1",
+    "content": "coment 1"
+  },
+  "addIssueActivity_issueIdIsNull": {
+    "issueId": "",
+    "content": "coment 1 err"
+  },
+  "addIssueActivity_contentIsNull": {
+    "issueId": "1",
+    "content": ""
+  },
+  "------------------ PUT  /issue/activity data---------------------": "note",
+  "updateIssueActivity_success": {
+    "id": 2,
+    "content": "coment update2"
+  },
+  "updateIssueActivity_idIsNull": {
+    "content": "coment update err"
+  },
+  "updateIssueActivity_contentIsNull": {
+    "id": 2,
+    "content": ""
+  },
+  "updateIssueActivity_notOwn": {
+    "id": 5,
+    "content": "coment update err"
+  },
+  "updateIssueActivity_notComment": {
+    "id": 1,
+    "content": "coment update err"
+  },
+  "------------------ DELETE  /issue/activity data---------------------": "note",
+  "deleteIssueActivity_success": {
+    "ids": "3,4"
+  },
+  "deleteIssueActivity_idIsNull": {
+    "ids": ""
+  },
+  "deleteIssueActivity_notOwn": {
+    "ids": "5"
+  },
+  "deleteIssueActivity_notComment": {
+    "ids": "1"
   }
 }

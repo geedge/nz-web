@@ -263,4 +263,166 @@ public class IssueRecordTest extends BaseTest<IssueRecord> {
         UTUtil.assertEqualsRCode(result, RCode.SUCCESS);
     }
 
+
+    /**
+     * GET /issue/activity success
+     */
+    @Test
+    public void queryIssueActivityListByParams_success() throws UnsupportedEncodingException {
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performGet("/issue/activity", map);
+
+        String responseStr = result.getResponse().getContentAsString();
+        Assert.assertNotNull("No success response", responseStr);
+
+        Map<String, Object> actualResult = JSONObject.parseObject(responseStr, Map.class);
+        Map resultInfo = (Map)actualResult.get("data");
+        Assert.assertNotNull(resultInfo);
+
+        Object list = resultInfo.get("list");
+        Assert.assertNotNull(list);
+
+        UTUtil.assertEqualsRCode(result, RCode.SUCCESS);
+    }
+
+    /**
+     * GET /issue/activity ISSUE_ID_ISNULL
+     */
+    @Test
+    public void queryIssueActivityListByParams_issueIdIsNull() throws UnsupportedEncodingException {
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performGet("/issue/activity", map);
+        UTUtil.assertEqualsRCode(result, RCode.ISSUE_ID_ISNULL);
+    }
+
+    /**
+     * GET /issue/activity ISSUE_ACTIVITY_TYPE_ISNULL
+     */
+    @Test
+    public void queryIssueActivityListByParams_typeIsNull() throws UnsupportedEncodingException {
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performGet("/issue/activity", map);
+        UTUtil.assertEqualsRCode(result, RCode.ISSUE_ACTIVITY_TYPE_ISNULL);
+
+    }
+
+    /**
+     * POST /issue/activity success
+     */
+    @Test
+    public void addIssueActivity_success() {
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performPost("/issue/activity", map);
+        UTUtil.assertEqualsRCode(result, RCode.SUCCESS);
+    }
+
+    /**
+     * POST /issue/activity ISSUE_ID_ISNULL
+     */
+    @Test
+    public void addIssueActivity_issueIdIsNull() {
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performPost("/issue/activity", map);
+        UTUtil.assertEqualsRCode(result, RCode.ISSUE_ID_ISNULL);
+    }
+
+    /**
+     * POST /issue/activity ISSUE_ACTIVITY_CONTENT_ISNULL
+     */
+    @Test
+    public void addIssueActivity_contentIsNull() {
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performPost("/issue/activity", map);
+        UTUtil.assertEqualsRCode(result, RCode.ISSUE_ACTIVITY_CONTENT_ISNULL);
+    }
+
+    /**
+     * PUT /issue/activity success
+     */
+    @Test
+    public void updateIssueActivity_success(){
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performPut("/issue/activity", map);
+        UTUtil.assertEqualsRCode(result, RCode.SUCCESS);
+    }
+
+    /**
+     * PUT /issue/activity ISSUE_ACTIVITY_ID_ISNULL
+     */
+    @Test
+    public void updateIssueActivity_idIsNull(){
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performPut("/issue/activity", map);
+        UTUtil.assertEqualsRCode(result, RCode.ISSUE_ACTIVITY_ID_ISNULL);
+    }
+
+    /**
+     * PUT /issue/activity ISSUE_ACTIVITY_CONTENT_ISNULL
+     */
+    @Test
+    public void updateIssueActivity_contentIsNull(){
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performPut("/issue/activity", map);
+        UTUtil.assertEqualsRCode(result, RCode.ISSUE_ACTIVITY_CONTENT_ISNULL);
+    }
+
+    /**
+     * PUT /issue/activity ISSUE_ACTIVITY_ONLYOWN_COMMENTS
+     */
+    @Test
+    public void updateIssueActivity_notOwn(){
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performPut("/issue/activity", map);
+        UTUtil.assertEqualsRCode(result, RCode.ISSUE_ACTIVITY_ONLYOWN_COMMENTS);
+    }
+
+    /**
+     * PUT /issue/activity ISSUE_ACTIVITY_ONLYOWN_COMMENTS
+     */
+    @Test
+    public void updateIssueActivity_notComment(){
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performPut("/issue/activity", map);
+        UTUtil.assertEqualsRCode(result, RCode.ISSUE_ACTIVITY_ONLYOWN_COMMENTS);
+    }
+
+    /**
+     * DELETE /issue/activity success
+     */
+    @Test
+    public void deleteIssueActivity_success(){
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performDelete("/issue/activity", map);
+        UTUtil.assertEqualsRCode(result, RCode.SUCCESS);
+    }
+
+    /**
+     * DELETE /issue/activity ISSUE_ACTIVITY_ID_ISNULL
+     */
+    @Test
+    public void deleteIssueActivity_idIsNull(){
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performDelete("/issue/activity", map);
+        UTUtil.assertEqualsRCode(result, RCode.ISSUE_ACTIVITY_ID_ISNULL);
+    }
+
+    /**
+     * DELETE /issue/activity ISSUE_ACTIVITY_ONLYOWN_COMMENTS
+     */
+    @Test
+    public void deleteIssueActivity_notOwn(){
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performDelete("/issue/activity", map);
+        UTUtil.assertEqualsRCode(result, RCode.ISSUE_ACTIVITY_ONLYOWN_COMMENTS);
+    }
+
+    /**
+     * DELETE /issue/activity ISSUE_ACTIVITY_ONLYOWN_COMMENTS
+     */
+    @Test
+    public void deleteIssueActivity_notComment(){
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performDelete("/issue/activity", map);
+        UTUtil.assertEqualsRCode(result, RCode.ISSUE_ACTIVITY_ONLYOWN_COMMENTS);
+    }
 }
