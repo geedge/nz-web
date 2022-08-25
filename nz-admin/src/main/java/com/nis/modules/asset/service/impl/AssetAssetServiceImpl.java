@@ -59,7 +59,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -837,19 +836,20 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // 保存 asset 关联数据
         this.saveAssetRelData(asset);
 
-        // 新增 asset 时，新增 asset panel chart /
-        this.saveAssetChartsWhenInsert(asset);
+        // asset panel & info chart
+        this.saveAssetInfoPanel(asset);
 
-        // 新增 asset 时，新增 关联 Model charts
-        this.saveAssetModelChartsWhenInsert(asset);
+        // 通过 model chart tepmlate 新增 asset charts
+        this.saveAssetChartsViaModelChartTmpl(asset);
         return asset.getId();
     }
 
     /**
-     * 新增 asset 时，新增 asset panel chart
+     * 新增 asset penel & info chart
+     *
      * @param asset
      */
-    private void saveAssetChartsWhenInsert(AssetAsset asset) {
+    private void saveAssetInfoPanel(AssetAsset asset) {
         // 配置信息获取
         SysConfigEntity assetChartConfig = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_CHART_TPL));
         // asset config
@@ -859,11 +859,11 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     }
 
     /**
-     * 新增 asset 时，新增 关联 Model charts
+     * 通过 model chart tepmlate 新增 asset charts
      *
      * @param asset
      */
-    private void saveAssetModelChartsWhenInsert(AssetAsset asset) {
+    private void saveAssetChartsViaModelChartTmpl(AssetAsset asset) {
         // 通过关联 model charts 添加 asset charts
         AssetModel model = modelService.getById(asset.getModelId());
         if (StringUtils.isNotEmpty(model.getChartIds())) {
@@ -1019,8 +1019,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             chartService.delCharts(ids, null);
         }
 
-        // 新增新 model 关联的 charts
-        this.saveAssetModelChartsWhenInsert(asset);
+        // 通过 model chart tepmlate 新增 asset charts
+        this.saveAssetChartsViaModelChartTmpl(asset);
     }
 
     private void saveAssetRelData(AssetAsset asset) {
@@ -1064,6 +1064,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // 通过 pid 关联的虚拟机，关联内容也展示这些 asset 关联的对象信息
         List<AssetAsset> delChildrenAssets = this.list(new LambdaQueryWrapper<AssetAsset>().in(AssetAsset::getPid, idList));
         delAssets.addAll(delChildrenAssets);
+        delAssets = delAssets.stream().distinct().collect(Collectors.toList());
 
         delAssets.forEach(assetEntity -> {
             Map<Object, Object> relObjectInfoMap = this.getAssetDelRelObjectInfoMap(assetEntity);
@@ -1772,15 +1773,15 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     private List<Map<String, String>> saveAssetsFromImportDataList(List<Map<Integer, String>> importDataList, List<String> headerInfos, Map<String, Object> params) {
         // 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
         String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
-        boolean isUpdate = StrUtil.equals("1", existed);
 
         String defaultCabinetUsizeStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_DEFAULT_CABINETU);
         Integer defaultCabinetUsize = Integer.parseInt(defaultCabinetUsizeStr);
 
         // 创建导入校验对象
         ImportValidateUtil validateUtil = ImportValidateUtil.builder()
-                .headerInfos(headerInfos)
+                .existed(existed).headerInfos(headerInfos)
                 .build();
+
         // 处理 excel 数据，将含宿主机资产排到前面
         List<Map<Integer, String>> handleImportData = this.handleImportData(importDataList);
         for (int i = 0; i < handleImportData.size(); i++) {
@@ -1790,7 +1791,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             // name， 以 name作为索引 标识该条记录是否存在
             String assetName = dataMap.get(AssetImportEnum.NAME.getIndex());
             validateUtil.validateRequired(assetName, lineNum, AssetImportEnum.NAME.getIndex());
-            boolean indexDuplicate = validateUtil.validateIndexDuplicate("asset_asset", "name", assetName, isUpdate, lineNum, AssetImportEnum.NAME.getIndex());
+            boolean indexDuplicate = validateUtil.validateIndexDuplicate("asset_asset", "name", assetName, lineNum, AssetImportEnum.NAME.getIndex());
             // 索引列重复 & 忽略标识，提示忽略本行
             if (BooleanUtil.and(indexDuplicate, StrUtil.equals("2", existed))) {
                 validateUtil.ignoreThisRow(lineNum, AssetImportEnum.NAME.getIndex());
@@ -1799,12 +1800,12 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
             String sn = dataMap.get(AssetImportEnum.SN.getIndex());
             validateUtil.validateRequired(sn, lineNum, AssetImportEnum.SN.getIndex());
-            validateUtil.validateDuplicate("asset_asset", "sn", sn, assetName, isUpdate, lineNum, AssetImportEnum.SN.getIndex());
+            validateUtil.validateDuplicate("asset_asset", "sn", sn, assetName, lineNum, AssetImportEnum.SN.getIndex());
 
             String manageIp = dataMap.get(AssetImportEnum.MANAGE_IP.getIndex());
             validateUtil.validateRequired(manageIp, lineNum, AssetImportEnum.MANAGE_IP.getIndex());
             validateUtil.validateRegex(manageIp, Constant.REGEX_IP, lineNum, AssetImportEnum.MANAGE_IP.getIndex());
-            validateUtil.validateDuplicate("asset_asset", "manage_ip", manageIp, assetName, isUpdate, lineNum, AssetImportEnum.MANAGE_IP.getIndex());
+            validateUtil.validateDuplicate("asset_asset", "manage_ip", manageIp, assetName, lineNum, AssetImportEnum.MANAGE_IP.getIndex());
 
             // state conf 不自动添加
             String stateName = dataMap.get(AssetImportEnum.STATE.getIndex());
@@ -1912,7 +1913,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                             } else if ((end - start) < modelUsize) {
                                 validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(AssetImportEnum.U_START.getIndex()));
                             } else {
-                                boolean flag = this.validateUSizeForImport(start, end, cabinet, assetName, isUpdate);
+                                boolean flag = this.validateUSizeForImport(start, end, cabinet, assetName, StrUtil.equals("1", existed));
                                 if (!flag)
                                     validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(AssetImportEnum.U_START.getIndex()));
                             }
@@ -2052,7 +2053,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 try {
                     this.saveOrUpdateRowData(saveEntitys, params);
                     dataSourceTransactionManager.commit(transactionStatus);
-                } catch (TransactionException e) {
+                } catch (Exception e) {
                     dataSourceTransactionManager.rollback(transactionStatus);
                     validateUtil.recordImportAttrErr(lineNum, RCode.ERROR);
                     logger.error("Asset import roll back the transaction failure", e);
@@ -2222,10 +2223,14 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             // 是否同步更新关联的dashboard，可选值： 0：不同步  1：同步  默认值：1
             String syncDashboard = Tool.ObjectUtil.defaultIfEmpty((String) params.get("syncDashboard"), "1");
             if (StrUtil.equals("1", syncDashboard)) {
-                VisualPanel assetPanel = panelService.getOne(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, Constant.PanelType.ASSET.getValue()).eq(VisualPanel::getLink, asset.getId()));
-                Map<String, Object> map = Tool.MapUtil.newHashMap(2);
-                map.put("panelId", assetPanel.getId());
-                chartService.syncTmpl(map);
+                // asset info charts && dashboard charts
+                List<VisualChart> assetChartList = chartService.list(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getVarType, 1).eq(VisualChart::getVarId, asset.getId()));
+                if (Tool.CollUtil.isNotEmpty(assetChartList)) {
+                    List<Integer> assetChartIdList = assetChartList.stream().map(VisualChart::getId).collect(Collectors.toList());
+                    Map<String, Object> map = Tool.MapUtil.newHashMap(2);
+                    map.put("ids", assetChartIdList);
+                    chartService.syncTmpl(map);
+                }
             }
             // 是否同步更新关联的endpoint，可选值：  0：不同步  1：同步  默认值：1
             String syncEndpoint = Tool.ObjectUtil.defaultIfEmpty((String) params.get("syncEndpoint"), "1");
@@ -2237,10 +2242,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             }
         } else {
             this.save(asset);
-            // 新增 asset panel chart
-            this.saveAssetChartsWhenInsert(asset);
-            // 新增 关联 Model charts
-            this.saveAssetModelChartsWhenInsert(asset);
+            // asset panel & info chart
+            this.saveAssetInfoPanel(asset);
+            // 通过 model chart tepmlate 新增 asset charts
+            this.saveAssetChartsViaModelChartTmpl(asset);
         }
 
         // 如果没有指定 meta, 则视为删除，先删后增

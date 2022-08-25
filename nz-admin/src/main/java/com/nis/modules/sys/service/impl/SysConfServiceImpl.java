@@ -334,6 +334,12 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
 
         return config == null ? null : config.getParamValue();
     }
+
+    @Override
+    public String getValueOrDefault(String key, String defaultValue) {
+        String value = this.getValue(key);
+        return Tool.StrUtil.isEmpty(value) ? defaultValue : value;
+    }
     /**
     * @Description 查询返回 所有的key 对应的value
     * @Author  rui

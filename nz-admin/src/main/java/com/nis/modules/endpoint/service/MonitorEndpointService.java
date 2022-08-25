@@ -25,7 +25,7 @@ public interface MonitorEndpointService extends IService<MonitorEndpoint> {
 
     void cancelImport(String seq);
 
-    Map importEndpointData(MultipartFile excelFile) throws IOException;
+    Map importEndpointData(MultipartFile excelFile, Map<String, Object> params) throws IOException;
 
     void export(HttpServletResponse response, Map<String, Object> params) throws IOException;
 

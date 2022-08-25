@@ -5,6 +5,8 @@ import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
+import com.alibaba.fastjson.JSONException;
+import com.alibaba.fastjson.JSONObject;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysI18nService;
 import lombok.Builder;
@@ -36,6 +38,12 @@ public class ImportValidateUtil {
 
     // 错误提示表头信息
     private List<String> headerInfos;
+
+    /**
+     * 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
+     * 校验工具类只对 1：覆盖 override 进行处理
+     */
+    private String existed;
 
     // 存储导入错误信息
     private final ThreadLocal<List<Map<String, String>>> threadLocal = new ThreadLocal();
@@ -89,10 +97,10 @@ public class ImportValidateUtil {
      *
      * @return
      */
-    public boolean validateIndexDuplicate(String tableName, String colName, String value, boolean isUpdate, int lineNum, int headerIndex) {
+    public boolean validateIndexDuplicate(String tableName, String colName, String value, int lineNum, int headerIndex) {
         List list = basicImportAndExportServices.queryList(tableName, colName, value);
 
-        if (Tool.CollectionUtil.isNotEmpty(list) && !isUpdate) {
+        if (Tool.CollectionUtil.isNotEmpty(list) && !StrUtil.equals("1", existed)) {
             String header = headerInfos.get(headerIndex);
             this.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_DUPLICATE.setParam(header));
             return true;
@@ -105,10 +113,10 @@ public class ImportValidateUtil {
      * 校验其他属性是否重复
      * 根据 index & isUpdate 修改时校验是否重复
      */
-    public void validateDuplicate(String tableName, String colName, String value, String index, boolean isUpdate, int lineNum, int headerIndex) {
+    public void validateDuplicate(String tableName, String colName, String value, String index, int lineNum, int headerIndex) {
         List<Map<String, Object>> list = basicImportAndExportServices.queryList(tableName, colName, value);
 
-        if (isUpdate) {
+        if (StrUtil.equals("1", existed)) {
             // 更新的情况下
             boolean flag = false;
             // 当只有一个结果并且这个结果是自身时，或没有结果时，说明结果不重复
@@ -182,6 +190,35 @@ public class ImportValidateUtil {
     }
 
     /**
+     * 校验端口是否符合规范
+     */
+    public void validateIp(String ip, int lineNum, int headerIndex) {
+        if (StrUtil.isNotEmpty(ip)) {
+            if (!CommonUtils.checkIp(ip)) {
+                String header = headerInfos.get(headerIndex);
+                this.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(header));
+            }
+        }
+    }
+
+    /**
+     * 校验字符串是否为 jsonarray 格式
+     */
+    public boolean validateJsonArray(String jsonStr, Integer lineNum, int headerIndex) {
+        if (StrUtil.isNotEmpty(jsonStr)) {
+            try {
+                JSONObject.parseArray(jsonStr);
+                return true;
+            } catch (JSONException e) {
+                String header = headerInfos.get(headerIndex);
+                this.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(header));
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * 校验内容是否在 枚举数组内
      */
     public void validateEnumValArr(String value, List<String> enumList, int lineNum, int headerIndex) {
@@ -251,6 +288,7 @@ public class ImportValidateUtil {
         List<Map<String, String>> errMsgList = threadLocal.get();
         errMsgList = Tool.CollUtil.isEmpty(errMsgList) ? Tool.ListUtil.list(true) : errMsgList;
         errMsgList.add(failDetail);
+        errMsgList = errMsgList.stream().distinct().collect(Collectors.toList());
 
         threadLocal.set(errMsgList);
     }

@@ -147,7 +147,7 @@ public class MonitorEndpointController {
     @PostMapping("/endpoint/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.ENDPOINT)
     @RequiresPermissions({"endpoint:save"})
-    public R importEndpointsData(MultipartFile excelFile, HttpServletRequest request) throws IOException {
+    public R importEndpointsData(MultipartFile excelFile, HttpServletRequest request, @RequestParam Map<String, Object> params) throws IOException {
         String language = request.getHeader(Constant.LANGUAGE);
         ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL);
         // 校验 LANGUAGE
@@ -155,7 +155,7 @@ public class MonitorEndpointController {
             throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
         }
 
-        Map map = monitorEndpointService.importEndpointData(excelFile);
+        Map map = monitorEndpointService.importEndpointData(excelFile, params);
         return R.ok(map);
     }
 

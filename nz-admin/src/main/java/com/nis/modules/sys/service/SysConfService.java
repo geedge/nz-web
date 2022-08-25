@@ -21,6 +21,15 @@ public interface SysConfService extends IService<SysConfigEntity> {
 
     String getValue(String key);
 
+    /**
+     * 根据key 获取配置值，为空返回默认值
+     *
+     * @param key
+     * @param defaultValue
+     * @return
+     */
+    String getValueOrDefault(String key, String defaultValue);
+
     Map<String,String> batchQuery(String ... keys);
 
     void saveLdap(Map<String, String> params);
