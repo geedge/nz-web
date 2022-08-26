@@ -24,6 +24,7 @@ public class NZException extends RuntimeException {
     private RCode rCode;
     
     public NZException(RCode rCode) {
+	    super(rCode.getMsg());
     	this.code = rCode.getCode();
     	this.msg = rCode.getMsg();
     	this.param = rCode.getParam();
