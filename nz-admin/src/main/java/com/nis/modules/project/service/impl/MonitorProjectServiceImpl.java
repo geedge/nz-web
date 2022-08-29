@@ -216,27 +216,26 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
         // module
         List<MonitorModule> moduleList = monitorModuleService.list(new LambdaQueryWrapper<MonitorModule>().eq(MonitorModule::getProjectId, project.getId()));
         if (Tool.CollUtil.isNotEmpty(moduleList)) {
+            // endpoint list
+            List<MonitorEndpoint> endpointList = monitorEndpointService.list();
             for (MonitorModule module : moduleList) {
-                Map<Object, Object> map = Tool.MapUtil.builder()
-                        .put("id", module.getId())
-                        .put("name", module.getName())
-                        .put("type", "module")
-                        .build();
-                relatesList.add(map);
-            }
-
-            // endpoint
-            List<Integer> moduleIdList = moduleList.stream().map(MonitorModule::getId).collect(Collectors.toList());
-            List<MonitorEndpoint> endpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().in(MonitorEndpoint::getModuleId, moduleIdList));
-            if (Tool.CollUtil.isNotEmpty(endpointList)) {
-                for (MonitorEndpoint endpoint : endpointList) {
+                List<Map> relList = Tool.ListUtil.list(true);
+                List<MonitorEndpoint> endpointListOfModule = endpointList.stream().filter(e -> e.getModuleId().equals(module.getId())).collect(Collectors.toList());
+                for (MonitorEndpoint endpoint : endpointListOfModule) {
                     Map<Object, Object> map = Tool.MapUtil.builder()
                             .put("id", endpoint.getId())
                             .put("name", endpoint.getName())
                             .put("type", "endpoint")
                             .build();
-                    relatesList.add(map);
+                    relList.add(map);
                 }
+                Map<Object, Object> map = Tool.MapUtil.builder()
+                        .put("id", module.getId())
+                        .put("name", module.getName())
+                        .put("type", "module")
+                        .put("relates", relList)
+                        .build();
+                relatesList.add(map);
             }
         }
 

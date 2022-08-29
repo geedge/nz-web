@@ -327,9 +327,8 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
                         .put("id", asset.getId())
                         .put("name", asset.getName())
                         .put("type", "asset")
+                        .put("relates", relatesEndpointList)
                         .build();
-                if (Tool.CollUtil.isNotEmpty(relatesEndpointList))
-                    map.put("relates", relatesEndpointList);
                 relatesList.add(map);
             }
         }

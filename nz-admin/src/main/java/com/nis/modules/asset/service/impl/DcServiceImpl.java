@@ -402,23 +402,22 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
 
             for (IpamSubnet ipamSubnet : ipamSubnetList) {
                 List<IpamIp> ipamIpListBySubnetId = ipamIpList.stream().filter(ipamIp -> ipamSubnet.getId().equals(ipamIp.getSubnetId())).collect(Collectors.toList());
-                List<Map> relatesEndpointList = Tool.ListUtil.list(true);
+                List<Map> relList = Tool.ListUtil.list(true);
                 for (IpamIp ipamIp : ipamIpListBySubnetId) {
                     Map<Object, Object> map = Tool.MapUtil.builder()
                             .put("id", ipamIp.getId())
                             .put("name", ipamIp.getName())
                             .put("type", "ipamIp")
                             .build();
-                    relatesEndpointList.add(map);
+                    relList.add(map);
                 }
 
                 Map<Object, Object> map = Tool.MapUtil.builder()
                         .put("id", ipamSubnet.getId())
                         .put("name", ipamSubnet.getName())
                         .put("type", "ipamSubnet")
+                        .put("relates", relList)
                         .build();
-                if (Tool.CollUtil.isNotEmpty(relatesEndpointList))
-                    map.put("relates", relatesEndpointList);
                 relatesList.add(map);
             }
         }
@@ -431,23 +430,22 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
 
             for (AssetAsset asset : assetList) {
                 List<MonitorEndpoint> endpointListByAssetId = endpointList.stream().filter(endpoint -> asset.getId().equals(endpoint.getAssetId())).collect(Collectors.toList());
-                List<Map> relatesEndpointList = Tool.ListUtil.list(true);
+                List<Map> relList = Tool.ListUtil.list(true);
                 for (MonitorEndpoint endpoint : endpointListByAssetId) {
                     Map<Object, Object> map = Tool.MapUtil.builder()
                             .put("id", endpoint.getId())
                             .put("name", endpoint.getName())
                             .put("type", "endpoint")
                             .build();
-                    relatesEndpointList.add(map);
+                    relList.add(map);
                 }
 
                 Map<Object, Object> map = Tool.MapUtil.builder()
                         .put("id", asset.getId())
                         .put("name", asset.getName())
                         .put("type", "asset")
+                        .put("relates", relList)
                         .build();
-                if (Tool.CollUtil.isNotEmpty(relatesEndpointList))
-                    map.put("relates", relatesEndpointList);
                 relatesList.add(map);
             }
         }

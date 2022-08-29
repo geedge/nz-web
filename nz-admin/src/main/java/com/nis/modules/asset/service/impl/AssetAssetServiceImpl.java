@@ -1061,11 +1061,6 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             return delRelObjectMsgList;
         }
 
-        // 通过 pid 关联的虚拟机，关联内容也展示这些 asset 关联的对象信息
-        List<AssetAsset> delChildrenAssets = this.list(new LambdaQueryWrapper<AssetAsset>().in(AssetAsset::getPid, idList));
-        delAssets.addAll(delChildrenAssets);
-        delAssets = delAssets.stream().distinct().collect(Collectors.toList());
-
         delAssets.forEach(assetEntity -> {
             Map<Object, Object> relObjectInfoMap = this.getAssetDelRelObjectInfoMap(assetEntity);
             if (Tool.CollUtil.isNotEmpty(relObjectInfoMap)) {
@@ -1087,7 +1082,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         // 删除自身和关联内容
         // 需要删除的 asset id list
-        List<Integer> removeAssetIdList = delAssets.stream().map(AssetAsset::getId).collect(Collectors.toList());
+        List<AssetAsset> delChildrenAssets = this.list(new LambdaQueryWrapper<AssetAsset>().in(AssetAsset::getPid, idList));
+        delAssets.addAll(delChildrenAssets);
+        List<Integer> removeAssetIdList = delAssets.stream().map(AssetAsset::getId).distinct().collect(Collectors.toList());
 
         // asset
         this.removeByIds(removeAssetIdList);
@@ -1146,32 +1143,44 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // children Asset
         List<AssetAsset> childrenAssetList = this.list(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getPid, asset.getId()));
 
-        // 虚拟机
+        // children asset & endpoint
         if (Tool.CollUtil.isNotEmpty(childrenAssetList)) {
+            // endpoint list
+            List<MonitorEndpoint> endpointList = monitorEndpointService.list();
             for (AssetAsset chasset : childrenAssetList) {
+                List<Map> relList = Tool.ListUtil.list(true);
+                List<MonitorEndpoint> endpointListOfAsset = endpointList.stream().filter(e -> e.getAssetId().equals(chasset.getId())).collect(Collectors.toList());
+                for (MonitorEndpoint endpoint : endpointListOfAsset) {
+                    Map<Object, Object> map = Tool.MapUtil.builder()
+                            .put("id", endpoint.getId())
+                            .put("name", endpoint.getName())
+                            .put("type", "endpoint")
+                            .build();
+                    relList.add(map);
+                }
+
                 Map<Object, Object> map = Tool.MapUtil.builder()
                         .put("id", chasset.getId())
                         .put("name", chasset.getName())
                         .put("type", "asset")
+                        .put("relates", relList)
                         .build();
                 relatesList.add(map);
             }
         }
 
-        // endpoint
-        List<MonitorEndpoint> endpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getAssetId, asset.getId()));
-        if (Tool.CollUtil.isNotEmpty(endpointList)) {
-            for (MonitorEndpoint endpoint : endpointList) {
-                Map<Object, Object> map = Tool.MapUtil.builder()
-                        .put("id", endpoint.getId())
-                        .put("name", endpoint.getName())
-                        .put("type", "endpoint")
-                        .build();
-                relatesList.add(map);
-            }
+        // rel endpoint
+        List<MonitorEndpoint> endpointListOfAsset = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getAssetId, asset.getId()));
+        for (MonitorEndpoint endpoint : endpointListOfAsset) {
+            Map<Object, Object> map = Tool.MapUtil.builder()
+                    .put("id", endpoint.getId())
+                    .put("name", endpoint.getName())
+                    .put("type", "endpoint")
+                    .build();
+            relatesList.add(map);
         }
 
-        if(Tool.CollUtil.isNotEmpty(relatesList)){
+        if (Tool.CollUtil.isNotEmpty(relatesList)) {
             Map<Object, Object> delRelObjectMap = Tool.MapUtil.builder()
                     .put("id", asset.getId())
                     .put("name", asset.getName())
