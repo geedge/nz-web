@@ -30,10 +30,34 @@ public class IssueActivity implements Serializable {
      */
     private Integer issueId;
 
+    /**
+     * 回复id
+     */
+    private Integer replyId;
+
+    /**
+     * 评论内容
+     */
     private String content;
+
+    /**
+     * 添加时间戳
+     */
     private Long cts;
+
+    /**
+     * 更新时间戳
+     */
     private Long uts;
+
+    /**
+     * 创建人id
+     */
     private Integer cid;
+
+    /**
+     * 更新人id
+     */
     private Integer uid;
 
     @TableField(exist = false)

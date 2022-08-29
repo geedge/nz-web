@@ -165,6 +165,7 @@ public class IssueRecordServiceImpl extends ServiceImpl<IssueRecordDao, IssueRec
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Integer saveIssue(IssueRecord issueRecord) {
+        issueRecord.setId(null);
         // 属性校验
         this.validateIssueInfo(issueRecord);
         // 设置属性值
@@ -257,8 +258,11 @@ public class IssueRecordServiceImpl extends ServiceImpl<IssueRecordDao, IssueRec
         issueActivity.setUid(ShiroUtils.getUserId().intValue());
         issueActivity.setIssueId(newIssueRecord.getId());
         issueActivity.setType(1);
+        issueActivity.setReplyId(-1);
         Map content = Tool.MapUtil.newHashMap();
         if(ToolUtil.isNotEmpty(oldIssueRecord)){
+            // 相关资产
+            oldIssueRecord.setAssetIds(issueAssetRelService.queryAssetsIds(oldIssueRecord.getId()));
             content.put("old", oldIssueRecord);
             newIssueRecord.setCts(oldIssueRecord.getCts());
             newIssueRecord.setCid(oldIssueRecord.getCid());

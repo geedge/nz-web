@@ -7,6 +7,7 @@
         <result property="id" column="id"/>
         <result property="type" column="type"/>
         <result property="issueId" column="issue_id"/>
+        <result property="replyId" column="reply_id"/>
         <result property="content" column="content"/>
         <result property="cts" column="cts"/>
         <result property="uts" column="uts"/>

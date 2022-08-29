@@ -46,6 +46,7 @@ public class IssueActivityServiceImpl extends ServiceImpl<IssueActivityDao, Issu
                 .and(issueActivity.getContent()).notNull(RCode.ISSUE_ACTIVITY_CONTENT_ISNULL);
         // 设置属性值
         issueActivity.setType(2);
+        if(ToolUtil.isEmpty(issueActivity.getReplyId())) issueActivity.setReplyId(-1);
         issueActivity.setCts(System.currentTimeMillis());
         issueActivity.setUts(System.currentTimeMillis());
         issueActivity.setCid(ShiroUtils.getUserId().intValue());
@@ -80,7 +81,7 @@ public class IssueActivityServiceImpl extends ServiceImpl<IssueActivityDao, Issu
         ValidateUtils.is(ids).notNull(RCode.ISSUE_ACTIVITY_ID_ISNULL);
         List<Integer> idList = new ArrayList<>(Arrays.asList(ids));
         // 只允许删除自己的、comment 类型的动态
-        int notOwnCommentCount = this.count(new LambdaQueryWrapper<IssueActivity>().in(IssueActivity::getId, Arrays.asList(ids))
+        int notOwnCommentCount = this.count(new LambdaQueryWrapper<IssueActivity>().in(IssueActivity::getId, idList)
             .and(wrapper ->
                 wrapper.ne(IssueActivity::getCid, ShiroUtils.getUserId().intValue())
                 .or()
