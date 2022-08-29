@@ -11,8 +11,8 @@ INSERT INTO `issue_asset_rel`(`id`, `issue_id`, `asset_id`) VALUES (2, 2, 2);
 
 truncate issue_activity;
 
-INSERT INTO `issue_activity`(`id`, `type`, `issue_id`, `content`, `cts`, `uts`, `cid`, `uid`) VALUES (1, 1, 1, '{"new":{}}', 1661406036350, 1661406036350, 1, 1);
-INSERT INTO `issue_activity`(`id`, `type`, `issue_id`, `content`, `cts`, `uts`, `cid`, `uid`) VALUES (2, 2, 1, '2', 1661406036350, 1661406036350, 1, 1);
-INSERT INTO `issue_activity`(`id`, `type`, `issue_id`, `content`, `cts`, `uts`, `cid`, `uid`) VALUES (3, 2, 2, '3', 1661406036350, 1661406036350, 1, 1);
-INSERT INTO `issue_activity`(`id`, `type`, `issue_id`, `content`, `cts`, `uts`, `cid`, `uid`) VALUES (4, 2, 2, '4', 1661406036350, 1661406036350, 1, 1);
-INSERT INTO `issue_activity`(`id`, `type`, `issue_id`, `content`, `cts`, `uts`, `cid`, `uid`) VALUES (5, 2, 1, '5', 1661406036350, 1661406036350, 2, 2);
+INSERT INTO `issue_activity`(`id`, `type`, `issue_id`, `reply_id`, `content`, `cts`, `uts`, `cid`, `uid`) VALUES (1, 1, 1, -1, '{"new":{}}', 1661406036350, 1661406036350, 1, 1);
+INSERT INTO `issue_activity`(`id`, `type`, `issue_id`, `reply_id`, `content`, `cts`, `uts`, `cid`, `uid`) VALUES (2, 2, 1, -1, '2', 1661406036350, 1661406036350, 1, 1);
+INSERT INTO `issue_activity`(`id`, `type`, `issue_id`, `reply_id`, `content`, `cts`, `uts`, `cid`, `uid`) VALUES (3, 2, 2, -1, '3', 1661406036350, 1661406036350, 1, 1);
+INSERT INTO `issue_activity`(`id`, `type`, `issue_id`, `reply_id`, `content`, `cts`, `uts`, `cid`, `uid`) VALUES (4, 2, 2, -1, '4', 1661406036350, 1661406036350, 1, 1);
+INSERT INTO `issue_activity`(`id`, `type`, `issue_id`, `reply_id`, `content`, `cts`, `uts`, `cid`, `uid`) VALUES (5, 2, 1, -1, '5', 1661406036350, 1661406036350, 2, 2);
