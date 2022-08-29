@@ -1,8 +1,9 @@
 package com.nis.modules.module.service.impl;
 
+import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
@@ -25,6 +26,7 @@ import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.module.dao.MonitorModuleDao;
 import com.nis.modules.module.entity.MonitorModule;
+import com.nis.modules.module.entity.MonitorModuleImportEnum;
 import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.panel.service.VisualChartService;
@@ -653,242 +655,275 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
     }
 
     @Override
-    public Map importModuleData(MultipartFile multipartFile) throws IOException {
+    public Map importModuleData(MultipartFile multipartFile, Map<String, Object> params) throws IOException {
         String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_MODULE_EXPORT_HEADER);
         Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
         List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
 
-        List<Map> failDetails = new ArrayList<>();
-        String seqUUID = UUID.randomUUID().toString();
+        String seq = UUID.randomUUID().toString();
+        params.put("seq", seq);
 
-        int successNum = this.saveModulesFromImportDataList(importDataList, failDetails, new ArrayList<>(exportHeaderMap.keySet()), seqUUID);
+        // 表头信息 国际化之后的
+        List<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
+
         int totalNum = importDataList.size();
+        List<Map<String, String>> failDetailList = this.saveModulesFromImportDataList(importDataList, headerInfos, params);
+
+        // 从错误信息中获取失败导入行数量
+        int failNum = (int) failDetailList.stream().map(map -> Integer.valueOf(map.get("lineNo"))).distinct().count();
 
         Map resultMap = new HashMap(8);
-        resultMap.put("seq", seqUUID);
+        resultMap.put("seq", seq);
         resultMap.put("totalNum", totalNum);
-        resultMap.put("successNum", successNum);
-        resultMap.put("failNum", totalNum - successNum);
-        resultMap.put("failDetail", CommonUtils.handleImportFailDetails(failDetails));
+        resultMap.put("successNum", totalNum - failNum);
+        resultMap.put("failNum", failNum);
+        resultMap.put("failDetail", failDetailList);
         return resultMap;
     }
 
-    private int saveModulesFromImportDataList(List<Map<Integer, String>> importDataList, List<Map> failDetails, List<String> headerInfos, String seqUUID) {
-        int successNum = 0;
+    private List<Map<String, String>> saveModulesFromImportDataList(List<Map<Integer, String>> importDataList, List<String> headerInfos, Map<String, Object> params) {
+        // 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
+        String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
+
+        // 创建导入校验对象
+        ImportValidateUtil validateUtil = ImportValidateUtil.builder()
+                .existed(existed).headerInfos(headerInfos)
+                .build();
         for (int i = 0; i < importDataList.size(); i++) {
-            int dataFromExcelRowNum = i + 1;
-            boolean saveFlag = true;
+            int lineNum = i + 1;
+            Map saveEntitys = Tool.MapUtil.newHashMap();
             Map<Integer, String> dataMap = importDataList.get(i);
 
-            String moduleName = dataMap.get(0);
-            if (StringUtils.isEmpty(moduleName)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.MODULE_NAME_ISNULL.getMsg());
-            } else {
-                int countByName = this.count(new QueryWrapper<MonitorModule>().lambda().eq(MonitorModule::getName, moduleName));
-                if (countByName > 0) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.MODULE_NAME_DUPLICATE.getMsg());
-                }
+            String moduleName = dataMap.get(MonitorModuleImportEnum.NAME.getIndex());
+            validateUtil.validateRequired(moduleName, lineNum, MonitorModuleImportEnum.NAME.getIndex());
+            boolean indexDuplicate = validateUtil.validateIndexDuplicate("monitor_module", "name", moduleName, lineNum, MonitorModuleImportEnum.NAME.getIndex());
+            // 索引列重复 & 忽略标识，提示忽略本行
+            if (BooleanUtil.and(indexDuplicate, StrUtil.equals("2", existed))) {
+                validateUtil.ignoreThisRow(lineNum, MonitorModuleImportEnum.NAME.getIndex());
+                continue;
             }
 
-            String projectName = dataMap.get(1);
-            if (StringUtils.isEmpty(projectName)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.PROJECT_NAME_ISNULL.getMsg());
+            String projectName = dataMap.get(MonitorModuleImportEnum.PROJECT.getIndex());
+            validateUtil.validateRequired(projectName, lineNum, MonitorModuleImportEnum.PROJECT.getIndex());
+            Boolean projectExist = validateUtil.validateRelObjExits("monitor_project", "name", projectName, true, lineNum, MonitorModuleImportEnum.PROJECT.getIndex());
+            if (!projectExist) {
+                MonitorProject project = new MonitorProject();
+                project.setName(projectName);
+                saveEntitys.put("project", project);
             }
 
-            String configStr = dataMap.get(3);
-            if (StringUtils.isEmpty(configStr)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.MODULE_CONFIGS_ISNULL.getMsg());
-            } else {
-                List<Map> configMapList = null;
-                try {
-                    configMapList = JSONObject.parseArray(configStr, Map.class);
-                } catch (JSONException e) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.MODULE_CONFIGS_FORMAT.getMsg());
+            String configStr = dataMap.get(MonitorModuleImportEnum.CONFIGURATIONS.getIndex());
+            validateUtil.validateRequired(configStr, lineNum, MonitorModuleImportEnum.CONFIGURATIONS.getIndex());
+            boolean isJsonArray = validateUtil.validateJsonArray(configStr, lineNum, MonitorModuleImportEnum.CONFIGURATIONS.getIndex());
+            if (isJsonArray) {
+                List<Map> configMapList = JSONObject.parseArray(configStr, Map.class);
+                configMapList = Tool.CollUtil.defaultIfEmpty(configMapList, new ArrayList<>());
+
+                int countByType = (int) configMapList.stream().map(map -> map.get("type")).distinct().count();
+                boolean configDuplicateByType = (countByType == configMapList.size());
+                if (!configDuplicateByType) {
+                    validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_DUPLICATE.setParam(MonitorModuleImportEnum.CONFIGURATIONS.getIndex()));
                 }
-                if (saveFlag && Tool.CollectionUtil.isEmpty(configMapList)) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.MODULE_CONFIGS_ISNULL.getMsg());
-                }else if(saveFlag && Tool.CollectionUtil.isNotEmpty(configMapList)){
-                    long countByType = configMapList.stream().map(map -> map.get("type")).distinct().count();
-                    if (countByType != configMapList.size()) {
-                        saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.MODULE_CONFIGS_TYPE_DUPLICATE.getMsg());
-                    }
-                    Map metricsConfigMap = configMapList.stream().filter(map -> {
-                        String configType = (String) map.get("type");
-                        return StrUtil.equals("metrics", configType);
-                    }).findFirst().get();
-                    if (metricsConfigMap != null && (1 == (Integer) ObjectUtil.defaultIfNull(metricsConfigMap.get("enable"), 1))) {
-                        Map configMap = (Map) metricsConfigMap.get("config");
-                        Object port = configMap.get("port");
-                        if (ToolUtil.isNotEmpty(port)) {
-                            if (!CommonUtils.checkPort(port.toString())) {
-                                saveFlag = false;
-                                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.MODULE_PORT_ERROR.getMsg());
-                            }
-                        }
-                        String protocol = (String) configMap.get("protocol");
-                        if (!StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_HTTP, protocol) && !StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_SNMP, protocol)
-                        		&& !StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_HTTPS, protocol)) {
-                            saveFlag = false;
-                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.MODULE_PROTOCOL_INVALID.getMsg());
-                        }
 
-                        if (StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_SNMP, protocol)) {
-                            Object snmpCredentialsId = configMap.get("snmpCredentialsId");
-                            if (ToolUtil.isEmpty(snmpCredentialsId)) {
-                                saveFlag = false;
-                                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.SNMP_CREDENTIAL_ID_ISNULL.getMsg());
-                            }
-
-                            SnmpCredential snmpCredential = snmpCredentialService.getById(snmpCredentialsId.toString());
-                            if (ToolUtil.isEmpty(snmpCredential)) {
-                                saveFlag = false;
-                                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.SNMP_CREDENTIAL_NOT_FOUND.getMsg());
-                            }
-
-                            Object walk = configMap.get("walk");
-                            if (ToolUtil.isEmpty(walk)) {
-                                saveFlag = false;
-                                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.MODULE_SNMP_WALK_ISNULL.getMsg());
-                            }
-                            try {
-                                JSONArray.parseArray(JSONObject.toJSONString(walk));
-                            } catch (JSONException e) {
-                                saveFlag = false;
-                                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.MODULE_SNMP_WALK_FORMAT.getMsg());
-                            }
-                        }
-
-                        Map<String, Object> labels = MapUtil.defaultIfEmpty((Map) configMap.get("labels"), Collections.emptyMap());
-                        for (String labelKey : labels.keySet()) {
-                            if (!ReUtil.isMatch(Constant.PROMETHEUS_LABELNAME_EXPRESSION, labelKey)) {
-                                saveFlag = false;
-                                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.PROMETHEUS_LABELNAME_FORMAT_ERROR.getMsg());
-                            }
-                        }
-
-                        List<Map> relabelConfigList = ObjectUtil.defaultIfNull((List) configMap.get("relabel_config"), Collections.emptyList());
-                        for (Map map : relabelConfigList) {
-                            List<String> sourceLabels = ObjectUtil.defaultIfNull((List) map.get("source_labels"), Collections.emptyList());
-                            for (String sourceLabel : sourceLabels) {
-                                if (!ReUtil.isMatch(Constant.PROMETHEUS_LABELNAME_EXPRESSION, sourceLabel)) {
-                                    saveFlag = false;
-                                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.PROMETHEUS_LABELNAME_FORMAT_ERROR.getMsg());
-                                }
-                            }
-                            String targetLabel = (String) map.get("target_label");
-                            if (StrUtil.isNotEmpty(targetLabel)) {
-                                if (!ReUtil.isMatch(Constant.PROMETHEUS_LABELNAME_EXPRESSION, targetLabel)) {
-                                    saveFlag = false;
-                                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.PROMETHEUS_LABELNAME_FORMAT_ERROR.getMsg());
-                                }
-                            }
-                        }
-                    }
+                List<String> configTypeList = Arrays.asList(Constant.MonitorConfType.values()).stream().map(Constant.MonitorConfType::getValue).collect(Collectors.toList());
+                for (Map map : configMapList) {
+                    validateUtil.validateRequired(map.get("type"), lineNum, MonitorModuleImportEnum.CONFIGURATIONS.getIndex());
+                    validateUtil.validateEnumValArr(map.get("type").toString(), configTypeList, lineNum, MonitorModuleImportEnum.CONFIGURATIONS.getIndex());
                 }
-            }
 
-            String chartNames = dataMap.get(4);
-            StringBuilder relChartTemplateIds = new StringBuilder();
-            if (StringUtils.isNotEmpty(chartNames)) {
-                String[] split = chartNames.split(",");
-                for (String chartName : split) {
-                    List<VisualChart> list = visualChartService.list(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getPanelId, 0).eq(VisualChart::getName, chartName));
-                    // VarType 2 为  endpoint
-                    list = list.stream().filter(chart -> chart.getVarType() == 2).collect(Collectors.toList());
-                    if (Tool.CollectionUtil.isEmpty(list)) {
-                        saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_NOTEXSITS.getMsg());
-                    } else if (list.size() == 1) {
-                        // 类型为 endpoint ,且通过名称只关联一个
-                        relChartTemplateIds.append(list.get(0).getId());
-                        relChartTemplateIds.append(",");
-                    } else if (list.size() > 1) {
-                        saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_NAME_DUPLICATE_NOTLINK.getMsg());
-                    }
-                }
-            }
-
-            if (saveFlag) {
-                String endpointNameTmpl = dataMap.get(2);
-                String remark = dataMap.get(5);
-
-                DefaultTransactionDefinition def = new DefaultTransactionDefinition();
-                TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(def);
-
-                MonitorModule module = new MonitorModule();
-                try {
-                    MonitorProject project = monitorProjectService.getOne(new LambdaQueryWrapper<MonitorProject>().eq(MonitorProject::getName, projectName));
-                    if (project == null) {
-                        project = new MonitorProject();
-                        project.setSeq(seqUUID);
-                        project.setName(projectName);
-                        monitorProjectService.save(project);
-                    }
-
-                    module.setProjectId(project.getId());
-                    module.setName(moduleName);
-                    endpointNameTmpl = StrUtil.isEmpty(endpointNameTmpl) ? "{{module.name}}-{{asset.name}}" : endpointNameTmpl;
-                    module.setEndpointNameTmpl(endpointNameTmpl);
-                    module.setRemark(remark);
-                    String chartIds = relChartTemplateIds.toString();
-                    module.setChartIds(StrUtil.isNotEmpty(chartIds) ? chartIds.substring(0, chartIds.length() - 1) : "");
-                    module.setSeq(seqUUID);
-                    module.setConfigs(configStr);
-
-                    List<Map> configMapList = JSONObject.parseArray(module.getConfigs(), Map.class);
-                    Map metricsConfigMap = configMapList.stream().filter(map -> {
-                        String configType = (String) map.get("type");
-                        return StrUtil.equals("metrics", configType);
-                    }).findFirst().get();
-
+                Map metricsConfigMap = configMapList.stream().filter(map -> {
+                    String configType = (String) map.get("type");
+                    Integer enable = (Integer) ObjectUtil.defaultIfNull(map.get("enable"), 1);
+                    return BooleanUtil.and(StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), configType), enable == 1, configDuplicateByType);
+                }).findFirst().orElse(null);
+                if (Tool.CollUtil.isNotEmpty(metricsConfigMap)) {
+                    List<String> protocolEnumValueList = Tool.ListUtil.of(Constant.MODULE_TYPE_HTTP, Constant.MODULE_TYPE_SNMP, Constant.MODULE_TYPE_HTTPS);
                     Map configMap = (Map) metricsConfigMap.get("config");
                     String protocol = (String) configMap.get("protocol");
-                    if (StrUtil.equals(Constant.MODULE_TYPE_SNMP, protocol)) {
-                        Object port = configMap.get("port");
-                        if (ToolUtil.isEmpty(port)) {
-                            configMap.put("port", Constant.SNMP_DEFAULT_PORT); // port  缺省值
-                            module.setConfigs(JSONObject.toJSONString(configMapList));
-                        }
+                    validateUtil.validateEnumValArr(protocol, protocolEnumValueList, lineNum, MonitorModuleImportEnum.CONFIGURATIONS.getIndex());
 
-                        // 处理snmYml字段
-                        Object snmpCredentialsId = configMap.get("snmpCredentialsId");
-                        String snmpYml = this.generateYmlFromSnmpParam(snmpCredentialsId.toString(), module);
-                        module.setSnmpYml(snmpYml);
-                    } else {
-                        Object port = configMap.get("port");
-                        if (ToolUtil.isEmpty(port)) {
-                            configMap.put("port", 9100); // http port 缺省值设置
-                            module.setConfigs(JSONObject.toJSONString(configMapList));
-                        }
+                    Object port = configMap.get("port");
+                    if (ToolUtil.isNotEmpty(port)) {
+                        validateUtil.validatePort(port.toString(), lineNum, MonitorModuleImportEnum.CONFIGURATIONS.getIndex());
                     }
 
-                    this.save(module);
+                    // snmp 类型校验 config
+                    if (StrUtil.equals(Constant.MODULE_TYPE_SNMP, protocol)) {
+                        Object snmpCredentialsId = configMap.get("snmpCredentialsId");
+                        validateUtil.validateRequired(snmpCredentialsId, lineNum, MonitorModuleImportEnum.CONFIGURATIONS.getIndex());
+                        String snmpCredentialsIdStr = ObjectUtil.isNotEmpty(snmpCredentialsId) ? snmpCredentialsId.toString() : StrUtil.EMPTY;
+                        validateUtil.validateRelObjExits("snmp_credential", "id", snmpCredentialsIdStr, false, lineNum, MonitorModuleImportEnum.CONFIGURATIONS.getIndex());
 
+                        Object walk = configMap.get("walk");
+                        validateUtil.validateRequired(walk, lineNum, MonitorModuleImportEnum.CONFIGURATIONS.getIndex());
+                        validateUtil.validateJsonArray(walk != null ? JSONObject.toJSONString(walk) : "", lineNum, MonitorModuleImportEnum.CONFIGURATIONS.getIndex());
+                    }
+                    Map<String, Object> labels = MapUtil.defaultIfEmpty((Map) configMap.get("labels"), Collections.emptyMap());
+                    labels.keySet().stream().forEach(labelKey -> {
+                        validateUtil.validateRegex(labelKey, Constant.PROMETHEUS_LABELNAME_EXPRESSION, lineNum, MonitorModuleImportEnum.CONFIGURATIONS.getIndex());
+                    });
+
+                    List<Map> relabelConfigList = ObjectUtil.defaultIfNull((List) configMap.get("relabel_config"), Collections.emptyList());
+                    for (Map map : relabelConfigList) {
+                        List<String> sourceLabels = ObjectUtil.defaultIfNull((List) map.get("source_labels"), Collections.emptyList());
+                        for (String sourceLabel : sourceLabels) {
+                            validateUtil.validateRegex(sourceLabel, Constant.PROMETHEUS_LABELNAME_EXPRESSION, lineNum, MonitorModuleImportEnum.CONFIGURATIONS.getIndex());
+                        }
+                        String targetLabel = (String) map.get("target_label");
+                        if (StrUtil.isNotEmpty(targetLabel)) {
+                            validateUtil.validateRegex(targetLabel, Constant.PROMETHEUS_LABELNAME_EXPRESSION, lineNum, MonitorModuleImportEnum.CONFIGURATIONS.getIndex());
+                        }
+                    }
+                }
+
+                Map logsConfigMap = configMapList.stream().filter(map -> {
+                    String configType = (String) map.get("type");
+                    Integer enable = (Integer) ObjectUtil.defaultIfNull(map.get("enable"), 1);
+                    return BooleanUtil.and(StrUtil.equals(Constant.MonitorConfType.LOGS.getValue(), configType), enable == 1, configDuplicateByType);
+                }).findFirst().orElse(null);
+                if (Tool.CollUtil.isNotEmpty(logsConfigMap) && ToolUtil.isNotEmpty(logsConfigMap.get("config"))) {
+                    List<Map> configMaps = (List<Map>) logsConfigMap.get("config");
+                    for (Map configMap : configMaps) {
+                        if ("file".equals(configMap.get("type").toString())) {
+                            validateUtil.validateRequired(configMap.get("fileName"), lineNum, MonitorModuleImportEnum.CONFIGURATIONS.getIndex());
+                        } else if ("journal".equals(configMap.get("type").toString())) {
+                            validateUtil.validateRequired(configMap.get("unit"), lineNum, MonitorModuleImportEnum.CONFIGURATIONS.getIndex());
+                        } else if ("syslog".equals(configMap.get("type").toString())) {
+                            validateUtil.validateRequired(configMap.get("appName"), lineNum, MonitorModuleImportEnum.CONFIGURATIONS.getIndex());
+                            validateUtil.validateRequired(configMap.get("listenAddress"), lineNum, MonitorModuleImportEnum.CONFIGURATIONS.getIndex());
+                        } else {
+                            validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_ENUM_VALUE_ERROR.setParam(MonitorModuleImportEnum.CONFIGURATIONS.getIndex()));
+                        }
+                    }
+                }
+            }
+
+            String chartNames = dataMap.get(MonitorModuleImportEnum.CHART_TEMPLATES.getIndex());
+            StringBuilder relChartTemplateIds = new StringBuilder();
+            if (StringUtils.isNotEmpty(chartNames)) {
+                // module 只能选择 endpoint 类型且 groupId = 0 的图表
+                List<VisualChart> endpointChartTemplateList = visualChartService.list(new LambdaQueryWrapper<VisualChart>()
+                        .eq(VisualChart::getPanelId, 0).eq(VisualChart::getGroupId, 0)
+                        .eq(VisualChart::getVarType, Constant.ChartVariableType.ENDPOINT.getValue()));
+
+                StrUtil.split(chartNames, StrUtil.C_COMMA).stream().forEach(chartName -> {
+                    List<Integer> chartIdList = endpointChartTemplateList.stream()
+                            .filter(visualChart -> StrUtil.equals(visualChart.getName(), chartName))
+                            .map(VisualChart::getId).collect(Collectors.toList());
+                    if (Tool.CollUtil.isEmpty(chartIdList)) {
+                        validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_RELATED_OBJ_NOT_EXIST.setParam(MonitorModuleImportEnum.CHART_TEMPLATES.getIndex()));
+                    } else if (chartIdList.size() > 1) {
+                        validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_DUPLICATE.setParam(MonitorModuleImportEnum.CHART_TEMPLATES.getIndex()));
+                    } else if (chartIdList.size() == 1) {
+                        relChartTemplateIds.append(StrUtil.concat(true, chartIdList.get(0).toString(), ","));
+                    }
+                });
+            }
+
+            List<Map<String, String>> errMsgForThisLine = validateUtil.getImportErrMsgForThisLine(lineNum);
+            // 遇到错误是否继续导入，可选值： 0：不继续    1：继续    默认值：1
+            String ignoreError = Tool.ObjectUtil.defaultIfEmpty((String) params.get("ignoreError"), "1");
+            if (BooleanUtil.and(Tool.StrUtil.equals("0", ignoreError), Tool.CollUtil.isNotEmpty(errMsgForThisLine))) {
+                break;
+            }
+
+            if (Tool.CollUtil.isEmpty(errMsgForThisLine)) {
+                String endpointNameTmpl = StrUtil.emptyToDefault(dataMap.get(MonitorModuleImportEnum.ENDPOINT_NAME_TEMPLATE.getIndex()), "{{module.name}}-{{asset.name}}");
+                String remark = dataMap.get(MonitorModuleImportEnum.REMARK.getIndex());
+
+                MonitorModule module = new MonitorModule();
+                if (saveEntitys.get("project") == null) {
+                    MonitorProject project = monitorProjectService.getOne(new LambdaQueryWrapper<MonitorProject>().eq(MonitorProject::getName, projectName));
+                    module.setProjectId(project.getId());
+                }
+                module.setName(moduleName);
+                module.setEndpointNameTmpl(endpointNameTmpl);
+                module.setRemark(remark);
+                module.setChartIds(StrUtil.isNotEmpty(relChartTemplateIds) ? relChartTemplateIds.substring(0, relChartTemplateIds.length() - 1) : "");
+                module.setConfigs(configStr);
+                List<Map> configMapList = JSONObject.parseArray(configStr, Map.class);
+                Map metricsConfigMap = configMapList.stream().filter(map -> {
+                    String configType = (String) map.get("type");
+                    return StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), configType);
+                }).findFirst().get();
+                if (Tool.CollUtil.isNotEmpty(metricsConfigMap)) {
+                    Map configMap = (Map) metricsConfigMap.get("config");
+                    String protocol = (String) configMap.get("protocol");
+                    // 补充 port 缺省值
+                    Object port = configMap.get("port");
+                    if (StrUtil.equals(Constant.MODULE_TYPE_SNMP, protocol)) {
+                        if (ToolUtil.isEmpty(port)) {
+                            configMap.put("port", 161);
+                        }
+                        // 处理 snmYml 字段
+                        String snmpYml = this.generateYmlFromSnmpParam(configMap.get("snmpCredentialsId").toString(), module);
+                        module.setSnmpYml(snmpYml);
+                    } else {
+                        if (ToolUtil.isEmpty(port)) {
+                            configMap.put("port", 9100);
+                        }
+                    }
+                }
+                module.setConfigs(JSONObject.toJSONString(configMapList));
+                saveEntitys.put("module", module);
+
+                TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(new DefaultTransactionDefinition());
+                try {
+                    this.saveOrUpdateRowData(saveEntitys, params);
                     dataSourceTransactionManager.commit(transactionStatus);
-                    successNum++;
-                } catch (RuntimeException e) {
+                } catch (Exception e) {
                     dataSourceTransactionManager.rollback(transactionStatus);
-                    log.error(String.format("module 导入保存失败,实体信息是：%s,错误信息是：%s", JSONObject.toJSONString(module), e.getMessage()), e);
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, "System", RCode.EXCELFILE_IMPORT_ERROR.getMsg());
+                    validateUtil.recordImportAttrErr(lineNum, RCode.ERROR);
+                    log.error("Module import roll back the transaction failure", e);
                 }
             }
         }
-        return successNum;
+        // 返回导入错误信息
+        return validateUtil.getImportErrMsg();
     }
 
-    private void addFailDetail(int i, List<Map> failDetails, String headerInfo, String msg) {
-        Map failDetail = new HashMap(4);
-        failDetail.put("lineNo", i);
-        failDetail.put("errorMsg", headerInfo + ": " + msg);
-        failDetails.add(failDetail);
+    private void saveOrUpdateRowData(Map saveEntitys, Map<String, Object> params) {
+        String seq = params.get("seq").toString();
+
+        MonitorProject project = (MonitorProject) saveEntitys.get("project");
+        if (project != null) {
+            project.setSeq(seq);
+            monitorProjectService.save(project);
+        }
+
+        MonitorModule module = (MonitorModule) saveEntitys.get("module");
+        if (module.getProjectId() == null && project != null) {
+            module.setProjectId(project.getId());
+        }
+        module.setSeq(seq);
+
+        // 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore   在此只需要处理更新即可
+        String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
+        MonitorModule oldModule = this.getOne(new LambdaQueryWrapper<MonitorModule>().eq(MonitorModule::getName, module.getName()));
+
+        if (StrUtil.equals("1", existed) && oldModule != null) {
+            // update & sync
+            module.setId(oldModule.getId());
+
+            // module
+            this.updateById(module);
+
+            // project topo node
+            if (!oldModule.getProjectId().equals(module.getProjectId())) {
+                List<MonitorModule> modules = Tool.ListUtil.of(oldModule);
+                topoService.removeTopoConfigNodeAndLineByModules(modules);
+            }
+            // 是否同步更新关联的endpoint，可选值：  0：不同步  1：同步  默认值：1
+            String syncEndpoint = Tool.ObjectUtil.defaultIfEmpty((String) params.get("syncEndpoint"), "1");
+            if (StrUtil.equals("1", syncEndpoint)) {
+                List<MonitorEndpoint> endpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getModuleId, module.getId()));
+                if (Tool.CollUtil.isNotEmpty(endpointList)) {
+                    monitorEndpointService.syncTmpl(ListUtil.of(module.getId()), Collections.emptyList(), Collections.emptyList());
+                }
+            }
+        } else {
+            this.save(module);
+        }
     }
 
     @Override

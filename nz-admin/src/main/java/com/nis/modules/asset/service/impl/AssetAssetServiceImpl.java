@@ -896,7 +896,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 saveChart.setUpdateBy(ShiroUtils.getUserId().intValue());
                 saveChart.setPid(chart.getId());
 
-                saveChart.setVarType(1);
+                saveChart.setVarType(Constant.ChartVariableType.ASSET.getValue());
                 saveChart.setVarId(asset.getId());
 
                 Integer newGroupId = groupIdMapping.get(saveChart.getGroupId());
@@ -1109,7 +1109,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         }
 
         // chart : create by asset chart tmplate
-        chartService.remove(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getVarType, 1).in(VisualChart::getVarId, removeAssetIdList));
+        chartService.remove(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getVarType, Constant.ChartVariableType.ASSET.getValue()).in(VisualChart::getVarId, removeAssetIdList));
 
         // alert
         alertMessageService.removeByAssetIds(removeAssetIdList);
@@ -2224,7 +2224,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             String syncDashboard = Tool.ObjectUtil.defaultIfEmpty((String) params.get("syncDashboard"), "1");
             if (StrUtil.equals("1", syncDashboard)) {
                 // asset info charts && dashboard charts
-                List<VisualChart> assetChartList = chartService.list(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getVarType, 1).eq(VisualChart::getVarId, asset.getId()));
+                List<VisualChart> assetChartList = chartService.list(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getVarType, Constant.ChartVariableType.ASSET.getValue()).eq(VisualChart::getVarId, asset.getId()));
                 if (Tool.CollUtil.isNotEmpty(assetChartList)) {
                     List<Integer> assetChartIdList = assetChartList.stream().map(VisualChart::getId).collect(Collectors.toList());
                     Map<String, Object> map = Tool.MapUtil.newHashMap(2);

@@ -162,7 +162,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         List<Map<String, Object>> alert = statService.getSeverityStatByRuleMsgCount(Tool.MapUtil.empty(), ruleIdAndAlertCountMap);
         endpoint.setAlert(alert);
 
-        endpoint.setConfigs(getEndpointConfigs(endpoint));
+        endpoint.setConfigs(this.getEndpointConfigs(endpoint));
 
 
         try{
@@ -806,7 +806,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 saveChart.setUpdateBy(ShiroUtils.getUserId().intValue());
                 saveChart.setPid(chart.getId());
 
-                saveChart.setVarType(2);
+                saveChart.setVarType(Constant.ChartVariableType.ENDPOINT.getValue());
                 saveChart.setVarId(endpoint.getId());
 
                 Integer newGroupId = groupIdMapping.get(saveChart.getGroupId());
@@ -864,7 +864,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         }
 
         // 删除 关联通过 chart temp 创建的 charts
-        visualChartService.remove(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getVarType, 2).in(VisualChart::getVarId, ids));
+        visualChartService.remove(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getVarType, Constant.ChartVariableType.ENDPOINT.getValue()).in(VisualChart::getVarId, ids));
 
         // configs
         endpointConfigService.remove(new LambdaQueryWrapper<MonitorEndpointConfig>().in(MonitorEndpointConfig::getEndpointId, ids));
@@ -1232,7 +1232,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             String syncDashboard = Tool.ObjectUtil.defaultIfEmpty((String) params.get("syncDashboard"), "1");
             if (StrUtil.equals("1", syncDashboard)) {
                 // endpoint info charts && dashboard charts
-                List<VisualChart> endpointChartList = visualChartService.list(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getVarType, 2).eq(VisualChart::getVarId, endpoint.getId()));
+                List<VisualChart> endpointChartList = visualChartService.list(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getVarType, Constant.ChartVariableType.ENDPOINT.getValue()).eq(VisualChart::getVarId, endpoint.getId()));
                 if (Tool.CollUtil.isNotEmpty(endpointChartList)) {
                     List<Integer> endpointChartIdList = endpointChartList.stream().map(VisualChart::getId).collect(Collectors.toList());
                     Map<String, Object> map = Tool.MapUtil.newHashMap(2);
@@ -1484,8 +1484,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     private void saveOrUpdateEndpointConfigs(MonitorEndpoint endpoint, MonitorModule module) {
         List<MonitorEndpointConfig> configList = endpointConfigService.list(new LambdaQueryWrapper<MonitorEndpointConfig>().eq(MonitorEndpointConfig::getEndpointId, endpoint.getId()));
-        AssetAsset asset = assetService.getById(endpoint.getAssetId());
+        AssetAsset asset = endpoint.getAsset() != null ? endpoint.getAsset() : assetService.getById(endpoint.getAssetId());
         List<Map> configMapList = JSONObject.parseArray((String) endpoint.getConfigs(), Map.class);
+        List<MonitorEndpointConfig> endpointConfigList = Tool.ListUtil.list(true);
         if (Tool.CollectionUtil.isEmpty(configList)) {
             // 新增
             for (Map configMap : configMapList) {
@@ -1521,8 +1522,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 endpointConfig.setHash(String.valueOf(Math.abs(MurmurHash.hash64(hash))));
                 endpointConfig.setSeq(endpoint.getSeq());
                 endpointConfig.setType(configMap.get("type").toString());
-                endpointConfigService.save(endpointConfig);
+                endpointConfigList.add(endpointConfig);
             }
+            endpointConfigService.saveBatch(endpointConfigList);
         } else {
             // 修改
             for (MonitorEndpointConfig endpointConfig : configList) {
@@ -1548,8 +1550,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                     endpointConfig.setVersion(endpointConfig.getVersion() + 1);
                 }
                 endpointConfig.setSeq(endpoint.getSeq());
-                endpointConfigService.updateById(endpointConfig);
+                endpointConfigList.add(endpointConfig);
             }
+            endpointConfigService.updateBatchById(endpointConfigList);
         }
     }
 

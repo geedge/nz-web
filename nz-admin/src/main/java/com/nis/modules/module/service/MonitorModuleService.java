@@ -37,7 +37,7 @@ public interface MonitorModuleService extends IService<MonitorModule> {
 
     void cancelImport(String seq);
 
-    Map importModuleData(MultipartFile excelFile) throws IOException;
+    Map importModuleData(MultipartFile excelFile, Map<String, Object> params) throws IOException;
 
     void export(HttpServletResponse response, Map<String, Object> params) throws IOException;
 

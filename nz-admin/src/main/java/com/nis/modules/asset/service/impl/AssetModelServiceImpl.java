@@ -400,7 +400,7 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
                 String[] split = chartNames.split(",");
                 for (String chartName : split) {
                     List<VisualChart> list = visualChartService.list(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getPanelId, 0).eq(VisualChart::getName, chartName));
-                    list = list.stream().filter(chart -> chart.getVarType() == 1).collect(Collectors.toList());
+                    list = list.stream().filter(chart -> chart.getVarType() == Constant.ChartVariableType.ASSET.getValue()).collect(Collectors.toList());
                     if (Tool.CollectionUtil.isEmpty(list)) {
                         saveFlag = false;
                         this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_NOTEXSITS.getMsg());

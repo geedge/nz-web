@@ -646,6 +646,28 @@ public class Constant {
 		}
 	}
 
+	/**
+	 * chart Variable type enum
+	 */
+	public enum ChartVariableType {
+		ASSET(1),
+		ENDPOINT(2);
+
+		private Integer value;
+
+		ChartVariableType(Integer value) {
+			this.value = value;
+		}
+
+		public Integer getValue() {
+			return value;
+		}
+
+		public void setValue(Integer value) {
+			this.value = value;
+		}
+	}
+
 	public enum AgentType {
 		GLOBAL("global", 1), PER_DATACENTER("per_datacenter", 2), THANOS_QUERY("thanos_query", 3),
 		THANOS_RULE("thanos_rule", 4), THANOS_SIDECAR("thanos_sidecar", 5), THANOS_STORE("thanos_store", 6),

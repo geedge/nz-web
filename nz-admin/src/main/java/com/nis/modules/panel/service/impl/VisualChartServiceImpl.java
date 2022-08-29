@@ -675,10 +675,10 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 			for (VisualChart chart : tempChartList) {
 				Map<Integer, Object> objs = new HashMap<>();
 				// 查询所有 varId 对应数据信息
-				if (chart.getVarType().equals(1)) {
+				if (chart.getVarType().equals(Constant.ChartVariableType.ASSET.getValue())) {
 					AssetAsset asset = assetAssetService.queryAssetInfo(entityId);
 					objs.put(entityId, asset);
-				} else if (chart.getVarType().equals(2)) {
+				} else if (chart.getVarType().equals(Constant.ChartVariableType.ENDPOINT.getValue())) {
 					MonitorEndpoint endpoint = monitorEndpointService.queryEndpointEntity(entityId);
 					objs.put(entityId, endpoint);
 				}
@@ -699,7 +699,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 				if (ObjectUtil.isNotEmpty(panelId)) {
 					visualChart.setPanelId(panelId);
 				} else {
-					String type = chart.getVarType().equals(1) ? Constant.PanelType.ASSET.getValue() : Constant.PanelType.ENDPOINT.getValue();
+					String type = chart.getVarType().equals(Constant.ChartVariableType.ASSET.getValue()) ? Constant.PanelType.ASSET.getValue() : Constant.PanelType.ENDPOINT.getValue();
 					VisualPanel linkPanel = panelList.stream().filter(panel -> type.equalsIgnoreCase(panel.getType()) && entityId.equals(panel.getLink())).findAny().orElse(null);
 					visualChart.setPanelId(linkPanel.getId());
 				}
@@ -967,13 +967,10 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		syncChart.setUpdateBy(ShiroUtils.getUserId().intValue());
 
 		Object obj = null;
-		String type = "";
-		if(instance.getVarType().equals(2)) {
+		if (instance.getVarType().equals(Constant.ChartVariableType.ENDPOINT.getValue())) {
 			obj = monitorEndpointService.queryEndpointEntity(instance.getVarId());
-			type = Constant.PanelType.ENDPOINT.getValue();
-		}else if(instance.getVarType().equals(1)) {
+		} else if (instance.getVarType().equals(Constant.ChartVariableType.ASSET.getValue())) {
 			obj = assetAssetService.queryAssetInfo(instance.getVarId());
-			type = Constant.PanelType.ASSET.getValue();
 		}
 		
 		syncChart.setName(NzExpressionUtil.renderExpression(temp.getName(),obj));

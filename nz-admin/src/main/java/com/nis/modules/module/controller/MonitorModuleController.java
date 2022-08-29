@@ -139,7 +139,7 @@ public class MonitorModuleController {
     @PostMapping("/module/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.MODULE)
     @RequiresPermissions({"module:save"})
-    public R importModules(MultipartFile excelFile, HttpServletRequest request) throws IOException {
+    public R importModules(MultipartFile excelFile, HttpServletRequest request, @RequestParam Map<String, Object> params) throws IOException {
         String language = request.getHeader(Constant.LANGUAGE);
         ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL);
         // 校验 LANGUAGE
@@ -147,7 +147,7 @@ public class MonitorModuleController {
             throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
         }
 
-        Map info = monitorModuleService.importModuleData(excelFile);
+        Map info = monitorModuleService.importModuleData(excelFile, params);
         return R.ok(info);
     }
 
