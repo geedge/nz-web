@@ -94,7 +94,7 @@ public class IssueController {
     @GetMapping("/type")
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ISSUERECORD)
     public R queryType(String name) {
-        return R.ok(issueRecordService.queryType(name));
+        return R.ok().putData("list", issueRecordService.queryType(name));
     }
 
     /**

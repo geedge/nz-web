@@ -16,6 +16,7 @@
         <result property="uid" column="uid"/>
         <result property="rid" column="rid"/>
         <result property="aid" column="aid"/>
+        <result property="starred" column="starred"/>
         <collection property="assets" column="id" ofType="com.nis.modules.asset.entity.AssetAsset" select="queryAssetList" >
             <result property="id" column="id"/>
             <result property="name" column="name"/>
@@ -24,7 +25,8 @@
 
     <select id="queryIssueList" resultMap="issueMap">
         SELECT
-            issue.*
+            issue.*,
+            IFNULL( sus.starred, 0 ) AS starred
         FROM
             issue_record issue
             LEFT JOIN issue_asset_rel rel ON issue.id = rel.issue_id

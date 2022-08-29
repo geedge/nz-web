@@ -237,12 +237,8 @@ public class IssueRecordServiceImpl extends ServiceImpl<IssueRecordDao, IssueRec
 
     @Override
     public List queryType(String name) {
-        List list = null;
-        List<IssueRecord> issueList = this.list(new LambdaQueryWrapper<IssueRecord>().like(StrUtil.isNotEmpty(name), IssueRecord::getType, name));
-        if(Tool.CollectionUtil.isNotEmpty(issueList)){
-            list = issueList.stream().filter(issue -> StrUtil.isNotBlank(issue.getType())).map(IssueRecord::getType).distinct().collect(Collectors.toList());
-        }
-        return list;
+        List<IssueRecord> issueList = this.list(new LambdaQueryWrapper<IssueRecord>().like(StrUtil.isNotEmpty(name), IssueRecord::getType, name).groupBy(IssueRecord::getType));
+        return issueList.stream().map(IssueRecord::getType).collect(Collectors.toList());
     }
 
     /**
