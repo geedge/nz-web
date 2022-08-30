@@ -545,6 +545,7 @@ public enum RCode {
     SYS_USER_STARRED_TYPE_ISNULL(511046,"Starred type can not be empty"),
     SYS_USER_STARRED_TID_ISNULL(511047,"Starred tid can not be empty"),
     SYS_USER_STARRED_ID_TYPE_ISNULL(511048,"Starred id and type at the same time null"),
+    SYS_USER_NEWPWD_ISNULL(511049, "User new password can not be empty"), //新密码不能为空
 
     AGENT_ID_ISNULL(521000, "Agent id can not be empty"),
     AGENT_DCID_ISNULL(521001, "Agent Dc id can not be empty"),

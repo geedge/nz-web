@@ -4573,5 +4573,15 @@ INSERT INTO `sys_i18n` VALUES (7211, '397012', 'en', 'ISSUE_ACTIVITY_ONLYOWN_COM
 INSERT INTO `sys_i18n` VALUES (7213, '397012', 'zh', 'ISSUE_ACTIVITY_ONLYOWN_COMMENTS', '问题动态只能操作自己的评论', '响应消息->issue activity删除/修改接口', '2022-08-25 11:36:13', 416);
 INSERT INTO `sys_i18n` VALUES (7214, '391013', 'en', 'ISSUE_ACTIVITY_TYPE_ISNULL', 'Issue activity type can not be empty', '响应消息->issue activity查询接口', '2022-08-25 11:36:13', 416);
 INSERT INTO `sys_i18n` VALUES (7215, '391013', 'zh', 'ISSUE_ACTIVITY_TYPE_ISNULL', '问题动态类型不能为空', '响应消息->issue activity查询接口', '2022-08-25 11:36:13', 416);
+INSERT INTO `sys_i18n` VALUES (7217, 'batch.forceDelete', 'en', 'batch.forceDelete', 'Force delete', '批量删除', '2022-08-29 01:23:58', 1);
+INSERT INTO `sys_i18n` VALUES (7219, 'batch.forceDelete', 'zh', 'batch.forceDelete', '关联删除', '批量刪除', '2022-08-29 01:39:15', 1);
+INSERT INTO `sys_i18n` VALUES (7221, 'batch.prepare', 'en', 'batch.prepare', 'Are you sure to delete these {dataLength} pleaces of data?', '批量删除 -> 首次提示', '2022-08-29 01:38:12', 1);
+INSERT INTO `sys_i18n` VALUES (7223, 'batch.prepare', 'zh', 'batch.prepare', '是否删除这{dataLength}处的数据？', '批量删除 -> 首次提示', '2022-08-29 01:38:05', 1);
+INSERT INTO `sys_i18n` VALUES (7225, 'batch.process', 'en', 'batch.process', 'These {title} cannot be deleted.If you want to continue to delete,please check the \"Force delete\" action.', '批量删除确认', '2022-08-29 01:47:03', 1);
+INSERT INTO `sys_i18n` VALUES (7227, 'batch.process', 'zh', 'batch.process', '这些{title}不能被删除。如果要继续删除，请勾选“强制删除”操作。', '批量删除 -> 确认', '2022-08-29 01:50:11', 1);
+INSERT INTO `sys_i18n` VALUES (7229, 'batch.finish', 'en', 'batch.finish', 'These {{title}} delete complete.', '批量删除 -》 成功', '2022-08-29 01:53:02', 1);
+INSERT INTO `sys_i18n` VALUES (7231, 'batch.finish', 'zh', 'batch.finish', '这些{title}删除完成。', '批量删除 -》 成功', '2022-08-29 01:53:48', 1);
+INSERT INTO `sys_i18n` VALUES (7232, '511049', 'en', 'SYS_USER_NEWPWD_ISNULL', 'User new password can not be empty', '响应消息->个人中心密码修改', '2022-08-30 15:43:43', 416);
+INSERT INTO `sys_i18n` VALUES (7233, '511049', 'zh', 'SYS_USER_NEWPWD_ISNULL', '新密码不能为空', '响应消息->个人中心密码修改', '2022-08-30 15:43:43', 416);
 
 SET FOREIGN_KEY_CHECKS = 1;

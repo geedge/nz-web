@@ -28,7 +28,6 @@ import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
 import com.nis.common.utils.TypeEnum;
-import com.nis.common.validator.Assert;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
@@ -65,7 +64,7 @@ public class SysUserController extends AbstractController {
 		Integer id = (Integer) params.get("id");
 		String newPin = (String) params.get("newPin");
 		String oldPin = (String) params.get("oldPin");
-		Assert.isBlank(newPin, "新密码不为能空");
+		ValidateUtils.is(newPin).notNull(RCode.SYS_USER_NEWPWD_ISNULL);
 		SysUserEntity user = (id== null)? this.getUser() : sysUserService.getById(id);
 		user.setPin(newPin);
 		sysUserService.checkPin(user,false);
