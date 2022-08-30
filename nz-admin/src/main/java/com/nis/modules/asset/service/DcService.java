@@ -60,7 +60,7 @@ public interface DcService extends IService<Dc> {
 
     void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException;
 
-    Map importDcData(MultipartFile excelFile) throws IOException;
+    Map importDcData(MultipartFile excelFile, Map<String, Object> params) throws IOException;
 
     void export(HttpServletResponse response, Map<String, Object> params) throws IOException;
 

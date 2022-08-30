@@ -20,6 +20,7 @@ public interface CabinetService extends IService<Cabinet> {
 
     /**
      * 详情
+     *
      * @param id
      * @return
      */
@@ -27,6 +28,7 @@ public interface CabinetService extends IService<Cabinet> {
 
     /**
      * 分页列表
+     *
      * @param params
      * @return
      */
@@ -34,6 +36,7 @@ public interface CabinetService extends IService<Cabinet> {
 
     /**
      * 保存
+     *
      * @param cabinet
      * @return
      */
@@ -41,6 +44,7 @@ public interface CabinetService extends IService<Cabinet> {
 
     /**
      * 修改
+     *
      * @param cabinet
      * @return
      */
@@ -48,6 +52,7 @@ public interface CabinetService extends IService<Cabinet> {
 
     /**
      * cabinet 删除方法
+     *
      * @param force 0：存在关联数据时，删除失败 1：存在关联数据时，同时删除关联数据 默认：0
      * @param ids
      * @return
@@ -56,6 +61,7 @@ public interface CabinetService extends IService<Cabinet> {
 
     /**
      * 机柜u位查询
+     *
      * @param id
      * @return
      */
@@ -63,7 +69,7 @@ public interface CabinetService extends IService<Cabinet> {
 
     void getCabinetTemplateByLanguage(HttpServletResponse response, String format) throws IOException;
 
-    Map importCabinetData(MultipartFile excelFile) throws IOException;
+    Map importCabinetData(MultipartFile excelFile, Map<String, Object> params) throws IOException;
 
     void export(HttpServletResponse response, Map<String, Object> params) throws IOException;
 

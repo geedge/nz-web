@@ -1,11 +1,13 @@
 package com.nis.modules.asset.service.impl;
 
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
@@ -20,6 +22,7 @@ import com.nis.modules.asset.dao.DcDao;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.Cabinet;
 import com.nis.modules.asset.entity.Dc;
+import com.nis.modules.asset.entity.DcImportEnum;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.CabinetService;
 import com.nis.modules.asset.service.DcService;
@@ -471,126 +474,147 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
     }
 
     @Override
-    public Map importDcData(MultipartFile multipartFile) throws IOException {
+    public Map importDcData(MultipartFile multipartFile, Map<String, Object> params) throws IOException {
         String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_DC_EXPORT_HEADER);
         Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
         List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
 
-        List<Map> failDetails = new ArrayList<>();
-        String seqUUID = UUID.randomUUID().toString();
+        String seq = UUID.randomUUID().toString();
+        params.put("seq", seq);
+        // 表头信息 国际化之后的
+        List<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
 
-        int successNum = this.saveDatacentersFromImportDataList(importDataList, failDetails, new ArrayList<>(exportHeaderMap.keySet()), seqUUID);
         int totalNum = importDataList.size();
+        List<Map<String, String>> failDetailList = this.saveDatacentersFromImportDataList(importDataList, headerInfos, params);
+
+        // 从错误信息中获取失败导入行数量
+        int failNum = (int) failDetailList.stream().map(map -> Integer.valueOf(map.get("lineNo"))).distinct().count();
 
         Map resultMap = new HashMap(8);
-        resultMap.put("seq", seqUUID);
+        resultMap.put("seq", seq);
         resultMap.put("totalNum", totalNum);
-        resultMap.put("successNum", successNum);
-        resultMap.put("failNum", totalNum - successNum);
-        resultMap.put("failDetail", CommonUtils.handleImportFailDetails(failDetails));
+        resultMap.put("successNum", totalNum - failNum);
+        resultMap.put("failNum", failNum);
+        resultMap.put("failDetail", failDetailList);
         return resultMap;
     }
 
-    private int saveDatacentersFromImportDataList(List<Map<Integer, String>> importDataList, List<Map> failDetails, List<String> headerInfos, String seqUUID) {
-        int successNum = 0;
+    private List<Map<String, String>> saveDatacentersFromImportDataList(List<Map<Integer, String>> importDataList, List<String> headerInfos, Map<String, Object> params) {
+        // 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
+        String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
+
+        // 创建导入校验对象
+        ImportValidateUtil validateUtil = ImportValidateUtil.builder()
+                .existed(existed).headerInfos(headerInfos)
+                .build();
         for (int i = 0; i < importDataList.size(); i++) {
-            int dataFromExcelRowNum = i + 1;
-            boolean saveFlag = true;
+            int lineNum = i + 1;
             Map<Integer, String> dataMap = importDataList.get(i);
 
-            String name = dataMap.get(0);
-            if (StringUtils.isEmpty(name)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.DC_NAME_ISNULL.getMsg());
-            } else {
-                int countByName = this.count(new LambdaQueryWrapper<Dc>().eq(Dc::getName, name));
-                if (countByName > 0) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.DC_NAME_DUPLICATE.getMsg());
-                }
+            String name = dataMap.get(DcImportEnum.NAME.getIndex());
+            validateUtil.validateRequired(name, lineNum, DcImportEnum.NAME.getIndex());
+            boolean indexDuplicate = validateUtil.validateIndexDuplicate("dc", "name", name, lineNum, DcImportEnum.NAME.getIndex());
+            // 索引列重复 & 忽略标识，提示忽略本行
+            if (BooleanUtil.and(indexDuplicate, StrUtil.equals("2", existed))) {
+                validateUtil.ignoreThisRow(lineNum, DcImportEnum.NAME.getIndex());
+                continue;
             }
 
-            String location = dataMap.get(1);
-            String tel = dataMap.get(2);
+            String principalName = dataMap.get(DcImportEnum.PRINCIPAL.getIndex());
+            if (StrUtil.isNotEmpty(principalName))
+                validateUtil.validateRelObjExits("sys_user", "name", principalName, false, lineNum, DcImportEnum.PRINCIPAL.getIndex());
 
-            SysUserEntity principalUser = null;
-            String principalName = dataMap.get(3);
-            if (StringUtils.isNotEmpty(principalName)) {
-                principalUser = sysUserService.getOne(new LambdaQueryWrapper<SysUserEntity>().eq(SysUserEntity::getName, principalName));
-                if (principalUser == null) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.DC_PRINCIPAL_NOT_EXISTS.getMsg());
-                }
+            String longitude = dataMap.get(DcImportEnum.LONGITUDE.getIndex());
+            if (StrUtil.isNotEmpty(longitude)) {
+                Double longitudeDoubleValue = validateUtil.validateDouble(longitude, lineNum, DcImportEnum.LONGITUDE.getIndex());
+                if (longitudeDoubleValue != null && (longitudeDoubleValue > 180 || longitudeDoubleValue < -180))
+                    validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(DcImportEnum.LONGITUDE.getIndex()));
             }
 
-            String longitude = dataMap.get(4);
-            if (StringUtils.isNotEmpty(longitude)) {
-                try {
-                    Double aDouble = Double.valueOf(longitude);
-                    if (aDouble > 180 || aDouble < -180) {
-                        saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.DC_LONGITUDE_ERROR.getMsg());
-                    }
-                } catch (NumberFormatException e) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.DC_LONGITUDE_FORMAT.getMsg());
-                }
+            String latitude = dataMap.get(DcImportEnum.LATITUDE.getIndex());
+            if (StrUtil.isNotEmpty(latitude)) {
+                Double latitudeDoubleValue = validateUtil.validateDouble(latitude, lineNum, DcImportEnum.LATITUDE.getIndex());
+                if (latitudeDoubleValue != null && (latitudeDoubleValue > 90 || latitudeDoubleValue < -90))
+                    validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(DcImportEnum.LATITUDE.getIndex()));
             }
 
-            String latitude = dataMap.get(5);
-            if (StringUtils.isNotEmpty(latitude)) {
-                try {
-                    Double aDouble = Double.valueOf(latitude);
-                    if (aDouble > 90 || aDouble < -90) {
-                        saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.DC_LATITUDE_ERROR.getMsg());
-                    }
-                } catch (NumberFormatException e) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.DC_LATITUDE_FORMAT.getMsg());
-                }
+            String state = dataMap.get(DcImportEnum.STATE.getIndex());
+            validateUtil.validateRequired(state, lineNum, DcImportEnum.STATE.getIndex());
+            validateUtil.validateEnumValArr(state, Tool.ListUtil.of(Constant.SWITCH_OPEN.toUpperCase(), Constant.SWITCH_CLOSE.toUpperCase()), lineNum, DcImportEnum.STATE.getIndex());
+
+            // 遇到错误是否继续导入，可选值： 0：不继续    1：继续    默认值：1
+            String ignoreError = Tool.ObjectUtil.defaultIfEmpty((String) params.get("ignoreError"), "1");
+
+            List<Map<String, String>> errMsgForThisLine = validateUtil.getImportErrMsgForThisLine(lineNum);
+            if (BooleanUtil.and(Tool.StrUtil.equals("0", ignoreError), Tool.CollUtil.isNotEmpty(errMsgForThisLine))) {
+                break;
             }
 
-            String state = dataMap.get(6);
-            if (StringUtils.isEmpty(state)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.DC_STATE_ISNULL.getMsg());
-            } else {
-                if (!StrUtil.equals(Constant.SWITCH_OPEN.toUpperCase(), state) && !StrUtil.equals(Constant.SWITCH_CLOSE.toUpperCase(), state)) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.DC_STATE_ERROR.getMsg());
-                }
-            }
+            if (Tool.CollUtil.isEmpty(errMsgForThisLine)) {
+                String location = dataMap.get(DcImportEnum.LOCATION.getIndex());
+                String tel = dataMap.get(DcImportEnum.TELEPHONE.getIndex());
 
-            if (saveFlag) {
                 Dc dc = new Dc();
-                try {
-                    dc.setName(name);
-                    dc.setLocation(location);
-                    dc.setTel(tel);
+                dc.setName(name);
+                dc.setLocation(location);
+                dc.setTel(tel);
+                dc.setLongitude(StrUtil.isNotEmpty(longitude) ? Double.valueOf(longitude) : null);
+                dc.setLatitude(StrUtil.isNotEmpty(latitude) ? Double.valueOf(latitude) : null);
+                dc.setState(state);
+                if (StrUtil.isNotEmpty(principalName)) {
+                    SysUserEntity principalUser = sysUserService.getOne(new LambdaQueryWrapper<SysUserEntity>().eq(SysUserEntity::getName, principalName));
                     dc.setPrincipal(principalUser == null ? null : principalUser.getId().intValue());
-                    dc.setY(1);
-                    dc.setX(1);
-                    dc.setLongitude(StrUtil.isNotEmpty(longitude) ? Double.valueOf(longitude) : null);
-                    dc.setLatitude(StrUtil.isNotEmpty(latitude) ? Double.valueOf(latitude) : null);
-                    dc.setState(state);
-                    dc.setSeq(seqUUID);
-                    this.save(dc);
-                    successNum++;
-                } catch (RuntimeException e) {
-                    log.error(String.format("datacenter 导入保存失败,实体信息是：%s,错误信息是：%s", JSONObject.toJSONString(dc), e.getMessage()), e);
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, "System", RCode.EXCELFILE_IMPORT_ERROR.getMsg());
+                } else {
+                    dc.setPrincipal(null);
+                }
+                try {
+                    this.saveOrUpdateRowData(dc, params);
+                } catch (Exception e) {
+                    validateUtil.recordImportAttrErr(lineNum, RCode.ERROR);
+                    log.error("Dc import roll back the transaction failure", e);
                 }
             }
         }
-        return successNum;
+        // 返回错误信息
+        return validateUtil.getImportErrMsg();
     }
 
-    private void addFailDetail(int i, List<Map> failDetails, String headerInfo, String msg) {
-        Map failDetail = new HashMap(4);
-        failDetail.put("lineNo", i);
-        failDetail.put("errorMsg", headerInfo + ": " + msg);
-        failDetails.add(failDetail);
+    private void saveOrUpdateRowData(Dc dc, Map<String, Object> params) {
+        String seq = params.get("seq").toString();
+        dc.setSeq(seq);
+
+        // 经纬度存在空值，则使用系统默认值填充
+        if (BooleanUtil.or(ToolUtil.isEmpty(dc.getLatitude()), ToolUtil.isEmpty(dc.getLongitude()))) {
+            String mapCenterConfigJsonStr = sysConfigService.getValue("map_center_config");
+            Map<String, Object> map = JSONObject.parseObject(mapCenterConfigJsonStr, Map.class);
+            String longitude = (String) map.get("longitude");
+            String latitude = (String) map.get("latitude");
+            dc.setLongitude(StrUtil.isNotEmpty(longitude) ? Double.valueOf(longitude) : null);
+            dc.setLatitude(StrUtil.isNotEmpty(latitude) ? Double.valueOf(latitude) : null);
+        }
+
+        // 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore   在此只需要处理更新即可
+        String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
+        Dc oldDc = this.getOne(new LambdaQueryWrapper<Dc>().eq(Dc::getName, dc.getName()));
+        if (StrUtil.equals("1", existed) && oldDc != null) {
+            // update
+            dc.setId(oldDc.getId());
+
+            LambdaUpdateWrapper<Dc> updateWrapper = new LambdaUpdateWrapper<Dc>()
+                    .eq(Dc::getId, dc.getId())
+                    .set(Dc::getPrincipal, dc.getPrincipal())
+                    .set(Dc::getLatitude, dc.getLatitude())
+                    .set(Dc::getLongitude, dc.getLongitude())
+                    .set(Dc::getLocation, dc.getLocation())
+                    .set(Dc::getTel, dc.getTel());
+            this.update(dc, updateWrapper);
+        } else {
+            // insert
+            // default value
+            dc.setY(1);
+            dc.setX(1);
+            this.save(dc);
+        }
     }
 
     @Override

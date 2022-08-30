@@ -93,12 +93,6 @@ public class Cabinet implements Serializable {
     private Map alertStat;
 
     /**
-     * 当前cabinet包含的asset集合
-     */
-    /*@TableField(exist = false)
-    private List<Asset> assetList;*/
-
-    /**
      * 当前cabinet包含的asset asset集合
      */
     @TableField(exist = false)

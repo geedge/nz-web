@@ -1,10 +1,7 @@
 package com.nis.common.utils;
 
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.util.BooleanUtil;
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.ReUtil;
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.*;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
@@ -161,6 +158,19 @@ public class ImportValidateUtil {
         }
     }
 
+    /**
+     * 校验是否是double格式
+     */
+    public Double validateDouble(String value, int lineNum, int headerIndex) {
+        try {
+            Double aDouble = Double.valueOf(value);
+            return aDouble;
+        } catch (NumberFormatException e) {
+            String header = headerInfos.get(headerIndex);
+            this.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(header));
+        }
+        return null;
+    }
 
     /**
      * 校验时间数据是否符合指定格式

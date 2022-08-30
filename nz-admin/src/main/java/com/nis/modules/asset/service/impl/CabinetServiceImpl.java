@@ -1,11 +1,12 @@
 package com.nis.modules.asset.service.impl;
 
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
-import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
@@ -16,6 +17,7 @@ import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.asset.dao.CabinetDao;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.Cabinet;
+import com.nis.modules.asset.entity.CabinetImportEnum;
 import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.CabinetService;
@@ -382,147 +384,159 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
     }
 
     @Override
-    public Map importCabinetData(MultipartFile multipartFile) throws IOException {
+    public Map importCabinetData(MultipartFile multipartFile, Map<String, Object> params) throws IOException {
         String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_CABINET_EXPORT_HEADER);
         Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
         List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
 
-        List<Map> failDetails = new ArrayList<>();
-        String seqUUID = UUID.randomUUID().toString();
+        String seq = UUID.randomUUID().toString();
+        params.put("seq", seq);
+        // 表头信息 国际化之后的
+        List<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
 
-        int successNum = this.saveCabinetsFromImportDataList(importDataList, failDetails, new ArrayList<>(exportHeaderMap.keySet()), seqUUID);
         int totalNum = importDataList.size();
+        List<Map<String, String>> failDetailList = this.saveCabinetsFromImportDataList(importDataList, headerInfos, params);
+
+        // 从错误信息中获取失败导入行数量
+        int failNum = (int) failDetailList.stream().map(map -> Integer.valueOf(map.get("lineNo"))).distinct().count();
 
         Map resultMap = new HashMap(8);
-        resultMap.put("seq", seqUUID);
+        resultMap.put("seq", seq);
         resultMap.put("totalNum", totalNum);
-        resultMap.put("successNum", successNum);
-        resultMap.put("failNum", totalNum - successNum);
-        resultMap.put("failDetail", CommonUtils.handleImportFailDetails(failDetails));
+        resultMap.put("successNum", totalNum - failNum);
+        resultMap.put("failNum", failNum);
+        resultMap.put("failDetail", failDetailList);
         return resultMap;
     }
 
-    private int saveCabinetsFromImportDataList(List<Map<Integer, String>> importDataList, List<Map> failDetails, List<String> headerInfos, String seqUUID) {
-        int successNum = 0;
+    private List<Map<String, String>> saveCabinetsFromImportDataList(List<Map<Integer, String>> importDataList, List<String> headerInfos, Map<String, Object> params) {
+        // 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
+        String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
+
+        // 创建导入校验对象
+        ImportValidateUtil validateUtil = ImportValidateUtil.builder()
+                .existed(existed).headerInfos(headerInfos)
+                .build();
+        List<Dc> dcList = dcService.list();
         for (int i = 0; i < importDataList.size(); i++) {
-            int dataFromExcelRowNum = i + 1;
-            boolean saveFlag = true;
-              Map<Integer, String> dataMap = importDataList.get(i);
+            int lineNum = i + 1;
+            Map<Integer, String> dataMap = importDataList.get(i);
 
-              String cabinetName = dataMap.get(0);
-            if (StringUtils.isEmpty(cabinetName)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.DC_CABINETNAME_ISNULL.getMsg());
-            }
+            String cabinetName = dataMap.get(CabinetImportEnum.NAME.getIndex());
+            validateUtil.validateRequired(cabinetName, lineNum, CabinetImportEnum.NAME.getIndex());
 
-            String dcName = dataMap.get(1);
-            Dc dc = null;
-            if (StringUtils.isEmpty(dcName)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.DC_NAME_ISNULL.getMsg());
-            } else {
-                dc = dcService.getOne(new LambdaQueryWrapper<Dc>().eq(Dc::getName, dcName));
-                if (ToolUtil.isEmpty(dc)) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.DC_NOT_EXISTS.getMsg());
-                }
-            }
+            String dcName = dataMap.get(CabinetImportEnum.DC.getIndex());
+            validateUtil.validateRequired(dcName, lineNum, CabinetImportEnum.DC.getIndex());
+            Boolean dcExits = validateUtil.validateRelObjExits("dc", "name", dcName, false, lineNum, CabinetImportEnum.DC.getIndex());
 
-            String uSize = dataMap.get(2);
-            if (StringUtils.isNotEmpty(uSize)) {
-                Integer uSizeIntVal = null;
-                try {
-                    uSizeIntVal = Double.valueOf(uSize).intValue();
-                } catch (NumberFormatException e) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CABINET_USIZE_FORMAT.getMsg());
-                }
-                if (uSizeIntVal != null && (uSizeIntVal < 1 || uSizeIntVal > Constant.CURRENT_CABINET_MAXU)) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CABINET_USIZE_ERROR.getMsg());
-                }
-            }
+            Integer yIntVal = null, xIntVal = null;
+            String y = dataMap.get(CabinetImportEnum.Y.getIndex());
+            if (StrUtil.isNotEmpty(y))
+                yIntVal = validateUtil.validateInteger(y, lineNum, CabinetImportEnum.Y.getIndex());
 
-            String y = dataMap.get(3);
-            if (StringUtils.isNotEmpty(y)) {
-                try {
-                    Double.valueOf(y).intValue();
-                } catch (NumberFormatException e) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CABINET_Y_FORMAT.getMsg());
-                }
-            }
-            String x = dataMap.get(4);
-            if (StringUtils.isNotEmpty(x)) {
-                try {
-                    Double.valueOf(x).intValue();
-                } catch (NumberFormatException e) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CABINET_X_FORMAT.getMsg());
-                }
-            }
-            String remark = dataMap.get(5);
-            if (saveFlag) {
-                // 名称校验
-                int countByName = this.count(new QueryWrapper<Cabinet>().lambda().eq(Cabinet::getName, cabinetName).eq(Cabinet::getDcId, dc.getId()));
-                if (countByName > 0) {
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.DC_CABINETNAME_DUPLICATE.getMsg());
-                    continue;
+            String x = dataMap.get(CabinetImportEnum.X.getIndex());
+            if (StrUtil.isNotEmpty(x))
+                xIntVal = validateUtil.validateInteger(x, lineNum, CabinetImportEnum.X.getIndex());
+
+            if (BooleanUtil.and(dcExits, StrUtil.isNotEmpty(cabinetName))) {
+                Dc dc = dcList.stream().filter(pojo -> StrUtil.equals(pojo.getName(), dcName)).findFirst().get();
+                // 索引重复 & error or ignore
+                List<Cabinet> cabinetList = this.list(new LambdaQueryWrapper<Cabinet>().eq(Cabinet::getName, cabinetName).eq(Cabinet::getDcId, dc.getId()));
+                if (Tool.CollUtil.isNotEmpty(cabinetList)) {
+                    if (StrUtil.equals("0", existed)) {
+                        validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_DUPLICATE.setParam(CabinetImportEnum.NAME.getIndex()));
+                    } else if (StrUtil.equals("2", existed)) {
+                        validateUtil.ignoreThisRow(lineNum, CabinetImportEnum.NAME.getIndex());
+                        continue;
+                    }
                 }
                 // 校验行列
-                if (StrUtil.isAllNotEmpty(x, y)) {
-                    int xIntVal = Double.valueOf(x).intValue();
-                    int yIntVal = Double.valueOf(y).intValue();
+                if (Tool.ObjectUtil.isAllNotEmpty(yIntVal, xIntVal)) {
                     if (yIntVal > dc.getY()) {
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CABINET_Y_INCORRECT.getMsg());
-                        continue;
+                        validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(CabinetImportEnum.Y.getIndex()));
+
                     }
                     if (xIntVal > dc.getX()) {
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CABINET_X_INCORRECT.getMsg());
-                        continue;
+                        validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(CabinetImportEnum.X.getIndex()));
                     }
-                    int countByPosition = this.count(new QueryWrapper<Cabinet>().lambda().eq(Cabinet::getDcId, dc.getId()).eq(Cabinet::getY, yIntVal).eq(Cabinet::getX, xIntVal));
-                    if (countByPosition > 0) {
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CABINET_POSITION_OCCUPIED.getMsg());
-                        continue;
+                    Cabinet cabinetOfXY = this.getOne(new LambdaQueryWrapper<Cabinet>().eq(Cabinet::getDcId, dc.getId()).eq(Cabinet::getY, yIntVal).eq(Cabinet::getX, xIntVal));
+                    if (cabinetOfXY != null) {
+                        if (StrUtil.equals("0", existed)) {
+                            validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_SUPPORT.setParam(CabinetImportEnum.Y.getIndex()));
+                        }
+                        if (StrUtil.equals("1", existed) && !StrUtil.equals(cabinetOfXY.getName(), cabinetName)) {
+                            validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_SUPPORT.setParam(CabinetImportEnum.Y.getIndex()));
+                        }
                     }
                 }
+            }
+
+            String uSize = dataMap.get(CabinetImportEnum.U_SIZE.getIndex());
+            if (StrUtil.isNotEmpty(uSize)) {
+                Integer uSizeIntVal = validateUtil.validateInteger(uSize, lineNum, CabinetImportEnum.U_SIZE.getIndex());
+                if (uSizeIntVal != null && (uSizeIntVal < 1 || uSizeIntVal > Constant.CURRENT_CABINET_MAXU)) {
+                    validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(CabinetImportEnum.U_SIZE.getIndex()));
+                }
+            }
+            String remark = dataMap.get(CabinetImportEnum.REMARK.getIndex());
+
+            // 遇到错误是否继续导入，可选值： 0：不继续    1：继续    默认值：1
+            String ignoreError = Tool.ObjectUtil.defaultIfEmpty((String) params.get("ignoreError"), "1");
+
+            List<Map<String, String>> errMsgForThisLine = validateUtil.getImportErrMsgForThisLine(lineNum);
+            if (BooleanUtil.and(Tool.StrUtil.equals("0", ignoreError), Tool.CollUtil.isNotEmpty(errMsgForThisLine))) {
+                break;
+            }
+
+            if (Tool.CollUtil.isEmpty(errMsgForThisLine)) {
+                Dc dc = dcList.stream().filter(pojo -> StrUtil.equals(pojo.getName(), dcName)).findFirst().get();
+
                 Cabinet cabinet = new Cabinet();
+                cabinet.setName(cabinetName);
+                cabinet.setRemark(remark);
+                if (StrUtil.isNotEmpty(x)) cabinet.setX(Double.valueOf(x).intValue());
+                if (StrUtil.isNotEmpty(y)) cabinet.setY(Double.valueOf(y).intValue());
+                if (StrUtil.isNotEmpty(uSize)) cabinet.setuSize(Double.valueOf(uSize).intValue());
                 try {
-                    cabinet.setName(cabinetName);
-                    cabinet.setDcId(dc.getId());
-
-                    if (StrUtil.isNotEmpty(uSize)) {
-                        cabinet.setuSize(Double.valueOf(uSize).intValue());
-                    } else {
-                        SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_DEFAULT_CABINETU).eq(SysConfigEntity::getStatus, 1));
-                        cabinet.setuSize(Integer.valueOf(configEntity.getParamValue()));
-                    }
-
-                    cabinet.setRemark(remark);
-                    if (StrUtil.isNotEmpty(x)) {
-                        cabinet.setX(Double.valueOf(x).intValue());
-                    }
-                    if (StrUtil.isNotEmpty(y)) {
-                        cabinet.setY(Double.valueOf(y).intValue());
-                    }
-                    cabinet.setSeq(seqUUID);
-                    this.save(cabinet);
-                    successNum++;
-                } catch (RuntimeException e) {
-                    log.error(String.format("cabinet 导入保存失败,实体信息是：%s,错误信息是：%s", JSONObject.toJSONString(cabinet), e.getMessage()), e);
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, "System", RCode.EXCELFILE_IMPORT_ERROR.getMsg());
+                    this.saveOrUpdateRowData(dc, cabinet, params);
+                } catch (Exception e) {
+                    validateUtil.recordImportAttrErr(lineNum, RCode.ERROR);
+                    log.error("Cabinet import roll back the transaction failure", e);
                 }
             }
         }
-        return successNum;
+        // 返回错误信息
+        return validateUtil.getImportErrMsg();
     }
 
-    private void addFailDetail(int i, List<Map> failDetails, String headerInfo, String msg) {
-        Map failDetail = new HashMap(4);
-        failDetail.put("lineNo", i);
-        failDetail.put("errorMsg", headerInfo + ": " + msg);
-        failDetails.add(failDetail);
+    private void saveOrUpdateRowData(Dc dc, Cabinet cabinet, Map<String, Object> params) {
+        String seq = params.get("seq").toString();
+        cabinet.setSeq(seq);
+        cabinet.setDcId(dc.getId());
+
+        if (ObjectUtil.isEmpty(cabinet.getuSize())) {
+            String defaultUSize = sysConfigService.getValue(Constant.SYSCONFIG_KEY_DEFAULT_CABINETU);
+            cabinet.setuSize(Integer.valueOf(defaultUSize));
+        }
+
+        // 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore   在此只需要处理更新即可
+        String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
+        Cabinet oldCabinet = this.getOne(new LambdaQueryWrapper<Cabinet>()
+                .eq(Cabinet::getName, cabinet.getName())
+                .eq(Cabinet::getDcId, dc.getId()));
+        if (StrUtil.equals("1", existed) && oldCabinet != null) {
+            // update
+            cabinet.setId(oldCabinet.getId());
+
+            LambdaUpdateWrapper<Cabinet> updateWrapper = new LambdaUpdateWrapper<Cabinet>()
+                    .eq(Cabinet::getId, cabinet.getId())
+                    .set(Cabinet::getY, cabinet.getY())
+                    .set(Cabinet::getX, cabinet.getX());
+            this.update(cabinet, updateWrapper);
+        } else {
+            // insert
+            this.save(cabinet);
+        }
     }
 
     @Override
