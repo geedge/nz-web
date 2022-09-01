@@ -14,7 +14,7 @@ public enum TypeEnum {
 	ALERTSEVERITY("alert severity"), ALERTNOTIFYMETHOD("alert notify method"), ASSETSTATECONF("asset state conf"),
 	ASSETTYPECONF("asset type conf"), EXPRESSIONTMPL("expression tmpl"), ASSETBRAND("asset brand"),
 	SNMPCREDENTIAL("snmp credential"), LICENSE("license"), SYSTEMAPIKEY("sys api key"),I18N("i18n"),CTL("ctl"),IPAMSUBNET("ipam subnet"),
-	IPAMIP("ipam ip"),RECORD_RULE("record rule"), ISSUERECORD("issue record"), ISSUEACTIVITY("issue activity");
+	IPAMIP("ipam ip"),RECORD_RULE("record rule"), ISSUERECORD("issue record"), ISSUEACTIVITY("issue activity"), SYSFILE("sys file");
 
 	private String value;
 

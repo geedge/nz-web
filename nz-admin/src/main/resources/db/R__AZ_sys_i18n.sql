@@ -4583,5 +4583,15 @@ INSERT INTO `sys_i18n` VALUES (7229, 'batch.finish', 'en', 'batch.finish', 'Thes
 INSERT INTO `sys_i18n` VALUES (7231, 'batch.finish', 'zh', 'batch.finish', '这些{title}删除完成。', '批量删除 -》 成功', '2022-08-29 01:53:48', 1);
 INSERT INTO `sys_i18n` VALUES (7232, '511049', 'en', 'SYS_USER_NEWPWD_ISNULL', 'User new password can not be empty', '响应消息->个人中心密码修改', '2022-08-30 15:43:43', 416);
 INSERT INTO `sys_i18n` VALUES (7233, '511049', 'zh', 'SYS_USER_NEWPWD_ISNULL', '新密码不能为空', '响应消息->个人中心密码修改', '2022-08-30 15:43:43', 416);
+INSERT INTO `sys_i18n` VALUES (7234, '631000', 'en', 'SYS_FILE_ID_ISNULL', 'Sys file id is can not be null', '响应消息->系统文件详情/删除', '2022-09-01 15:13:43', 416);
+INSERT INTO `sys_i18n` VALUES (7235, '631000', 'zh', 'SYS_FILE_ID_ISNULL', '系统文件ID不能为空', '响应消息->系统文件详情/删除', '2022-09-01 15:13:43', 416);
+INSERT INTO `sys_i18n` VALUES (7236, '631001', 'en', 'SYS_FILE_UUID_ISNULL', 'Sys file uuid is can not be null', '响应消息->系统文件下载', '2022-09-01 15:13:43', 416);
+INSERT INTO `sys_i18n` VALUES (7237, '631001', 'zh', 'SYS_FILE_UUID_ISNULL', '系统文件UUID不能为空', '响应消息->系统文件下载', '2022-09-01 15:13:43', 416);
+INSERT INTO `sys_i18n` VALUES (7238, '636002', 'en', 'SYS_FILE_NOTEXIST', 'Sys file does not exist', '响应消息->系统文件下载', '2022-09-01 15:13:43', 416);
+INSERT INTO `sys_i18n` VALUES (7239, '636002', 'zh', 'SYS_FILE_NOTEXIST', '系统文件不存在', '响应消息->系统文件下载', '2022-09-01 15:13:43', 416);
+INSERT INTO `sys_i18n` VALUES (7240, '631003', 'en', 'SYS_FILE_ISNULL', 'Sys file is can not be null', '响应消息->系统文件上传', '2022-09-01 15:13:43', 416);
+INSERT INTO `sys_i18n` VALUES (7241, '631003', 'zh', 'SYS_FILE_ISNULL', '系统文件不能为空', '响应消息->系统文件上传', '2022-09-01 15:13:43', 416);
+INSERT INTO `sys_i18n` VALUES (7242, '634004', 'en', 'SYS_FILE_BIG_ERROR', 'Sys file is too big, Please contact your administrator to modify the database configuration : max_allowed_packet', '响应消息->系统文件上传', '2022-09-01 15:13:43', 416);
+INSERT INTO `sys_i18n` VALUES (7243, '634004', 'zh', 'SYS_FILE_BIG_ERROR', '系统文件过大，请与管理员联系以修改数据库配置：max_allowed_packet', '响应消息->系统文件上传', '2022-09-01 15:13:43', 416);
 
 SET FOREIGN_KEY_CHECKS = 1;

@@ -806,6 +806,15 @@ public enum RCode {
     LINK_WEIGHT_PARAM_INVALID(627007,"link weight param is invalid"),
 
     /**
+     * sys_file
+     */
+    SYS_FILE_ID_ISNULL(631000,"Sys file id is can not be null"),
+    SYS_FILE_UUID_ISNULL(631001,"Sys file uuid is can not be null"),
+    SYS_FILE_NOTEXIST(636002,"Sys file does not exist"),
+    SYS_FILE_ISNULL(631003,"Sys file is can not be null"),
+    SYS_FILE_BIG_ERROR(634004,"Sys file is too big, Please contact your administrator to modify the database configuration : max_allowed_packet"),
+
+    /**
      * agent相关
      */
     AGENT_INSTALL_PARAM_MISS(711000,"Parameter of this API is missed"),

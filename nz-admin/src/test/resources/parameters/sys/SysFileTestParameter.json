@@ -1,0 +1,25 @@
+{
+  "------------------ GET  /file data---------------------": "note",
+  "querySysFilel_success": {
+    "id": "1"
+  },
+  "querySysFilelList_exist": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "name": "FileName"
+  },
+  "querySysFilelList_notexist": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "uuid": "uuid"
+  },
+  "------------------ DELETE  /file data---------------------": "note",
+  "delSysFilel_idIsNull": {
+    "ids": ""
+  },
+  "delSysFilel_success": {
+    "ids": "1,3"
+  }
+}

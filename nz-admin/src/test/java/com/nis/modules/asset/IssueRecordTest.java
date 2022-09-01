@@ -115,8 +115,11 @@ public class IssueRecordTest extends BaseTest<IssueRecord> {
         Assert.assertNotNull("No success response", responseStr);
 
         Map<String, Object> actualResult = JSONObject.parseObject(responseStr, Map.class);
-        List resultInfo = (List)actualResult.get("data");
+        Map resultInfo = (Map)actualResult.get("data");
         Assert.assertNotNull(resultInfo);
+
+        List list = (List)resultInfo.get("list");
+        Assert.assertNotEquals(0, list.size());
     }
 
     /**
