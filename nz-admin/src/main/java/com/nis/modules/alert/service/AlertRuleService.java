@@ -31,7 +31,7 @@ public interface AlertRuleService extends IService<AlertRuleEntity> {
 
 	void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException;
 
-	Map importAlertRuleData(MultipartFile excelFile) throws IOException;
+	Map importAlertRuleData(MultipartFile excelFile, Map<String, Object> params) throws IOException;
 
 	void export(HttpServletResponse response, Map<String, Object> params) throws IOException;
 

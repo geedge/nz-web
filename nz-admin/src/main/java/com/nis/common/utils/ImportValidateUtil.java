@@ -175,15 +175,17 @@ public class ImportValidateUtil {
     /**
      * 校验时间数据是否符合指定格式
      */
-    public void validateDateFormat(String value, String pattern, int lineNum, int headerIndex) {
+    public Date validateDateFormat(String value, String pattern, int lineNum, int headerIndex) {
         if (StrUtil.isNotEmpty(value)) {
             try {
                 Date date = DateUtils.parseDate(value, new String[]{pattern});
+                return date;
             } catch (ParseException e) {
                 String header = headerInfos.get(headerIndex);
                 this.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(header));
             }
         }
+        return null;
     }
 
 

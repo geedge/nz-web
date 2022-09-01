@@ -1,9 +1,11 @@
 package com.nis.modules.alert.service.impl;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -13,10 +15,7 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.smartvalidate.utils.RegexUtil;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.dao.AlertRuleDao;
-import com.nis.modules.alert.entity.AlertMessageEntity;
-import com.nis.modules.alert.entity.AlertNotifyMethod;
-import com.nis.modules.alert.entity.AlertRuleEntity;
-import com.nis.modules.alert.entity.AlertSeverityConf;
+import com.nis.modules.alert.entity.*;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertNotifyMethodService;
 import com.nis.modules.alert.service.AlertRuleService;
@@ -271,382 +270,255 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     }
 
     @Override
-    public Map importAlertRuleData(MultipartFile multipartFile) throws IOException {
+    public Map importAlertRuleData(MultipartFile multipartFile, Map<String, Object> params) throws IOException {
         String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_ALERTRULE_EXPORT_HEADER);
         Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
         List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
 
-        List<Map> failDetails = new ArrayList<>();
-        String seqUUID = UUID.randomUUID().toString();
+        String seq = UUID.randomUUID().toString();
+        params.put("seq", seq);
 
-        int successNum = this.saveRulesFromImportDataList(importDataList, failDetails, new ArrayList<>(exportHeaderMap.keySet()), seqUUID);
+        // 表头信息 国际化之后的
+        List<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
+
         int totalNum = importDataList.size();
+        List<Map<String, String>> failDetailList = this.saveRulesFromImportDataList(importDataList, headerInfos, params);
+
+        // 从错误信息中获取失败导入行数量
+        int failNum = (int) failDetailList.stream().map(map -> Integer.valueOf(map.get("lineNo"))).distinct().count();
 
         Map resultMap = new HashMap(8);
-        resultMap.put("seq", seqUUID);
+        resultMap.put("seq", seq);
         resultMap.put("totalNum", totalNum);
-        resultMap.put("successNum", successNum);
-        resultMap.put("failNum", totalNum - successNum);
-        resultMap.put("failDetail", CommonUtils.handleImportFailDetails(failDetails));
+        resultMap.put("successNum", totalNum - failNum);
+        resultMap.put("failNum", failNum);
+        resultMap.put("failDetail", failDetailList);
         return resultMap;
     }
 
-    private int saveRulesFromImportDataList(List<Map<Integer, String>> importDataList, List<Map> failDetails, List<String> headerInfos, String seqUUID) {
-        int successNum = 0;
-        List<AlertSeverityConf> severityConfs = alertSeverityService.list();
+    private List<Map<String, String>> saveRulesFromImportDataList(List<Map<Integer, String>> importDataList, List<String> headerInfos, Map<String, Object> params) {
         List<AlertNotifyMethod> methodList = methodService.list();
-
-        List<AlertRuleEntity> alertList = this.list();
-        List<String> alertNameList = alertList.stream().map(AlertRuleEntity::getName).collect(Collectors.toList());
         List<SysUserEntity> userList = sysUserService.list();
+
+        // 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
+        String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
+        // 创建导入校验对象
+        ImportValidateUtil validateUtil = ImportValidateUtil.builder()
+                .existed(existed).headerInfos(headerInfos)
+                .build();
         for (int i = 0; i < importDataList.size(); i++) {
-            int dataFromExcelRowNum = i + 1;
-            boolean saveFlag = true;
+            int lineNum = i + 1;
             Map<Integer, String> dataMap = importDataList.get(i);
 
-            String alertName = dataMap.get(0);
-            if (StringUtils.isEmpty(alertName)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.ALERTRULE_NAME_ISNULL.getMsg());
+            String name = dataMap.get(AlertRuleImportEnum.NAME.getIndex());
+            validateUtil.validateRequired(name, lineNum, AlertRuleImportEnum.NAME.getIndex());
+            boolean indexDuplicate = validateUtil.validateIndexDuplicate("alert_rule", "name", name, lineNum, AlertRuleImportEnum.NAME.getIndex());
+            // 索引列重复 & 忽略标识，提示忽略本行
+            if (BooleanUtil.and(indexDuplicate, StrUtil.equals("2", existed))) {
+                validateUtil.ignoreThisRow(lineNum, AlertRuleImportEnum.NAME.getIndex());
+                continue;
+            }
+            String interval = dataMap.get(AlertRuleImportEnum.INTERVAL.getIndex());
+            Integer intervalIntVal = validateUtil.validateInteger(interval, lineNum, AlertRuleImportEnum.INTERVAL.getIndex());
+
+            String timeout = dataMap.get(AlertRuleImportEnum.TIMEOUT.getIndex());
+            Integer timeoutIntVal = validateUtil.validateInteger(timeout, lineNum, AlertRuleImportEnum.TIMEOUT.getIndex());
+
+            String type = dataMap.get(AlertRuleImportEnum.TYPE.getIndex());
+            validateUtil.validateRequired(type, lineNum, AlertRuleImportEnum.TYPE.getIndex());
+            validateUtil.validateEnumValArr(type, Tool.ListUtil.of("1", "2", "3"), lineNum, AlertRuleImportEnum.TYPE.getIndex());
+
+            String expr = dataMap.get(AlertRuleImportEnum.EXPR.getIndex());
+            validateUtil.validateRequired(expr, lineNum, AlertRuleImportEnum.EXPR.getIndex());
+
+            String operator = dataMap.get(AlertRuleImportEnum.OPERATOR.getIndex());
+            operator = operator.replaceAll(" ", "");
+            String threshold = dataMap.get(AlertRuleImportEnum.THRESHOLD.getIndex());
+            String unit = dataMap.get(AlertRuleImportEnum.UNIT.getIndex());
+            String last = dataMap.get(AlertRuleImportEnum.LAST.getIndex());
+            if (StrUtil.equals("3", type)) {
+                validateUtil.validateRegex(expr, "^(\\d{1,9}\\.){0,}[\\d]+$", lineNum, AlertRuleImportEnum.EXPR.getIndex());
             } else {
-                if (!this.checkImportAlertNameDuplicate(alertName, alertNameList)) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.ALERTRULE_NAME_DUPLICATE.getMsg());
-                }
+                validateUtil.validateRequired(threshold, lineNum, AlertRuleImportEnum.THRESHOLD.getIndex());
+                validateUtil.validateDouble(threshold, lineNum, AlertRuleImportEnum.THRESHOLD.getIndex());
+
+                List<String> unitEnumList = Tool.ListUtil.toList(Constant.ALERT_RULE_UNIT_MAP.keySet());
+                validateUtil.validateRequired(unit, lineNum, AlertRuleImportEnum.UNIT.getIndex());
+                validateUtil.validateEnumValArr(unit, unitEnumList, lineNum, AlertRuleImportEnum.UNIT.getIndex());
+
+                validateUtil.validateRequired(operator, lineNum, AlertRuleImportEnum.OPERATOR.getIndex());
+                validateUtil.validateEnumValArr(operator, Constant.RULE_OPERATORS, lineNum, AlertRuleImportEnum.OPERATOR.getIndex());
+
+                validateUtil.validateRequired(last, lineNum, AlertRuleImportEnum.LAST.getIndex());
+                validateUtil.validateDouble(last, lineNum, AlertRuleImportEnum.LAST.getIndex());
             }
 
-            String typeStr = dataMap.get(1);
-            if (StrUtil.isEmpty(typeStr)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.ALERTRULE_TYPE_ISNULL.getMsg());
-            } else {
-                List<String> typeList = Arrays.asList(new String[]{"1", "2", "3"});
-                if (!typeList.contains(typeStr)) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.ALERTRULE_TYPE_INCORRECT.getMsg());
-                }
-            }
-            String intervalStr = dataMap.get(2);
-            String timeoutStr = dataMap.get(3);
+            String severity = dataMap.get(AlertRuleImportEnum.SEVERITY.getIndex());
+            validateUtil.validateRequired(severity, lineNum, AlertRuleImportEnum.SEVERITY.getIndex());
+            validateUtil.validateRelObjExits("alert_severity_conf", "name", severity, false, lineNum, AlertRuleImportEnum.SEVERITY.getIndex());
 
-            String expr = dataMap.get(4);
-            String operator = dataMap.get(5);
-            String threshold = dataMap.get(6);
-            String unit = dataMap.get(7);
-            String last = dataMap.get(8);
-            if (saveFlag) {
-                if (StringUtils.isEmpty(expr)) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ALERTRULE_EXPR_ISNULL.getMsg());
-                }
+            String summary = dataMap.get(AlertRuleImportEnum.SUMMARY.getIndex());
+            validateUtil.validateRequired(summary, lineNum, AlertRuleImportEnum.SUMMARY.getIndex());
 
-                if (StrUtil.equals("3", typeStr)) {
-                    if (!RegexUtil.test("^(\\d{1,9}\\.){0,}[\\d]+$", expr)) {
-                        saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ALERTRULE_OIDFORMAT_ERROR.getMsg());
-                    }
-                } else {
-                    if (StringUtils.isEmpty(threshold)) {
-                        saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ALERTRULE_THRESHOLD_ISNULL.getMsg());
-                    } else {
-                        try {
-                            Double.valueOf(threshold);
-                        } catch (NumberFormatException e) {
-                            saveFlag = false;
-                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ALERTRULE_THRESHOLD_FORMAT.getMsg());
-                        }
-                    }
-                    if (StringUtils.isEmpty(unit)) {
-                        saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), RCode.ALERTRULE_UNIT_ISNULL.getMsg());
-                    } else {
-                        Integer integer = Constant.ALERT_RULE_UNIT_MAP.get(unit);
-                        if (ToolUtil.isEmpty(integer)) {
-                            saveFlag = false;
-                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), RCode.ALERTRULE_UNIT_INVALIDE.getMsg());
-                        }
-                    }
-                    if (StringUtils.isEmpty(operator)) {
-                        saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.ALERTRULE_OPERATOR_ISNULL.getMsg());
-                    } else {
-                        operator = operator.replaceAll(" ", "");
-                        if (!Constant.RULE_OPERATORS.contains(operator)) {
-                            saveFlag = false;
-                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.ALERTRULE_OPERATOR_INVALIDE.getMsg());
-                        }
-                    }
-                    if (StringUtils.isEmpty(last)) {
-                        saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), RCode.ALERTRULE_LAST_ISNULL.getMsg());
-                    } else {
-                        try {
-                            Double.valueOf(last).intValue();
-                        } catch (NumberFormatException e) {
-                            saveFlag = false;
-                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), RCode.ALERTRULE_LAST_ISNOTPOSITIVE.getMsg());
-                        }
-                    }
-                }
-            }
-            String severity = dataMap.get(9);
-            AlertSeverityConf alertSeverityConf=null;
-            if (StringUtils.isEmpty(severity)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(9), RCode.ALERTRULE_SEVERITY_ISNULL.getMsg());
-            }else{
-                alertSeverityConf = severityConfs.stream().filter(t -> Tool.StrUtil.equals(severity, t.getName())).findAny().orElse(null);
-                if(ToolUtil.isEmpty(alertSeverityConf)){
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(9), RCode.ALERTRULE_SEVERITY_INCORRECT.getMsg());
-                }
-            }
-            String summary = dataMap.get(10);
-            if (StringUtils.isEmpty(summary)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(10), RCode.ALERTRULE_SUMMARY_ISNULL.getMsg());
-            }
-            String description = dataMap.get(11);
-            String receiver = dataMap.get(12);
-            String method = dataMap.get(13);
-            if (StringUtils.isNotEmpty(receiver)) {
-                if (CollectionUtils.isNotEmpty(this.getNonExistentUsers(receiver, userList))) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(12), RCode.ALERTRULE_RECEIVER_NOTFOUND.getMsg());
-                } else {
-                    receiver = this.getUserIdsByUserNames(receiver, userList);
-                }
-                if(StringUtils.isEmpty(method)){
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(13), RCode.ALERTRULE_METHOD_ISNULL.getMsg());
-                }
+            String receiver = dataMap.get(AlertRuleImportEnum.RECEIVER.getIndex());
+            String method = dataMap.get(AlertRuleImportEnum.NOTICES_METHOD.getIndex());
+            if (StrUtil.isNotEmpty(receiver)) {
+                validateUtil.validateRequired(method, lineNum, AlertRuleImportEnum.NOTICES_METHOD.getIndex());
+
+                List<String> list = Arrays.stream(StrUtil.split(receiver, ",")).distinct().collect(Collectors.toList());
+                List<String> receiverUserNameList = userList.stream().map(SysUserEntity::getName).distinct().filter(list::contains).collect(Collectors.toList());
+
+                if (ObjectUtil.notEqual(list.size(), receiverUserNameList.size()))
+                    validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_RELATED_OBJ_NOT_EXIST.setParam(AlertRuleImportEnum.RECEIVER.getIndex()));
+                receiver = userList.stream().filter(user -> list.contains(user.getName())).map(user -> user.getId().toString()).collect(Collectors.joining(","));
             }
 
-            if (StringUtils.isNotEmpty(method)) {
-                // 校验 method 是否存在
-                if (CollectionUtils.isNotEmpty(this.getNonExistentMethods(method, methodList))) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(12), RCode.ALERTRULE_METHOD_NOTFOUND.getMsg());
-                } else {
-                    // 获取 method ids
-                    method = this.getMethodIdsByUserNames(method, methodList);
-                }
+            if (StrUtil.isNotEmpty(method)) {
+                List<String> list = Arrays.stream(StrUtil.split(method, ",")).distinct().collect(Collectors.toList());
+                List<String> receiverMethodNameList = methodList.stream().map(AlertNotifyMethod::getName).distinct().filter(list::contains).collect(Collectors.toList());
+
+                if (ObjectUtil.notEqual(list.size(), receiverMethodNameList.size()))
+                    validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_RELATED_OBJ_NOT_EXIST.setParam(AlertRuleImportEnum.NOTICES_METHOD.getIndex()));
+                method = methodList.stream().filter(m -> list.contains(m.getName())).map(m -> m.getId().toString()).collect(Collectors.joining(","));
             }
 
-            String stateStr = dataMap.get(14);
-            if (StrUtil.isNotEmpty(stateStr)) {
-                if (!StrUtil.equals("1", stateStr) && !StrUtil.equals("0", stateStr)) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(14), RCode.ALERTRULE_STATE_INCORRECT.getMsg());
-                }
-            }
+            String state = dataMap.get(AlertRuleImportEnum.STATE.getIndex());
+            state = StrUtil.emptyToDefault(state, "1");
+            validateUtil.validateEnumValArr(state, Tool.ListUtil.of("0", "1"), lineNum, AlertRuleImportEnum.STATE.getIndex());
 
-            String autoExpiredStr = dataMap.get(15);
+            String autoExpired = dataMap.get(AlertRuleImportEnum.AUTO_EXPIRED.getIndex());
+            autoExpired = StrUtil.emptyToDefault(autoExpired, "1");
+            validateUtil.validateEnumValArr(autoExpired, Tool.ListUtil.of("0", "1"), lineNum, AlertRuleImportEnum.AUTO_EXPIRED.getIndex());
+
             // 默认开启 进行校验 day start end format
-            String schedEnableStr = dataMap.get(16);
-            schedEnableStr = StrUtil.emptyToDefault(schedEnableStr, "1");
-            String schedDaysStr = dataMap.get(17);
-            schedDaysStr = StrUtil.emptyToDefault(schedDaysStr, "1,2,3,4,5,6,7");
-            String schedStimeStr = dataMap.get(18);
-            schedStimeStr = StrUtil.emptyToDefault(schedStimeStr, "00:00");
-            String schedEtimeStr = dataMap.get(19);
-            schedEtimeStr = StrUtil.emptyToDefault(schedEtimeStr, "23:59");
-            String notifyActiveStr = dataMap.get(20);
-            String notifyExpiredStr = dataMap.get(21);
-            String trbShotStr = dataMap.get(22);
+            String schedEnable = dataMap.get(AlertRuleImportEnum.SCHED_ENABLE.getIndex());
+            schedEnable = StrUtil.emptyToDefault(schedEnable, "1");
+            validateUtil.validateEnumValArr(schedEnable, Tool.ListUtil.of("0", "1"), lineNum, AlertRuleImportEnum.SCHED_ENABLE.getIndex());
 
-            List<String> enableList = Arrays.asList(new String[]{"0", "1"});
-            if (StrUtil.isNotEmpty(autoExpiredStr) && !enableList.contains(autoExpiredStr)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(15), RCode.ALERTRULE_AUTOEXPIRED_INCORRECT.getMsg());
-            }
+            String notifyActive = dataMap.get(AlertRuleImportEnum.NOTIFY_ACTIVE.getIndex());
+            notifyActive = StrUtil.emptyToDefault(notifyActive, "1");
+            validateUtil.validateEnumValArr(notifyActive, Tool.ListUtil.of("0", "1"), lineNum, AlertRuleImportEnum.NOTIFY_ACTIVE.getIndex());
 
-            if (StrUtil.isNotEmpty(notifyActiveStr) && !enableList.contains(notifyActiveStr)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(20), RCode.ALERTRULE_NOTIFYACTIVE_INCORRECT.getMsg());
-            }
+            String notifyExpired = dataMap.get(AlertRuleImportEnum.NOTIFY_EXPIRED.getIndex());
+            notifyExpired = StrUtil.emptyToDefault(notifyExpired, "1");
+            validateUtil.validateEnumValArr(notifyExpired, Tool.ListUtil.of("0", "1"), lineNum, AlertRuleImportEnum.NOTIFY_EXPIRED.getIndex());
 
-            if (StrUtil.isNotEmpty(notifyExpiredStr) && !enableList.contains(notifyExpiredStr)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(21), RCode.ALERTRULE_NOTIFYEXPIRED_INCORRECT.getMsg());
-            }
+            String schedDays = dataMap.get(AlertRuleImportEnum.SCHED_DAYS.getIndex());
+            String schedStime = dataMap.get(AlertRuleImportEnum.SCHED_STIME.getIndex());
+            String schedEtime = dataMap.get(AlertRuleImportEnum.SCHED_ETIME.getIndex());
+            schedDays = StrUtil.emptyToDefault(schedDays, "1,2,3,4,5,6,7");
+            schedStime = StrUtil.emptyToDefault(schedStime, "00:00");
+            schedEtime = StrUtil.emptyToDefault(schedEtime, "23:59");
 
-            if (!enableList.contains(schedEnableStr)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(16), RCode.ALERTRULE_SCHEDENABLE_INCORRECT.getMsg());
-            }
+            Arrays.stream(StrUtil.split(schedDays, ",")).distinct().forEach(s -> {
+                validateUtil.validateRegex(s, "^[1-7]$", lineNum, AlertRuleImportEnum.SCHED_DAYS.getIndex());
+            });
 
-            if (StrUtil.isNotEmpty(schedDaysStr)) {
-                List<String> tempList = Arrays.asList(schedDaysStr.split(","));
-                for (String s : tempList) {
-                    if (!RegexUtil.test("^[1-7]$", s)) {
-                        saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(17), RCode.ALERTRULE_SCHEDDAYS_INCORRECT.getMsg());
-                    }
-                }
+            validateUtil.validateRegex(schedStime, "^(?:[01]\\d|2[0-3])(?::[0-5]\\d)$", lineNum, AlertRuleImportEnum.SCHED_STIME.getIndex());
+            validateUtil.validateRegex(schedEtime, "^(?:[01]\\d|2[0-3])(?::[0-5]\\d)$", lineNum, AlertRuleImportEnum.SCHED_ETIME.getIndex());
+
+            Date schedStimeDate = validateUtil.validateDateFormat(schedStime, "HH:mm", lineNum, AlertRuleImportEnum.SCHED_STIME.getIndex());
+            Date schedEtimeDate = validateUtil.validateDateFormat(schedEtime, "HH:mm", lineNum, AlertRuleImportEnum.SCHED_ETIME.getIndex());
+            if (ObjectUtil.isAllNotEmpty(schedStimeDate, schedEtimeDate)) {// 结束时间应该晚于开始时间
+                if (DateUtil.compare(schedStimeDate, schedEtimeDate) > 0)
+                    validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(AlertRuleImportEnum.SCHED_ETIME.getIndex()));
             }
 
-            if (!RegexUtil.test("^(?:[01]\\d|2[0-3])(?::[0-5]\\d)$", schedStimeStr)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(18), RCode.ALERTRULE_SCHEDSTIME_INCORRECT.getMsg());
-            }
-            if (!RegexUtil.test("^(?:[01]\\d|2[0-3])(?::[0-5]\\d)$", schedEtimeStr)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(19), RCode.ALERTRULE_SCHEDETIME_INCORRECT.getMsg());
-            }
-            try {
-                DateFormat formatter = new SimpleDateFormat("HH:mm");
-                Date schedStimeDate = formatter.parse(schedStimeStr);
-                Date schedEtimeDate = formatter.parse(schedEtimeStr);
-                // 结束时间应该晚于开始时间
-                if (DateUtil.compare(schedStimeDate, schedEtimeDate) > 0) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(19), RCode.ALERTRULE_SCHEDETIME_ERROR.getMsg());
-                }
-            } catch (ParseException e) {
-                log.error(e);
-            }
+            List<Map<String, String>> errMsgForThisLine = validateUtil.getImportErrMsgForThisLine(lineNum);
+            if (Tool.CollUtil.isEmpty(errMsgForThisLine)) {
+                AlertSeverityConf alertSeverityConf = alertSeverityService.getOne(new LambdaQueryWrapper<AlertSeverityConf>().eq(AlertSeverityConf::getName, severity));
 
-            if (saveFlag) {
+                String description = dataMap.get(AlertRuleImportEnum.DESCRIPTION.getIndex());
+                String trbShotStr = dataMap.get(AlertRuleImportEnum.TROUBLE_SHOOTING.getIndex());
                 AlertRuleEntity ruleEntity = new AlertRuleEntity();
-                ruleEntity.setName(alertName);
+                ruleEntity.setName(name);
                 ruleEntity.setExpr(expr);
                 ruleEntity.setOperator(operator);
                 ruleEntity.setThreshold(StrUtil.isNotEmpty(threshold) ? Double.valueOf(threshold) : null);
-                ruleEntity.setUnit(Constant.ALERT_RULE_UNIT_MAP.get(StrUtil.emptyToDefault(unit,"none")));
+                ruleEntity.setUnit(Constant.ALERT_RULE_UNIT_MAP.get(StrUtil.emptyToDefault(unit, "none")));
                 ruleEntity.setLast(StrUtil.isNotEmpty(last) ? Double.valueOf(last).intValue() : null);
                 ruleEntity.setSeverityId(alertSeverityConf.getId());
                 ruleEntity.setSummary(summary);
                 ruleEntity.setDescription(description);
                 ruleEntity.setReceiver(receiver);
                 ruleEntity.setMethod(method);
-                ruleEntity.setSeq(seqUUID);
-                ruleEntity.setState(Integer.valueOf(StrUtil.emptyToDefault(stateStr, "1")));
-
-                ruleEntity.setAutoExpired(Integer.valueOf(StrUtil.emptyToDefault(autoExpiredStr, "1")));
-                ruleEntity.setSchedEnable(Integer.valueOf(schedEnableStr));
-                ruleEntity.setSchedDays(schedDaysStr);
-                ruleEntity.setSchedStime(schedStimeStr);
-                ruleEntity.setSchedEtime(schedEtimeStr);
-                ruleEntity.setNotifyActive(Integer.valueOf(StrUtil.emptyToDefault(notifyActiveStr, "1")));
-                ruleEntity.setNotifyExpired(Integer.valueOf(StrUtil.emptyToDefault(notifyExpiredStr, "1")));
+                ruleEntity.setState(Integer.valueOf(state));
+                ruleEntity.setAutoExpired(Integer.valueOf(autoExpired));
+                ruleEntity.setSchedEnable(Integer.valueOf(schedEnable));
+                ruleEntity.setSchedDays(schedDays);
+                ruleEntity.setSchedStime(schedStime);
+                ruleEntity.setSchedEtime(schedEtime);
+                ruleEntity.setNotifyActive(Integer.valueOf(notifyActive));
+                ruleEntity.setNotifyExpired(Integer.valueOf(notifyExpired));
                 ruleEntity.setTrbShot(trbShotStr);
-
-                ruleEntity.setType(Integer.valueOf(typeStr));
-                if (StrUtil.isNotEmpty(intervalStr)) {
-                    Integer intervalVal = Integer.valueOf(intervalStr);
-                    if (intervalVal < 15) {
-                        intervalVal = Integer.valueOf(sysConfigService.getValue(Constant.SYSCONFIG_KEY_SCRAPEINTERVAL));
-                    }
-                    ruleEntity.setInr(intervalVal);
-                }
-
-                if (StrUtil.isNotEmpty(timeoutStr)) {
-                    Integer timeoutVal = Integer.valueOf(timeoutStr);
-                    if (timeoutVal < 15) {
-                        timeoutVal = Integer.valueOf(sysConfigService.getValue(Constant.SYSCONFIG_KEY_SCRAPETIMEOUT));
-                    }
-                    ruleEntity.setTimeout(timeoutVal);
-                }
+                ruleEntity.setType(Integer.valueOf(type));
+                ruleEntity.setInr(intervalIntVal);
+                ruleEntity.setTimeout(timeoutIntVal);
                 // 仅metrics类型需要校验rule表达式  logs和snmp trap暂不支持
-                if (StrUtil.equals("1", typeStr)) {
+                if (StrUtil.equals("1", type)) {
                     try {
-                        boolean b = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(ruleEntity));
-                        if (!b) {
-                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ALERTRULE_EXPR_ERROR.getMsg());
-                            continue;
+                        boolean checkRule = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(ruleEntity));
+                        if (!checkRule) {
+                            validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(AlertRuleImportEnum.EXPR.getIndex()));
                         }
-                    } catch (IOException e) {
-                        log.error(String.format("expr校验失败,rule信息是：%s,错误信息是：%s", ruleEntity.toString(), e));
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ALERTRULE_EXPR_ERROR.getMsg());
+                    } catch (Exception e) {
+                        log.error(e, "expr validate error,rule info: {}", JSONObject.toJSONString(ruleEntity));
+                        validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(AlertRuleImportEnum.EXPR.getIndex()));
                     }
                 }
-                try {
-                    this.save(ruleEntity);
-                    alertNameList.add(alertName);
-                    successNum++;
-                } catch (RuntimeException e) {
-                    log.error(String.format("rule导入保存失败,rule信息是：%s,错误信息是：%s", ruleEntity.toString(), e));
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, "System", RCode.ALERTRULE_IMPORT_ERROR.getMsg());
+
+                // 遇到错误是否继续导入，可选值： 0：不继续    1：继续    默认值：1
+                String ignoreError = Tool.ObjectUtil.defaultIfEmpty((String) params.get("ignoreError"), "1");
+
+                errMsgForThisLine = validateUtil.getImportErrMsgForThisLine(lineNum);
+                if (BooleanUtil.and(Tool.StrUtil.equals("0", ignoreError), Tool.CollUtil.isNotEmpty(errMsgForThisLine))) {
+                    break;
+                }
+
+                if (Tool.CollUtil.isEmpty(errMsgForThisLine)) {
+                    try {
+                        this.saveOrUpdateRowData(ruleEntity, params);
+                    } catch (Exception e) {
+                        validateUtil.recordImportAttrErr(lineNum, RCode.ERROR);
+                        log.error("Asset import roll back the transaction failure", e);
+                    }
                 }
             }
         }
-        return successNum;
+        return validateUtil.getImportErrMsg();
     }
 
-    private List<String> getNonExistentMethods(String method, List<AlertNotifyMethod> methodList) {
-        List<String> methodNames = methodList.stream().map(AlertNotifyMethod::getName).collect(Collectors.toList());
-        List<String> list = new ArrayList<>(Arrays.asList(method.split(",")));
-        Iterator<String> iterator = list.iterator();
-        String next;
-        while (iterator.hasNext()) {
-            next = iterator.next();
-            if (methodNames.contains(next)) {
-                iterator.remove();
+    private void saveOrUpdateRowData(AlertRuleEntity rule, Map<String, Object> params) {
+        String seq = params.get("seq").toString();
+        rule.setSeq(seq);
+
+        Integer inr = rule.getInr();
+        if (ObjectUtil.isNotEmpty(inr)) {
+            if (inr < 15) {
+                inr = Integer.valueOf(sysConfigService.getValue(Constant.SYSCONFIG_KEY_SCRAPEINTERVAL));
             }
+            rule.setInr(inr);
         }
-        return list;
-    }
-
-    private String getMethodIdsByUserNames(String method, List<AlertNotifyMethod> methodList) {
-        Map<String, Integer> nameAndIdMap = methodList.stream().collect(Collectors.toMap(AlertNotifyMethod::getName, AlertNotifyMethod::getId));
-        List<String> list = Arrays.asList(method.split(","));
-        String methodIds = "";
-        for (String name : list) {
-            methodIds += nameAndIdMap.get(name) + ",";
-        }
-        if (StringUtils.isNotEmpty(methodIds)) {
-            methodIds = methodIds.substring(0, methodIds.length() - 1);
-        }
-        return methodIds;
-    }
-
-    private String getUserIdsByUserNames(String receiver, List<SysUserEntity> userList) {
-        Map<String, Long> userNameAndIdMap = userList.stream().collect(Collectors.toMap(SysUserEntity::getName, SysUserEntity::getId));
-        List<String> list = Arrays.asList(receiver.split(","));
-        String receiverIds = "";
-        for (String s : list) {
-            receiverIds += userNameAndIdMap.get(s) + ",";
-        }
-        if (StringUtils.isNotEmpty(receiverIds)) {
-            receiverIds = receiverIds.substring(0, receiverIds.length() - 1);
-        }
-        return receiverIds;
-    }
-
-    private List<String> getNonExistentUsers(String receiver, List<SysUserEntity> userList) {
-        List<String> usernames = userList.stream().map(SysUserEntity::getName).collect(Collectors.toList());
-        List<String> list = new ArrayList<>(Arrays.asList(receiver.split(",")));
-        Iterator<String> iterator = list.iterator();
-        String next;
-        while (iterator.hasNext()) {
-            next = iterator.next();
-            if (usernames.contains(next)) {
-                iterator.remove();
+        Integer timeout = rule.getTimeout();
+        if (ObjectUtil.isNotEmpty(timeout)) {
+            if (timeout < 15) {
+                timeout = Integer.valueOf(sysConfigService.getValue(Constant.SYSCONFIG_KEY_SCRAPETIMEOUT));
             }
+            rule.setTimeout(timeout);
         }
-        return list;
-    }
 
-    private void addFailDetail(int i, List<Map> failDetails, String headerInfo, String msg) {
-        Map failDetail = new HashMap(4);
-        failDetail.put("lineNo", i);
-        failDetail.put("errorMsg", headerInfo + ": " + msg);
-        failDetails.add(failDetail);
-    }
+        // 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore   在此只需要处理更新即可
+        String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
+        AlertRuleEntity oldRule = this.getOne(new LambdaQueryWrapper<AlertRuleEntity>().eq(AlertRuleEntity::getName, rule.getName()));
+        if (StrUtil.equals("1", existed) && oldRule != null) {
+            // update
+            rule.setId(oldRule.getId());
 
-    public boolean checkImportAlertNameDuplicate(String alertName, List<String> alertNameList) {
-        if (ToolUtil.isNotEmpty(alertNameList)) {
-            // 不唯一
-            if (alertNameList.contains(alertName)) {
-                return false;
-            } else {
-                //  唯一
-                return true;
-            }
+            this.updateById(rule);
+        } else {
+            // insert
+            this.save(rule);
         }
-        return true;
     }
 
     @Override

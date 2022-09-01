@@ -120,7 +120,7 @@ public class AlertRuleController {
     @PostMapping("/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.ALERTRULE)
     @RequiresPermissions({"alert:rule:save"})
-    public R importAlertFromExcelFile(MultipartFile excelFile,HttpServletRequest request) throws IOException {
+    public R importAlertFromExcelFile(MultipartFile excelFile, HttpServletRequest request, @RequestParam Map<String, Object> params) throws IOException {
         String language = request.getHeader(Constant.LANGUAGE);
         ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL);
         // 校验 LANGUAGE
@@ -128,7 +128,7 @@ public class AlertRuleController {
             throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
         }
 
-        return R.ok(alertRuleService.importAlertRuleData(excelFile));
+        return R.ok(alertRuleService.importAlertRuleData(excelFile, params));
     }
 
     @GetMapping("/export")
