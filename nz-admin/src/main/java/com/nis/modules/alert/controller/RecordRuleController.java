@@ -4,9 +4,13 @@ import com.nis.common.annotation.SysLog;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.entity.RecordRuleEntity;
+import com.nis.modules.alert.entity.RecordRuleEvalLog;
+import com.nis.modules.alert.service.RecordRuleEvalLogService;
 import com.nis.modules.alert.service.RecordRuleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -15,6 +19,9 @@ public class RecordRuleController {
 
     @Autowired
     private RecordRuleService recordRuleService;
+
+    @Autowired
+    private RecordRuleEvalLogService recordRuleEvalLogService;
 
     /**
      * 详情
@@ -79,4 +86,18 @@ public class RecordRuleController {
         recordRuleService.deleteRecordRule(ids);
         return R.ok();
     }
+
+    /**
+     * 执行记录查询
+     * @param id
+     * @return
+     */
+    @GetMapping("/{id}/evalLog")
+    public R queryEvalLog(@PathVariable Integer id) {
+        ValidateUtils.is(id).notNull(RCode.RECORD_RULE_ID_ISNULL);
+        List<RecordRuleEvalLog> recordRuleEvalLogs = recordRuleEvalLogService.queryListByRuleId(id);
+        return R.ok().putData("list",recordRuleEvalLogs);
+    }
+
+
 }
