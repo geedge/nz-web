@@ -4595,5 +4595,9 @@ INSERT INTO `sys_i18n` VALUES (7242, '634004', 'en', 'SYS_FILE_BIG_ERROR', 'Sys 
 INSERT INTO `sys_i18n` VALUES (7243, '634004', 'zh', 'SYS_FILE_BIG_ERROR', '系统文件过大，请与管理员联系以修改数据库配置：max_allowed_packet', '响应消息->系统文件上传', '2022-09-01 15:13:43', 416);
 INSERT INTO `sys_i18n` VALUES (7244, '917', 'en', 'IMPORT_FIELDS_DUPLICATE', '{0} Duplicate ,{1} Duplicate', '', '2022-09-02 03:24:05', 1);
 INSERT INTO `sys_i18n` VALUES (7245, '917', 'zh', 'IMPORT_FIELDS_DUPLICATE', '{0} 重复 ,{1} 重复', '', '2022-09-02 03:24:05', 1);
+INSERT INTO `sys_i18n` VALUES (7246, '743003', 'en', 'RECORD_RULE_NAME_FORMAT_ERROR', 'Record rule name format error', '', '2022-09-02 03:24:05', 1);
+INSERT INTO `sys_i18n` VALUES (7247, '743003', 'zh', 'RECORD_RULE_NAME_FORMAT_ERROR', '记录规则名称格式错误', '', '2022-09-02 03:24:05', 1);
+INSERT INTO `sys_i18n` VALUES (7248, '743004', 'en', 'RECORD_RULE_LABEL_NAME_FORMAT_ERROR', 'Record rule label name format error', '', '2022-09-02 03:24:05', 1);
+INSERT INTO `sys_i18n` VALUES (7249, '743004', 'zh', 'RECORD_RULE_LABEL_NAME_FORMAT_ERROR', '记录规则标签名称格式错误', '', '2022-09-02 03:24:05', 1);
 
 SET FOREIGN_KEY_CHECKS = 1;

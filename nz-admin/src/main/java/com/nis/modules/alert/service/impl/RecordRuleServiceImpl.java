@@ -1,11 +1,10 @@
 package com.nis.modules.alert.service.impl;
 
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import cn.hutool.core.map.MapUtil;
+import com.nis.common.utils.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
@@ -22,11 +21,6 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.protobuf.Types.TimeSeries;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
 import com.nis.modules.alert.dao.RecordRuleDao;
 import com.nis.modules.alert.entity.RecordRuleEntity;
 import com.nis.modules.alert.service.RecordRuleService;
@@ -106,6 +100,13 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 				.notNull(RCode.RECORD_RULE_TYPE_ISNULL).and(recordRule.getExpr()).notNull(RCode.RECORD_RULE_EXPR_ISNULL)
 				.and(recordRule.getLabels()).notNull(RCode.RECORD_RULE_LABELS_ISNULL).and(recordRule.getState())
 				.notNull(RCode.RECORD_RULE_STATE_ISNULL);
+		//校验name labels name 合法性
+		ValidateUtils.is(recordRule.getName()).regex(Constant.PROMETHEUS_LABELNAME_EXPRESSION,RCode.RECORD_RULE_NAME_FORMAT_ERROR);
+		Map<String, Object> map = JSONUtil.toBean(recordRule.getLabels(), Map.class);
+		for (String labelName : map.keySet()) {
+			ValidateUtils.is(labelName).regex(Constant.PROMETHEUS_LABELNAME_EXPRESSION, RCode.RECORD_RULE_LABEL_NAME_FORMAT_ERROR);
+		}
+
 		// 校验type
 		List<Integer> type = Arrays.asList(new Integer[] { 1, 2 });
 		if (!type.contains(recordRule.getType())) {

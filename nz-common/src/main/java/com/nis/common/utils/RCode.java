@@ -949,6 +949,8 @@ public enum RCode {
     RECORD_RULE_BUILD_IN_EXIST(740001,"Record rule built-in allows deletion"),
     RECORD_RULE_TYPE_ERROR(743001,"Record rule type error"),
     RECORD_RULE_STATE_ERROR(743002,"Record rule state error"),
+    RECORD_RULE_NAME_FORMAT_ERROR(743003,"Record rule name format error"),
+    RECORD_RULE_LABEL_NAME_FORMAT_ERROR(743004,"Record rule label name format error"),
 
 
     /**
