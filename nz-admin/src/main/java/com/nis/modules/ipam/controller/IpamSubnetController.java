@@ -114,7 +114,7 @@ public class IpamSubnetController {
 
 	@PostMapping("/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.CHART)
-	public R importIpamSubnetData(MultipartFile excelFile, HttpServletRequest request ,@RequestParam Map<String ,Object> params) throws IOException, AddressStringException, IncompatibleAddressException {
+	public R importIpamSubnetData(@RequestParam(value = "file") MultipartFile excelFile, HttpServletRequest request, @RequestParam Map<String, Object> params) throws IOException, AddressStringException, IncompatibleAddressException {
 		String language = request.getHeader(Constant.LANGUAGE);
 		ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL);
 		// 校验 LANGUAGE

@@ -152,7 +152,7 @@ public class DcController {
     @PostMapping("/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.DATACENTER)
     @RequiresPermissions({"dc:save"})
-    public R importDcData(MultipartFile excelFile, HttpServletRequest request, @RequestParam Map<String, Object> params) throws IOException {
+    public R importDcData(@RequestParam(value = "file") MultipartFile excelFile, HttpServletRequest request, @RequestParam Map<String, Object> params) throws IOException {
         String language = request.getHeader(Constant.LANGUAGE);
         ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL);
         // 校验 LANGUAGE
@@ -319,7 +319,7 @@ public class DcController {
     @PostMapping("/cabinet/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.DATACENTER)
     @RequiresPermissions({"cabinet:save"})
-    public R importCabinetsFromExcel(MultipartFile excelFile, HttpServletRequest request, @RequestParam Map<String, Object> params) throws IOException {
+    public R importCabinetsFromExcel(@RequestParam(value = "file") MultipartFile excelFile, HttpServletRequest request, @RequestParam Map<String, Object> params) throws IOException {
         String language = request.getHeader(Constant.LANGUAGE);
         ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL);
 

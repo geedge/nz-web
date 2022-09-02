@@ -87,7 +87,7 @@ public class IpamIpController {
 
     @PostMapping("/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.CHART)
-    public R importChartData(MultipartFile excelFile, HttpServletRequest request) throws IOException, AddressStringException, IncompatibleAddressException {
+    public R importChartData(@RequestParam(value = "file") MultipartFile excelFile, HttpServletRequest request) throws IOException, AddressStringException, IncompatibleAddressException {
         String language = request.getHeader(Constant.LANGUAGE);
         ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL);
         // 校验 LANGUAGE

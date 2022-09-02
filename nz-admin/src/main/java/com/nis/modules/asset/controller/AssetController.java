@@ -271,7 +271,7 @@ public class AssetController {
     @PostMapping("/asset/import")
     @SysLog(operation = OperationEnum.IMPORT,type = TypeEnum.ASSET)
     @RequiresPermissions({"asset:save"})
-    public R importAssetsData(MultipartFile excelFile, HttpServletRequest request, @RequestParam Map<String, Object> params) throws IOException {
+    public R importAssetsData(@RequestParam(value = "file") MultipartFile excelFile, HttpServletRequest request, @RequestParam Map<String, Object> params) throws IOException {
         String language = request.getHeader(Constant.LANGUAGE);
         ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL);
         // 校验 LANGUAGE

@@ -173,7 +173,7 @@ public class AssetBrandModelController {
     @PostMapping("/asset/model/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.MODEL)
     @RequiresPermissions({"asset:model:save"})
-    public R importAssetModelData(MultipartFile excelFile, HttpServletRequest request, @RequestParam Map<String, Object> params) throws IOException {
+    public R importAssetModelData(@RequestParam(value = "file") MultipartFile excelFile, HttpServletRequest request, @RequestParam Map<String, Object> params) throws IOException {
         String language = request.getHeader(Constant.LANGUAGE);
         ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL);
         // 校验 LANGUAGE
