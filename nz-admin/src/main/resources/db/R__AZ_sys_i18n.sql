@@ -4593,5 +4593,7 @@ INSERT INTO `sys_i18n` VALUES (7240, '631003', 'en', 'SYS_FILE_ISNULL', 'Sys fil
 INSERT INTO `sys_i18n` VALUES (7241, '631003', 'zh', 'SYS_FILE_ISNULL', '系统文件不能为空', '响应消息->系统文件上传', '2022-09-01 15:13:43', 416);
 INSERT INTO `sys_i18n` VALUES (7242, '634004', 'en', 'SYS_FILE_BIG_ERROR', 'Sys file is too big, Please contact your administrator to modify the database configuration : max_allowed_packet', '响应消息->系统文件上传', '2022-09-01 15:13:43', 416);
 INSERT INTO `sys_i18n` VALUES (7243, '634004', 'zh', 'SYS_FILE_BIG_ERROR', '系统文件过大，请与管理员联系以修改数据库配置：max_allowed_packet', '响应消息->系统文件上传', '2022-09-01 15:13:43', 416);
+INSERT INTO `sys_i18n` VALUES (7244, '917', 'en', 'IMPORT_FIELDS_DUPLICATE', '{0} Duplicate ,{1} Duplicate', '', '2022-09-02 03:24:05', 1);
+INSERT INTO `sys_i18n` VALUES (7245, '917', 'zh', 'IMPORT_FIELDS_DUPLICATE', '{0} 重复 ,{1} 重复', '', '2022-09-02 03:24:05', 1);
 
 SET FOREIGN_KEY_CHECKS = 1;

@@ -1,5 +1,6 @@
 package com.nis.modules.ipam.service.impl;
 
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
@@ -28,9 +29,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
+import javax.validation.constraints.Max;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements IpamIpService {
@@ -105,9 +108,13 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
         if (!(CommonUtils.checkIpv4(ipamIp.getAddr()) || CommonUtils.checkIpv6(ipamIp.getAddr()))){
             throw new NZException(RCode.IPAM_IP_ADDR_ERROR);
         }
-        IpamIp one = this.getOne(new LambdaQueryWrapper<IpamIp>().eq(IpamIp::getAddr, ipamIp.getAddr()));
-        if (Tool.ObjectUtil.isNotEmpty(one)) {
-            throw new NZException(RCode.IPAM_IP_INTERVAL_ERROR);
+        //校验ip是否重复
+        List<IpamIp> ipamIpList = ipamIpDao.selectList(new LambdaQueryWrapper<IpamIp>().ne(ObjectUtil.isNotEmpty(ipamIp.getId()), IpamIp::getId, ipamIp.getId()));
+        List<String> ipList = ipamIpList.stream().map(ipam -> ipam.getAddr()).collect(Collectors.toList());
+        if (ToolUtil.isNotAllEmpty(ipList)) {
+            if (ipList.contains(ipamIp.getAddr())) {
+                throw new NZException(RCode.IPAM_IP_INTERVAL_ERROR);
+            }
         }
         //判断ip属于那个子网
         boolean inRange = true;

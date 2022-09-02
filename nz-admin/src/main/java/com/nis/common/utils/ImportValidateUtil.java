@@ -215,6 +215,32 @@ public class ImportValidateUtil {
     }
 
     /**
+     * 校验掩码是否符合规范
+     */
+    public Integer validateMask(String mask, String type, int lineNum, int headerIndex) {
+        Integer ipCap = null;
+        if (StrUtil.isNotEmpty(mask)) {
+            Integer maskInt = Integer.valueOf(mask);
+            boolean maskFormat = true;
+            if(StringUtils.isEquals(type, "4") && maskInt > 32) {
+                maskFormat = false;
+            }else if(StringUtils.isEquals(type, "4")){
+                ipCap = 32;
+            }else if(StringUtils.isEquals(type, "6") && maskInt > 128){
+                maskFormat = false;
+            }else if(StringUtils.isEquals(type, "6")) {
+                ipCap = 128;
+            }
+
+            if (!maskFormat){
+                String header = headerInfos.get(headerIndex);
+                this.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(header));
+            }
+        }
+        return ipCap;
+    }
+
+    /**
      *
      * 校验 SNMP OID 是否符合规范
      */

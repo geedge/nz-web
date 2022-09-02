@@ -1,11 +1,13 @@
 package com.nis.modules.ipam.service.impl;
 
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -13,12 +15,15 @@ import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.Dc;
+import com.nis.modules.asset.entity.DcImportEnum;
 import com.nis.modules.asset.service.DcService;
 import com.nis.modules.ipam.dao.IpamIpDao;
 import com.nis.modules.ipam.dao.IpamSubnetDao;
 import com.nis.modules.ipam.entity.IpamIp;
 import com.nis.modules.ipam.entity.IpamSubnet;
+import com.nis.modules.ipam.entity.IpamSubnetEum;
 import com.nis.modules.ipam.service.IpamSubnetService;
+import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
@@ -39,6 +44,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet> implements IpamSubnetService {
@@ -263,166 +269,154 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 	}
 
 	@Override
-	public Map importIpamSubnetData(MultipartFile multipartFile) throws IOException, AddressStringException, IncompatibleAddressException {
+	public Map importIpamSubnetData(MultipartFile multipartFile,Map<String,Object> params) throws IOException, AddressStringException, IncompatibleAddressException {
 		String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_IPAMSUBNET_IMPORT_HEADER);
 		Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
         List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
 
-        List<Map> failDetails = new ArrayList<>();
         String seqUUID = UUID.randomUUID().toString();
+        params.put("seq",seqUUID);
+
+        //表头信息
         ArrayList<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
-        List<Map<Integer, String>> handleImportData = null;
-        int successNum = this.saveIpamSubnetsFromImportDataList(importDataList, failDetails, new ArrayList<>(exportHeaderMap.keySet()), seqUUID);
-        int totalNum = importDataList.size();
+		int totalNum = importDataList.size();
+		List<Map<String, String>> failDetailList = this.saveIpamSubnetsFromImportDataList(importDataList, headerInfos, params);
+
+		// 从错误信息中获取失败导入行数量
+		int failNum = (int) failDetailList.stream().map(map -> Integer.valueOf(map.get("lineNo"))).distinct().count();
+
+
 
         Map resultMap = new HashMap(8);
         resultMap.put("seq", seqUUID);
         resultMap.put("totalNum", totalNum);
-        resultMap.put("successNum", successNum);
-        resultMap.put("failNum", totalNum - successNum);
-        resultMap.put("failDetail", CommonUtils.handleImportFailDetails(failDetails));
+        resultMap.put("successNum", totalNum - failNum);
+        resultMap.put("failNum", failNum);
+        resultMap.put("failDetail", failDetailList);
         return resultMap;
 	}
-
-	private void addFailDetail(int i, List<Map> failDetails, String headerInfo, String msg) {
-        Map failDetail = new HashMap(4);
-        failDetail.put("lineNo", i);
-        failDetail.put("errorMsg", headerInfo + ": " + msg);
-        failDetails.add(failDetail);
-    }
 	
-	private int saveIpamSubnetsFromImportDataList(List<Map<Integer, String>> importDataList, List<Map> failDetails, List<String> headerInfos, String seqUUID) throws AddressStringException, IncompatibleAddressException {
-        int successNum = 0;
-        // 校验ip以及掩码值之前是否有创建或者包含
- 		List<IpamSubnet> ipamSubnets = this.list();
- 		List<String> ips = ipamSubnets.stream().map(o -> StrUtil.builder(o.getAddr(),StrUtil.SLASH,o.getMask().toString()).toString()).collect(Collectors.toList());
+	private List<Map<String, String>> saveIpamSubnetsFromImportDataList(List<Map<Integer, String>> importDataList, ArrayList<String> headerInfos, Map<String,Object> params) throws AddressStringException, IncompatibleAddressException {
+		// 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
+		String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
+
+		// 创建导入校验对象
+		ImportValidateUtil validateUtil = ImportValidateUtil.builder()
+				.existed(existed).headerInfos(headerInfos)
+				.build();
  		
         for (int i = 0; i < importDataList.size(); i++) {
-            int dataFromExcelRowNum = i + 1;
-            boolean saveFlag = true;
+			int lineNum = i + 1;
             Map<Integer, String> dataMap = importDataList.get(i);
 
-            String name = dataMap.get(0);
-            if (StringUtils.isEmpty(name)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.IPAM_SUBNET_NAME_ISNULL.getMsg());
-            }else {
-				IpamSubnet ipamSubnet = ipamSubnetDao.selectOne(new LambdaQueryWrapper<IpamSubnet>().eq(IpamSubnet::getName, name));
-				if(ObjectUtil.isNotEmpty(ipamSubnet)) {
-					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.IPAM_SUBNET_NAME_ERROR.getMsg());
-				}
+            //name 校验
+            String name = dataMap.get(IpamSubnetEum.NAME.getIndex());
+			validateUtil.validateRequired(name, lineNum, IpamSubnetEum.NAME.getIndex());
+			boolean indexDuplicate = validateUtil.validateIndexDuplicate("ipam_subnet", "name", name, lineNum, IpamSubnetEum.NAME.getIndex());
+			// 索引列重复 & 忽略标识，提示忽略本行
+			if (BooleanUtil.and(indexDuplicate, StrUtil.equals("2" , existed))){
+				validateUtil.ignoreThisRow(lineNum, IpamSubnetEum.NAME.getIndex());
+				continue;
 			}
 
-            String type = dataMap.get(1);
-            if(StringUtils.isEmpty(type)) {
-            	saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.IPAM_SUBNET_TYPE_ISNULL.getMsg());
-            }else {
-            	if(!(StringUtils.isEquals(type, "4") || StringUtils.isEquals(type, "6"))) {
-            		saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.IPAM_SUBNET_TYPE_ERROR.getMsg());
-            	}
-            }
-            
-            String addr = dataMap.get(2);
-            
-            
-            
-            if(StringUtils.isEmpty(addr)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.IPAM_SUBNET_ADDR_ISNULL.getMsg());
-            }else {
-            	boolean ipFormat = true;
-            	if(StringUtils.isEquals(type, "4")) {
-            		ipFormat = CommonUtils.checkIpv4(addr);
-            	}else if(StringUtils.isEquals(type, "6")){
-            		ipFormat = CommonUtils.checkIpv6(addr);
-            	}
-            	if(!ipFormat) {
-            		saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.IPAM_SUBNET_ADDR_ERROR.getMsg());
-            	}
-            }
+			//ip 类型校验
+            String type = dataMap.get(IpamSubnetEum.TYPE.getIndex());
+			validateUtil.validateRequired(type, lineNum, IpamSubnetEum.TYPE.getIndex());
+			validateUtil.validateEnumValArr(type, Arrays.asList("4","6"), lineNum, IpamSubnetEum.TYPE.getIndex());
 
-            String mask = dataMap.get(3);
-            Integer ipCap = null;
-            if (StringUtils.isEmpty(mask)) {
-            	saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.IPAM_SUBNET_MASK_ISNULL.getMsg());
-            }else {
-            	Integer maskInt = Integer.valueOf(mask);
-            	boolean maskFormat = true;
-            	if(StringUtils.isEquals(type, "4") && maskInt > 32) {
-            		maskFormat = false;
-            	}else if(StringUtils.isEquals(type, "4")){
-            		ipCap = 32;
-            	}else if(StringUtils.isEquals(type, "6") && maskInt > 128){
-            		maskFormat = false;
-            	}else if(StringUtils.isEquals(type, "6")) {
-            		ipCap = 128;
-            	}
-            	if(!maskFormat) {
-            		saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.IPAM_SUBNET_MASK_ERROR.getMsg());
-            	}
-            }
+			//ip校验
+            String addr = dataMap.get(IpamSubnetEum.ADDR.getIndex());
+			validateUtil.validateRequired(addr, lineNum, IpamSubnetEum.ADDR.getIndex());
+			validateUtil.validateIp(addr, lineNum, IpamSubnetEum.ADDR.getIndex());
+
+			//掩码校验
+            String mask = dataMap.get(IpamSubnetEum.MASK.getIndex());
+			validateUtil.validateRequired(mask, lineNum, IpamSubnetEum.MASK.getIndex());
+			Integer ipCap = validateUtil.validateMask(mask, type, lineNum, IpamSubnetEum.MASK.getIndex());
+
 
             // 校验ip以及掩码值之前是否有创建或者包含
-            String ip = StrUtil.builder(addr,StrUtil.SLASH,mask).toString();
-    		IPAddress ipAddress = new IPAddressString(ip).toAddress();
-            if(ToolUtil.isNotAllEmpty(ips)) {
-    			for(String p : ips) {
-    				IPAddress ipAddr = new IPAddressString(p).toAddress();
-    				if(ipAddr.contains(ipAddress)) {
-    					saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.IPAM_SUBNET_INTERVAL_ERROR.getMsg());
-    				}
-    			}
-    		}		
+			IpamSubnet one = this.getOne(new LambdaQueryWrapper<IpamSubnet>().eq(IpamSubnet::getMask, mask).eq(IpamSubnet::getAddr, addr));
+
+			if (one != null){
+				if (StrUtil.equals("0" , existed)){
+					validateUtil.recordImportAttrErr(lineNum,RCode.IMPORT_FIELDS_DUPLICATE.setParam(IpamSubnetEum.MASK.getIndex(),IpamSubnetEum.ADDR.getIndex()));
+				}else if (StrUtil.equals("1" , existed)){
+					//索引列重复 & 其他属性重复
+					if (!StrUtil.equals(name, one.getName())){
+						validateUtil.recordImportAttrErr(lineNum,RCode.IMPORT_FIELDS_DUPLICATE.setParam(IpamSubnetEum.MASK.getIndex(),IpamSubnetEum.ADDR.getIndex()));
+					}
+				}
+			}
+            String vlan = dataMap.get(IpamSubnetEum.VLAN.getIndex());
+
+            //dc相关校验
+            String dcName = dataMap.get(IpamSubnetEum.DC.getIndex());
+			validateUtil.validateRequired(dcName, lineNum, IpamSubnetEum.DC.getIndex());
+			validateUtil.validateRelObjExits("dc", "name", dcName, false, lineNum ,IpamSubnetEum.DC.getIndex());
             
-            String vlan = dataMap.get(4);
             
-            String dcName = dataMap.get(5);
-            Integer dcId = null;
-            if(StringUtils.isEmpty(dcName)) {
-            	saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.IPAM_SUBNET_DC_ISNULL.getMsg());
-            }else {
-            	Dc dc = dcService.getOne(new QueryWrapper<Dc>().lambda().eq(Dc::getName, dcName));
-            	if(ObjectUtils.isEmpty(dc)) {
-            		saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.IPAM_SUBNET_DC_ISNULL.getMsg());
-            	}else {
-            		dcId= dc.getId();
-            	}
-            }
-            
-            String remark = dataMap.get(6);
-            
-            if (saveFlag) {
-                IpamSubnet ipamSubnet = new IpamSubnet();
-                try {
-                	ipamSubnet.setName(name);
-                    ipamSubnet.setType(Integer.valueOf(type));
-                    ipamSubnet.setAddr(addr);
-                    ipamSubnet.setMask(Integer.valueOf(mask));
-                    ipamSubnet.setVlan(vlan);
-                    ipamSubnet.setCap(new BigDecimal(Math.pow(2,ipCap - ipamSubnet.getMask())).toString());
-                    ipamSubnet.setDcId(dcId);
-                    ipamSubnet.setRemark(remark);
-                	ipamSubnet.setSeq(seqUUID);
-                    this.save(ipamSubnet);
-                    successNum++;
-                } catch (RuntimeException e) {
-                    log.error(String.format("ipamsubnet 导入保存失败,实体信息是：%s,错误信息是：%s", JSONObject.toJSONString(ipamSubnet), e.getMessage()), e);
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, "System", RCode.EXCELFILE_IMPORT_ERROR.getMsg());
-                }
-            }
-        }
-        return successNum;
+            String remark = dataMap.get(IpamSubnetEum.REMARK.getIndex());
+
+			// 遇到错误是否继续导入，可选值： 0：不继续    1：继续    默认值：1
+			String ignoreError = Tool.ObjectUtil.defaultIfEmpty((String) params.get("ignoreError"), "1");
+			List<Map<String, String>> errMsgForThisLine = validateUtil.getImportErrMsgForThisLine(lineNum);
+			if (BooleanUtil.and(Tool.StrUtil.equals("0", ignoreError), Tool.CollUtil.isNotEmpty(errMsgForThisLine))) {
+				break;
+			}
+			if (Tool.CollUtil.isEmpty(errMsgForThisLine)) {
+				IpamSubnet ipamSubnet = new IpamSubnet();
+				ipamSubnet.setName(name);
+				ipamSubnet.setType(Integer.valueOf(type));
+				ipamSubnet.setAddr(addr);
+				ipamSubnet.setMask(Integer.valueOf(mask));
+				ipamSubnet.setVlan(vlan);
+				ipamSubnet.setCap(new BigDecimal(Math.pow(2,ipCap - ipamSubnet.getMask())).toString());
+				ipamSubnet.setRemark(remark);
+				ipamSubnet.setSeq(params.get("seq").toString());
+				if (StrUtil.isNotEmpty(dcName)) {
+					Dc dc = dcService.getOne(new LambdaQueryWrapper<Dc>().eq(Dc::getName, dcName));
+					ipamSubnet.setDcId(dc.getId());
+				}
+				try {
+					this.saveOrUpdateRowData(ipamSubnet,params);
+				} catch (Exception e) {
+					validateUtil.recordImportAttrErr(lineNum, RCode.ERROR);
+					log.error("ipamSubnet import roll back the transaction failure", e);
+				}
+			}
+		}
+        //返回错误信息
+        return validateUtil.getImportErrMsg();
     }
-		
+
+	private void saveOrUpdateRowData(IpamSubnet ipamSubnet, Map<String,Object> params) {
+		// 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
+		String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
+
+		//判断 name 重复
+		IpamSubnet oldIpamSubnet = this.getOne(new LambdaQueryWrapper<IpamSubnet>().eq(IpamSubnet::getName, ipamSubnet.getName()));
+
+		if (StrUtil.equals("1", existed) && oldIpamSubnet != null) {
+			// update
+			ipamSubnet.setId(oldIpamSubnet.getId());
+
+			LambdaUpdateWrapper<IpamSubnet> updateWrapper = new LambdaUpdateWrapper<IpamSubnet>()
+					.eq(IpamSubnet::getId, ipamSubnet.getId())
+					.set(IpamSubnet::getName, ipamSubnet.getName())
+					.set(IpamSubnet::getAddr, ipamSubnet.getAddr())
+					.set(IpamSubnet::getMask, ipamSubnet.getMask())
+					.set(IpamSubnet::getCap, ipamSubnet.getCap())
+					.set(IpamSubnet::getDcId, ipamSubnet.getDcId())
+					.set(IpamSubnet::getRemark, ipamSubnet.getRemark())
+					.set(IpamSubnet::getSeq, ipamSubnet.getSeq());
+			this.update(ipamSubnet, updateWrapper);
+		} else {
+			// insert
+			this.save(ipamSubnet);
+		}
+	}
+
 	@Override
 	public void export(HttpServletResponse response, Map<String, Object> params) throws IOException{
 		String maxLine = sysConfigService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);

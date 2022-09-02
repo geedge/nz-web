@@ -33,8 +33,8 @@ public interface IpamSubnetService extends IService<IpamSubnet> {
 
 	void getTemplateByLanguage(HttpServletResponse response,String format) throws IOException;
 	
-	Map importIpamSubnetData(MultipartFile excelFile) throws IOException,AddressStringException, IncompatibleAddressException ;
-	
+	Map importIpamSubnetData(MultipartFile excelFile,Map<String,Object> params) throws IOException,AddressStringException, IncompatibleAddressException ;
+
 	void export(HttpServletResponse response, Map<String, Object> params) throws IOException;
 		
 	void cancelImport(String seq);
