@@ -36,7 +36,7 @@ public interface AssetModelService extends IService<AssetModel> {
 
     void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException;
 
-    Map importAssetModelData(MultipartFile excelFile) throws IOException;
+    Map importAssetModelData(MultipartFile excelFile, Map<String, Object> params) throws IOException;
 
     void export(HttpServletResponse response, Map<String, Object> params) throws IOException;
 

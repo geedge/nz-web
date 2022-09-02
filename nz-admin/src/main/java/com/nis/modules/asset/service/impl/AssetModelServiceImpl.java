@@ -1,9 +1,9 @@
 package com.nis.modules.asset.service.impl;
 
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
-import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -13,10 +13,7 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.asset.dao.AssetAssetDao;
 import com.nis.modules.asset.dao.AssetModelDao;
-import com.nis.modules.asset.entity.AssetAsset;
-import com.nis.modules.asset.entity.AssetBrand;
-import com.nis.modules.asset.entity.AssetModel;
-import com.nis.modules.asset.entity.AssetTypeConf;
+import com.nis.modules.asset.entity.*;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetBrandService;
 import com.nis.modules.asset.service.AssetModelService;
@@ -354,150 +351,172 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
     }
 
     @Override
-    public Map importAssetModelData(MultipartFile multipartFile) throws IOException {
+    public Map importAssetModelData(MultipartFile multipartFile, Map<String, Object> params) throws IOException {
         String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_MODEL_EXPORT_HEADER);
         Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
         List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
 
-        List<Map> failDetails = new ArrayList<>();
-        String seqUUID = UUID.randomUUID().toString();
+        String seq = UUID.randomUUID().toString();
+        params.put("seq", seq);
 
-        int successNum = this.saveAssetModelsFromImportDataList(importDataList, failDetails, new ArrayList<>(exportHeaderMap.keySet()), seqUUID);
+        // 表头信息 国际化之后的
+        List<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
+
         int totalNum = importDataList.size();
+        List<Map<String, String>> failDetailList = this.saveAssetModelsFromImportDataList(importDataList, headerInfos, params);
+
+        // 从错误信息中获取失败导入行数量
+        int failNum = (int) failDetailList.stream().map(map -> Integer.valueOf(map.get("lineNo"))).distinct().count();
 
         Map resultMap = new HashMap(8);
-        resultMap.put("seq", seqUUID);
+        resultMap.put("seq", seq);
         resultMap.put("totalNum", totalNum);
-        resultMap.put("successNum", successNum);
-        resultMap.put("failNum", totalNum - successNum);
-        resultMap.put("failDetail", CommonUtils.handleImportFailDetails(failDetails));
+        resultMap.put("successNum", totalNum - failNum);
+        resultMap.put("failNum", failNum);
+        resultMap.put("failDetail", failDetailList);
         return resultMap;
     }
 
-    private int saveAssetModelsFromImportDataList(List<Map<Integer, String>> importDataList, List<Map> failDetails, List<String> headerInfos, String seqUUID) {
-        int successNum = 0;
+    private List<Map<String, String>> saveAssetModelsFromImportDataList(List<Map<Integer, String>> importDataList, List<String> headerInfos, Map<String, Object> params) {
+        // 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
+        String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
+
+        // 创建导入校验对象
+        ImportValidateUtil validateUtil = ImportValidateUtil.builder()
+                .existed(existed).headerInfos(headerInfos)
+                .build();
         for (int i = 0; i < importDataList.size(); i++) {
-            int dataFromExcelRowNum = i + 1;
-            boolean saveFlag = true;
+            int lineNum = i + 1;
+            Map saveEntitys = Tool.MapUtil.newHashMap();
             Map<Integer, String> dataMap = importDataList.get(i);
 
-            String modelName = dataMap.get(0);
-            if (StringUtils.isEmpty(modelName)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.ASSET_MODELNAME_ISNULL.getMsg());
+            String modelName = dataMap.get(AssetModelImportEnum.NAME.getIndex());
+            validateUtil.validateRequired(modelName, lineNum, AssetModelImportEnum.NAME.getIndex());
+
+            // 自动添加
+            String brandName = dataMap.get(AssetModelImportEnum.BRAND.getIndex());
+            validateUtil.validateRequired(brandName, lineNum, AssetModelImportEnum.BRAND.getIndex());
+            Boolean brandExist = validateUtil.validateRelObjExits("asset_brand", "name", brandName, true, lineNum, AssetModelImportEnum.BRAND.getIndex());
+            if (!brandExist) {
+                AssetBrand brand = new AssetBrand();
+                brand.setName(brandName);
+                saveEntitys.put("brand", brand);
             }
-
-            String brandName = dataMap.get(1);
-            if (StringUtils.isEmpty(brandName)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.ASSET_BRAND_NAME_ISNULL.getMsg());
-            }
-
-            String chartNames = dataMap.get(2);
-            StringBuilder relChartTemplateIds = new StringBuilder();
-            if (StringUtils.isNotEmpty(chartNames)) {
-                String[] split = chartNames.split(",");
-                for (String chartName : split) {
-                    List<VisualChart> list = visualChartService.list(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getPanelId, 0).eq(VisualChart::getName, chartName));
-                    list = list.stream().filter(chart -> chart.getVarType() == Constant.ChartVariableType.ASSET.getValue()).collect(Collectors.toList());
-                    if (Tool.CollectionUtil.isEmpty(list)) {
-                        saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_NOTEXSITS.getMsg());
-                    } else if (list.size() == 1) {
-                        // 类型为 asset ,且通过名称只关联一个
-                        relChartTemplateIds.append(list.get(0).getId());
-                        relChartTemplateIds.append(",");
-                    } else if (list.size() > 1) {
-                        saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_NAME_DUPLICATE_NOTLINK.getMsg());
-                    }
-                }
-            }
-
-            String remark = dataMap.get(3);
-
-            String typeName = dataMap.get(4);
-            Integer typeId = null;
-            if (StringUtils.isEmpty(typeName)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.TYPECONF_NAME_ISNULL.getMsg());
-            } else {
-                AssetTypeConf typeConf = typeConfService.getOne(new LambdaQueryWrapper<AssetTypeConf>().eq(AssetTypeConf::getName, typeName.trim()));
-                if (typeConf == null) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.TYPECONF_NOT_FOUND.getMsg());
-                }
-                typeId = Tool.ObjectUtil.isEmpty(typeConf) ? null : typeConf.getId();
-            }
-
-            String sysObjectIdStr = dataMap.get(5);
-            if (StringUtils.isNotEmpty(sysObjectIdStr)) {
-                // fotmat
-                try {
-                    new SnmpOid(sysObjectIdStr);
-                } catch (IllegalArgumentException e) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.ASSET_MODEL_OID_INCORRECT.getMsg());
-                }
-                // only
-                int count = this.count(new LambdaQueryWrapper<AssetModel>().eq(AssetModel::getSysObjectId, sysObjectIdStr));
-                if(count > 0){
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.ASSET_MODEL_OID_DUPLICATE.getMsg());
-                }
-            }
-
-            if (saveFlag) {
-                DefaultTransactionDefinition def = new DefaultTransactionDefinition();
-                TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(def);
-                AssetModel model = new AssetModel();
-                try {
-                    AssetBrand brand = brandService.getOne(new LambdaQueryWrapper<AssetBrand>().eq(AssetBrand::getName, brandName));
-                    if (brand == null) {
-                        brand = new AssetBrand();
-                        brand.setSeq(seqUUID);
-                        brand.setName(brandName);
-                        brandService.save(brand);
-                    }
-
-                    // 名称校验
-                    int countByName = this.count(new LambdaQueryWrapper<AssetModel>().eq(AssetModel::getBrandId, brand.getId()).eq(AssetModel::getName, modelName));
-                    if (countByName > 0) {
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.ASSET_MODELNAME_DUPLICATE.getMsg());
-                        dataSourceTransactionManager.commit(transactionStatus);
+            if (BooleanUtil.and(brandExist, StrUtil.isNotEmpty(modelName))) {
+                // brand 存在，进行名称校验
+                AssetBrand brand = brandService.getOne(new LambdaQueryWrapper<AssetBrand>().eq(AssetBrand::getName, brandName));
+                // 索引重复 & error or ignore
+                AssetModel m = this.getOne(new LambdaQueryWrapper<AssetModel>().eq(AssetModel::getBrandId, brand.getId()).eq(AssetModel::getName, modelName));
+                if (Tool.ObjectUtil.isNotEmpty(m)) {
+                    if (StrUtil.equals("0", existed)) {
+                        validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_DUPLICATE.setParam(AssetModelImportEnum.NAME.getIndex()));
+                    } else if (StrUtil.equals("2", existed)) {
+                        validateUtil.ignoreThisRow(lineNum, AssetModelImportEnum.NAME.getIndex());
                         continue;
                     }
+                }
+            }
 
-                    model.setName(modelName);
+            String chartNames = dataMap.get(AssetModelImportEnum.CHART_TEMPLATES.getIndex());
+            StringBuilder relChartTemplateIds = new StringBuilder();
+            if (StrUtil.isNotEmpty(chartNames)) {
+                // model 只能选择 asset 类型且 groupId = 0 的图表
+                List<VisualChart> assetChartTemplateList = visualChartService.list(new LambdaQueryWrapper<VisualChart>()
+                        .eq(VisualChart::getPanelId, 0).eq(VisualChart::getGroupId, 0)
+                        .eq(VisualChart::getVarType, Constant.ChartVariableType.ASSET.getValue()));
+
+                StrUtil.split(chartNames, StrUtil.C_COMMA).stream().forEach(chartName -> {
+                    List<Integer> chartIdList = assetChartTemplateList.stream()
+                            .filter(visualChart -> StrUtil.equals(visualChart.getName(), chartName))
+                            .map(VisualChart::getId).collect(Collectors.toList());
+                    if (Tool.CollUtil.isEmpty(chartIdList)) {
+                        validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_RELATED_OBJ_NOT_EXIST.setParam(AssetModelImportEnum.CHART_TEMPLATES.getIndex()));
+                    } else if (chartIdList.size() > 1) {
+                        validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_DUPLICATE.setParam(AssetModelImportEnum.CHART_TEMPLATES.getIndex()));
+                    } else if (chartIdList.size() == 1) {
+                        relChartTemplateIds.append(StrUtil.concat(true, chartIdList.get(0).toString(), ","));
+                    }
+                });
+            }
+
+            String typeName = dataMap.get(AssetModelImportEnum.ASSET_TYPE_NAME.getIndex());
+            validateUtil.validateRequired(typeName, lineNum, AssetModelImportEnum.ASSET_TYPE_NAME.getIndex());
+            validateUtil.validateRelObjExits("asset_type_conf", "name", typeName, false, lineNum, AssetModelImportEnum.ASSET_TYPE_NAME.getIndex());
+
+            String oid = dataMap.get(AssetModelImportEnum.OID.getIndex());
+            if (StrUtil.isNotEmpty(oid)) {
+                validateUtil.validateSnmpOID(oid, lineNum, AssetModelImportEnum.OID.getIndex());
+                validateUtil.validateDuplicate("asset_model", "sys_object_id", oid, modelName, lineNum, AssetModelImportEnum.OID.getIndex());
+            }
+
+            // 遇到错误是否继续导入，可选值： 0：不继续    1：继续    默认值：1
+            String ignoreError = Tool.ObjectUtil.defaultIfEmpty((String) params.get("ignoreError"), "1");
+            List<Map<String, String>> errMsgForThisLine = validateUtil.getImportErrMsgForThisLine(lineNum);
+            if (BooleanUtil.and(Tool.StrUtil.equals("0", ignoreError), Tool.CollUtil.isNotEmpty(errMsgForThisLine))) {
+                break;
+            }
+
+            if (Tool.CollUtil.isEmpty(errMsgForThisLine)) {
+                String remark = dataMap.get(AssetModelImportEnum.DESCRIPTION.getIndex());
+                AssetTypeConf typeConf = typeConfService.getOne(new LambdaQueryWrapper<AssetTypeConf>().eq(AssetTypeConf::getName, typeName));
+
+                AssetModel model = new AssetModel();
+                model.setRemark(remark);
+                model.setName(modelName);
+                model.setSysObjectId(oid);
+                model.setTypeId(typeConf.getId());
+                model.setChartIds(StrUtil.isNotEmpty(relChartTemplateIds) ? relChartTemplateIds.substring(0, relChartTemplateIds.length() - 1) : "");
+                if (saveEntitys.get("brand") == null) {
+                    AssetBrand brand = brandService.getOne(new LambdaQueryWrapper<AssetBrand>().eq(AssetBrand::getName, brandName));
                     model.setBrandId(brand.getId());
-                    model.setRemark(remark);
-                    model.setUsize(1);
-                    String chartIds = relChartTemplateIds.toString();
-                    model.setChartIds(StrUtil.isNotEmpty(chartIds) ? chartIds.substring(0, chartIds.length() - 1) : "");
-                    model.setTypeId(typeId);
-                    model.setSysObjectId(StrUtil.isNotEmpty(sysObjectIdStr) ? sysObjectIdStr : StrUtil.EMPTY);
-                    model.setSeq(seqUUID);
-                    this.save(model);
+                }
+                saveEntitys.put("model", model);
 
+                TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(new DefaultTransactionDefinition());
+                try {
+                    this.saveOrUpdateRowData(saveEntitys, params);
                     dataSourceTransactionManager.commit(transactionStatus);
-                    successNum++;
-                } catch (RuntimeException e) {
+                } catch (Exception e) {
                     dataSourceTransactionManager.rollback(transactionStatus);
-                    log.error(String.format("asset model 导入保存失败,实体信息是：%s,错误信息是：%s", JSONObject.toJSONString(model), e.getMessage()), e);
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, "System", RCode.EXCELFILE_IMPORT_ERROR.getMsg());
+                    validateUtil.recordImportAttrErr(lineNum, RCode.ERROR);
+                    log.error("Asset model import roll back the transaction failure", e);
                 }
             }
         }
-        return successNum;
+        // 返回错误信息
+        return validateUtil.getImportErrMsg();
     }
 
-    private void addFailDetail(int i, List<Map> failDetails, String headerInfo, String msg) {
-        Map failDetail = new HashMap(4);
-        failDetail.put("lineNo", i);
-        failDetail.put("errorMsg", headerInfo + ": " + msg);
-        failDetails.add(failDetail);
-    }
+    private void saveOrUpdateRowData(Map saveEntitys, Map<String, Object> params) {
+        String seq = params.get("seq").toString();
 
+        AssetBrand brand = (AssetBrand) saveEntitys.get("brand");
+        if (brand != null) {
+            brand.setSeq(seq);
+            brandService.save(brand);
+        }
+
+        AssetModel model = (AssetModel) saveEntitys.get("model");
+        model.setSeq(seq);
+        model.setUsize(1);
+        if (model.getBrandId() == null && brand != null) {
+            model.setBrandId(brand.getId());
+        }
+
+        // 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore   在此只需要处理更新即可
+        String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
+        AssetModel oldModel = this.getOne(new LambdaQueryWrapper<AssetModel>()
+                .eq(AssetModel::getName, model.getName())
+                .eq(AssetModel::getBrandId, model.getBrandId()));
+        if (StrUtil.equals("1", existed) && oldModel != null) {
+            // update
+            model.setId(oldModel.getId());
+            this.updateById(model);
+        } else {
+            // insert
+            this.save(model);
+        }
+    }
 
     @Override
     public void export(HttpServletResponse response, Map<String, Object> params) throws IOException {

@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysI18nService;
+import com.sun.jmx.snmp.SnmpOid;
 import lombok.Builder;
 import lombok.Data;
 
@@ -211,6 +212,21 @@ public class ImportValidateUtil {
                 this.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(header));
             }
         }
+    }
+
+    /**
+     *
+     * 校验 SNMP OID 是否符合规范
+     */
+    public SnmpOid validateSnmpOID(String oid, int lineNum, int headerIndex) {
+        try {
+            SnmpOid snmpOid = new SnmpOid(oid);
+            return snmpOid;
+        } catch (IllegalArgumentException e) {
+            String header = headerInfos.get(headerIndex);
+            this.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(header));
+        }
+        return null;
     }
 
     /**
