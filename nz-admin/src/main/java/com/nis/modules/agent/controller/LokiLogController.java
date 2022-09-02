@@ -48,7 +48,7 @@ public class LokiLogController {
 				.and(end).notNull(RCode.AGENT_PARAM_END_ISNULL);
 
 		String direction = request.getParameter("direction");
-		direction = StrUtil.isEmpty(direction) ? "backward" : "forward";
+		direction = StrUtil.isEmpty(direction) ? "backward" : direction;
 
 		String limit = request.getParameter("limit");
 		Long limitLongVal = StrUtil.isEmpty(limit) ? 100L : Long.valueOf(limit);
