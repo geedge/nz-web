@@ -31,7 +31,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
     private AlertHandlerDao msgHandlerDao;
 	@Autowired
 	private RedisTemplate<String, String> redisTemplate;
-	@Value("${redis.maxQueueLength:10000}")
+	@Value("${redis.maxAlertMessageSize:10000}")
     private Long maxQueueLength;//redis队列长度
 	
     @Override

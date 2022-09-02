@@ -1,23 +1,13 @@
 package com.nis.modules.alert.backend;
 
-import cn.hutool.core.date.StopWatch;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
-import com.nis.common.exception.NZException;
-import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
-import com.nis.modules.alert.entity.AlertRuleEntity;
-import com.nis.modules.alert.entity.AlertRuleEvalLog;
-import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
-import com.nis.modules.alert.service.AlertMessageService;
-import com.nis.modules.alert.service.AlertRuleEvalLogService;
-import com.nis.modules.agent.entity.Agent;
-import com.nis.modules.agent.service.LokiApiService;
-import com.nis.modules.agent.service.PromApiService;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
@@ -26,12 +16,32 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpEntity;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
-import java.util.concurrent.TimeUnit;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.nis.common.exception.NZException;
+import com.nis.common.protobuf.Types.Label;
+import com.nis.common.protobuf.Types.Sample;
+import com.nis.common.protobuf.Types.TimeSeries;
+import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.Tool;
+import com.nis.modules.agent.entity.Agent;
+import com.nis.modules.agent.service.LokiApiService;
+import com.nis.modules.agent.service.PromApiService;
+import com.nis.modules.alert.entity.AlertRuleEntity;
+import com.nis.modules.alert.entity.AlertRuleEvalLog;
+import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
+import com.nis.modules.alert.service.AlertMessageService;
+import com.nis.modules.alert.service.AlertRuleEvalLogService;
+import com.nis.modules.alert.service.RecordRuleService;
+
+import cn.hutool.core.date.StopWatch;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 
 @Component
 @DisallowConcurrentExecution
@@ -52,6 +62,9 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 
 	@Autowired
 	private AlertMessageService alertMessageService;
+	
+	@Autowired
+	private RecordRuleService recordRuleService;
 
 	/**
 	 * alert rule 查询告警数据 向前偏移
@@ -212,6 +225,15 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 				// 保存执行日志
 				evalLog.setEtts(Tool.DateUtil.current());
 				evalLogService.save(evalLog);
+				//存一份数据到 prometheus
+				Label recordLabel = Label.newBuilder().setName("id").setValue(String.valueOf(alertRuleId)).build();
+				Label durationMetric = Label.newBuilder().setName("__name__").setValue("alert_rule_eval_duration").build();
+				Label stateMetric = Label.newBuilder().setName("__name__").setValue("alert_rule_eval_state").build();
+				Sample durationSample = Sample.newBuilder().setTimestamp(evalLog.getStts()).setValue(evalLog.getEtts() - evalLog.getStts()).build();
+				Sample stateSample = Sample.newBuilder().setTimestamp(evalLog.getStts()).setValue(evalLog.getState()).build();
+				TimeSeries durationTs = TimeSeries.newBuilder().addLabels(recordLabel).addLabels(durationMetric).addSamples(durationSample).build();
+				TimeSeries stateTs = TimeSeries.newBuilder().addLabels(recordLabel).addLabels(stateMetric).addSamples(stateSample).build();
+				recordRuleService.rightPushRecordToRedis(Tool.ListUtil.of(durationTs,stateTs));
 			} catch (Exception e) {
 				log.warn(e, "save alert rule eval log error");
 			}

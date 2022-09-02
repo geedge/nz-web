@@ -7,6 +7,7 @@ import com.nis.modules.agent.job.CortexHistoryDataDelJob;
 import com.nis.modules.alert.backend.AlertMessageExpiredJob;
 import com.nis.modules.alert.backend.AlertRuleManagerJob;
 import com.nis.modules.alert.backend.AlertSilenceStatusJob;
+import com.nis.modules.alert.backend.RecordManagerJob;
 import com.nis.modules.alert.job.AlertMessageHistoryPartitionManagementJob;
 import com.nis.modules.asset.job.AssetFeatureJob;
 import com.nis.modules.asset.job.AssetPingStatusJob;
@@ -81,6 +82,9 @@ public class JobConfig {
     @Value("${nezha.alertMessageHistoryPartManJobCron:0 0 0 1/1 * ?}")
     private String alertMessageHistoryPartManJobCron;
 
+    @Value("${nezha.recordtRuleManagerJobCron:0/10 * * * * ?}")
+    private String recordtRuleManagerJobCron;
+    
 	@Autowired
     private Scheduler scheduler;
 //    @Qualifier("costomSchedulerFactoryBean")
@@ -101,7 +105,8 @@ public class JobConfig {
     private String sysComponentJobName = "SYSCOMPONENT_JOB";
     private String cortexHistoryDataDelJobName = "CORTEXHISTORYDATADEL_JOB";
     private String alertMessageHistoryPartManJobName = "ALERTMESSAGEHISTORYPARTMAN_JOB";
-
+    private String recordtRuleManagerJobName = "RECORDTRULEMANAGER_JOB";
+    
     @Bean
     public JobDetail agentCronJobDetail() {
         return JobBuilder.newJob(AutoConfigAgentJob.class).withIdentity(JOB_NAME + agentJobName).storeDurably().build();
@@ -177,6 +182,11 @@ public class JobConfig {
         return JobBuilder.newJob(AlertMessageHistoryPartitionManagementJob.class).withIdentity(JOB_NAME + alertMessageHistoryPartManJobName).storeDurably().build();
     }
     
+    @Bean
+    public JobDetail recordtRuleManagerJobDetail() {
+        return JobBuilder.newJob(RecordManagerJob.class).withIdentity(JOB_NAME + recordtRuleManagerJobName).storeDurably().build();
+    }
+    
     @PostConstruct
     public void init() throws SchedulerException {
         // agent 健康检查定时任务
@@ -224,6 +234,9 @@ public class JobConfig {
 
         // alert message History Partition Management 分区管理
         createCronScheduleJob(alertMessageHistoryPartManJobName, alertMessageHistoryPartManJobDetail(), StringUtils.isEmpty(alertMessageHistoryPartManJobCron) ? "0 0 0 1/1 * ?" : alertMessageHistoryPartManJobCron);
+        
+        // record rule 配置管理任务
+        createCronScheduleJob(recordtRuleManagerJobName, recordtRuleManagerJobDetail(), StringUtils.isEmpty(recordtRuleManagerJobCron) ? "0/10 * * * * ?" : recordtRuleManagerJobCron);
     }
     
     /**

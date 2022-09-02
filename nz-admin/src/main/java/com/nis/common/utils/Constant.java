@@ -1059,6 +1059,10 @@ public class Constant {
 
 	// 存放prometheus推送过来的告警消息
 	public static final String ALERT_MESSAGE_RECV = "alert_message_recv";
+	/**
+	 * 存放 record 执行结果
+	 */
+	public static final String RECORD_DATA_CACHE = "record_data_cache";
 
 	/**
 	 * 存放 active 状态 告警消息

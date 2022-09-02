@@ -87,6 +87,9 @@ public class EventLogSqlInterceptor implements Interceptor {
 						// 处理 snmp module
 						eventLogService.increment("snmp", "prometheus", "promtail");
 						break;
+					case "record_rule":
+						eventLogService.increment("record");
+						break;
 					default:
 						break;
 					}

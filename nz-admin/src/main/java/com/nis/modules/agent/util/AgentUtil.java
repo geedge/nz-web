@@ -1,6 +1,8 @@
 package com.nis.modules.agent.util;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
@@ -29,15 +31,20 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import org.xerial.snappy.Snappy;
 
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.nis.common.exception.NZException;
+import com.nis.common.protobuf.Remote.WriteRequest;
+import com.nis.common.protobuf.Types.TimeSeries;
 import com.nis.common.utils.CommonUtils;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 import com.nis.modules.agent.entity.Agent;
+import com.nis.modules.agent.service.PromApiService;
 import com.nis.modules.sys.service.SysConfigService;
 
 import cn.hutool.core.net.url.UrlBuilder;
@@ -55,7 +62,8 @@ public class AgentUtil {
 	private static Log log = Log.get();
 	private static RestTemplate restTemplate;
 	private static SysConfigService sysConfigService;
-
+	private static PromApiService promApiService;
+	
 	@Value("${nezha.installPath:install/}")
 	private String installPath;
 
@@ -119,6 +127,45 @@ public class AgentUtil {
 		return exchange.getBody();
 	}
 
+	/**
+	 *  prometheus remote write
+	 * @param url
+	 * @param token
+	 * @param body
+	 * @return
+	 * @throws IOException 
+	 * @throws UnsupportedEncodingException 
+	 * @throws URISyntaxException 
+	 * @throws RestClientException 
+	 */
+	public static ResponseEntity<String> remoteWrite(List<TimeSeries> timeSeriesList) throws UnsupportedEncodingException, IOException, RestClientException, URISyntaxException {
+		Agent server = promApiService.getOneAvaliableGlobalAgent();
+		String pathPrefix = promApiService.getPromApiProxyPathPrefix();
+		String path = Tool.StrUtil.contains(pathPrefix, "/cortex") ? String.format("%s%s", pathPrefix,"/api/v1/push") : String.format("%s%s", pathPrefix,"/api/v1/write");
+		String token = server.getToken();
+		// 构造请求路径
+		UrlBuilder urlBuilder = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
+				.setPort(server.getPort()).setPath(UrlPath.of(path, Charset.forName("UTF-8")));
+		path = urlBuilder.build();
+		log.debug("remote write path: {}",path);
+		// 设置请求头
+		HttpHeaders headers = new HttpHeaders();
+		headers.add(HttpHeaders.AUTHORIZATION, token);
+		headers.add("Content-Encoding","snappy");
+		headers.add("Content-Type","application/x-protobuf");
+		headers.add("User-Agent","network zodiac");
+		headers.add("X-Prometheus-Remote-Write-Version", "0.1.0");
+		//protobuf 序列化
+		WriteRequest writeRequest = WriteRequest.newBuilder().addAllTimeseries(timeSeriesList).build();
+		byte[] byteArray = writeRequest.toByteArray(); // protobuf 序列化
+		byte[] compress = Snappy.compress(byteArray); // snappy 压缩
+		HttpEntity httpEntity = new HttpEntity(compress, headers);
+		// 发送 请求
+		ResponseEntity<String> exchange = null;
+		exchange = restTemplate.exchange(new URI(path), HttpMethod.POST, httpEntity,String.class);
+		return exchange;
+	}
+	
 	/**
 	 * GET 请求
 	 *
@@ -333,5 +380,10 @@ public class AgentUtil {
 	@Autowired
 	public void setSysconfigService(SysConfigService sysConfigService) {
 		AgentUtil.sysConfigService = sysConfigService;
+	}
+	
+	@Autowired
+	public void setPromApiService(PromApiService promApiService) {
+		AgentUtil.promApiService = promApiService;
 	}
 }
