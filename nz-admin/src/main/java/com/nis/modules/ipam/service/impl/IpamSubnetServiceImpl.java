@@ -304,7 +304,6 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 		ImportValidateUtil validateUtil = ImportValidateUtil.builder()
 				.existed(existed).headerInfos(headerInfos)
 				.build();
- 		
         for (int i = 0; i < importDataList.size(); i++) {
 			int lineNum = i + 1;
             Map<Integer, String> dataMap = importDataList.get(i);
@@ -334,10 +333,8 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 			validateUtil.validateRequired(mask, lineNum, IpamSubnetEum.MASK.getIndex());
 			Integer ipCap = validateUtil.validateMask(mask, type, lineNum, IpamSubnetEum.MASK.getIndex());
 
-
             // 校验ip以及掩码值之前是否有创建或者包含
 			IpamSubnet one = this.getOne(new LambdaQueryWrapper<IpamSubnet>().eq(IpamSubnet::getMask, mask).eq(IpamSubnet::getAddr, addr));
-
 			if (one != null){
 				if (StrUtil.equals("0" , existed)){
 					validateUtil.recordImportAttrErr(lineNum,RCode.IMPORT_FIELDS_DUPLICATE.setParam(IpamSubnetEum.MASK.getIndex(),IpamSubnetEum.ADDR.getIndex()));
@@ -348,23 +345,27 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 					}
 				}
 			}
-            String vlan = dataMap.get(IpamSubnetEum.VLAN.getIndex());
 
             //dc相关校验
             String dcName = dataMap.get(IpamSubnetEum.DC.getIndex());
 			validateUtil.validateRequired(dcName, lineNum, IpamSubnetEum.DC.getIndex());
 			validateUtil.validateRelObjExits("dc", "name", dcName, false, lineNum ,IpamSubnetEum.DC.getIndex());
-            
-            
-            String remark = dataMap.get(IpamSubnetEum.REMARK.getIndex());
 
 			// 遇到错误是否继续导入，可选值： 0：不继续    1：继续    默认值：1
 			String ignoreError = Tool.ObjectUtil.defaultIfEmpty((String) params.get("ignoreError"), "1");
 			List<Map<String, String>> errMsgForThisLine = validateUtil.getImportErrMsgForThisLine(lineNum);
 			if (BooleanUtil.and(Tool.StrUtil.equals("0", ignoreError), Tool.CollUtil.isNotEmpty(errMsgForThisLine))) {
+				// 结束本次导入，自导入行开始 到结尾数据行，提示错误信息
+				for (int j = i; j < importDataList.size(); j++) {
+					validateUtil.recordImportAttrErr(j + 1, RCode.IMPORT_ERROR_STOP);
+				}
 				break;
 			}
 			if (Tool.CollUtil.isEmpty(errMsgForThisLine)) {
+				Dc dc = dcService.getOne(new LambdaQueryWrapper<Dc>().eq(Dc::getName, dcName));
+				String vlan = dataMap.get(IpamSubnetEum.VLAN.getIndex());
+				String remark = dataMap.get(IpamSubnetEum.REMARK.getIndex());
+
 				IpamSubnet ipamSubnet = new IpamSubnet();
 				ipamSubnet.setName(name);
 				ipamSubnet.setType(Integer.valueOf(type));
@@ -374,10 +375,7 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 				ipamSubnet.setCap(new BigDecimal(Math.pow(2,ipCap - ipamSubnet.getMask())).toString());
 				ipamSubnet.setRemark(remark);
 				ipamSubnet.setSeq(params.get("seq").toString());
-				if (StrUtil.isNotEmpty(dcName)) {
-					Dc dc = dcService.getOne(new LambdaQueryWrapper<Dc>().eq(Dc::getName, dcName));
-					ipamSubnet.setDcId(dc.getId());
-				}
+				ipamSubnet.setDcId(dc.getId());
 				try {
 					this.saveOrUpdateRowData(ipamSubnet,params);
 				} catch (Exception e) {
@@ -394,9 +392,7 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 		// 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
 		String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
 
-		//判断 name 重复
 		IpamSubnet oldIpamSubnet = this.getOne(new LambdaQueryWrapper<IpamSubnet>().eq(IpamSubnet::getName, ipamSubnet.getName()));
-
 		if (StrUtil.equals("1", existed) && oldIpamSubnet != null) {
 			// update
 			ipamSubnet.setId(oldIpamSubnet.getId());

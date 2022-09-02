@@ -1178,6 +1178,10 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             // 遇到错误是否继续导入，可选值： 0：不继续    1：继续    默认值：1
             String ignoreError = Tool.ObjectUtil.defaultIfEmpty((String) params.get("ignoreError"), "1");
             if (BooleanUtil.and(Tool.StrUtil.equals("0", ignoreError), Tool.CollUtil.isNotEmpty(errMsgForThisLine))) {
+                // 结束本次导入，自导入行开始 到结尾数据行，提示错误信息
+                for (int j = i; j < importDataList.size(); j++) {
+                    validateUtil.recordImportAttrErr(j + 1, RCode.IMPORT_ERROR_STOP);
+                }
                 break;
             }
             if (Tool.CollUtil.isEmpty(errMsgForThisLine)) {

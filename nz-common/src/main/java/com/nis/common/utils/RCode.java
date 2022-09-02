@@ -872,6 +872,7 @@ public enum RCode {
     IMPORT_NOT_WITHIN_REASON(915, "{0} Not within reason"),
     IMPORT_NOT_MATCH(916, "{0} does not match {1} configuration"),
     IMPORT_FIELDS_DUPLICATE(917, "{0} Duplicate ,{1} Duplicate"),
+    IMPORT_ERROR_STOP(918, "Error stop import"),
 
 
     /**
