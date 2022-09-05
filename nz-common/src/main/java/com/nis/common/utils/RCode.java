@@ -278,7 +278,7 @@ public enum RCode {
     ASSET_MODEL_NOTFOUND(326007,"Asset model not found"),
     ASSET_MODEL_OID_DUPLICATE(322008,"OID duplicate"),
     ASSET_MODEL_OID_INCORRECT(323009,"OID format is incorrect"),
-    ASSET_MODEL_RELOBJ_CAN_NOT_REMOVE(317037, "Asset model have associated data and cannot be deleted"),
+    ASSET_MODEL_RELOBJ_CAN_NOT_REMOVE(327010, "Asset model have associated data and cannot be deleted"),
 
     /**
      * Account
@@ -854,25 +854,25 @@ public enum RCode {
     /**
      * 导入相关
      */
-    EXCELFILE_TYPE_ERROR(900, "The type can only be xlsx, json, csv"),
-    EXCELFILE_PARSE_ERROR(901, "Import file resolution failed"),
-    EXCELFILE_HEADER_TEMPLATE_ERROR(902,"The header row of the import template is inconsistent with the system template"),
-    EXCELFILE_HEADER_LANGUAGE_ERROR(903, "Language must be en, zh or ru"),
-    EXCELFILE_IMPORT_FILE_ISNULL(904, "Import file is null"),
-    EXCELFILE_HEADER_LANGUAGE_ISNULL(905, "Language can not be empty"),
-    EXCELFILE_IMPORT_ERROR(906, "File import error"),
-    UNDO_IMPORT_SEQ_ISNULL(907, "Undo import sequence number cannot be empty"),
-    IMPORT_FIELD_REQUIRED(908, "{0} Required"),
-    IMPORT_FIELD_DUPLICATE(909, "{0} Duplicate"),
-    IMPORT_FORMAT_ERROR(910, "{0} Format error"),
-    IMPORT_RELATED_OBJ_NOT_EXIST(911, "{0} Related content does not exist"),
-    IMPORT_ENUM_VALUE_ERROR(912, "{0} Not in enum value list"),
-    IMPORT_IGNORE(913, "Duplicate {0}, ignore the data in this row"),
-    IMPORT_NOT_SUPPORT(914, "{0} Configuration not support"),
-    IMPORT_NOT_WITHIN_REASON(915, "{0} Not within reason"),
-    IMPORT_NOT_MATCH(916, "{0} does not match {1} configuration"),
-    IMPORT_FIELDS_DUPLICATE(917, "{0} Duplicate ,{1} Duplicate"),
-    IMPORT_ERROR_STOP(918, "Error stop import"),
+    EXCELFILE_TYPE_ERROR(800, "The type can only be xlsx, json, csv"),
+    EXCELFILE_PARSE_ERROR(801, "Import file resolution failed"),
+    EXCELFILE_HEADER_TEMPLATE_ERROR(802,"The header row of the import template is inconsistent with the system template"),
+    EXCELFILE_HEADER_LANGUAGE_ERROR(803, "Language must be en, zh or ru"),
+    EXCELFILE_IMPORT_FILE_ISNULL(804, "Import file is null"),
+    EXCELFILE_HEADER_LANGUAGE_ISNULL(805, "Language can not be empty"),
+    EXCELFILE_IMPORT_ERROR(806, "File import error"),
+    UNDO_IMPORT_SEQ_ISNULL(807, "Undo import sequence number cannot be empty"),
+    IMPORT_FIELD_REQUIRED(808, "{0} Required"),
+    IMPORT_FIELD_DUPLICATE(809, "{0} Duplicate"),
+    IMPORT_FORMAT_ERROR(810, "{0} Format error"),
+    IMPORT_RELATED_OBJ_NOT_EXIST(811, "{0} Related content does not exist"),
+    IMPORT_ENUM_VALUE_ERROR(812, "{0} Not in enum value list"),
+    IMPORT_IGNORE(813, "Duplicate {0}, ignore the data in this row"),
+    IMPORT_NOT_SUPPORT(814, "{0} Configuration not support"),
+    IMPORT_NOT_WITHIN_REASON(815, "{0} Not within reason"),
+    IMPORT_NOT_MATCH(816, "{0} does not match {1} configuration"),
+    IMPORT_FIELDS_DUPLICATE(817, "{0} Duplicate ,{1} Duplicate"),
+    IMPORT_ERROR_STOP(818, "Error stop import"),
 
 
     /**
@@ -919,7 +919,7 @@ public enum RCode {
 	IPAM_SUBNET_DC_ISNULL(721011,"Ipamsubnet datacenter can not be null"),
 	IPAM_SUBNET_INTERVAL_ERROR(723012,"Ipamsubnet interval already exists"),
     IPAM_SUBNET_NAME_ERROR(723013,"Ipamsubnet name already exists"),
-    IPAM_SUBNET_RELOBJ_CAN_NOT_REMOVE(587009, "Ipamsubnet have associated data and cannot be deleted"),
+    IPAM_SUBNET_RELOBJ_CAN_NOT_REMOVE(727014, "Ipamsubnet have associated data and cannot be deleted"),
 
     /**
      * IpamIp 相关
@@ -957,8 +957,8 @@ public enum RCode {
     /**
      * Tool
      */
-    TOOL_PING_IP_ISNULL(741000, "Ping ip can not be empty"),
-    TOOL_TRACEROUTE_IP_ISNULL(741001, "Traceroute ip can not be empty"),
+    TOOL_PING_IP_ISNULL(751000, "Ping ip can not be empty"),
+    TOOL_TRACEROUTE_IP_ISNULL(751001, "Traceroute ip can not be empty"),
 
     ERROR(999, "error"); //通用错误/未知错误
 
