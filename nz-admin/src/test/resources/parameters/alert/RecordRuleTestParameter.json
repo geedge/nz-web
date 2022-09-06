@@ -24,7 +24,7 @@
   },
   "------------------ POST  /record/rule data---------------------": "note",
   "addRecordRule_success": {
-    "name": "nz-web-rule",
+    "name": "nz_web_rule",
     "type": 1,
     "expr": "nz_status",
     "inr": 1,
@@ -39,28 +39,28 @@
     "labels": "{up:1,down:2,unknown:3}"
   },
   "addRecordRule_typeIsNull": {
-    "name": "nz-up",
+    "name": "nz_up",
     "expr": "nz_up",
     "inr": 1,
     "state": 1,
     "labels": "{up:1,down:2,unknown:3}"
   },
   "addRecordRule_labelsIsNull": {
-    "name": "nz-up",
+    "name": "nz_up",
     "expr": "nz_up",
     "inr": 1,
     "state": 1,
     "type": 1
   },
   "addRecordRule_stateIsNull": {
-    "name": "nz-up",
+    "name": "nz_up",
     "expr": "nz_up",
     "inr": 1,
     "type": 1,
     "labels": "{up:1,down:2,unknown:3}"
   },
   "addRecordRule_typeIsError": {
-    "name": "nz-up",
+    "name": "nz_up",
     "expr": "nz_up",
     "inr": 1,
     "state": 1,
@@ -68,7 +68,7 @@
     "type": 3
   },
   "addRecordRule_stateIsError": {
-    "name": "nz-up",
+    "name": "nz_up",
     "expr": "nz_up",
     "inr": 1,
     "state": 2,
@@ -78,7 +78,7 @@
   "------------------ PUT  /record/rule data---------------------": "note",
   "updateRecordRule_success": {
     "id": 3,
-    "name": "nz-web-rule-update",
+    "name": "nz_web_rule_update",
     "type": 1,
     "expr": "nz_status",
     "inr": 1,
@@ -86,7 +86,7 @@
     "labels": "{up:1,down:2,unknown:3}"
   },
   "updateRecordRule_idIsNull": {
-    "name": "nz-web-rule-update-idIsNull",
+    "name": "nz_web_rule_update_idIsNull",
     "type": 1,
     "expr": "nz_status",
     "inr": 1,
