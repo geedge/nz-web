@@ -86,20 +86,20 @@ public class IpamIpController {
     }
 
     @PostMapping("/import")
-    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.CHART)
-    public R importChartData(@RequestParam(value = "file") MultipartFile excelFile, HttpServletRequest request) throws IOException, AddressStringException, IncompatibleAddressException {
+    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.IPAMIP)
+    public R importIpamIpData(@RequestParam(value = "file") MultipartFile excelFile, HttpServletRequest request, @RequestParam Map<String, Object> params) throws IOException {
         String language = request.getHeader(Constant.LANGUAGE);
         ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL);
         // 校验 LANGUAGE
         if (!Arrays.asList(Constant.LANGUAGE_VALUES).contains(language)) {
             throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
         }
-        Map info = ipamIpService.importIpamIpData(excelFile);
+        Map info = ipamIpService.importIpamIpData(excelFile, params);
         return R.ok(info);
     }
 
     @GetMapping("/export")
-    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.CHART)
+    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.IPAMIP)
     public void export(HttpServletResponse response, @RequestParam Map<String, Object> params) throws IOException {
         Object format = params.get("format");
         String formatStr = format == null ? "1" : format.toString();
@@ -113,7 +113,7 @@ public class IpamIpController {
     }
 
     @DeleteMapping("/cancelImport")
-    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.CHART)
+    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.IPAMIP)
     public R cancelImport(String seq) {
         ValidateUtils.is(seq).notNull(RCode.UNDO_IMPORT_SEQ_ISNULL);
         ipamIpService.cancelImport(seq);

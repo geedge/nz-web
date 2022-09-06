@@ -1,11 +1,13 @@
 package com.nis.modules.ipam.service.impl;
 
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -14,10 +16,13 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.asset.dao.AssetAssetDao;
 import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.ipam.dao.IpamIpDao;
 import com.nis.modules.ipam.entity.IpamIp;
+import com.nis.modules.ipam.entity.IpamIpEum;
 import com.nis.modules.ipam.entity.IpamSubnet;
+import com.nis.modules.ipam.entity.IpamSubnetEum;
 import com.nis.modules.ipam.service.IpamIpService;
 import com.nis.modules.ipam.service.IpamSubnetService;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
@@ -31,6 +36,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.Max;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -154,138 +160,140 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
     }
 
     @Override
-    public Map importIpamIpData(MultipartFile excelFile) throws IOException, AddressStringException {
+    public Map importIpamIpData(MultipartFile excelFile, Map<String, Object> params) throws IOException {
         String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_IPAMIP_IMPORT_HEADER);
         Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
         List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(excelFile, sysHeaderJsonStr);
 
         List<Map> failDetails = new ArrayList<>();
         String seqUUID = UUID.randomUUID().toString();
-        //ArrayList<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
-        //List<Map<Integer, String>> handleImportData = null;
-        int successNum = this.saveIpamIpsFromImportDataList(importDataList, failDetails, new ArrayList<>(exportHeaderMap.keySet()), seqUUID);
+        params.put("seq",seqUUID);
+        ArrayList<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
+        List<Map<String, String>> failDetailList = this.saveIpamIpsFromImportDataList(importDataList, headerInfos, params);
         int totalNum = importDataList.size();
+
+        // 从错误信息中获取失败导入行数量
+        int failNum = (int) failDetailList.stream().map(map -> Integer.valueOf(map.get("lineNo"))).distinct().count();
 
         Map resultMap = new HashMap(8);
         resultMap.put("seq", seqUUID);
         resultMap.put("totalNum", totalNum);
-        resultMap.put("successNum", successNum);
-        resultMap.put("failNum", totalNum - successNum);
-        resultMap.put("failDetail", CommonUtils.handleImportFailDetails(failDetails));
+        resultMap.put("successNum", totalNum - failNum);
+        resultMap.put("failNum", failNum);
+        resultMap.put("failDetail", failDetailList);
         return resultMap;
     }
 
-    private int saveIpamIpsFromImportDataList(List<Map<Integer, String>> importDataList, List<Map> failDetails, ArrayList<String> headerInfos, String seqUUID) throws AddressStringException, UnknownHostException {
-        int successNum = 0;
+    private List<Map<String, String>> saveIpamIpsFromImportDataList(List<Map<Integer, String>> importDataList, ArrayList<String> headerInfos, Map<String, Object> params) throws UnknownHostException {
+        // 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
+        String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
+
+        // 创建导入校验对象
+        ImportValidateUtil validateUtil = ImportValidateUtil.builder()
+                .existed(existed).headerInfos(headerInfos)
+                .build();
         for (int i = 0; i < importDataList.size(); i++) {
-            int dataFromExcelRowNum = i + 1;
-            boolean saveFlag = true;
+            int lineNum = i + 1;
             Map<Integer, String> dataMap = importDataList.get(i);
 
-            String name = dataMap.get(0);
-            if (StringUtils.isEmpty(name)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.IPAM_IP_NAME_ISNULL.getMsg());
-            }else {
-                IpamIp ipamIp = ipamIpDao.selectOne(new LambdaQueryWrapper<IpamIp>().eq(IpamIp::getName, name));
-                if (Tool.ObjectUtil.isNotEmpty(ipamIp)) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.IPAM_IP_NAME_ERROR.getMsg());
-                }
+            //name
+            String name = dataMap.get(IpamIpEum.NAME.getIndex());
+            validateUtil.validateRequired(name, lineNum, IpamIpEum.NAME.getIndex());
+            boolean indexDuplicate = validateUtil.validateIndexDuplicate("ipam_ip", "name", name, lineNum, IpamIpEum.NAME.getIndex());
+            // 索引列重复 & 忽略标识，提示忽略本行
+            if (BooleanUtil.and(indexDuplicate, StrUtil.equals("2" , existed))){
+                validateUtil.ignoreThisRow(lineNum, IpamIpEum.NAME.getIndex());
+                continue;
             }
 
-            String subnetName = dataMap.get(1);
-            IpamSubnet ipamSubnet = null;
-            Integer subnetId = null;
-            if(StringUtils.isEmpty(subnetName)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.IPAM_IP_SUBNET_ISNULL.getMsg());
-            }else {
-                ipamSubnet = ipamSubnetService.getOne(new QueryWrapper<IpamSubnet>().lambda().eq(IpamSubnet::getName, subnetName));
-                if(org.springframework.util.ObjectUtils.isEmpty(ipamSubnet)) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.IPAM_IP_SUBNET_ISNULL.getMsg());
-                }else {
-                    subnetId= ipamSubnet.getId();
-                }
-            }
+            String subnetName = dataMap.get(IpamIpEum.SUBNET.getIndex());
+            validateUtil.validateRequired(subnetName, lineNum, IpamIpEum.SUBNET.getIndex());
+            validateUtil.validateRelObjExits("ipam_subnet", "name", subnetName , false, lineNum , IpamIpEum.SUBNET.getIndex());
 
-            String addr = dataMap.get(2);
-            if(StringUtils.isEmpty(addr)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.IPAM_IP_ADDR_ISNULL.getMsg());
-            }else {
-                if (!(CommonUtils.checkIpv4(addr) || CommonUtils.checkIpv6(addr))){
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.IPAM_IP_ADDR_ERROR.getMsg());
-                }
-                //检查ip是否在子网内
-                CIDRUtils cidrUtils = new CIDRUtils(StrUtil.builder(ipamSubnet.getAddr(),StrUtil.SLASH,ipamSubnet.getMask().toString()).toString());
-                if (!cidrUtils.isInRange(addr)){
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.IPAM_IP_SUBNET_ADDR_ERROR.getMsg());
-                }
-            }
 
-            String mac = dataMap.get(3);
-            if (StringUtils.isNotEmpty(mac)) {
-                if(!CommonUtils.checkMac(mac)){
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum,failDetails,headerInfos.get(3),RCode.IPAM_IP_MAC_ERROR.getMsg());
-                }
-            }
+            String addr = dataMap.get(IpamIpEum.ADDR.getIndex());
+            IpamSubnet ipamSubnet = ipamSubnetService.getOne(new LambdaQueryWrapper<IpamSubnet>().eq(IpamSubnet::getName, subnetName));
+            validateUtil.validateRequired(addr, lineNum, IpamIpEum.ADDR.getIndex());
+            validateUtil.validateIp(addr, lineNum , IpamIpEum.ADDR.getIndex());
+            validateUtil.validateIpInSubnet(addr, ipamSubnet, lineNum, IpamIpEum.ADDR.getIndex());
+
+
+            String mac = dataMap.get(IpamIpEum.MAC.getIndex());
+            validateUtil.validateMac(mac, lineNum, IpamIpEum.MAC.getIndex());
 
             // 校验ip之前是否有创建或者包含
-            IpamIp ipamIp1 = this.getOne(new LambdaQueryWrapper<IpamIp>().eq(IpamIp::getAddr, addr));
-            if (Tool.ObjectUtil.isNotEmpty(ipamIp1)){
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum,failDetails,headerInfos.get(2),RCode.IPAM_IP_INTERVAL_ERROR.getMsg());
-            }
+            validateUtil.validateDuplicate("ipam_ip", "addr", addr,name , lineNum, IpamIpEum.ADDR.getIndex());
 
-            String assetName = dataMap.get(4);
-            Integer assetId = null;
+            String assetName = dataMap.get(IpamIpEum.ASSET.getIndex());
             Integer state = null;
-            if(StringUtils.isEmpty(assetName)) {
+            if(StringUtils.isEmpty(assetName)){
                 //资产不存在 当前IP为未分配状态
                 state = 1;
             }else {
-                AssetAsset assetAsset = asset.getOne(new QueryWrapper<AssetAsset>().lambda().eq(AssetAsset::getName, assetName));
-                if(org.springframework.util.ObjectUtils.isEmpty(assetAsset)) {
-                    saveFlag = false;
+                Boolean aBoolean = validateUtil.validateRelObjExits("asset_asset", "name", assetName, false, lineNum, IpamIpEum.ASSET.getIndex());
+                if (aBoolean){
+                    //资产存在 当前IP为已分配状态
+                    state = 3;
+                }else {
                     //资产不存在 当前IP为未分配状态
                     state = 1;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.IPAM_IP_ASSET_ISNULL.getMsg());
-                }else {
-                    //资产存在 当前IP为已分配状态
-                    assetId= assetAsset.getId();
-                    state = 3;
                 }
+
+            }
+            // 遇到错误是否继续导入，可选值： 0：不继续    1：继续    默认值：1
+            String ignoreError = Tool.ObjectUtil.defaultIfEmpty((String) params.get("ignoreError"), "1");
+            List<Map<String, String>> errMsgForThisLine = validateUtil.getImportErrMsgForThisLine(lineNum);
+            if (BooleanUtil.and(Tool.StrUtil.equals("0", ignoreError), Tool.CollUtil.isNotEmpty(errMsgForThisLine))) {
+                // 结束本次导入，自导入行开始 到结尾数据行，提示错误信息
+                for (int j = i; j < importDataList.size(); j++) {
+                    validateUtil.recordImportAttrErr(j + 1, RCode.IMPORT_ERROR_STOP);
+                }
+                break;
             }
 
-            String remark = dataMap.get(5);
-
-            if (saveFlag) {
+            if (Tool.CollUtil.isEmpty(errMsgForThisLine)) {
+                AssetAsset assetAsset = asset.getOne(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getName, assetName));
+                String remark = dataMap.get(IpamIpEum.REMARK.getIndex());
                 IpamIp ipamIp = new IpamIp();
+                ipamIp.setName(name);
+                ipamIp.setSubnetId(ipamSubnet.getId());
+                ipamIp.setAddr(addr);
+                ipamIp.setMac(mac);
+                if (ObjectUtil.isEmpty(assetAsset)){
+                    ipamIp.setAssetId(null);
+                }else {
+                    ipamIp.setAssetId(assetAsset.getId());
+                }
+                ipamIp.setRemark(remark);
+                ipamIp.setSeq(params.get("seq").toString());
+                ipamIp.setState(state);
+                ipamIp.setUts(new Date().getTime());
                 try {
-                    ipamIp.setName(name);
-                    ipamIp.setSubnetId(subnetId);
-                    ipamIp.setAddr(addr);
-                    ipamIp.setMac(mac);
-                    ipamIp.setAssetId(assetId);
-                    ipamIp.setRemark(remark);
-                    ipamIp.setSeq(seqUUID);
-                    ipamIp.setState(state);
-                    ipamIp.setUts(new Date().getTime());
-                    this.save(ipamIp);
-                    successNum++;
-                } catch (RuntimeException e) {
-                    log.error(String.format("ipamip 导入保存失败,实体信息是：%s,错误信息是：%s", JSONObject.toJSONString(ipamIp), e.getMessage()), e);
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, "System", RCode.EXCELFILE_IMPORT_ERROR.getMsg());
+                    this.saveOrUpdateRowData(ipamIp,params);
+                } catch (Exception e) {
+                    validateUtil.recordImportAttrErr(lineNum, RCode.ERROR);
+                    log.error("ipamIp import roll back the transaction failure", e);
                 }
             }
         }
-        return successNum;
+        return validateUtil.getImportErrMsg();
     }
+
+    private void saveOrUpdateRowData(IpamIp ipamIp, Map<String, Object> params) {
+        // 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
+        String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
+
+        IpamIp oldIIpamIp = this.getOne(new LambdaQueryWrapper<IpamIp>().eq(IpamIp::getName, ipamIp.getName()));
+        if (StrUtil.equals("1", existed) && oldIIpamIp != null) {
+            // update
+            ipamIp.setId(oldIIpamIp.getId());
+            this.updateById(ipamIp);
+        } else {
+            // insert
+            this.save(ipamIp);
+        }
+    }
+
     private void addFailDetail(int i, List<Map> failDetails, String headerInfo, String msg) {
         Map failDetail = new HashMap(4);
         failDetail.put("lineNo", i);

@@ -879,6 +879,7 @@ public enum RCode {
     IMPORT_NOT_MATCH(816, "{0} does not match {1} configuration"),
     IMPORT_FIELDS_DUPLICATE(817, "{0} Duplicate ,{1} Duplicate"),
     IMPORT_ERROR_STOP(818, "Error stop import"),
+    IMPORT_SUBNET_VALUE_ERROR(819, "{0} Not in subnet value list"),
 
 
     /**

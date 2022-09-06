@@ -4,12 +4,14 @@ import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.*;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
+import com.nis.modules.ipam.entity.IpamSubnet;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysI18nService;
 import com.sun.jmx.snmp.SnmpOid;
 import lombok.Builder;
 import lombok.Data;
 
+import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -253,6 +255,39 @@ public class ImportValidateUtil {
             this.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(header));
         }
         return null;
+    }
+
+    /**
+     *
+     * 校验 ip 是否在子网范围内 支持IPV4 IPV6
+     */
+    public void validateIpInSubnet(String ip, IpamSubnet subnet ,int lineNum, int headerIndex) {
+        if (StrUtil.isNotEmpty(ip)) {
+            try {
+                CIDRUtils cidrUtils = new CIDRUtils(StrUtil.builder(subnet.getAddr(),StrUtil.SLASH,subnet.getMask().toString()).toString());
+                if (!cidrUtils.isInRange(ip)){
+                    String header = headerInfos.get(headerIndex);
+                    this.recordImportAttrErr(lineNum, RCode.IMPORT_SUBNET_VALUE_ERROR.setParam(header));
+                }
+            }catch (Exception e){
+                String header = headerInfos.get(headerIndex);
+                this.recordImportAttrErr(lineNum, RCode.IMPORT_SUBNET_VALUE_ERROR.setParam(header));
+            }
+        }
+    }
+
+
+    /**
+     *
+     * 校验 mac
+     */
+    public void validateMac(String mac, int lineNum, int headerIndex) {
+        if (StrUtil.isNotEmpty(mac)) {
+            if(!CommonUtils.checkMac(mac)){
+                String header = headerInfos.get(headerIndex);
+                this.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(header));
+            }
+        }
     }
 
     /**

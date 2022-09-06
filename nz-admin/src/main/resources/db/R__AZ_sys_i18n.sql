@@ -4625,5 +4625,6 @@ INSERT INTO `sys_i18n` VALUES (7300, '401000', 'en', 'ASSET_COMMENT_ID_ISNULL', 
 INSERT INTO `sys_i18n` VALUES (7301, '401000', 'zh', 'ASSET_COMMENT_ID_ISNULL', '资产评论ID不能为空', '响应消息->资产评论修改/删除', '2022-09-06 15:34:12', 416);
 INSERT INTO `sys_i18n` VALUES (7302, '401001', 'en', 'ASSET_COMMENT_CONTENT_ISNULL', 'Asset comment content can not be empty', '响应消息->资产评论修改/新增', '2022-09-06 15:34:12', 416);
 INSERT INTO `sys_i18n` VALUES (7303, '401001', 'zh', 'ASSET_COMMENT_CONTENT_ISNULL', '资产评论内容不能为空', '响应消息->资产评论修改/新增', '2022-09-06 15:34:12', 416);
-
+INSERT INTO `sys_i18n` VALUES (7304, '819', 'en', 'IMPORT_SUBNET_VALUE_ERROR', '{0} Not in subnet value list', '', '2022-09-06 01:19:43', 425);
+INSERT INTO `sys_i18n` VALUES (7305, '819', 'zh', 'IMPORT_SUBNET_VALUE_ERROR', '{0} 不在子网列表之内', '', '2022-09-06 01:19:43', 425);
 SET FOREIGN_KEY_CHECKS = 1;

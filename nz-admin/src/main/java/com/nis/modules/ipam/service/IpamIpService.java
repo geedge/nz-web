@@ -24,7 +24,7 @@ public interface IpamIpService extends IService<IpamIp> {
 
     void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException;
 
-    Map importIpamIpData(MultipartFile excelFile) throws IOException, AddressStringException;
+    Map importIpamIpData(MultipartFile excelFile ,Map<String, Object> params) throws IOException;
 
     void export(HttpServletResponse response, Map<String, Object> params) throws IOException;
 
