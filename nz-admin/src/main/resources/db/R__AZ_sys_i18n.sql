@@ -4602,7 +4602,7 @@ INSERT INTO `sys_i18n` VALUES (7249, '743004', 'zh', 'RECORD_RULE_LABEL_NAME_FOR
 INSERT INTO `sys_i18n` VALUES (7250, '818', 'en', 'IMPORT_ERROR_STOP', 'Error stop import', '', '2022-09-02 14:22:11', 1);
 INSERT INTO `sys_i18n` VALUES (7251, '818', 'zh', 'IMPORT_ERROR_STOP', '出错停止导入', '', '2022-09-02 14:22:29', 1);
 INSERT INTO `sys_i18n` VALUES (7253, 'issueTab.dynamic', 'en', 'issueTab.dynamic', 'dynamic', '', '2022-09-05 01:14:57', 425);
-INSERT INTO `sys_i18n` VALUES (7255, '	 issueTab.dynamic', 'zh', 'issueTab.dynamic', '动态', '', '2022-09-05 01:15:15', 425);
+INSERT INTO `sys_i18n` VALUES (7255, 'issueTab.dynamic', 'zh', 'issueTab.dynamic', '动态', '', '2022-09-05 01:15:15', 425);
 INSERT INTO `sys_i18n` VALUES (7257, 'issueTab.whole', 'en', 'issueTab.whole', 'whole', '', '2022-09-05 01:15:33', 425);
 INSERT INTO `sys_i18n` VALUES (7259, 'issueTab.whole', 'zh', 'issueTab.whole', '全部', '', '2022-09-05 01:15:56', 425);
 INSERT INTO `sys_i18n` VALUES (7261, 'issueTab.comment', 'en', 'issueTab.comment', 'comment', '', '2022-09-05 01:16:20', 425);
@@ -4613,6 +4613,17 @@ INSERT INTO `sys_i18n` VALUES (7269, 'issueTab.addComment', 'en', 'issueTab.addC
 INSERT INTO `sys_i18n` VALUES (7271, 'issueTab.addComment', 'zh', 'issueTab.addComment', '添加评论', '', '2022-09-05 01:19:03', 425);
 INSERT INTO `sys_i18n` VALUES (7273, 'issueTab.Add', 'en', 'issueTab.Add', 'add', '', '2022-09-05 01:19:16', 425);
 INSERT INTO `sys_i18n` VALUES (7275, 'issueTab.Add', 'zh', 'issueTab.Add', '添加', '', '2022-09-05 01:19:26', 425);
-INSERT INTO `sys_i18n` VALUES (7277, 'issueTab.Cencel', 'en', 'issueTab.Cencel', 'cencel', '', '2022-09-05 01:19:43', 425);
+INSERT INTO `sys_i18n` VALUES (7285, 'overall.process', 'en', 'overall.process', 'Process', '', '2022-09-06 03:43:10', 415);
+INSERT INTO `sys_i18n` VALUES (7287, 'overall.process', 'zh', 'overall.process', '进程', '', '2022-09-06 03:43:51', 415);
+INSERT INTO `sys_i18n` VALUES (7289, 'asset.process..threadCount', 'en', 'asset.process..threadCount', 'Thread count', '', '2022-09-06 05:52:26', 415);
+INSERT INTO `sys_i18n` VALUES (7291, 'asset.process..threadCount', 'zh', 'asset.process..threadCount', '线程数', '', '2022-09-06 05:52:47', 415);
+INSERT INTO `sys_i18n` VALUES (7293, 'asset.process.PID', 'en', 'asset.process.PID', 'PID', '', '2022-09-06 06:03:06', 415);
+INSERT INTO `sys_i18n` VALUES (7295, 'asset.process.PID', 'zh', 'asset.process.PID', '进程号', '', '2022-09-06 06:03:23', 415);
+INSERT INTO `sys_i18n` VALUES (7297, 'dashboard.panel.chartForm.typeVal.rank.label', 'en', 'dashboard.panel.chartForm.typeVal.rank.label', 'Rank', '', '2022-09-06 06:26:08', 407);
+INSERT INTO `sys_i18n` VALUES (7299, 'dashboard.panel.chartForm.typeVal.rank.label', 'zh', 'dashboard.panel.chartForm.typeVal.rank.label', '排行榜', '', '2022-09-06 06:26:20', 407);
+INSERT INTO `sys_i18n` VALUES (7300, '401000', 'en', 'ASSET_COMMENT_ID_ISNULL', 'Asset comment id can not be empty', '响应消息->资产评论修改/删除', '2022-09-06 15:34:12', 416);
+INSERT INTO `sys_i18n` VALUES (7301, '401000', 'zh', 'ASSET_COMMENT_ID_ISNULL', '资产评论ID不能为空', '响应消息->资产评论修改/删除', '2022-09-06 15:34:12', 416);
+INSERT INTO `sys_i18n` VALUES (7302, '401001', 'en', 'ASSET_COMMENT_CONTENT_ISNULL', 'Asset comment content can not be empty', '响应消息->资产评论修改/新增', '2022-09-06 15:34:12', 416);
+INSERT INTO `sys_i18n` VALUES (7303, '401001', 'zh', 'ASSET_COMMENT_CONTENT_ISNULL', '资产评论内容不能为空', '响应消息->资产评论修改/新增', '2022-09-06 15:34:12', 416);
 
 SET FOREIGN_KEY_CHECKS = 1;

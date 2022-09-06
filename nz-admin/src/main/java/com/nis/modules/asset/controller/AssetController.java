@@ -5,11 +5,9 @@ import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
-import com.nis.modules.asset.entity.AssetAsset;
-import com.nis.modules.asset.entity.AssetFieldMeta;
-import com.nis.modules.asset.entity.AssetStateConf;
-import com.nis.modules.asset.entity.AssetTypeConf;
+import com.nis.modules.asset.entity.*;
 import com.nis.modules.asset.service.AssetAssetService;
+import com.nis.modules.asset.service.AssetCommentService;
 import com.nis.modules.asset.service.AssetStateConfService;
 import com.nis.modules.asset.service.AssetTypeConfService;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
@@ -44,6 +42,9 @@ public class AssetController {
 
     @Autowired
     private AssetAssetService assetAssetService;
+
+    @Autowired
+    private AssetCommentService assetCommentService;
 
     /**
      * 资产详情
@@ -455,6 +456,67 @@ public class AssetController {
         ValidateUtils.is(ids).notNull(RCode.TYPECONF_ID_ISNULL);
 
         typeConfService.delete(ids);
+        return R.ok();
+    }
+
+    /**
+     * 资产评论详情
+     * @param id
+     * @return
+     */
+    @GetMapping("/comment/{id}")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSETCOMMENT)
+    public R queryAssetCommentInfo(@PathVariable("id") Integer id) {
+        return R.ok(assetCommentService.queryCommentInfo(id));
+    }
+
+    /**
+     * 资产评论列表
+     * @param params
+     * @return
+     */
+    @GetMapping("/comment")
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSETCOMMENT)
+    public R queryAssetCommentPage(@RequestParam Map<String, Object> params) {
+        return R.ok(assetCommentService.queryCommentPage(params));
+    }
+
+    /**
+     * 保存
+     * @param AssetComment
+     * @return
+     */
+    @PostMapping("/comment")
+    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.ASSETCOMMENT)
+    @RequiresPermissions({"assetComment:save"})
+    public R saveAssetComment(@RequestBody AssetComment AssetComment) {
+        return R.ok().putData("id", assetCommentService.saveComment(AssetComment));
+    }
+
+    /**
+     * 修改
+     * @param AssetComment
+     * @return
+     */
+    @PutMapping("/comment")
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ASSETCOMMENT)
+    @RequiresPermissions({"assetComment:update"})
+    public R updateAssetComment(@RequestBody AssetComment AssetComment) {
+        ValidateUtils.is(AssetComment.getId()).notNull(RCode.ASSET_COMMENT_ID_ISNULL);
+        return R.ok().putData("id", assetCommentService.updateComment(AssetComment));
+    }
+
+    /**
+     * 删除
+     * @param ids
+     * @return
+     */
+    @DeleteMapping("/comment")
+    @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ASSETCOMMENT)
+    @RequiresPermissions({"assetComment:delete"})
+    public R deleteAssetComment(@RequestParam Integer... ids) {
+        ValidateUtils.is(ids).notNull(RCode.ASSET_COMMENT_ID_ISNULL);
+        assetCommentService.deleteComment(ids);
         return R.ok();
     }
 

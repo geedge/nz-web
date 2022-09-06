@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.nis.modules.asset.dao.AssetCommentDao">
+
+    <resultMap type="com.nis.modules.asset.entity.AssetComment" id="commentMap">
+        <result property="id" column="id"/>
+        <result property="assetId" column="asset_id"/>
+        <result property="replyId" column="reply_id"/>
+        <result property="content" column="content"/>
+        <result property="cts" column="cts"/>
+        <result property="uts" column="uts"/>
+        <result property="cid" column="cid"/>
+        <result property="uid" column="uid"/>
+        <association property="createUser" columnPrefix="c_" javaType="com.nis.modules.sys.entity.SysUserEntity">
+            <result property="id" column="id"/>
+            <result property="name" column="name"/>
+        </association>
+        <association property="updateUser" columnPrefix="u_" javaType="com.nis.modules.sys.entity.SysUserEntity">
+            <result property="id" column="id"/>
+            <result property="name" column="name"/>
+        </association>
+        <association property="asset" columnPrefix="a_" javaType="com.nis.modules.asset.entity.AssetAsset">
+            <result property="id" column="id"/>
+            <result property="name" column="name"/>
+        </association>
+    </resultMap>
+
+    <select id="queryCommentList" resultMap="commentMap">
+        SELECT
+            comment.*,
+            c.id as c_id,
+            c.name as c_name,
+            u.id as u_id,
+            u.name as u_name,
+            a.id as a_id,
+            a.name as a_name
+        FROM
+            asset_comment comment
+            LEFT JOIN asset_asset a on comment.asset_id = a.id
+            LEFT JOIN sys_user c on comment.cid = c.id
+            LEFT JOIN sys_user u on comment.uid = u.id
+        <where>
+
+            <if test="params.ids != null">
+                comment.id in
+                <foreach item="id" collection="params.ids" separator="," open="(" close=")" index="">
+                    #{id}
+                </foreach>
+            </if>
+            <if test="params.content != null and params.content != ''">
+                AND locate(#{params.content} , comment.content)
+            </if>
+            <if test="params.assetId != null and params.assetId != ''">
+                AND comment.asset_id = #{params.assetId}
+            </if>
+            <if test="params.assetName != null and params.assetName != ''">
+                AND locate(#{params.assetName} , a.name)
+            </if>
+            <if test="params.cid != null and params.cid != ''">
+                AND comment.cid = #{params.cid}
+            </if>
+            <if test="params.uid != null and params.uid != ''">
+                AND comment.uid = #{params.uid}
+            </if>
+        </where>
+        <if test="params.orderBy == null or params.orderBy == ''">
+            ORDER BY comment.id
+        </if>
+    </select>
+
+</mapper>

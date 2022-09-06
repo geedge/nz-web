@@ -1,6 +1,7 @@
 package com.nis.modules.asset;
 
 import com.alibaba.fastjson.JSONObject;
+import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
 import com.nis.modules.BaseTest;
 import com.nis.modules.UTUtil;
@@ -14,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Map;
 
@@ -102,4 +104,92 @@ public class AssetAssetTest extends BaseTest<AssetAsset> {
         UTUtil.assertToSizeByFlag(result, true);
     }
 
+
+
+
+    /**
+     * GET /asset/comment  资产评论
+     *
+     * @throws Exception
+     */
+    @Test
+    public void queryAssetCommentListByParams_success() throws UnsupportedEncodingException {
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performGet("/asset/comment", map);
+
+        String responseStr = result.getResponse().getContentAsString();
+        Assert.assertNotNull("No success response", responseStr);
+
+        Map<String, Object> actualResult = JSONObject.parseObject(responseStr, Map.class);
+        Map resultInfo = (Map)actualResult.get("data");
+        Assert.assertNotNull(resultInfo);
+
+        Object list = resultInfo.get("list");
+        Assert.assertNotNull(list);
+
+        UTUtil.assertEqualsRCode(result, RCode.SUCCESS);
+    }
+    /**
+     * POST /asset/comment  SUCCESS
+     */
+    @Test
+    public void addAssetComment_success() {
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performPost("/asset/comment", map);
+        UTUtil.assertEqualsRCode(result, RCode.SUCCESS);
+    }
+    /**
+     * POST /asset/comment  ASSET_ID_ISNULL
+     */
+    @Test
+    public void addAssetComment_assetIdIsnull() {
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performPost("/asset/comment", map);
+        UTUtil.assertEqualsRCode(result, RCode.ASSET_ID_ISNULL);
+    }
+    /**
+     * POST /asset/comment  ASSET_COMMENT_CONTENT_ISNULL
+     */
+    @Test
+    public void addAssetComment_contentIsnull() {
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performPost("/asset/comment", map);
+        UTUtil.assertEqualsRCode(result, RCode.ASSET_COMMENT_CONTENT_ISNULL);
+    }
+    /**
+     * PUT /asset/comment  SUCCESS
+     */
+    @Test
+    public void editAssetComment_success() {
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performPut("/asset/comment", map);
+        UTUtil.assertEqualsRCode(result, RCode.SUCCESS);
+    }
+    /**
+     * PUT /asset/comment  ASSET_COMMENT_ID_ISNULL
+     */
+    @Test
+    public void editAssetComment_commentIdIsnull() {
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performPut("/asset/comment", map);
+        UTUtil.assertEqualsRCode(result, RCode.ASSET_COMMENT_ID_ISNULL);
+    }
+    /**
+     * DELETE /asset/comment  SUCCESS
+     */
+    @Test
+    public void delAssetComment_success() {
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performDelete("/asset/comment", map);
+        UTUtil.assertEqualsRCode(result, RCode.SUCCESS);
+    }
+    /**
+     * DELETE /asset/comment  ASSET_COMMENT_ID_ISNULL
+     */
+    @Test
+    public void delAssetComment_commentIdIsnull() {
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performDelete("/asset/comment", map);
+        UTUtil.assertEqualsRCode(result, RCode.ASSET_COMMENT_ID_ISNULL);
+    }
 }

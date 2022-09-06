@@ -54,7 +54,7 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileDao, SysFileEntity> i
     @Override
     @Transactional(rollbackFor = Exception.class)
     public SysFileEntity sysFileUpload(MultipartFile file) throws IOException {
-        ValidateUtils.is(file).notNull(RCode.SYS_FILE_ISNULL);
+        ValidateUtils.is(file.getOriginalFilename()).notNull(RCode.SYS_FILE_ISNULL);
         String filename = file.getOriginalFilename();
         String fileType = filename.substring(filename.lastIndexOf(".") + 1);
         byte[] fileBytes = file.getBytes();

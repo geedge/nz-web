@@ -389,6 +389,12 @@ public enum RCode {
     ISSUE_ACTIVITY_TYPE_ISNULL(391013, "Issue activity type can not be empty"),
 
     /**
+     * Asset Comment
+     */
+    ASSET_COMMENT_ID_ISNULL(401000, "Asset comment id can not be empty"),
+    ASSET_COMMENT_CONTENT_ISNULL(401001, "Asset comment content can not be empty"),
+
+    /**
      * alerts菜单栏相关
      */
     ALERTMSG_ACK_INCORRECT(414001,"Alert message ack is incorrect"),
