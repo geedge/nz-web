@@ -259,13 +259,13 @@ public class ImportValidateUtil {
 
     /**
      *
-     * 校验 ip 是否在子网范围内 支持IPV4 IPV6
+     * 校验 addr 是否在子网范围内 支持IPV4 IPV6
      */
-    public void validateIpInSubnet(String ip, IpamSubnet subnet ,int lineNum, int headerIndex) {
-        if (StrUtil.isNotEmpty(ip)) {
+    public void validateIpInScope(String addr, String ip, String mask ,int lineNum, int headerIndex) {
+        if (StrUtil.isNotEmpty(addr)) {
             try {
-                CIDRUtils cidrUtils = new CIDRUtils(StrUtil.builder(subnet.getAddr(),StrUtil.SLASH,subnet.getMask().toString()).toString());
-                if (!cidrUtils.isInRange(ip)){
+                CIDRUtils cidrUtils = new CIDRUtils(StrUtil.builder(ip,StrUtil.SLASH,mask).toString());
+                if (!cidrUtils.isInRange(addr)){
                     String header = headerInfos.get(headerIndex);
                     this.recordImportAttrErr(lineNum, RCode.IMPORT_SUBNET_VALUE_ERROR.setParam(header));
                 }

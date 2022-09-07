@@ -6,7 +6,7 @@ public enum IpamIpEum {
     ADDR("addr", 2),
     MAC("mac", 3),
     ASSET("asset name", 4),
-    REMARK("dc name", 5);
+    REMARK("remark", 5);
 
     private String name;
     private int index;

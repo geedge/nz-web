@@ -215,7 +215,7 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
             IpamSubnet ipamSubnet = ipamSubnetService.getOne(new LambdaQueryWrapper<IpamSubnet>().eq(IpamSubnet::getName, subnetName));
             validateUtil.validateRequired(addr, lineNum, IpamIpEum.ADDR.getIndex());
             validateUtil.validateIp(addr, lineNum , IpamIpEum.ADDR.getIndex());
-            validateUtil.validateIpInSubnet(addr, ipamSubnet, lineNum, IpamIpEum.ADDR.getIndex());
+            validateUtil.validateIpInScope(addr, ipamSubnet.getAddr(),ipamSubnet.getMask().toString(), lineNum, IpamIpEum.ADDR.getIndex());
 
 
             String mac = dataMap.get(IpamIpEum.MAC.getIndex());
@@ -292,13 +292,6 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
             // insert
             this.save(ipamIp);
         }
-    }
-
-    private void addFailDetail(int i, List<Map> failDetails, String headerInfo, String msg) {
-        Map failDetail = new HashMap(4);
-        failDetail.put("lineNo", i);
-        failDetail.put("errorMsg", headerInfo + ": " + msg);
-        failDetails.add(failDetail);
     }
 
     @Override
