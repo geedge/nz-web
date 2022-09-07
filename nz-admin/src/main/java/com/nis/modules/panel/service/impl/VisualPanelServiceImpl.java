@@ -28,13 +28,9 @@ import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.report.job.ReportJobManager;
 import com.nis.modules.stat.service.impl.StatServiceImpl;
 import com.nis.modules.sys.dao.SysConfigDao;
-import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
-import com.nis.modules.sys.service.BasicImportAndExportServices;
-import com.nis.modules.sys.service.SysConfigService;
-import com.nis.modules.sys.service.SysDictService;
-import com.nis.modules.sys.service.SysUserStarredService;
+import com.nis.modules.sys.service.*;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.quartz.SchedulerException;
@@ -116,6 +112,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
     @Autowired
     private ReportJobManager reportJobManager;
+
+    @Autowired
+    private SysI18nService sysI18nService;
 
     @Override
     public VisualPanel queryInfo(Integer id) {
@@ -592,24 +591,16 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         String seqUUID = UUID.randomUUID().toString();
         type = StringUtils.isEmpty(type) ? Constant.PanelType.DASHBOARD.getValue() : type;
 
-        SysConfigEntity i18nConfig = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.I18N_MAPPING).eq(SysConfigEntity::getStatus, 1));
-        Map i18nConfigMap = JSONObject.parseObject(i18nConfig.getParamValue(), Map.class);
-        Map chartTypeMap = (Map) i18nConfigMap.get(Constant.DICT_CHART_TYPE);
-        Map chartTypeMapByLanguage = (Map) chartTypeMap.get(language);
-        if (ToolUtil.isEmpty(chartTypeMapByLanguage)) {
-            throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
-        }
-
         ArrayList<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
         int successNum = 0;
         List<Map<Integer, String>> handleImportData = null;
         if(StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(),type)) {
             // 处理excel表数据 将group chart相关排在前列
         	handleImportData = this.groupChartRowHandle(importDataList, 1);
-            successNum = this.saveDashboardChartData(handleImportData, failDetails, headerInfos, seqUUID, chartTypeMapByLanguage);
+            successNum = this.saveDashboardChartData(handleImportData, failDetails, headerInfos, seqUUID);
         } else {
             handleImportData = this.groupChartRowHandle(importDataList, 0);
-            successNum = this.saveAssetEndpointChartData(handleImportData, failDetails, seqUUID, type, linkId, chartTypeMapByLanguage,headerInfos);
+            successNum = this.saveAssetEndpointChartData(handleImportData, failDetails, seqUUID, type, linkId,headerInfos);
         }
         int totalNum = ToolUtil.isNotEmpty(handleImportData) ? handleImportData.size() : 0;
 
@@ -973,26 +964,19 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 type = Constant.PanelType.ASSET.getValue();
             }
         }
-        String language = (String) params.get("language");
-
         // 获取导出配置 key 名称
         String configKey = this.getChartTemplateConfigKeyByType(type);
         String sysHeaderJsonStr = sysConfigService.getValue(configKey);
-
-        String i18nConfigJsonStr = sysConfigService.getValue(Constant.I18N_MAPPING);
-        Map i18nConfigMap = JSONObject.parseObject(i18nConfigJsonStr, Map.class);
-        Map chartTypeMap = (Map) i18nConfigMap.get(Constant.DICT_CHART_TYPE);
-        Map chartTypeMapByLanguage = (Map) chartTypeMap.get(StrUtil.emptyToDefault(language, "en"));
 
         charts = charts.stream().sorted(Comparator.comparing(VisualChart::getGroupId)).collect(Collectors.toList());
         String fileName = "Charts";
         String formatStr = params.get("format").toString();
 
         if (StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(), type)) {
-            List<List<String>> exportDataList = this.handleDashboardChartExportDataList(charts, chartTypeMapByLanguage);
+            List<List<String>> exportDataList = this.handleDashboardChartExportDataList(charts);
             basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, formatStr, fileName);
         } else {
-            List<List<String>> exportDataList = this.handleAssetEndpointChartExportDataList(charts, chartTypeMapByLanguage);
+            List<List<String>> exportDataList = this.handleAssetEndpointChartExportDataList(charts);
             basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, formatStr, fileName);
         }
     }
@@ -1024,10 +1008,14 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
     }
 
 
-    private List<List<String>> handleAssetEndpointChartExportDataList(List<VisualChart> charts, Map chartTypeMapByLanguage) {
+    private List<List<String>> handleAssetEndpointChartExportDataList(List<VisualChart> charts) {
         Map<Integer, String> varTypeIdAndNameMap = new HashMap<>(4);
         varTypeIdAndNameMap.put(1, "Asset");
         varTypeIdAndNameMap.put(2, "Endpoint");
+
+        // type 导出转换为 国际化之后的名称
+        List<SysDictEntity> chartTypeList = sysDictService.list(new LambdaQueryWrapper<SysDictEntity>().eq(SysDictEntity::getType, Constant.DICT_CHART_TYPE));
+        Map<String, String> chartTypeAndI18nMap = chartTypeList.stream().collect(Collectors.toMap(SysDictEntity::getValue, SysDictEntity::getI18nCode));
 
         List<List<String>> exportDataList = new ArrayList<>();
         for (VisualChart chart : charts) {
@@ -1037,7 +1025,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             String type = chart.getType();
             tempList.add(chart.getGroup().getName());
             tempList.add(chart.getName());
-            tempList.add(this.getI18nChartTypeValue(chartTypeMapByLanguage, type));
+            String typeI18nCode = chartTypeAndI18nMap.get(type);
+            tempList.add(sysI18nService.queryValue(typeI18nCode));
             tempList.add(ToolUtil.isEmpty(varTypeIdAndNameMap.get(chart.getVarType())) ? "" : varTypeIdAndNameMap.get(chart.getVarType()));
             tempList.add(ObjectUtil.defaultIfNull(chart.getSpan(), "").toString());
             tempList.add(ObjectUtil.defaultIfNull(chart.getHeight(), "").toString());
@@ -1077,12 +1066,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         }
         return JSONArray.toJSONString(handleMaps);
     }
-    
-    private String getI18nChartTypeValue(Map chartTypeMapByLanguage, String type) {
-        Object value = chartTypeMapByLanguage.get(type);
-        return value == null ? "" : value.toString();
-    }
-    
+
     private String getUnitDescrByVal(Integer unitVal) {
         String unitDescr = null;
         for (Map.Entry<String, Integer> entry : Constant.ALERT_RULE_UNIT_MAP.entrySet()) {
@@ -1115,7 +1099,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         }
     }
 
-    private int saveDashboardChartData(List<Map<Integer, String>> importDataList, List<Map> failDetails, List<String> headerInfos, String seqUUID, Map<String, String> chartTypeMapByLanguage) {
+    private int saveDashboardChartData(List<Map<Integer, String>> importDataList, List<Map> failDetails, List<String> headerInfos, String seqUUID) {
         List<VisualPanel> panelTreeList = this.queryList(new HashMap());
         Map<String, Integer> nodeNamePathAndIdMap = new HashMap<>();
         for (VisualPanel panel : panelTreeList) {
@@ -1135,7 +1119,10 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         // 查询 chart datasource类型防止频繁查库
         List<SysDictEntity> chartDatasources = sysDictService.list(new QueryWrapper<SysDictEntity>().lambda().eq(SysDictEntity::getType, Constant.DICT_CHART_DATASOURCE));
         List<String> datasources = chartDatasources.stream().map(SysDictEntity::getValue).collect(Collectors.toList());
-        
+
+        // chart 导入 Type 是国际化后的，这里统一获取 chart type 可读名称 & 真实 type 值
+        Map<String, String> typeReadableNameMap = this.getChartTypeReadableNameMap();
+
         int successNum = 0;
         for (int i = 0; i < importDataList.size(); i++) {
             int dataFromExcelRowNum = i + 1;
@@ -1188,15 +1175,16 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 saveFlag = typeFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_TYPE_ISNULL.getMsg());
             } else {
-                type = this.validateChartTypeForImport(type, chartTypeMapByLanguage);
+                // 根据可读名称，获取 chart type
+                type = typeReadableNameMap.get(type);
                 if (StringUtils.isEmpty(type)) {
                     saveFlag = typeFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_TYPE_INVALIDE.getMsg());
                 }
             }
             
-            VisualChart groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, name).eq(VisualChart::getPanelId, panelId).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()));
-            if(StrUtil.equals(type, Constant.CHART_GROUP_TYPE.toString())&&ToolUtil.isNotEmpty(groupChart)) {
+            VisualChart groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, name).eq(VisualChart::getPanelId, panelId).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE));
+            if(StrUtil.equals(type, Constant.CHART_GROUP_TYPE)&&ToolUtil.isNotEmpty(groupChart)) {
         		// chart group 不允许重复 
             	saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_GROUP_NAME_DUPLICATE.getMsg());
@@ -1367,7 +1355,32 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         }
         return successNum;
     }
-    
+
+    /**
+     * chart 导入 Type 是国际化后的，这里统一获取 chart type 可读名称 & 真实 type 值
+     *
+     * @return
+     */
+    private Map<String, String> getChartTypeReadableNameMap() {
+        List<SysDictEntity> chartTypeList = sysDictService.list(new LambdaQueryWrapper<SysDictEntity>().eq(SysDictEntity::getType, Constant.DICT_CHART_TYPE));
+        Map<String, String> chartTypeI18nCodeAndValueMap = chartTypeList.stream()
+                .filter(sysDict -> StrUtil.isNotEmpty(sysDict.getI18nCode()))
+                .collect(Collectors.toMap(SysDictEntity::getI18nCode, SysDictEntity::getValue));
+
+        Map<String, String> map = Tool.MapUtil.newHashMap();
+
+        for (Map.Entry<String, String> entry : chartTypeI18nCodeAndValueMap.entrySet()) {
+            // chart type i18n code
+            String i18nCode = entry.getKey();
+            // chart type real
+            String type = entry.getValue();
+
+            String chartReadableName = sysI18nService.queryValue(i18nCode);
+            map.put(chartReadableName, type);
+        }
+        return map;
+    }
+
     private String validateChartElementForImport(String datasource,String elements) {
         // datasource类型为metrics logs的需要校验elements
         if (datasource.equals(Constant.ChartDatasourceType.METRICS.getValue()) || datasource.equals(Constant.ChartDatasourceType.LOGS.getValue())) {
@@ -1554,16 +1567,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         failDetails.add(failDetail);
     }
 
-    private String validateChartTypeForImport(String type, Map<String,String> chartTypeMapByLanguage) {
-        for (Map.Entry<String, String> entry : chartTypeMapByLanguage.entrySet()) {
-            if(StrUtil.equals(type,entry.getValue())){
-                return entry.getKey();
-            }
-        }
-        return null;
-    }
-    
-    private int saveAssetEndpointChartData(List<Map<Integer, String>> importDataList, List<Map> failDetails, String seqUUID, String panelType, Integer linkId, Map chartTypeMapByLanguage, List<String> headerInfos) {
+    private int saveAssetEndpointChartData(List<Map<Integer, String>> importDataList, List<Map> failDetails, String seqUUID, String panelType, Integer linkId, List<String> headerInfos) {
         // 导入类型 template 标识
         Boolean templateFlag = Constant.PanelType.TEMPLATE.getValue().equalsIgnoreCase(panelType);
         // chart template 导入导出 varType map
@@ -1579,6 +1583,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         // 查询 chart datasource类型防止频繁查库
         List<SysDictEntity> chartDatasources = sysDictService.list(new QueryWrapper<SysDictEntity>().lambda().eq(SysDictEntity::getType, Constant.DICT_CHART_DATASOURCE));
         List<String> datasources = chartDatasources.stream().map(SysDictEntity::getValue).collect(Collectors.toList());
+
+        // chart 导入 Type 是国际化后的，这里统一获取 chart type 可读名称 & 真实 type 值
+        Map<String, String> typeReadableNameMap = this.getChartTypeReadableNameMap();
         
         int successNum = 0;
         for (int i = 0; i < importDataList.size(); i++) {
@@ -1638,7 +1645,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 saveFlag = typeFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_TYPE_ISNULL.getMsg());
             } else {
-                type = this.validateChartTypeForImport(type, chartTypeMapByLanguage);
+                // 根据可读名称，获取 chart type
+                type = typeReadableNameMap.get(type);
                 if (StringUtils.isEmpty(type)) {
                     saveFlag = typeFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_TYPE_INVALIDE.getMsg());
@@ -1877,13 +1885,16 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         return chartList;
     }
 
-    private List<List<String>> handleDashboardChartExportDataList(List<VisualChart> charts, Map chartTypeMapByLanguage) {
+    private List<List<String>> handleDashboardChartExportDataList(List<VisualChart> charts) {
         List<VisualPanel> panelTreeList = this.queryList(new HashMap());
         Map<Integer, String> nodeIdAndNamePathMap = new HashMap<>();
         for (VisualPanel panel : panelTreeList) {
             nodeIdAndNamePathMap.put(panel.getId(), panel.getName());
             this.getPanelIdAndNamePathMapFromTree(panel, panel.getName(), nodeIdAndNamePathMap);
         }
+        // type 导出转换为 国际化之后的名称
+        List<SysDictEntity> chartTypeList = sysDictService.list(new LambdaQueryWrapper<SysDictEntity>().eq(SysDictEntity::getType, Constant.DICT_CHART_TYPE));
+        Map<String, String> chartTypeAndI18nMap = chartTypeList.stream().collect(Collectors.toMap(SysDictEntity::getValue, SysDictEntity::getI18nCode));
 
         List<List<String>> exportDataList = new ArrayList<>();
         for (VisualChart chart : charts) {
@@ -1893,7 +1904,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             tempList.add(nodeIdAndNamePathMap.get(chart.getPanelId()));
             tempList.add(chart.getGroup().getName());
             tempList.add(chart.getName());
-            tempList.add(this.getI18nChartTypeValue(chartTypeMapByLanguage, type));
+            String typeI18nCode = chartTypeAndI18nMap.get(type);
+            tempList.add(sysI18nService.queryValue(typeI18nCode));
             tempList.add(ObjectUtil.defaultIfNull(chart.getSpan(), "").toString());
             tempList.add(ObjectUtil.defaultIfNull(chart.getHeight(), "").toString());
             if (StrUtil.equals(Constant.CHART_TEXT_TYPE, type)) {

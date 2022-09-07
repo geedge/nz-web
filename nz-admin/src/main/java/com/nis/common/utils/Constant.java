@@ -1048,9 +1048,6 @@ public class Constant {
 
 	public static final String CHART_ELEMENT_EXPERT_TYPE = "expert";
 
-	// 国际化对应
-	public static final String I18N_MAPPING = "i18n_mapping";
-
 	// endpoint state功能是否开启 0 不开启 1 开启
 	public static final String ENDPOINT_ALERT_PUSH = "endpoint_alert_push";
 
