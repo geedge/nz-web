@@ -10,7 +10,7 @@ REPLACE INTO `sys_dict`(`id`, `name`, `type`, `code`, `value`, `i18n_code`, `ord
 REPLACE INTO `sys_dict`(`id`, `name`, `type`, `code`, `value`, `i18n_code`, `order_num`, `remark`, `del_flag`, `operator`, `op_time`, `seq`) VALUES (null, '图表数据源', 'chartDatasource', 3, 'system', '', 0, '系统数据源', 0, 1, '2021-11-27 10:56:27', NULL);
 REPLACE INTO `sys_dict`(`id`, `name`, `type`, `code`, `value`, `i18n_code`, `order_num`, `remark`, `del_flag`, `operator`, `op_time`, `seq`) VALUES (null, '图表数据源', 'chartDatasource', 4, 'misc', '', 0, 'misc数据源', 0, 1, '2021-11-27 10:56:27', NULL);
 
-Delete from sys_dict where code = 'chartType';
+Delete from sys_dict where type = 'chartType';
 
 REPLACE INTO `sys_dict`(`id`, `name`, `type`, `code`, `value`, `i18n_code`, `order_num`, `remark`, `del_flag`, `operator`, `op_time`, `seq`) VALUES (NULL, '图表类型', 'chartType', 8, 'text', 'dashboard.panel.chartForm.typeVal.text.label', 8, '告警', 0, 1, '2020-05-27 17:50:33', NULL);
 REPLACE INTO `sys_dict`(`id`, `name`, `type`, `code`, `value`, `i18n_code`, `order_num`, `remark`, `del_flag`, `operator`, `op_time`, `seq`) VALUES (NULL, '图表类型', 'chartType', 9, 'pie', 'dashboard.panel.chartForm.typeVal.pie.label', 9, '饼图', 0, 1, '2021-02-05 10:57:33', NULL);
