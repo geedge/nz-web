@@ -10,6 +10,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
@@ -30,6 +31,7 @@ import com.nis.modules.stat.service.impl.StatServiceImpl;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
+import com.nis.modules.sys.entity.Timezone;
 import com.nis.modules.sys.service.*;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
@@ -115,6 +117,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
     @Autowired
     private SysI18nService sysI18nService;
+
+    @Autowired
+    private TimezoneService timezoneService;
 
     @Override
     public VisualPanel queryInfo(Integer id) {
@@ -729,6 +734,11 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         resultMap.put("start", start);
         resultMap.put("end", end);
         resultMap.put("panel", R.ok(panel));
+        // 查询系统时区信息
+        String timezone = sysConfigService.getValue("timezone");
+        Timezone timezoneEntity = timezoneService.getOne(new LambdaUpdateWrapper<Timezone>().eq(Timezone::getName, timezone));
+        resultMap.put("offset", timezoneEntity.getOffset());
+        resultMap.put("timezone", timezone);
         // charts 查询
         Map param = new HashMap<>();
         param.put("pageSize", "-1");
@@ -1586,7 +1596,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
         // chart 导入 Type 是国际化后的，这里统一获取 chart type 可读名称 & 真实 type 值
         Map<String, String> typeReadableNameMap = this.getChartTypeReadableNameMap();
-        
+
         int successNum = 0;
         for (int i = 0; i < importDataList.size(); i++) {
             int dataFromExcelRowNum = i + 1;
