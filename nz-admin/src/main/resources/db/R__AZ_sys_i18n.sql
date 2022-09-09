@@ -4615,8 +4615,8 @@ INSERT INTO `sys_i18n` VALUES (7273, 'issueTab.Add', 'en', 'issueTab.Add', 'add'
 INSERT INTO `sys_i18n` VALUES (7275, 'issueTab.Add', 'zh', 'issueTab.Add', '添加', '', '2022-09-05 01:19:26', 425);
 INSERT INTO `sys_i18n` VALUES (7285, 'overall.process', 'en', 'overall.process', 'Process', '', '2022-09-06 03:43:10', 415);
 INSERT INTO `sys_i18n` VALUES (7287, 'overall.process', 'zh', 'overall.process', '进程', '', '2022-09-06 03:43:51', 415);
-INSERT INTO `sys_i18n` VALUES (7289, 'asset.process..threadCount', 'en', 'asset.process..threadCount', 'Thread count', '', '2022-09-06 05:52:26', 415);
-INSERT INTO `sys_i18n` VALUES (7291, 'asset.process..threadCount', 'zh', 'asset.process..threadCount', '线程数', '', '2022-09-06 05:52:47', 415);
+INSERT INTO `sys_i18n` VALUES (7289, 'asset.process.threadCount', 'en', 'asset.process.threadCount', 'Thread count', '', '2022-09-08 02:00:04', 415);
+INSERT INTO `sys_i18n` VALUES (7291, 'asset.process.threadCount', 'zh', 'asset.process.threadCount', '线程数', '', '2022-09-08 02:00:21', 415);
 INSERT INTO `sys_i18n` VALUES (7293, 'asset.process.PID', 'en', 'asset.process.PID', 'PID', '', '2022-09-06 06:03:06', 415);
 INSERT INTO `sys_i18n` VALUES (7295, 'asset.process.PID', 'zh', 'asset.process.PID', '进程号', '', '2022-09-06 06:03:23', 415);
 INSERT INTO `sys_i18n` VALUES (7297, 'dashboard.panel.chartForm.typeVal.rank.label', 'en', 'dashboard.panel.chartForm.typeVal.rank.label', 'Rank', '', '2022-09-06 06:26:08', 407);
@@ -4627,4 +4627,15 @@ INSERT INTO `sys_i18n` VALUES (7302, '401001', 'en', 'ASSET_COMMENT_CONTENT_ISNU
 INSERT INTO `sys_i18n` VALUES (7303, '401001', 'zh', 'ASSET_COMMENT_CONTENT_ISNULL', '资产评论内容不能为空', '响应消息->资产评论修改/新增', '2022-09-06 15:34:12', 416);
 INSERT INTO `sys_i18n` VALUES (7304, '819', 'en', 'IMPORT_SUBNET_VALUE_ERROR', '{0} Not in subnet value list', '', '2022-09-06 01:19:43', 425);
 INSERT INTO `sys_i18n` VALUES (7305, '819', 'zh', 'IMPORT_SUBNET_VALUE_ERROR', '{0} 不在子网列表之内', '', '2022-09-06 01:19:43', 425);
+INSERT INTO `sys_i18n` VALUES (7307, 'asset.process.cpu', 'en', 'asset.process.cpu', 'CPU', '', '2022-09-08 03:22:15', 415);
+INSERT INTO `sys_i18n` VALUES (7309, 'asset.process.cpu', 'zh', 'asset.process.cpu', 'CPU 使用率', '', '2022-09-08 03:22:36', 415);
+INSERT INTO `sys_i18n` VALUES (7311, 'asset.process.mem', 'en', 'asset.process.mem', 'MEM', '', '2022-09-08 03:23:51', 415);
+INSERT INTO `sys_i18n` VALUES (7313, 'asset.process.mem', 'zh', 'asset.process.mem', 'MEM 使用率', '', '2022-09-08 03:24:12', 415);
+INSERT INTO `sys_i18n` VALUES (7319, 'silence.expired', 'en', 'silence.expired', 'expired', 'silence -》 state', '2022-09-08 08:48:23', 381);
+INSERT INTO `sys_i18n` VALUES (7321, 'silence.expired', 'zh', 'silence.expired', 'expired', 'silence-》 state', '2022-09-08 08:48:39', 381);
+INSERT INTO `sys_i18n` VALUES (7323, 'silence.pending', 'en', 'silence.pending', 'pending', 'silence -》 state', '2022-09-08 08:49:09', 381);
+INSERT INTO `sys_i18n` VALUES (7325, 'silence.pending', 'zh', 'silence.pending', 'pending', 'silence -》 state', '2022-09-08 08:49:32', 381);
+INSERT INTO `sys_i18n` VALUES (7327, 'silence.active', 'en', 'silence.active', 'active', 'silence =》 state', '2022-09-08 08:50:26', 381);
+INSERT INTO `sys_i18n` VALUES (7329, 'silence.active', 'zh', 'silence.active', 'active', 'silence =》 state', '2022-09-08 08:50:43', 381);
+
 SET FOREIGN_KEY_CHECKS = 1;
