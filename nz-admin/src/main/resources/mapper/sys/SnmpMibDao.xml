@@ -39,8 +39,11 @@
 
         WHERE 1=1
 
-        <if test="params.id != null and params.id != ''">
-            AND sm.id = #{params.id}
+        <if test="params.ids != null">
+            AND sm.id in
+            <foreach item="id" collection="params.ids" separator="," open="(" close=")" index="">
+                #{id}
+            </foreach>
         </if>
 
         <if test="params.name != null and params.name != ''">
