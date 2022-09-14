@@ -70,6 +70,17 @@ public class VsysResultServiceImpl extends ServiceImpl<VsysResultDao, VsysResult
                     .build();
             vsysDetail.add(m);
         }
+        // total = 0
+        taskList.stream().filter(task -> task.getTotal() == 0).forEach(task -> {
+            Map<Object, Object> m = Tool.MapUtil.builder()
+                    .put("vsysId", task.getVsysId())
+                    .put("type", task.getType())
+                    .put("progress", 100)
+                    .put("success", 0)
+                    .put("failed", 0)
+                    .build();
+            vsysDetail.add(m);
+        });
 
         Map<Object, Object> proMap = Tool.MapUtil.builder()
                 .put("totalProgress", totalProgress.replace("%", ""))
