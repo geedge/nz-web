@@ -820,6 +820,22 @@ public enum RCode {
     SYS_FILE_ISNULL(631003,"Sys file is can not be null"),
     SYS_FILE_BIG_ERROR(634004,"Sys file is too big, Please contact your administrator to modify the database configuration : max_allowed_packet"),
 
+
+    /**
+     * vsys
+     */
+    VSYS_TASK_ISNULL(641000, "Vsys task can not be empty"),
+    VSYS_TASK_ID_ISNULL(641001, "Vsys task id can not be empty"),
+    VSYS_TASK_TYPE_ISNULL(641002, "Vsys task type can not be empty"),
+    VSYS_TASK_TYPE_INVALIDED(644003, "Vsys task type is not in the range of enumeration"),
+    VSYS_TASK_DEVICETAG_TYPE_ISNULL(641004, "Vsys task device tag type can not be empty"),
+    VSYS_TASK_DEVICETAG_VALUE_ISNULL(641005, "Vsys task device tag value can not be empty"),
+    VSYS_TASK_PARAM_OSQUOTAS_ISNULL(641006, "Vsys task params osQuotas can not be empty"),
+    VSYS_TASK_CREATE_ERROR(641007, "Vsys task create error"),
+    VSYS_TASK_NOT_FOUND(646008, "Vsys task not found"),
+    VSYS_TASK_UUID_ISNULL(641009, "Vsys task uuid can not be empty"),
+    VSYS_ID_ISNULL(641010, "Vsys id can not be empty"),
+
     /**
      * agent相关
      */

@@ -104,4 +104,10 @@ public interface AssetAssetService extends IService<AssetAsset> {
      * @return
      */
     List<MonitorProject> getProjectListByAssetId(Integer assetId);
+
+    /**
+     * 获取 tsg 设备列表
+     * @return
+     */
+    List<AssetAsset> getTsgAssetListbyModel();
 }

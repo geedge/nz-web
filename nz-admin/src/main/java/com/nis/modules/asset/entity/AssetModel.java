@@ -66,6 +66,14 @@ public class AssetModel implements Serializable {
     private String sysObjectId;
 
 
+    /**
+     * TSG 产品
+     * 默认： 0
+     * 0：非tsg 设备
+     * 1：tsg 设备，支持vsys
+     */
+    private Integer tsgAppliance;
+
     @TableField(exist = false)
     private AssetTypeConf type;
 

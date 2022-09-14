@@ -2465,4 +2465,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         List<MonitorProject> projectList = projectService.list(new LambdaQueryWrapper<MonitorProject>().in(MonitorProject::getId, projectIds));
         return projectList;
     }
+
+    @Override
+    public List<AssetAsset> getTsgAssetListbyModel() {
+        List<AssetAsset> tsgAssetList = assetDao.getTsgAssetListbyModel();
+        return tsgAssetList;
+    }
 }

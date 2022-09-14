@@ -46,4 +46,10 @@ public interface AssetAssetDao extends BaseMapper<AssetAsset> {
      */
     @Update("UPDATE asset_asset SET model_id = #{newModelId} WHERE model_id = #{oldModelId} AND type_id = #{typeId};")
     void updateModelId(@Param("newModelId") Integer id, @Param("oldModelId") Integer oldModelId, @Param("typeId") Integer typeId);
+
+    /**
+     * 获取 tsg 设备列表
+     */
+    List<AssetAsset> getTsgAssetListbyModel();
+
 }
