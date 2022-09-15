@@ -41,5 +41,5 @@ public interface VisualPanelService extends IService<VisualPanel> {
 
     void snapshot(HttpServletResponse response, String format, Integer panelId, Long start, Long end, String language, String vars) throws IOException;
 
-    String genSnapshotByTemplate(Integer valueOf, Long start, Long end, String lang, String toJSONString);
+    String genSnapshotByTemplate(Integer panelId, Long start, Long end, String lang, String vars);
 }
