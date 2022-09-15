@@ -24,7 +24,6 @@ import org.quartz.JobExecutionException;
 import org.quartz.JobKey;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpEntity;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.stereotype.Component;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
@@ -136,7 +135,7 @@ public class ReportJob extends QuartzJobBean {
                 for (SysUserEntity user : userList) {
                     // 以用户默认语言生成 快照文件
                     String lang = user.getLang();
-                    String snapshotStr = visualPanelService.snapshot(format, Integer.valueOf(panelId), start, end, lang, JSONObject.toJSONString(snapshotVars));
+                    String snapshotStr = visualPanelService.genSnapshotByTemplate(Integer.valueOf(panelId), start, end, lang, JSONObject.toJSONString(snapshotVars));
 
                     File file = null;
                     try {

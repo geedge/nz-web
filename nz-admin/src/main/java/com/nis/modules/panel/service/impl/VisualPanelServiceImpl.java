@@ -1,6 +1,5 @@
 package com.nis.modules.panel.service.impl;
 
-import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
@@ -10,7 +9,6 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
@@ -26,12 +24,11 @@ import com.nis.modules.panel.entity.VisualPanel;
 import com.nis.modules.panel.service.VisualChartElementService;
 import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
+import com.nis.modules.panel.service.VisualService;
 import com.nis.modules.report.job.ReportJobManager;
 import com.nis.modules.stat.service.impl.StatServiceImpl;
-import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
-import com.nis.modules.sys.entity.Timezone;
 import com.nis.modules.sys.service.*;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
@@ -47,11 +44,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -98,9 +91,6 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
     private LokiApiService lokiApiService;
 
     @Autowired
-    private SysConfigDao sysConfigDao;
-
-    @Autowired
     private SysUserStarredService starredService;
 
     @Autowired
@@ -119,7 +109,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
     private SysI18nService sysI18nService;
 
     @Autowired
-    private TimezoneService timezoneService;
+    private VisualService visualService;
 
     @Override
     public VisualPanel queryInfo(Integer id) {
@@ -692,109 +682,57 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
     }
 
     @Override
-    public void snapshot(HttpServletResponse response, String format, Integer panelId, Long start, Long end, String language, String vars) {
-        VisualPanel panel = this.getById(panelId);
-        if (panel == null) {
-            throw new NZException(RCode.CHART_PANEL_ISNULL);
-        }
-
+    public void snapshot(HttpServletResponse response, String format, Integer panelId, Long start, Long end, String language, String vars) throws IOException {
         // 生成模板
-        String snapshotStr = this.genSnapshotByTemplate(panel, start, end, language, vars);
-
-        format = StrUtil.emptyToDefault(format, "html");
-        try {
-            response.setCharacterEncoding("utf-8");
-            response.setContentType("multipart/form-data");
-            response.setHeader("Content-disposition", "attachment;filename=panel-" + panel.getName() + "." + format + ";filename*=utf-8''" + URLEncoder.encode("panel-" + panel.getName() + "." + format, "UTF-8"));
-            response.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
-            response.getOutputStream().write(snapshotStr.getBytes());
-        } catch (IOException e) {
-            log.error(e);
-        }
+        String snapshotStr = this.genSnapshotByTemplate(panelId, start, end, language, vars);
+        // 目前下载名称由前端控制
+        // String downFileName = String.format("%s-%s.%s", "panel", panel.getName(), StrUtil.emptyToDefault(format, "html"));
+        ResponseUtil.downloadFile(response, "", snapshotStr.getBytes());
     }
 
     @Override
-    public String snapshot(String format, Integer panelId, Long start, Long end, String language, String vars) {
+    public String genSnapshotByTemplate(Integer panelId, Long start, Long end, String language, String vars) {
         VisualPanel panel = this.getById(panelId);
         if (panel == null) {
             throw new NZException(RCode.CHART_PANEL_ISNULL);
         }
-
-        // 生成模板
-        String snapshotStr = this.genSnapshotByTemplate(panel, start, end, language, vars);
-        return snapshotStr;
-    }
-
-    private String genSnapshotByTemplate(VisualPanel panel, Long start, Long end, String language, String vars) {
         // 计算步长
-        String step = getTimeStep(start, end);
+        String step = visualService.getTimeStep(start, end);
         // 封装返回结果
-        Map<String, Object> resultMap = new HashMap();
-        resultMap.put("language", language);
-        resultMap.put("start", start);
-        resultMap.put("end", end);
-        resultMap.put("panel", R.ok(panel));
-        // 查询系统时区信息
-        String timezone = sysConfigService.getValue("timezone");
-        Timezone timezoneEntity = timezoneService.getOne(new LambdaUpdateWrapper<Timezone>().eq(Timezone::getName, timezone));
-        resultMap.put("offset", timezoneEntity.getOffset());
-        resultMap.put("timezone", timezone);
+        Map<String, Object> resultMap = visualService.snapshotResultMap(start, end, language);
+        resultMap.put("step", step);
         // charts 查询
         Map param = new HashMap<>();
         param.put("pageSize", "-1");
         param.put("panelId", panel.getId());
         param.put("groupId", 0);
         PageUtils chartPageUtils = visualChartService.queryPage(param);
-        resultMap.put("charts", R.ok(chartPageUtils));
         List<VisualChart> chartsList = (List<VisualChart>) chartPageUtils.getList();
         if (Tool.CollUtil.isEmpty(chartsList)) {
             throw new NZException(RCode.CHART_NOTEXSITS);
         } else {
-            // 封装公共请求参数
-            Map<String, String> basicQueryParam = new HashMap();
-            basicQueryParam.put("start", StrUtil.toString(start));
-            basicQueryParam.put("end", StrUtil.toString(end));
-            basicQueryParam.put("step", step);
-
             List<Map> varList = StrUtil.isNotEmpty(vars) ? JSONObject.parseArray(vars, Map.class) : Tool.ListUtil.empty();
 
             // 将chartsData获取任务装入futureList
-            List<CompletableFuture<Map>> futureList = this.recursionChartsData(chartsList, basicQueryParam, varList);
+            List<CompletableFuture<Map>> futureList = this.recursionChartsData(chartsList, resultMap, varList);
             try {
                 Map chartsDataMap = new HashMap();
-                CompletableFuture.allOf((CompletableFuture<?>[]) futureList.toArray(new CompletableFuture[0]))
-                        .get(connectTimeout, TimeUnit.MILLISECONDS);
+                CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0])).get(connectTimeout, TimeUnit.MILLISECONDS);
                 futureList.forEach(future -> {
                     Map<String, Object> result = future.getNow(null);
                     if (Tool.MapUtil.isNotEmpty(result)) {
-                        if (Tool.MapUtil.isNotEmpty(result)) { //  && Tool.StrUtil.equals("success",Tool.StrUtil.toString(result.get("status")))
-                            chartsDataMap.put(StrUtil.concat(true, StrUtil.toString(result.get("chartId")), "_", StrUtil.toString(result.get("eleIndex"))), result);
-                        }
+                        chartsDataMap.put(StrUtil.concat(true, StrUtil.toString(result.get("chartId")), "_", StrUtil.toString(result.get("eleIndex"))), result);
                     }
                 });
                 resultMap.put("chartsData", chartsDataMap);
             } catch (InterruptedException | ExecutionException | TimeoutException e) {
                 log.error(e);
             }
+            resultMap.remove("step");
+            resultMap.put("panel", R.ok(panel));
+            resultMap.put("charts", R.ok(chartPageUtils));
         }
-        // 读取模板，替换数据
-        BufferedReader reader = null;
-        StringBuffer sbf = new StringBuffer();
-        try {
-            String path = sysConfigDao.queryByKey("snapshot_template_path").getParamValue();
-            reader = new BufferedReader(new FileReader(Tool.StrUtil.concat(true, path, File.separator, "snapshot_template.html")));
-            String line = null;
-            while ((line = reader.readLine()) != null) {
-                if (Tool.StrUtil.startWith(line, "<script>window.dataJson"))
-                    line = "<script>window.dataJson=" + JSONUtil.toJsonStr(resultMap) + "</script>";
-                sbf.append(line + "\n");
-            }
-        } catch (IOException e) {
-            log.error(e);
-        } finally {
-            if (reader != null) IoUtil.close(reader);
-        }
-        return sbf.toString();
+        return visualService.replaceSnapshotTemplate(resultMap);
     }
 
     /**
@@ -814,8 +752,12 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         return expr;
     }
 
-    private List<CompletableFuture<Map>> recursionChartsData(List<VisualChart> chartsList, Map<String, String> basicQueryParam, List<Map> varList) {
+    private List<CompletableFuture<Map>> recursionChartsData(List<VisualChart> chartsList, Map<String, Object> basicQueryParam, List<Map> varList) {
+        String start = StrUtil.toString(basicQueryParam.get("start"));
+        String end = StrUtil.toString(basicQueryParam.get("end"));
+        String step = StrUtil.toString(basicQueryParam.get("step"));
         List<CompletableFuture<Map>> futureList = new ArrayList<>();
+
         for (VisualChart chart : chartsList) {
             String datasource = chart.getDatasource();
             if (StrUtil.equals("misc",datasource)){
@@ -828,107 +770,50 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             }
             Map<String, Object> chartParam = (HashMap) chart.getParam();
             if(StrUtil.equals("system", datasource)) {
-                CompletableFuture<Map> mapCompletableFuture = null;
-                if(StrUtil.equals("assetInfo",chart.getType())){
-                    mapCompletableFuture = CompletableFuture.supplyAsync(() -> {
-                        VisualPanel visualPanel = this.getById(chart.getPanelId());
-                        R ok = R.ok(assetAssetService.queryAssetInfo(visualPanel.getLink()));
-                        ok.put("status", "success");
-                        ok.put("eleIndex", "0");
-                        ok.put("chartId", chart.getId());
-                        return ok;
-                    });
-                }else if(StrUtil.equals("endpointInfo",chart.getType())){
-                    mapCompletableFuture = CompletableFuture.supplyAsync(() -> {
-                        VisualPanel visualPanel = this.getById(chart.getPanelId());
-                        R ok = R.ok(monitorEndpointService.queryEndpointEntity(visualPanel.getLink()));
-                        ok.put("status", "success");
-                        ok.put("eleIndex", "0");
-                        ok.put("chartId", chart.getId());
-                        return ok;
-                    });
-                }else{
-                    mapCompletableFuture = CompletableFuture.supplyAsync(() -> {
-                        JSONObject dataSource = JSONArray.parseArray(JSONObject.toJSONString(chartParam.get("datasource"))).getJSONObject(0);
-                        JSONArray selectAry = new JSONArray();
-                        selectAry.add(dataSource.get("select"));
-                        dataSource.put("select", selectAry);
-                        HashMap analyseMap = new HashMap();
-                        analyseMap.put("q", dataSource.toJSONString());
-                        Map resultMap = new HashMap<>();
-                        resultMap.put("status", "success");
-                        resultMap.put("eleIndex", "0");
-                        resultMap.put("chartId", chart.getId());
-                        resultMap.putAll(statServiceImpl.queryAnalyse(analyseMap));
-                        return resultMap;
-                    });
-                }
-                futureList.add(mapCompletableFuture);
+                futureList.add(CompletableFuture.supplyAsync(() -> {
+                    VisualPanel visualPanel = this.getById(chart.getPanelId());
+                    R ok = R.ok();
+                    if(StrUtil.equals("assetInfo",chart.getType())){
+                        ok.put("data", assetAssetService.queryAssetInfo(visualPanel.getLink()));
+                    }else if(StrUtil.equals("endpointInfo",chart.getType())){
+                        ok.put("data", monitorEndpointService.queryEndpointEntity(visualPanel.getLink()));
+                    }else{
+                        cn.hutool.json.JSONObject dataSource = JSONUtil.parseArray(chartParam.get("datasource")).getJSONObject(0);
+                        dataSource.set("select", JSONUtil.createArray().put(dataSource.get("select")));
+                        ok.putAllData(statServiceImpl.queryAnalyse(JSONUtil.toBean(JSONUtil.createObj().set("q", dataSource.toString()), Map.class)));
+                    }
+                    ok.put("eleIndex", "0");
+                    ok.put("chartId", chart.getId());
+                    return ok;
+                }));
             } else {
-                Integer eleIndex = 0;
-                String start = basicQueryParam.get("start");
-                String end = basicQueryParam.get("end");
-                String step = basicQueryParam.get("step");
-
                 if(Tool.CollUtil.isNotEmpty(chart.getElements())){
+                    Integer eleIndex = 0;
+                    String limit = chartParam.get("limit") == null ? "100" : chartParam.get("limit").toString();
                     for (VisualChartElement element : chart.getElements()) {
                         String indexStr = StrUtil.toString(eleIndex++);
                         // 将表达式进行变量渲染
                         String expr = this.replaceExprByVars(element.getExpression(), varList);
-                        switch (datasource) {
-                            case "metrics":
-                                futureList.add(CompletableFuture.supplyAsync(() -> {
-                                    JSONObject jsonObject = null;
-                                    try {
-                                        jsonObject = promApiService.query_range(expr, start, end, step, chartParam.get("nullType").toString(), null);
-                                        jsonObject.put("eleIndex", indexStr);
-                                        jsonObject.put("chartId", chart.getId());
-                                    }catch (NZException e){}
-                                    return jsonObject;
-                                }));
-                                break;
-                            case "logs":
-                                String limit = chartParam.get("limit") == null ? "100" : chartParam.get("limit").toString();
-                                futureList.add(CompletableFuture.supplyAsync(() -> {
-                                    JSONObject jsonObject = null;
-                                    try {
-                                        jsonObject = lokiApiService.query_range(expr, start, end, limit, step, null, "backward", "1", null);
-                                        jsonObject.put("eleIndex", indexStr);
-                                        jsonObject.put("chartId", chart.getId());
-                                    }catch (NZException e){}
-                                    return jsonObject;
-                                }));
-                                break;
-                            default:break;
-                        }
+                        futureList.add(CompletableFuture.supplyAsync(() -> {
+                            JSONObject jsonObject = null;
+                            try {
+                                if(StrUtil.equals("metrics",datasource)){
+                                    jsonObject = promApiService.query_range(expr, start, end, step, chartParam.get("nullType").toString(), null);
+                                } else if(StrUtil.equals("logs",datasource)){
+                                    jsonObject = lokiApiService.query_range(expr, start, end, limit, step, null, "backward", "1", null);
+                                }
+                                jsonObject.put("eleIndex", indexStr);
+                                jsonObject.put("chartId", chart.getId());
+                            }catch (NZException e){}
+                            return jsonObject;
+                        }));
                     }
                 }else{
-                    futureList.add(CompletableFuture.supplyAsync(() -> {
-                        Map emptyElementsMap = Tool.MapUtil.newHashMap();
-                        emptyElementsMap.put("eleIndex", 0);
-                        emptyElementsMap.put("chartId", chart.getId());
-                        return emptyElementsMap;
-                    }));
+                    futureList.add(CompletableFuture.supplyAsync(() -> JSONUtil.toBean(JSONUtil.createObj().set("eleIndex", 0).set("chartId", chart.getId()), Map.class)));
                 }
             }
         }
         return futureList;
-    }
-
-    /**
-     * 计算Dashboards step
-     */
-    public String getTimeStep(Long start, Long end){
-        Long timeDiff = (end - start) / (24 * 60 * 60);
-        if(timeDiff < 1){
-            return "15s";
-        }else if(timeDiff < 7){
-            return "5m";
-        }else if(timeDiff < 30){
-            return "10m";
-        }else{
-            return "30m";
-        }
     }
 
     @Override

@@ -168,7 +168,7 @@ public class VisualPanelController {
 	 * @param vars
 	 */
 	@GetMapping("/snapshot")
-	public void snapshot(HttpServletResponse response, HttpServletRequest request, String format, Integer panelId, Long start, Long end, String vars) {
+	public void snapshot(HttpServletResponse response, HttpServletRequest request, String format, Integer panelId, Long start, Long end, String vars) throws IOException {
 		ValidateUtils.is(panelId).notNull(RCode.PANEL_ID_ISNULL)
 				.and(start).notNull(RCode.AGENT_PARAM_START_ISNULL)
 				.and(end).notNull(RCode.AGENT_PARAM_END_ISNULL);
