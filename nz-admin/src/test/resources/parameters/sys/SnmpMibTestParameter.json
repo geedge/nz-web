@@ -4,13 +4,13 @@
     "pageNo": null,
     "pageSize": null,
     "orderBy": "",
-    "id": "1"
+    "ids": "1"
   },
   "querySnmpMiblList_notexist": {
     "pageNo": null,
     "pageSize": null,
     "orderBy": "",
-    "id": "10000"
+    "ids": "10000"
   },
   "------------------ POST  /mibl data---------------------": "note",
   "addSnmpMibl_success": {
