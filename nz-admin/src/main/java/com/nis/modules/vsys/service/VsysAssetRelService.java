@@ -15,4 +15,11 @@ public interface VsysAssetRelService extends IService<VsysAssetRel> {
      */
     List<VsysAssetRel> queryAssetVsysRel(Integer vsysId, Integer assetId);
 
+    /**
+     * 保存|更新 rel
+     *
+     * @param vsysId
+     * @param assetId
+     */
+    void saveOrUpdateRelObj(Integer vsysId, Integer assetId);
 }

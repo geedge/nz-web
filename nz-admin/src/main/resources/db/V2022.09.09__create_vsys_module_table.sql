@@ -47,7 +47,7 @@ CREATE TABLE `vsys_result`  (
   `vsys_id` int(10) NOT NULL COMMENT 'vsys id',
   `type` int(10) NOT NULL COMMENT '任务类型 1：add 2：update 3：delete',
   `state` int(10) NOT NULL COMMENT '状态 0：失败 1：成功',
-  `msg` varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '执行信息',
+  `msg` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '执行信息',
   `num` int(10) NOT NULL DEFAULT 1 COMMENT '执行第几次 默认： 1',
   `ts` bigint(20) NOT NULL COMMENT '时间戳',
   PRIMARY KEY (`id`) USING BTREE

@@ -77,4 +77,5 @@ REPLACE INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) 
 REPLACE INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (null, 'nz_talon_oshi_mode', '1', 1, '1:nz-agent 代理模式,通过nz-agent 代理访问 nz-talon 接口   2:直连模式,nz-web 直接访问 nz-talon oshi 接口。默认为1');
 REPLACE INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (null, 'vsys_concurrency', '10', 1, 'vsys 任务并发数量 默认： 10');
 REPLACE INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (null, 'vsys_retry', '5', 1, 'vsys 任务失败重试次数 默认： 5');
+REPLACE INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (null, 'vsys_restconf_auth', '{\"protocol\":\"http\",\"port\":8447,\"type\":\"none\",\"username\":\"admin\",\"password\":\"admin\"}', 1, 'type 可选值：basicAuth , none');
 

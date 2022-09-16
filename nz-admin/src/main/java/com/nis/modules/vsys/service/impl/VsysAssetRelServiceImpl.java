@@ -1,5 +1,6 @@
 package com.nis.modules.vsys.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.Tool;
@@ -45,5 +46,22 @@ public class VsysAssetRelServiceImpl extends ServiceImpl<VsysAssetRelDao, VsysAs
         }
 
         return relList;
+    }
+
+    @Override
+    public void saveOrUpdateRelObj(Integer vsysId, Integer assetId) {
+        // 先查询是否存在对应关系
+        VsysAssetRel rel = this.getOne(new LambdaQueryWrapper<VsysAssetRel>()
+                .eq(VsysAssetRel::getVsysId, vsysId)
+                .eq(VsysAssetRel::getAssetId, assetId));
+
+        // save
+        if (rel == null) {
+            rel = new VsysAssetRel(null, assetId, vsysId, System.currentTimeMillis());
+        } else {
+            // update uts
+            rel.setUts(System.currentTimeMillis());
+        }
+        this.saveOrUpdate(rel);
     }
 }

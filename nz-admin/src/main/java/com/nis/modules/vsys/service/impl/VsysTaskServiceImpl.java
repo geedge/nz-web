@@ -1,13 +1,18 @@
 package com.nis.modules.vsys.service.impl;
 
+import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.http.HttpStatus;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.JSONPath;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
 import com.nis.modules.asset.entity.AssetAsset;
@@ -18,10 +23,13 @@ import com.nis.modules.asset.service.AssetFieldMetaService;
 import com.nis.modules.asset.service.AssetFieldValueService;
 import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.vsys.dao.VsysTaskDao;
+import com.nis.modules.vsys.entity.VsysAssetRel;
 import com.nis.modules.vsys.entity.VsysResult;
 import com.nis.modules.vsys.entity.VsysTask;
+import com.nis.modules.vsys.service.VsysAssetRelService;
 import com.nis.modules.vsys.service.VsysResultService;
 import com.nis.modules.vsys.service.VsysTaskService;
+import com.nis.modules.vsys.utils.VsysConfigUtil;
 import com.nis.modules.vsys.utils.VsysConstant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -49,6 +57,9 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
 
     @Autowired
     private VsysResultService vsysResultService;
+
+    @Autowired
+    private VsysAssetRelService vsysAssetRelService;
 
     @Autowired
     private AssetFieldMetaService assetFieldMetaService;
@@ -99,7 +110,6 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public String createTask(VsysTask task) throws Exception {
         // validate
         this.validateTashInfo(task);
@@ -147,17 +157,30 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
                 vsysTask.setParams(JSONObject.toJSONString(vsysTask.getParams()));
             }
 
-            // save db
-            this.save(vsysTask);
-
-            // record 未执行状态日志
-            this.recordUnExecStateLog(vsysTask, vsysAssetIdList);
-
-            // save redis
-            redisTemplate.opsForList().leftPush(VsysConstant.VSYS_TASK_QUEUE, JSONObject.toJSONString(vsysTask));
-            log.info("push vsys task to redis, key: {}, data: {}", VsysConstant.VSYS_TASK_QUEUE, JSONObject.toJSONString(vsysTask));
+            // save task
+            this.saveVsysTask(vsysTask, vsysAssetIdList);
         }
         return taskUuid;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void saveVsysTask(VsysTask vsysTask, List<Integer> vsysAssetIdList) {
+        // default value
+        if (vsysTask.getTotal() == 0) {
+            vsysTask.setProgress(100d);
+        } else {
+            vsysTask.setProgress(0d);
+        }
+
+        // save db
+        this.save(vsysTask);
+
+        // record 未执行状态日志
+        this.recordUnExecStateLog(vsysTask, vsysAssetIdList);
+
+        // save redis
+        redisTemplate.opsForList().leftPush(VsysConstant.VSYS_TASK_QUEUE, JSONObject.toJSONString(vsysTask));
+        log.info("push vsys task to redis, key: {}, data: {}", VsysConstant.VSYS_TASK_QUEUE, JSONObject.toJSONString(vsysTask));
     }
 
     /**
@@ -178,6 +201,7 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
             result.setType(task.getType());
             result.setState(VsysConstant.ResultState.NOT_EXEC.getValue());
             result.setTs(System.currentTimeMillis());
+            result.setMsg(StrUtil.EMPTY);
             resultList.add(result);
         }
 
@@ -214,6 +238,295 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
             }
         }
         return vsysAssetIdList;
+    }
+
+    @Override
+    public void vsysConfig(VsysTask vsysTask, AssetAsset asset) throws Exception {
+        // target ip
+        String manageIp = asset.getManageIp();
+        Integer type = vsysTask.getType();
+        // retry
+        int execNum = vsysTask.getRetry() == 0 ? 1 : vsysTask.getRetry();
+        for (int i = 0; i < execNum; i++) {
+            int currentExecNum = i + 1;
+            VsysResult result = vsysResultService.getOne(new LambdaQueryWrapper<VsysResult>()
+                    .eq(VsysResult::getAssetId, asset.getId())
+                    .eq(VsysResult::getTaskId, vsysTask.getId())
+                    .and(qw -> qw.eq(VsysResult::getState, VsysConstant.ResultState.SUCCESS.getValue())
+                            .or().eq(VsysResult::getState, VsysConstant.ResultState.FAILURE.getValue())));
+            if (result != null) {
+                log.info("vsys task finished, ExecNum:{}, taskId:{}, type:{}, assetId:{}, ManageIp:{}", i, vsysTask.getId(), type, asset.getId(), manageIp);
+                break;
+            }
+            // 没有产生 SUCCESS|FAILURE 结果， 就重复执行
+            log.info("vsys task no successful or failure records, ExecNum:{}, taskId:{}, type:{}, assetId:{}, ManageIp:{}", currentExecNum, vsysTask.getId(), type, asset.getId(), manageIp);
+
+            VsysResult res = new VsysResult();
+            res.setTs(System.currentTimeMillis());
+            res.setNum(currentExecNum);
+            switch (type) {
+                // add & update
+                case 1:
+                case 2: {
+                    this.deleteChain(vsysTask, manageIp);
+                    this.deleteRuleSet(vsysTask, manageIp);
+                    this.deleteServiceFunction(vsysTask, manageIp);
+
+                    Map<Object, Object> sfResult = this.addServiceFunction(vsysTask, manageIp);
+                    Map<Object, Object> ruleSetResult = this.addRuleSet(vsysTask, manageIp);
+                    Map<Object, Object> chainResult = this.addChain(vsysTask, manageIp);
+
+                    Integer sfResultCode = (Integer) sfResult.get("code");
+                    Integer ruleSetResultCode = (Integer) ruleSetResult.get("code");
+                    Integer chainResultCode = (Integer) chainResult.get("code");
+                    if (HttpStatus.HTTP_CREATED == sfResultCode
+                            && HttpStatus.HTTP_CREATED == ruleSetResultCode
+                            && HttpStatus.HTTP_CREATED == chainResultCode) {
+                        // success
+                        res.setState(VsysConstant.ResultState.SUCCESS.getValue());
+                        // save|update vsys asset rel
+                        vsysAssetRelService.saveOrUpdateRelObj(vsysTask.getVsysId(), asset.getId());
+                        // task progress
+                        this.updateTaskProgress(vsysTask.getId(), true, false);
+                    } else {
+                        // failure
+                        // 直至重试最后一次，更新状态为 FAILURE，并设置错误消息
+                        if (currentExecNum == execNum) {
+                            res.setState(VsysConstant.ResultState.FAILURE.getValue());
+                            String msg = Tool.StrUtil.concat(true, (String) sfResult.get("msg"), (String) ruleSetResult.get("msg"), (String) chainResult.get("msg"));
+                            res.setMsg(StrUtil.subWithLength(msg, 0, Constant.MYSQL_TEXT_MAXLENGTH));
+                            // task progress
+                            this.updateTaskProgress(vsysTask.getId(), false, true);
+                        }
+                    }
+                    break;
+                }
+                // delete
+                case 3: {
+                    Map<Object, Object> chainResult = this.deleteChain(vsysTask, manageIp);
+                    Map<Object, Object> ruleSetResult = this.deleteRuleSet(vsysTask, manageIp);
+                    Map<Object, Object> sfResult = this.deleteServiceFunction(vsysTask, manageIp);
+
+                    Integer sfResultCode = (Integer) sfResult.get("code");
+                    Integer ruleSetResultCode = (Integer) ruleSetResult.get("code");
+                    Integer chainResultCode = (Integer) chainResult.get("code");
+                    if (HttpStatus.HTTP_NO_CONTENT == sfResultCode
+                            && HttpStatus.HTTP_NO_CONTENT == ruleSetResultCode
+                            && HttpStatus.HTTP_NO_CONTENT == chainResultCode) {
+                        // success
+                        res.setState(VsysConstant.ResultState.SUCCESS.getValue());
+                        // del vsys asset rel
+                        vsysAssetRelService.remove(new LambdaQueryWrapper<VsysAssetRel>()
+                                .eq(VsysAssetRel::getVsysId, vsysTask.getVsysId())
+                                .eq(VsysAssetRel::getAssetId, asset.getId()));
+                        // task progress
+                        this.updateTaskProgress(vsysTask.getId(), true, false);
+                    } else {
+                        // failure
+                        if (currentExecNum == execNum) {
+                            res.setState(VsysConstant.ResultState.FAILURE.getValue());
+                            String msg = Tool.StrUtil.concat(true, (String) sfResult.get("msg"), (String) ruleSetResult.get("msg"), (String) chainResult.get("msg"));
+                            res.setMsg(StrUtil.subWithLength(msg, 0, Constant.MYSQL_TEXT_MAXLENGTH));
+                            // task progress
+                            this.updateTaskProgress(vsysTask.getId(), false, true);
+                        }
+                    }
+                    break;
+                }
+                default:
+                    break;
+            }
+            // 本次执行结束 更新 result log
+            vsysResultService.update(res, new LambdaUpdateWrapper<VsysResult>()
+                    .eq(VsysResult::getTaskId, vsysTask.getId())
+                    .eq(VsysResult::getAssetId, asset.getId()));
+        }
+    }
+
+    /**
+     * 更新 task success & failure & progress
+     *
+     * @param taskId
+     * @param success
+     * @param failure
+     */
+    private synchronized void updateTaskProgress(Integer taskId, boolean success, boolean failure) {
+        VsysTask updateTask = this.getById(taskId);
+        if (success) {
+            updateTask.setSuccess(updateTask.getSuccess() + 1);
+        }
+        if (failure) {
+            updateTask.setFailed(updateTask.getFailed() + 1);
+        }
+        String percent = NumberUtil.formatPercent((double) (updateTask.getSuccess() + updateTask.getFailed()) / updateTask.getTotal(), 2);
+        updateTask.setProgress(Double.valueOf(percent.replace("%", "")));
+        this.updateById(updateTask);
+    }
+
+
+    /**
+     * 添加 sf
+     *
+     * @param vsysTask
+     * @param manageIp
+     * @return
+     */
+    private Map<Object, Object> addServiceFunction(VsysTask vsysTask, String manageIp) {
+        // service function name
+        String sfName = String.format("tsg-traffic-engine-vsys-%s", vsysTask.getVsysId());
+
+        // sf default settings
+        Map<String, String> settingsMap = Tool.MapUtil.builder("template", VsysConstant.VSYS_DEFAULT_TEMPLATE_NAME).build();
+
+        String osQuotas = JSONPath.read(vsysTask.getParams().toString(), "osQuotas").toString();
+        // sf body
+        Map<Object, Object> sfMap = Tool.MapUtil.builder()
+                .put("name", sfName)
+                .put("vsys_id", vsysTask.getVsysId())
+                .put("quotas", JSONObject.parseObject(osQuotas))
+                .put("settings", settingsMap)
+                .put("enable", "yes")
+                .build();
+
+        Map<Object, Object> sfBody = Tool.MapUtil.builder()
+                .put("tsg-os-mgnt-srv:service_function", sfMap)
+                .build();
+
+        // request
+        String path = "/restconf/data";
+        Map<Object, Object> resultMp = VsysConfigUtil.requestPost(manageIp, path, sfBody);
+        return resultMp;
+    }
+
+    /**
+     * 添加 ruleset
+     *
+     * @param vsysTask
+     * @param manageIp
+     * @return
+     */
+    private Map<Object, Object> addRuleSet(VsysTask vsysTask, String manageIp) {
+        // ruleset name
+        String ruleSetName = String.format("ruleset_vsys_%s", vsysTask.getVsysId());
+        Object classificationRule = JSONPath.read(vsysTask.getParams().toString(), "classificationRule");
+        JSONObject classificationRuleObj = JSONObject.parseObject(ObjectUtil.defaultIfNull(classificationRule, Tool.StrUtil.EMPTY_JSON).toString());
+
+        Map<Object, Object> ruleConfig = Tool.MapUtil.builder()
+                .put("id", vsysTask.getVsysId())
+                .build();
+
+        /**
+         * 当前只处理 IP 类型 rule
+         */
+        String type = ObjectUtil.defaultIfNull(classificationRuleObj.get("type"), StrUtil.EMPTY).toString();
+        if (StrUtil.equalsIgnoreCase("ip", type)) {
+            Object ruleObj = JSONPath.read(vsysTask.getParams().toString(), "classificationRule.rule");
+            JSONObject jsonObject = JSONObject.parseObject(ObjectUtil.defaultIfNull(ruleObj, Tool.StrUtil.EMPTY_JSON).toString());
+
+            Object sip = jsonObject.get("sip");
+            Object dip = jsonObject.get("dip");
+            if (ObjectUtil.isAllNotEmpty(sip, dip)) {
+                ruleConfig.put("ipv4-sip", sip.toString());
+                ruleConfig.put("ipv4-dip", dip.toString());
+            }
+        }
+
+        // ruleset body
+        Map<Object, Object> ruleSetMap = Tool.MapUtil.builder()
+                .put("name", ruleSetName)
+                .put("rule", ruleConfig)
+                .build();
+
+        Map<Object, Object> ruleSetBody = Tool.MapUtil.builder()
+                .put("tsg-os-mgnt-srv:ruleset", ruleSetMap)
+                .build();
+
+        // request
+        String path = "/restconf/data";
+        Map<Object, Object> resultMp = VsysConfigUtil.requestPost(manageIp, path, ruleSetBody);
+        return resultMp;
+    }
+
+    /**
+     * 添加 sf chain
+     *
+     * @param vsysTask
+     * @param manageIp
+     * @return
+     */
+    private Map<Object, Object> addChain(VsysTask vsysTask, String manageIp) {
+        // service function name
+        String sfName = String.format("tsg-traffic-engine-vsys-%s", vsysTask.getVsysId());
+
+        // ruleset name
+        String ruleSetName = String.format("ruleset_vsys_%s", vsysTask.getVsysId());
+
+        // chain body
+        Map<Object, Object> chainMap = Tool.MapUtil.builder()
+                .put("id", vsysTask.getVsysId())
+                .put("service_function", sfName)
+                .put("ruleset", ruleSetName)
+                .build();
+
+        Map<Object, Object> chainBody = Tool.MapUtil.builder()
+                .put("tsg-os-mgnt-srv:index", chainMap)
+                .build();
+
+        // request
+        String path = String.format("%s%s", "/restconf/data", "/tsg-os-mgnt-srv:service_function_chain=Default");
+        Map<Object, Object> resultMp = VsysConfigUtil.requestPostWithoutEncodeUrl(manageIp, path, chainBody);
+        return resultMp;
+    }
+
+    /**
+     * 删除 sf
+     *
+     * @param vsysTask
+     * @param manageIp
+     * @return
+     */
+    private Map<Object, Object> deleteServiceFunction(VsysTask vsysTask, String manageIp) {
+        // service function name
+        String sfName = String.format("tsg-traffic-engine-vsys-%s", vsysTask.getVsysId());
+
+        // request
+        String path = String.format("%s%s=%s", "/restconf/data", "/tsg-os-mgnt-srv:service_function", sfName);
+        Map<Object, Object> resultMp = VsysConfigUtil.requestDeleteWithoutEncodeUrl(manageIp, path, null);
+        return resultMp;
+    }
+
+    /**
+     * 删除 ruleset
+     *
+     * @param vsysTask
+     * @param manageIp
+     * @return
+     */
+    private Map<Object, Object> deleteRuleSet(VsysTask vsysTask, String manageIp) {
+        // ruleset name
+        String ruleSetName = String.format("ruleset_vsys_%s", vsysTask.getVsysId());
+
+        // request
+        String path = String.format("%s%s=%s", "/restconf/data", "/tsg-os-mgnt-srv:ruleset", ruleSetName);
+        Map<Object, Object> resultMp = VsysConfigUtil.requestDeleteWithoutEncodeUrl(manageIp, path, null);
+        return resultMp;
+    }
+
+    /**
+     * 删除 chain
+     *
+     * @param vsysTask
+     * @param manageIp
+     * @return
+     */
+    private Map<Object, Object> deleteChain(VsysTask vsysTask, String manageIp) {
+        Integer vsysId = vsysTask.getVsysId();
+
+        // request
+        String indexq = "/index=" + vsysId;
+        String path = String.format("%s%s%s", "/restconf/data", "/tsg-os-mgnt-srv:service_function_chain=Default", indexq);
+        Map<Object, Object> resultMp = VsysConfigUtil.requestDeleteWithoutEncodeUrl(manageIp, path, null);
+        return resultMp;
     }
 
 }

@@ -43,7 +43,7 @@ public class VsysResultServiceImpl extends ServiceImpl<VsysResultDao, VsysResult
         long totalFailed = totalresultList.stream().filter(result -> VsysConstant.ResultState.FAILURE.getValue() == result.getState()).count();
 
         // 总进度
-        String totalProgress = NumberUtil.formatPercent((double) (totalSuccess + totalFailed) / totalNum, 2);
+        String totalProgress = totalNum == 0 ? "100" : NumberUtil.formatPercent((double) (totalSuccess + totalFailed) / totalNum, 2);
 
         // 根据 taskId 得到 vsysDetail, vsysId & type 并不能确保唯一
         List<Map> vsysDetail = Tool.ListUtil.list(true);

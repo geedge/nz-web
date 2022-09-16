@@ -19,6 +19,7 @@ import com.nis.modules.sys.service.LicenseService;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import com.nis.modules.vsys.backend.VsysTaskConfigThread;
 import com.nis.setup.entity.SetupEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -68,6 +69,9 @@ public class SetupRunner implements CommandLineRunner{
 
     @Autowired
 	VisualPanelService visualPanelService;
+
+	@Autowired
+	private VsysTaskConfigThread vsysTaskConfigThread;
 	
     
     
@@ -106,6 +110,9 @@ public class SetupRunner implements CommandLineRunner{
 		}
 		log.info("Setup sys-backup job finished");
 
+		// 启动VSYS 配置下发线程
+		Tool.ThreadUtil.execute(vsysTaskConfigThread);
+		log.info("启动 {} 成功", "VsysTaskConfigThread");
 
 		if (inited == 2) {
 			log.info(" inited = {}	,skip init setup", inited);
