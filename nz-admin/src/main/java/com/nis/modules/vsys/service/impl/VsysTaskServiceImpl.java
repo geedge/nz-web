@@ -101,11 +101,12 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
                 }
             }
 
-            Object params = vsysInfo.getParams();
-            if (Tool.ObjectUtil.isNotEmpty(params)) {
-                Map paramsMap = (Map) params;
-                ValidateUtils.is(paramsMap.get("osQuotas")).notNull(RCode.VSYS_TASK_PARAM_OSQUOTAS_ISNULL);
-            }
+            // osQuotas not null
+            Map osQuotas = vsysInfo.getOsQuotas();
+            ValidateUtils.is(osQuotas).notNull(RCode.VSYS_TASK_PARAM_OSQUOTAS_ISNULL);
+
+            // classification Rule
+            // Map classificationRule = vsysInfo.getClassificationRule();
         }
     }
 
@@ -153,9 +154,13 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
                 vsysTask.setDeviceTag(JSONObject.toJSONString(deviceTag));
             }
 
-            if (vsysTask.getParams() != null) {
-                vsysTask.setParams(JSONObject.toJSONString(vsysTask.getParams()));
-            }
+            // osQuotas & classificationRule
+            Map<Object, Object> paramMap = Tool.MapUtil.builder()
+                    .put("name", StrUtil.emptyToDefault(vsysTask.getName(), StrUtil.EMPTY))
+                    .put("osQuotas", vsysTask.getOsQuotas())
+                    .put("classificationRule", Tool.MapUtil.defaultIfEmpty(vsysTask.getClassificationRule(), Tool.MapUtil.empty()))
+                    .build();
+            vsysTask.setParams(JSONObject.toJSONString(paramMap));
 
             // save task
             this.saveVsysTask(vsysTask, vsysAssetIdList);
@@ -378,12 +383,18 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
         // sf default settings
         Map<String, String> settingsMap = Tool.MapUtil.builder("template", VsysConstant.VSYS_DEFAULT_TEMPLATE_NAME).build();
 
-        String osQuotas = JSONPath.read(vsysTask.getParams().toString(), "osQuotas").toString();
+        String osQuotas = JSONPath.read(vsysTask.getParams(), "osQuotas").toString();
+        JSONObject osQuotasMap = JSONObject.parseObject(osQuotas);
+
+        Tool.MapUtil.renameKey(osQuotasMap, "totalPercent", "total");
+        Tool.MapUtil.renameKey(osQuotasMap, "firewallPercent", "firewall");
+        Tool.MapUtil.renameKey(osQuotasMap, "proxyPercent", "proxy");
+
         // sf body
         Map<Object, Object> sfMap = Tool.MapUtil.builder()
                 .put("name", sfName)
                 .put("vsys_id", vsysTask.getVsysId())
-                .put("quotas", JSONObject.parseObject(osQuotas))
+                .put("quotas", osQuotasMap)
                 .put("settings", settingsMap)
                 .put("enable", "yes")
                 .build();
@@ -408,33 +419,41 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
     private Map<Object, Object> addRuleSet(VsysTask vsysTask, String manageIp) {
         // ruleset name
         String ruleSetName = String.format("ruleset_vsys_%s", vsysTask.getVsysId());
-        Object classificationRule = JSONPath.read(vsysTask.getParams().toString(), "classificationRule");
-        JSONObject classificationRuleObj = JSONObject.parseObject(ObjectUtil.defaultIfNull(classificationRule, Tool.StrUtil.EMPTY_JSON).toString());
+        // 当前默认取 andRules[0].orRules 配置
+        List<Map> orRules = (List<Map>) JSONPath.read(vsysTask.getParams(), "classificationRule.andRules[0].orRules");
 
-        Map<Object, Object> ruleConfig = Tool.MapUtil.builder()
-                .put("id", vsysTask.getVsysId())
-                .build();
+        List<Map> ruleConfigListMap = Tool.ListUtil.list(true);
+        if (Tool.CollUtil.isNotEmpty(orRules)) {
+            /**
+             * 只处理 IP 类型，其余类型暂不下发
+             */
+            orRules = orRules.stream().filter(map -> {
+                String type = ObjectUtil.defaultIfNull(map.get("type"), StrUtil.EMPTY).toString();
+                return StrUtil.equalsIgnoreCase("ip", type);
+            }).collect(Collectors.toList());
 
-        /**
-         * 当前只处理 IP 类型 rule
-         */
-        String type = ObjectUtil.defaultIfNull(classificationRuleObj.get("type"), StrUtil.EMPTY).toString();
-        if (StrUtil.equalsIgnoreCase("ip", type)) {
-            Object ruleObj = JSONPath.read(vsysTask.getParams().toString(), "classificationRule.rule");
-            JSONObject jsonObject = JSONObject.parseObject(ObjectUtil.defaultIfNull(ruleObj, Tool.StrUtil.EMPTY_JSON).toString());
+            for (int i = 0; i < orRules.size(); i++) {
+                Map<Object, Object> tm = Tool.MapUtil.builder()
+                        // id 以序号编排
+                        .put("id", i + 1)
+                        .build();
 
-            Object sip = jsonObject.get("sip");
-            Object dip = jsonObject.get("dip");
-            if (ObjectUtil.isAllNotEmpty(sip, dip)) {
-                ruleConfig.put("ipv4-sip", sip.toString());
-                ruleConfig.put("ipv4-dip", dip.toString());
+                Map ruleMap = (Map) ObjectUtil.defaultIfNull(orRules.get(i).get("rule"), Tool.MapUtil.empty());
+
+                Object sip = ruleMap.get("sip");
+                Object dip = ruleMap.get("dip");
+                if (ObjectUtil.isAllNotEmpty(sip, dip)) {
+                    tm.put("ipv4-sip", sip.toString());
+                    tm.put("ipv4-dip", dip.toString());
+                }
+                ruleConfigListMap.add(tm);
             }
         }
 
         // ruleset body
         Map<Object, Object> ruleSetMap = Tool.MapUtil.builder()
                 .put("name", ruleSetName)
-                .put("rule", ruleConfig)
+                .put("rule", ruleConfigListMap)
                 .build();
 
         Map<Object, Object> ruleSetBody = Tool.MapUtil.builder()

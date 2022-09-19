@@ -8,6 +8,7 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @TableName("vsys_task")
@@ -47,8 +48,26 @@ public class VsysTask implements Serializable {
     /**
      * 参数
      */
-    private Object params;
+    private String params;
 
+
+    /**
+     * obj  name
+     */
+    @TableField(exist = false)
+    private String name;
+
+    /**
+     * 分流规则
+     */
+    @TableField(exist = false)
+    private Map classificationRule;
+
+    /**
+     * 配额参数
+     */
+    @TableField(exist = false)
+    private Map osQuotas;
     /**
      * 并发数	默认： 0 ，不限制
      */
