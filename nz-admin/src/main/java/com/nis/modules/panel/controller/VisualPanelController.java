@@ -87,10 +87,10 @@ public class VisualPanelController {
 	}
 
 	@GetMapping("/template")
-	public void getTemplateByLanguage(HttpServletResponse response, String type, HttpServletRequest request) throws IOException {
-		String language = request.getHeader(Constant.LANGUAGE);
-		String format = request.getHeader("format");
-		format = Tool.StrUtil.emptyToDefault(format, "1");
+	public void getTemplateByLanguage(HttpServletResponse response,
+	                                  @RequestParam(required = false, defaultValue = "dashboard") String type,
+	                                  @RequestParam(required = false, defaultValue = "en") String language,
+	                                  @RequestParam(required = false, defaultValue = "1") String format) throws IOException {
 
 		// 校验 LANGUAGE
 		if (!Arrays.asList(Constant.LANGUAGE_VALUES).contains(language)) {
