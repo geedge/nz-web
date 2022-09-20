@@ -95,6 +95,8 @@ dev_build:
     - env | sort
     - pwd
     - export FILE_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA.tar.gz
+    - chmod +x ./ci-scripts/replaceI18nsql.sh
+    - ./ci-scripts/replaceI18nsql.sh
     - mvn clean install -Dxjar.password=afdsafasfsag -Dxjar.excludes=/db/*,/static/**/*,/install/* -Dmaven.test.skip=true
     - cd ./nz-admin/target
     - go build xjar.go
