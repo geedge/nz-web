@@ -1,11 +1,10 @@
 package com.nis.modules.sys.controller;
 
 import cn.hutool.log.Log;
+import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
+import com.nis.common.utils.*;
 import com.nis.modules.sys.service.SysBackupService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -39,6 +38,7 @@ public class SysBackupController {
 	 * 修改备份
 	 */
 	@PutMapping
+	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.SYSTEM)
 	public R modify(@RequestBody Map<String, Object> params){
 		sysBackupService.save(params);
 		return R.ok();
@@ -69,6 +69,7 @@ public class SysBackupController {
 	 * @return
 	 */
 	@PutMapping("/restore")
+	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.SYSTEM)
 	public R restore(@RequestBody(required = false) Map<String, Object> params) {
 		ValidateUtils.is(params).notNull(RCode.SYS_BACKUP_FILENAME_ISNULL);
 		String filename = (String) params.get("filename");

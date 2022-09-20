@@ -123,7 +123,7 @@ public class SysBackupServiceImpl implements SysBackupService {
 			}
 			
 	        //文件名
-	        sqlFilename = path + File.separator +  String.format("%s_%s.sql", dbName, DateUtil.format(new Date() , "yyyyMMdd_hh_mm_ss"));
+	        sqlFilename = path + File.separator +  String.format("%s_%s.sql", dbName, DateUtil.format(new Date() , "zyyyyMMdd_hh_mm_ss"));
 	        BufferedWriter writer = FileUtil.getWriter(sqlFilename, "UTF-8", false);
 		    stmtInfo = conn.createStatement();
 		    /*
