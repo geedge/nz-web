@@ -589,4 +589,9 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
         this.remove(new LambdaQueryWrapper<Cabinet>().eq(Cabinet::getSeq, seq));
     }
 
+    @Override
+    public List<Cabinet> getCabinetWithAssetPositionInfo() {
+        return cabinetDao.getCabinetWithAssetPositionInfo();
+    }
+
 }

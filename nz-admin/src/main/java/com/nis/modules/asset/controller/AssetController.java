@@ -138,14 +138,7 @@ public class AssetController {
                 .and(asset.getClientPin()).maxLength(64)
                 .and(asset.getClientToken()).maxLength(64)
                 .and(asset.getClientUser()).maxLength(64);
-        
-        /*if(ObjectUtil.equal(asset.getAuthType(), 1)) {
-        	ValidateUtils.is(asset.getAuthUsername()).notNull(RCode.ASSET_AUTHUSERNAME_ISNULL).maxLength(64)
-        	.and(asset.getAuthPin()).notNull(RCode.ASSET_AUTHPIN_ISNULL).maxLength(256);
-        }else if(ObjectUtil.equal(asset.getAuthType(), 2)){
-        	ValidateUtils.is(asset.getAuthPriKey()).notNull(RCode.ASSET_AUTHPRIKEY_ISNULL);
-        }*/
-        
+
         // client enable =1 开启talon ，token，port不能为空
         if(Tool.ObjectUtil.equal(asset.getClientEnable(),1)) {
         	ValidateUtils.is(asset.getClientPort()).notNull(RCode.ASSET_CLIENT_PROT_ISNULL)
@@ -180,17 +173,6 @@ public class AssetController {
                 return R.ok().putData("list", delRelObjectMsgList);
         }
     }
-
-
-    /**
-     * alert 统计
-     * @return
-     */
-    /*@GetMapping("/asset/stat/alert/{id}")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET)
-    public R alertStatByAsset(@PathVariable Integer id) {
-        return R.ok(assetAssetService.alertStatByAsset(id));
-    }*/
 
     /**
      * endpoint 统计

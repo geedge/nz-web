@@ -21,15 +21,12 @@ import com.nis.common.utils.*;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.dao.AssetAssetDao;
-import com.nis.modules.asset.dao.AssetFieldMetaDao;
-import com.nis.modules.asset.dao.CabinetDao;
 import com.nis.modules.asset.entity.*;
 import com.nis.modules.asset.service.*;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.entity.MonitorEndpointState;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.endpoint.service.MonitorEndpointStateService;
-import com.nis.modules.ipam.service.IpamIpService;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.panel.entity.VisualChart;
@@ -58,9 +55,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
@@ -81,13 +78,13 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     private static Log logger = Log.get();
 
     @Autowired
+    private RedisTemplate redisTemplate;
+
+    @Autowired
     private SysUserDao sysUserDao;
 
     @Autowired
-    private AssetAssetDao assetDao;
-
-    @Autowired
-    private AssetFieldMetaDao assetFieldMetaDao;
+    private SysConfigService sysConfigService;
 
     @Autowired
     private DcService dcService;
@@ -114,7 +111,13 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     private AssetFieldValueService assetFieldValueService;
 
     @Autowired
-    private MonitorEndpointService monitorEndpointService;
+    private AssetPingService assetPingService;
+
+    @Autowired
+    private AssetFeatureService assetFeatureService;
+
+    @Autowired
+    private AssetTalonStatusService assetTalonStatusService;
 
     @Autowired
     private AlertMessageService alertMessageService;
@@ -123,58 +126,37 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     private StatService statService;
 
     @Autowired
-    private AssetPingService assetPingService;
+    private SnmpCredentialService snmpCredentialService;
+
+    @Autowired
+    private VisualPanelService panelService;
+
+    @Autowired
+    private VisualChartService chartService;
+
+    @Autowired
+    private VisualChartElementService chartElementService;
+
+    @Autowired
+    private MonitorProjectService projectService;
+
+    @Autowired
+    private MonitorModuleService moduleService;
+
+    @Autowired
+    private MonitorEndpointService monitorEndpointService;
 
     @Autowired
     private MonitorEndpointStateService monitorEndpointStateService;
 
     @Autowired
-    private AssetFeatureService assetFeatureService;
-
-    @Autowired
-    private SysConfigService sysConfigService;
-
-    @Autowired
-    private CabinetDao cabinetDao;
-
-    @Autowired
-    private DataSourceTransactionManager dataSourceTransactionManager;
-
-    @Autowired
-    private TransactionDefinition transactionDefinition;
-
-	@Autowired
-	private SnmpCredentialService snmpCredentialService;
-
-	@Autowired
-    private VisualChartService chartService;
-
-	@Autowired
-    private VisualPanelService panelService;
-
-	@Autowired
-    private VisualChartElementService chartElementService;
-
-	@Autowired
-    private MonitorModuleService moduleService;
-
-	@Autowired
-    private MonitorProjectService projectService;
-
-	@Autowired
-    private RedisTemplate redisTemplate;
-
-    @Autowired
     private BasicImportAndExportServices basicImportAndExportServices;
-    
-    @Autowired
-    private AssetTalonStatusService assetTalonStatusService;
 
     @Autowired
     private SysUserStarredService starredService;
 
     @Autowired
-    private IpamIpService ipamIpService;
+    private DataSourceTransactionManager dataSourceTransactionManager;
 
     @SuppressWarnings("unchecked")
     @Override
@@ -186,12 +168,12 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         AssetTypeConf type = typeConfService.getById(asset.getTypeId());
         asset.setType(type);
 
-        if(type.getVmh()==1) {
-        	List<AssetAsset> children = this.list(new QueryWrapper<AssetAsset>().lambda().eq(AssetAsset::getPid, id));
-        	if(ToolUtil.isNotEmpty(children)) {
-        		asset.setChildrenNum(children.size());
-            	asset.setChildren(children);
-        	}
+        if (type.getVmh() == 1) {
+            List<AssetAsset> children = this.list(new QueryWrapper<AssetAsset>().lambda().eq(AssetAsset::getPid, id));
+            if (ToolUtil.isNotEmpty(children)) {
+                asset.setChildrenNum(children.size());
+                asset.setChildren(children);
+            }
         }
 
         AssetStateConf state = stateConfService.getById(asset.getStateId());
@@ -208,8 +190,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         AssetPing assetPing = assetPingService.getOne(new QueryWrapper<AssetPing>().lambda().eq(AssetPing::getAssetId, asset.getId()));
         Object object = redisTemplate.opsForHash().get(Constant.SYSCONFIG_KEY_ASSET_PING, asset.getId().toString());
-        if(ToolUtil.isNotEmpty(object)) {
-        	assetPing = JSON.parseObject((String)object,AssetPing.class);
+        if (ToolUtil.isNotEmpty(object)) {
+            assetPing = JSON.parseObject((String) object, AssetPing.class);
         }
         asset.setPingInfo(assetPing);
 
@@ -256,15 +238,15 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         asset.setAuthPriKey(null);
         asset.setClientPin(null);
 
-        try{
+        try {
             ///收藏标识 0：未收藏 1：已收藏
             int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
-                    .eq(SysUserStarredEntity::getTid,asset.getId())
-                    .eq(SysUserStarredEntity::getType,"asset")
-                    .eq(SysUserStarredEntity::getUid,ShiroUtils.getUserId())
+                    .eq(SysUserStarredEntity::getTid, asset.getId())
+                    .eq(SysUserStarredEntity::getType, "asset")
+                    .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId())
             );
             asset.setStarred(count == 0 ? 0 : 1);
-        }catch (UnavailableSecurityManagerException e){
+        } catch (UnavailableSecurityManagerException e) {
             // 快照线程无法获取ShiroSession
         }
         // 已配置的 module 名单
@@ -273,10 +255,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     }
 
     private void handleQueryAssetParam(Map<String, Object> params) {
-    	String ids = (String) params.get("ids");
-        if(StrUtil.isNotBlank(ids)) {
-        	List<String> listIds = Arrays.asList(ids.split(","));
-        	params.put("ids",listIds);
+        String ids = (String) params.get("ids");
+        if (StrUtil.isNotBlank(ids)) {
+            List<String> listIds = Arrays.asList(ids.split(","));
+            params.put("ids", listIds);
         }
         if (ToolUtil.isNotEmpty(params.get("brandIds"))) {
             params.put("brandIds", Arrays.asList(String.valueOf(params.get("brandIds")).split(StringPool.COMMA)));
@@ -363,10 +345,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         this.handleQueryAssetParam(params);
 
         //当前用户id
-        params.put("userId",ShiroUtils.getUserId().intValue());
+        params.put("userId", ShiroUtils.getUserId().intValue());
 
         IPage page = new Query(AssetAsset.class).getPage(params);
-        List<AssetAsset> assetList = assetDao.queryAssetList(page, params);
+        List<AssetAsset> assetList = this.baseMapper.queryAssetList(page, params);
 
         // 查询结果不为空时处理返回结果
         if (CollectionUtils.isNotEmpty(assetList)) {
@@ -378,65 +360,65 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     }
 
     @Override
-    public Map<String,List> queryAssetGroupBy(Map<String, Object> params){
-    	Map<String,List> result = new HashMap<String, List>();
-    	QueryWrapper wrapper = new QueryWrapper().select("id","name");
-		wrapper.orderByAsc("name");
-    	//dc
-    	List<Map<String, Object>> dcList = dcService.listMaps(wrapper);
-    	List<Map<String,Object>> dcGroupList = assetDao.queryAssetGroupBy("asset.dc_id", params);
-    	this.assetGroupBysetNum(dcList, dcGroupList);
-    	result.put("dc", dcList);
-    	//type
-    	List<Map<String, Object>> typeList = typeConfService.listMaps(wrapper);
-    	List<Map<String,Object>> typeGroupList = assetDao.queryAssetGroupBy("asset.type_id", params);
-    	this.assetGroupBysetNum(typeList, typeGroupList);
-    	result.put("type", typeList);
-    	//model
-    	List<AssetBrand> brandList = brandService.list();
-    	Map<String,AssetBrand> brandMap = Tool.MapUtil.newHashMap();
-    	brandList.forEach(brand -> {
-    		brandMap.put(brand.getId().toString(), brand);
-    	});
-    	QueryWrapper modelWrapper = new QueryWrapper().select("id","name","brand_id");
-    	modelWrapper.orderByAsc("name");
-    	List<Map<String, Object>> modelList = modelService.listMaps(modelWrapper);
-    	modelList.forEach(model -> {
-    		AssetBrand brand = brandMap.get(String.valueOf(model.get("brand_id")));
-    		model.put("brand", brand);
-    	});
-    	List<Map<String,Object>> modelGroupList = assetDao.queryAssetGroupBy("asset.model_id", params);
-    	this.assetGroupBysetNum(modelList, modelGroupList);
-    	result.put("model", modelList);
-    	//ping
-    	Map<String, Object> upMap = Tool.MapUtil.newHashMap();
-    	upMap.put("id", 1);
-    	upMap.put("name", "up");
-    	Map<String, Object> downMap = Tool.MapUtil.newHashMap();
-    	downMap.put("id", 0);
-    	downMap.put("name", "down");
-    	List<Map<String, Object>> pingList = Tool.ListUtil.toList(upMap,downMap);
-    	List<Map<String,Object>> pingGroupList = assetDao.queryAssetGroupBy("assp.status", params);
-    	this.assetGroupBysetNum(pingList, pingGroupList);
-    	result.put("ping", pingList);
-    	//label
-    	List<Map<String,Object>> metaGroupList = assetDao.queryAssetGroupBy("fvm.meta_id", params);
-    	metaGroupList = metaGroupList.stream().filter(map -> map.get("id") != null).collect(Collectors.toList());
-    	result.put("meta", metaGroupList);
-		return result;
+    public Map<String, List> queryAssetGroupBy(Map<String, Object> params) {
+        Map<String, List> result = new HashMap<String, List>();
+        QueryWrapper wrapper = new QueryWrapper().select("id", "name");
+        wrapper.orderByAsc("name");
+        //dc
+        List<Map<String, Object>> dcList = dcService.listMaps(wrapper);
+        List<Map<String, Object>> dcGroupList = this.baseMapper.queryAssetGroupBy("asset.dc_id", params);
+        this.assetGroupBysetNum(dcList, dcGroupList);
+        result.put("dc", dcList);
+        //type
+        List<Map<String, Object>> typeList = typeConfService.listMaps(wrapper);
+        List<Map<String, Object>> typeGroupList = this.baseMapper.queryAssetGroupBy("asset.type_id", params);
+        this.assetGroupBysetNum(typeList, typeGroupList);
+        result.put("type", typeList);
+        //model
+        List<AssetBrand> brandList = brandService.list();
+        Map<String, AssetBrand> brandMap = Tool.MapUtil.newHashMap();
+        brandList.forEach(brand -> {
+            brandMap.put(brand.getId().toString(), brand);
+        });
+        QueryWrapper modelWrapper = new QueryWrapper().select("id", "name", "brand_id");
+        modelWrapper.orderByAsc("name");
+        List<Map<String, Object>> modelList = modelService.listMaps(modelWrapper);
+        modelList.forEach(model -> {
+            AssetBrand brand = brandMap.get(String.valueOf(model.get("brand_id")));
+            model.put("brand", brand);
+        });
+        List<Map<String, Object>> modelGroupList = this.baseMapper.queryAssetGroupBy("asset.model_id", params);
+        this.assetGroupBysetNum(modelList, modelGroupList);
+        result.put("model", modelList);
+        //ping
+        Map<String, Object> upMap = Tool.MapUtil.newHashMap();
+        upMap.put("id", 1);
+        upMap.put("name", "up");
+        Map<String, Object> downMap = Tool.MapUtil.newHashMap();
+        downMap.put("id", 0);
+        downMap.put("name", "down");
+        List<Map<String, Object>> pingList = Tool.ListUtil.toList(upMap, downMap);
+        List<Map<String, Object>> pingGroupList = this.baseMapper.queryAssetGroupBy("assp.status", params);
+        this.assetGroupBysetNum(pingList, pingGroupList);
+        result.put("ping", pingList);
+        //label
+        List<Map<String, Object>> metaGroupList = this.baseMapper.queryAssetGroupBy("fvm.meta_id", params);
+        metaGroupList = metaGroupList.stream().filter(map -> map.get("id") != null).collect(Collectors.toList());
+        result.put("meta", metaGroupList);
+        return result;
     }
-    
-    private void assetGroupBysetNum(List<Map<String,Object>> allList,List<Map<String,Object>> groupList) {
-    	if(Tool.CollUtil.isEmpty(groupList)) {
-    		return;
-    	}
-    	Map<String,Object> groupMap = new HashMap<String, Object>();
-    	for(Map<String,Object> m : groupList) {
-    		groupMap.put(String.valueOf(m.get("id")), m.get("num"));
-    	}
-    	for(Map<String,Object> m : allList) {
-    		m.put("num", groupMap.getOrDefault(String.valueOf(m.get("id")), 0));
-    	}
+
+    private void assetGroupBysetNum(List<Map<String, Object>> allList, List<Map<String, Object>> groupList) {
+        if (Tool.CollUtil.isEmpty(groupList)) {
+            return;
+        }
+        Map<String, Object> groupMap = new HashMap<String, Object>();
+        for (Map<String, Object> m : groupList) {
+            groupMap.put(String.valueOf(m.get("id")), m.get("num"));
+        }
+        for (Map<String, Object> m : allList) {
+            m.put("num", groupMap.getOrDefault(String.valueOf(m.get("id")), 0));
+        }
 		/* 排序会导致筛选条件跳动 先注释
 		allList.sort((Map<String,Object> m1, Map<String,Object> m2) -> {
 			Integer i1 = Integer.valueOf(String.valueOf(m1.getOrDefault("num", 0)));
@@ -444,16 +426,16 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 			return Integer.compare(i2, i1);
 		});*/
     }
-    
+
     @SuppressWarnings("unchecked")
-	private void handleResuleList(List<AssetAsset> assetList) {
+    private void handleResuleList(List<AssetAsset> assetList) {
         List<SysUserEntity> userList = sysUserDao.selectList(null);
         Map<Long, SysUserEntity> userIdAndEntityMap = userList.stream().collect(Collectors.toMap(SysUserEntity::getId, Function.identity()));
 
         List<AssetAsset> list = this.list();
         Map<Integer, AssetAsset> assetIdAndEntityMap = list.stream().collect(Collectors.toMap(AssetAsset::getId, Function.identity()));
         Map<Integer, List<AssetAsset>> pidAndEntity = list.stream().collect(Collectors.groupingBy(AssetAsset::getPid));
-        
+
         List<AssetFieldMeta> metaInfoList = assetFieldMetaService.getAssetFieldMetaListByAssetId(null);
         Map<Integer, List<AssetFieldMeta>> assetIdAndMetaInfoList = metaInfoList.stream().collect(Collectors.groupingBy(AssetFieldMeta::getAssetId));
 
@@ -471,12 +453,12 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             if (asset.getPid() != -1) {
                 asset.setParent(assetIdAndEntityMap.get(asset.getPid()));
             }
-            
+
             List<AssetAsset> children = pidAndEntity.get(asset.getId());
-            if(ToolUtil.isNotEmpty(children)) {
-            	asset.setChildrenNum(children.size());
+            if (ToolUtil.isNotEmpty(children)) {
+                asset.setChildrenNum(children.size());
             }
-            
+
             asset.setFields(assetIdAndMetaInfoList.get(asset.getId()));
 
             // cabinetEnd 存值的时候会+1 在此减一返回前台
@@ -487,8 +469,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             // 获取缓存中ping状态信息
             AssetPing assetPing = assetPings.get(asset.getId());
             Object object = assetCachePings.get(asset.getId().toString());
-            if(ToolUtil.isNotEmpty(object)) {
-            	assetPing = JSON.parseObject((String)object,AssetPing.class);
+            if (ToolUtil.isNotEmpty(object)) {
+                assetPing = JSON.parseObject((String) object, AssetPing.class);
             }
             asset.setPingInfo(assetPing);
         }
@@ -618,8 +600,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         // auth_pin 密码加密处理
         String authPin = asset.getAuthPin();
-        if(StrUtil.isNotBlank(authPin)) {
-        	asset.setAuthPin(Base64.getEncoder().encodeToString(authPin.getBytes()));
+        if (StrUtil.isNotBlank(authPin)) {
+            asset.setAuthPin(Base64.getEncoder().encodeToString(authPin.getBytes()));
         } else {
             asset.setAuthPin(null);
         }
@@ -810,7 +792,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             asset.setCabinetEnd(asset.getCabinetEnd() + 1);
         }
 
-        if (asset.getPid() != null && asset.getPid()!=-1) {
+        if (asset.getPid() != null && asset.getPid() != -1) {
             // pid 不为空 证明是 虚拟极，继承宿主机 dc cabinet state end 信息
             AssetAsset parent = this.getById(asset.getPid());
             asset.setDcId(parent.getDcId());
@@ -1030,13 +1012,13 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             // 需要保存的 meta id
             List<AssetFieldValue> values = new ArrayList<AssetFieldValue>();
             for (AssetFieldMeta fieldMeta : fields) {
-            	for(String value: fieldMeta.getValue()) {
-            		AssetFieldValue temp = new AssetFieldValue();
+                for (String value : fieldMeta.getValue()) {
+                    AssetFieldValue temp = new AssetFieldValue();
                     temp.setAssetId(asset.getId());
                     temp.setMetaId(fieldMeta.getId());
                     temp.setValue(value);
                     values.add(temp);
-            	}
+                }
             }
             assetFieldValueService.saveBatch(values);
         }
@@ -1193,21 +1175,6 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         return Tool.MapUtil.empty();
     }
 
-    /*@Override
-    public Map alertStatByAsset(Integer assetId) {
-        List<AlertMessageEntity> alerts = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getAssetId, assetId));
-        long p1 = alerts.stream().filter(alert -> Constant.ALERT_SEVERITY_HIGH.equals(alert.getSeverity())).count();
-        long p2 = alerts.stream().filter(alert -> Constant.ALERT_SEVERITY_MEDIUM.equals(alert.getSeverity())).count();
-        long p3 = alerts.stream().filter(alert -> Constant.ALERT_SEVERITY_LOW.equals(alert.getSeverity())).count();
-
-        Map resultMap = new HashMap(8);
-        resultMap.put("total", alerts.size());
-        resultMap.put(Constant.ALERT_SEVERITY_HIGH, p1);
-        resultMap.put(Constant.ALERT_SEVERITY_MEDIUM, p2);
-        resultMap.put(Constant.ALERT_SEVERITY_LOW, p3);
-        return resultMap;
-    }*/
-
     @Override
     public Map endpointStatByAsset(Integer assetId) {
         List<MonitorEndpoint> endpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getAssetId, assetId));
@@ -1270,9 +1237,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     @Override
     public Map queryParams() {
         Map resultMap = new LinkedHashMap();
-        // dc
         List<AssetAsset> assetList = this.list();
-
+        // dc
         resultMap.put("dc", this.getDcStatByAsset(assetList));
         // type
         resultMap.put("type", this.getTypeStatByAsset(assetList));
@@ -1289,11 +1255,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
     @Override
     public List<AssetFieldMeta> queryAssetFieldValue(Integer assetId, Integer metaId) {
-        List<AssetFieldMeta> metaList = assetFieldMetaDao.selectMateInfoListByAssetId(assetId);
+        List<AssetFieldMeta> metaList = assetFieldMetaService.getAssetFieldMetaListByAssetId(assetId);
         metaList = metaList.stream().filter(assetFieldMeta -> assetFieldMeta.getId().equals(metaId)).collect(Collectors.toList());
-        for (AssetFieldMeta meta : metaList) {
-            meta.setKey(meta.getMetaKey());
-        }
         return metaList;
     }
 
@@ -1307,211 +1270,209 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void collectData(Integer assetId) {
-    	AssetAsset asset = this.getById(assetId);
-    	// 根据当前资产获取state设置是否进行采集
-    	AssetTypeConf assetType = typeConfService.getById(asset.getTypeId());
-    	if(ToolUtil.isEmpty(assetType)) {
-    		return;
-    	}
-    	Integer sshCollect = assetType.getSshCollect();
-    	Integer snmpCollect = assetType.getSnmpCollect();
-    	Integer authProtocol = assetType.getAuthProtocol();
-    	List<AssetFeature> results = new ArrayList<AssetFeature>();
-    	// 查询该资产下是否有之前收集的信息  防止频繁查询数据库
-		List<AssetFeature> assetFeatures = assetFeatureService.list(new QueryWrapper<AssetFeature>().lambda().eq(AssetFeature::getAssetId, assetId));
-		HashMap<String,AssetFeature> assetFeatureMap = new HashMap<String,AssetFeature>();
-		if(ToolUtil.isNotEmpty(assetFeatures)) {
-			for(AssetFeature data : assetFeatures) {
-				// 将数据以key为资产id 查询的信息名称 以及查询方式组合
-				assetFeatureMap.put(data.getAssetId()+data.getItem()+data.getSource(), data);
-			}
-		}
-    	
-    	if(ToolUtil.equals(sshCollect, 1) && ToolUtil.equals(authProtocol, 1) ) {
-    		// 进行ssh采集
-    		String sshCollectScript = assetType.getSshCollectScript();
-    		if(StrUtil.isBlank(sshCollectScript)) {
-    			logger.debug("asset sshCollectScript is empty asset info : %s",JSON.toJSON(asset));
-    			return;
-    		}
-    		
-    		Session session =null;
-			try {
-				// 进行ssh连接
-				session=SshUtil.getSshConnection(asset);
-				String sshCommondResult = RuntimeUtil.sshCommondResult(session," /bin/bash "+sshCollectScript);
-				this.getSshInfo(assetFeatureMap, results, sshCommondResult,asset);
-				
-			} catch (JSchException | IOException e) {
-				logger.error(e);
-				logger.error("asset feature get data error,assetId : {} info : {}",assetId,e);
-				throw new NZException(e.getMessage());
-			} finally {
-				SshUtil.close(session);
-			}
-    		
-    	}
-    	if(ToolUtil.equals(snmpCollect, 1)) {
-    		// 进行snmp数据采集
-    		try {
-    			SnmpCredential snmpCredential = snmpCredentialService.getById(asset.getSnmpCredentialId());
-    			if(ToolUtil.isEmpty(snmpCredential)) {
-    				logger.debug("asset snmpCredential is empty asset info : %s",JSON.toJSON(asset));
-    				return;
-    			}
-				this.getSystemInfoBySnmp(assetFeatureMap,results,asset,snmpCredential);
-			} catch (IOException e) {
-				logger.error("asset snmp collect error asset info : %s",JSON.toJSON(asset));
-				logger.error(e);
-			}
-    	}
-    	// 存入db 无则新增 有则修改
-		if(results!=null&&results.size()>0) {
-			assetFeatureService.saveOrUpdateBatch(results);
-		}
+        AssetAsset asset = this.getById(assetId);
+        // 根据当前资产获取state设置是否进行采集
+        AssetTypeConf assetType = typeConfService.getById(asset.getTypeId());
+        if (ToolUtil.isEmpty(assetType)) {
+            return;
+        }
+        Integer sshCollect = assetType.getSshCollect();
+        Integer snmpCollect = assetType.getSnmpCollect();
+        Integer authProtocol = assetType.getAuthProtocol();
+        List<AssetFeature> results = new ArrayList<AssetFeature>();
+        // 查询该资产下是否有之前收集的信息  防止频繁查询数据库
+        List<AssetFeature> assetFeatures = assetFeatureService.list(new QueryWrapper<AssetFeature>().lambda().eq(AssetFeature::getAssetId, assetId));
+        HashMap<String, AssetFeature> assetFeatureMap = new HashMap<String, AssetFeature>();
+        if (ToolUtil.isNotEmpty(assetFeatures)) {
+            for (AssetFeature data : assetFeatures) {
+                // 将数据以key为资产id 查询的信息名称 以及查询方式组合
+                assetFeatureMap.put(data.getAssetId() + data.getItem() + data.getSource(), data);
+            }
+        }
+
+        if (ToolUtil.equals(sshCollect, 1) && ToolUtil.equals(authProtocol, 1)) {
+            // 进行ssh采集
+            String sshCollectScript = assetType.getSshCollectScript();
+            if (StrUtil.isBlank(sshCollectScript)) {
+                logger.debug("asset sshCollectScript is empty asset info : %s", JSON.toJSON(asset));
+                return;
+            }
+
+            Session session = null;
+            try {
+                // 进行ssh连接
+                session = SshUtil.getSshConnection(asset);
+                String sshCommondResult = RuntimeUtil.sshCommondResult(session, " /bin/bash " + sshCollectScript);
+                this.getSshInfo(assetFeatureMap, results, sshCommondResult, asset);
+
+            } catch (JSchException | IOException e) {
+                logger.error(e);
+                logger.error("asset feature get data error,assetId : {} info : {}", assetId, e);
+                throw new NZException(e.getMessage());
+            } finally {
+                SshUtil.close(session);
+            }
+
+        }
+        if (ToolUtil.equals(snmpCollect, 1)) {
+            // 进行snmp数据采集
+            try {
+                SnmpCredential snmpCredential = snmpCredentialService.getById(asset.getSnmpCredentialId());
+                if (ToolUtil.isEmpty(snmpCredential)) {
+                    logger.debug("asset snmpCredential is empty asset info : %s", JSON.toJSON(asset));
+                    return;
+                }
+                this.getSystemInfoBySnmp(assetFeatureMap, results, asset, snmpCredential);
+            } catch (IOException e) {
+                logger.error("asset snmp collect error asset info : %s", JSON.toJSON(asset));
+                logger.error(e);
+            }
+        }
+        // 存入db 无则新增 有则修改
+        if (results != null && results.size() > 0) {
+            assetFeatureService.saveOrUpdateBatch(results);
+        }
     }
 
-    public void getSshInfo(HashMap<String,AssetFeature> assetFeatureMap,List<AssetFeature> results,String sshCommondResult,AssetAsset asset) {
-    	Map<String,String> sshResult = JSONObject.parseObject(sshCommondResult, Map.class);
-    	for(Map.Entry<String, String> entrySet: sshResult.entrySet()) {
-    		//查询数据库是否已经存在数据
-        	AssetFeature result = assetFeatureMap.get(asset.getId()+entrySet.getKey()+Constant.ACCOUNT_SSH_PROTOCOL);
-        	if(ToolUtil.isEmpty(result)) {
-        		result = new AssetFeature();
-        	}
-    		result.setAssetId(asset.getId());
-    		result.setItem(entrySet.getKey());
-    		result.setValue(sshResult.get(entrySet.getKey()));
-    		result.setSource(Constant.ACCOUNT_SSH_PROTOCOL);
-    		result.setUpdateAt(new Date());
-    		results.add(result);
-    	}
+    public void getSshInfo(HashMap<String, AssetFeature> assetFeatureMap, List<AssetFeature> results, String sshCommondResult, AssetAsset asset) {
+        Map<String, String> sshResult = JSONObject.parseObject(sshCommondResult, Map.class);
+        for (Map.Entry<String, String> entrySet : sshResult.entrySet()) {
+            //查询数据库是否已经存在数据
+            AssetFeature result = assetFeatureMap.get(asset.getId() + entrySet.getKey() + Constant.ACCOUNT_SSH_PROTOCOL);
+            if (ToolUtil.isEmpty(result)) {
+                result = new AssetFeature();
+            }
+            result.setAssetId(asset.getId());
+            result.setItem(entrySet.getKey());
+            result.setValue(sshResult.get(entrySet.getKey()));
+            result.setSource(Constant.ACCOUNT_SSH_PROTOCOL);
+            result.setUpdateAt(new Date());
+            results.add(result);
+        }
     }
-    
-    public void getSystemInfoBySnmp(HashMap<String,AssetFeature> assetFeatureMap,List<AssetFeature> results,AssetAsset asset,SnmpCredential snmpCredential) throws IOException {
-    	Map snmpInfos = JSONObject.parseObject((String) snmpCredential.getConfig(), Map.class);
-    	Set<String> keySet = Constant.SNMP_OID_MAP.keySet();
-		for(String key:keySet) {
-			List<Map> snmpResults = SnmpUtil.snmpWalk(asset.getManageIp(), snmpCredential.getPort(), snmpCredential.getType(), (String)snmpInfos.get("readCommunity"), Constant.SNMP_OID_MAP.get(key), snmpInfos);
-			if("ifEntry".equals(key)) {
-				List l =new LinkedList();
-				if (CollectionUtils.isNotEmpty(snmpResults)) {
-					Map<String,LinkedHashMap> handleMap =new LinkedHashMap<String,LinkedHashMap>();
-		            String resultOid;
-		            String name;
-		            for (Map map : snmpResults) {
-		            	//截取最后一位oid数  
-		            	resultOid = map.get("oid").toString();
-		            	//去掉最后一位oid剩下值
-		            	String first = resultOid.substring(0, resultOid.lastIndexOf("."));
-		            	//最后一位oid数
-		                String last = resultOid.substring(resultOid.lastIndexOf(".")+1,resultOid.length());
-		                name = Constant.SNMP_IFENTRY_MAP.get(first);
-		                if(ToolUtil.isEmpty(name)) {
-		                	continue;
-		                }
-		                Map map2 = handleMap.get(last);
-		                if(ToolUtil.isEmpty(map2)) {
-		                	Map map3 =new LinkedHashMap();
-		                	handleMap.put(last, (LinkedHashMap) map3);
-		                	map3.put(name,map.get("value"));
-		                }else {
-		                	map2.put(name,map.get("value"));
-		                }
-		            }
-		            
-		            for(String k:handleMap.keySet()) {
-		            	l.add(handleMap.get(k));
-		            }
-		        }
-				//查询数据库是否已经存在数据
-				AssetFeature result = assetFeatureMap.get(asset.getId()+key+Constant.ACCOUNT_SNMP_PROTOCOL);
-				if(ToolUtil.isEmpty(result)) {
-	        		result = new AssetFeature();
-	        	}
-				result.setAssetId(asset.getId());
-				result.setItem(key);
-				result.setValue(JSON.toJSONString(l));
-				result.setSource(Constant.ACCOUNT_SNMP_PROTOCOL);
-				result.setUpdateAt(new Date());
-				results.add(result);
-			}else {
-				for(Map snmpResult : snmpResults) {
-					String value = (String) snmpResult.get("value");
-					//查询数据库是否已经存在数据
-					AssetFeature result = assetFeatureMap.get(asset.getId()+key+Constant.ACCOUNT_SNMP_PROTOCOL);
-					if(ToolUtil.isEmpty(result)) {
-		        		result = new AssetFeature();
-		        	}
-					result.setAssetId(asset.getId());
-					result.setItem(key);
-					if("sysUpTime".equals(key)) {
-						TimeTicks t =new TimeTicks();
-						t.setValue(value);
-						long milliseconds = t.toMilliseconds();
-						//result.setValue(DateUtil.getTime(DateUtil.getUTCTimeByConfigTimeZone(new Date(new Date().getTime()-milliseconds))));
+
+    public void getSystemInfoBySnmp(HashMap<String, AssetFeature> assetFeatureMap, List<AssetFeature> results, AssetAsset asset, SnmpCredential snmpCredential) throws IOException {
+        Map snmpInfos = JSONObject.parseObject((String) snmpCredential.getConfig(), Map.class);
+        Set<String> keySet = Constant.SNMP_OID_MAP.keySet();
+        for (String key : keySet) {
+            List<Map> snmpResults = SnmpUtil.snmpWalk(asset.getManageIp(), snmpCredential.getPort(), snmpCredential.getType(), (String) snmpInfos.get("readCommunity"), Constant.SNMP_OID_MAP.get(key), snmpInfos);
+            if ("ifEntry".equals(key)) {
+                List l = new LinkedList();
+                if (CollectionUtils.isNotEmpty(snmpResults)) {
+                    Map<String, LinkedHashMap> handleMap = new LinkedHashMap<String, LinkedHashMap>();
+                    String resultOid;
+                    String name;
+                    for (Map map : snmpResults) {
+                        //截取最后一位oid数
+                        resultOid = map.get("oid").toString();
+                        //去掉最后一位oid剩下值
+                        String first = resultOid.substring(0, resultOid.lastIndexOf("."));
+                        //最后一位oid数
+                        String last = resultOid.substring(resultOid.lastIndexOf(".") + 1, resultOid.length());
+                        name = Constant.SNMP_IFENTRY_MAP.get(first);
+                        if (ToolUtil.isEmpty(name)) {
+                            continue;
+                        }
+                        Map map2 = handleMap.get(last);
+                        if (ToolUtil.isEmpty(map2)) {
+                            Map map3 = new LinkedHashMap();
+                            handleMap.put(last, (LinkedHashMap) map3);
+                            map3.put(name, map.get("value"));
+                        } else {
+                            map2.put(name, map.get("value"));
+                        }
+                    }
+
+                    for (String k : handleMap.keySet()) {
+                        l.add(handleMap.get(k));
+                    }
+                }
+                //查询数据库是否已经存在数据
+                AssetFeature result = assetFeatureMap.get(asset.getId() + key + Constant.ACCOUNT_SNMP_PROTOCOL);
+                if (ToolUtil.isEmpty(result)) {
+                    result = new AssetFeature();
+                }
+                result.setAssetId(asset.getId());
+                result.setItem(key);
+                result.setValue(JSON.toJSONString(l));
+                result.setSource(Constant.ACCOUNT_SNMP_PROTOCOL);
+                result.setUpdateAt(new Date());
+                results.add(result);
+            } else {
+                for (Map snmpResult : snmpResults) {
+                    String value = (String) snmpResult.get("value");
+                    //查询数据库是否已经存在数据
+                    AssetFeature result = assetFeatureMap.get(asset.getId() + key + Constant.ACCOUNT_SNMP_PROTOCOL);
+                    if (ToolUtil.isEmpty(result)) {
+                        result = new AssetFeature();
+                    }
+                    result.setAssetId(asset.getId());
+                    result.setItem(key);
+                    if ("sysUpTime".equals(key)) {
+                        TimeTicks t = new TimeTicks();
+                        t.setValue(value);
+                        long milliseconds = t.toMilliseconds();
                         result.setValue(DateUtil.getTime(new Date(new Date().getTime() - milliseconds)));
-					}else {
-						result.setValue(value);
-					}
-					result.setSource(Constant.ACCOUNT_SNMP_PROTOCOL);
-					result.setUpdateAt(new Date());
-					results.add(result);
-				}
-			}
-		}
-	}
-
+                    } else {
+                        result.setValue(value);
+                    }
+                    result.setSource(Constant.ACCOUNT_SNMP_PROTOCOL);
+                    result.setUpdateAt(new Date());
+                    results.add(result);
+                }
+            }
+        }
+    }
 
     private List<Map> getFieldStatByAsset() {
         List<AssetFieldMeta> allMetas = assetFieldMetaService.getAssetFieldMetaListByAssetId(null);
         List<Map> fieldStat = new ArrayList<>();
         Map metaStatMap, childrenMap;
-        
+
         // 创建一个key为field value  值为使用当前field的资产id集合
-        Map<String,Set<Integer>> fieldIdAndAssetIdsMap = new HashMap<String,Set<Integer>>();
-        Map<Integer,List<AssetFieldMeta>> fieldIdAndfields = new HashMap<Integer,List<AssetFieldMeta>>();
-        for(AssetFieldMeta fieldMeta: allMetas) {
-        	
-        	List<AssetFieldMeta> fields = fieldIdAndfields.get(fieldMeta.getId());
-        	if(ToolUtil.isEmpty(fields)) {
-        		fields = new ArrayList<AssetFieldMeta>();
-        		fields.add(fieldMeta);
-        		fieldIdAndfields.put(fieldMeta.getId(), fields);
-        	}else {
-        		fields.add(fieldMeta);
-        	}
-        	
-        	List<String> values = fieldMeta.getValue();
-        	for(String value : values) {
-        		Set<Integer> assetIds = fieldIdAndAssetIdsMap.get(value);
-        		if(ToolUtil.isEmpty(assetIds)) {
-        			assetIds = new HashSet<Integer>();
-        			assetIds.add(fieldMeta.getAssetId());
-        			fieldIdAndAssetIdsMap.put(value, assetIds);
-        		}else {
-        			assetIds.add(fieldMeta.getAssetId());
-        		}
-        	}
+        Map<String, Set<Integer>> fieldIdAndAssetIdsMap = new HashMap<String, Set<Integer>>();
+        Map<Integer, List<AssetFieldMeta>> fieldIdAndfields = new HashMap<Integer, List<AssetFieldMeta>>();
+        for (AssetFieldMeta fieldMeta : allMetas) {
+
+            List<AssetFieldMeta> fields = fieldIdAndfields.get(fieldMeta.getId());
+            if (ToolUtil.isEmpty(fields)) {
+                fields = new ArrayList<AssetFieldMeta>();
+                fields.add(fieldMeta);
+                fieldIdAndfields.put(fieldMeta.getId(), fields);
+            } else {
+                fields.add(fieldMeta);
+            }
+
+            List<String> values = fieldMeta.getValue();
+            for (String value : values) {
+                Set<Integer> assetIds = fieldIdAndAssetIdsMap.get(value);
+                if (ToolUtil.isEmpty(assetIds)) {
+                    assetIds = new HashSet<Integer>();
+                    assetIds.add(fieldMeta.getAssetId());
+                    fieldIdAndAssetIdsMap.put(value, assetIds);
+                } else {
+                    assetIds.add(fieldMeta.getAssetId());
+                }
+            }
         }
 
-        for(Map.Entry<Integer, List<AssetFieldMeta>> entry : fieldIdAndfields.entrySet()) {
-        	List<AssetFieldMeta> fields = fieldIdAndfields.get(entry.getKey());
-        	List children = new ArrayList();
-        	for(AssetFieldMeta fieldMeta : fields) {
-        		List<String> values = fieldMeta.getValue();
-    			for (String valueEntry : values) {
-    				if(ToolUtil.isEmpty(fieldIdAndAssetIdsMap.get(valueEntry))) {
-    			    	continue;
-    			    }
-    			    childrenMap = new HashMap(4);
-    			    childrenMap.put("value", valueEntry);
-    			    childrenMap.put("total", fieldIdAndAssetIdsMap.get(valueEntry).size());
-    			    children.add(childrenMap);
-    			    fieldIdAndAssetIdsMap.remove(valueEntry);
-    			}
-        	}
-                        
+        for (Map.Entry<Integer, List<AssetFieldMeta>> entry : fieldIdAndfields.entrySet()) {
+            List<AssetFieldMeta> fields = fieldIdAndfields.get(entry.getKey());
+            List children = new ArrayList();
+            for (AssetFieldMeta fieldMeta : fields) {
+                List<String> values = fieldMeta.getValue();
+                for (String valueEntry : values) {
+                    if (ToolUtil.isEmpty(fieldIdAndAssetIdsMap.get(valueEntry))) {
+                        continue;
+                    }
+                    childrenMap = new HashMap(4);
+                    childrenMap.put("value", valueEntry);
+                    childrenMap.put("total", fieldIdAndAssetIdsMap.get(valueEntry).size());
+                    children.add(childrenMap);
+                    fieldIdAndAssetIdsMap.remove(valueEntry);
+                }
+            }
+
             metaStatMap = new HashMap(8);
             metaStatMap.put("id", fields.get(0).getId());
             metaStatMap.put("name", fields.get(0).getName());
@@ -1643,7 +1604,6 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         return dcStats;
     }
 
-
     @Override
     public void export(HttpServletResponse response, Map<String, Object> params) throws IOException {
         String maxLine = sysConfigService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
@@ -1675,25 +1635,12 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
         List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
 
-        String seq = UUID.randomUUID().toString();
-        params.put("seq", seq);
-
         // 表头信息 国际化之后的
         List<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
 
-        int totalNum = importDataList.size();
-        List<Map<String, String>> failDetailList = this.saveAssetsFromImportDataList(importDataList, headerInfos, params);
-
-        // 从错误信息中获取失败导入行数量
-        int failNum = (int) failDetailList.stream().map(map -> Integer.valueOf(map.get("lineNo"))).distinct().count();
-
-        Map resultMap = new HashMap(8);
-        resultMap.put("seq", seq);
-        resultMap.put("totalNum", totalNum);
-        resultMap.put("successNum", totalNum - failNum);
-        resultMap.put("failNum", failNum);
-        resultMap.put("failDetail", failDetailList);
-        return resultMap;
+        // 返回统计信息
+        Map statMap = this.saveAssetsFromImportDataList(importDataList, headerInfos, params);
+        return statMap;
     }
 
     @Override
@@ -1729,7 +1676,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             }
 
             // 删除 field meta/value
-            assetFieldMetaService.remove(new LambdaQueryWrapper<AssetFieldMeta>().eq(AssetFieldMeta::getSeq,seq));
+            assetFieldMetaService.remove(new LambdaQueryWrapper<AssetFieldMeta>().eq(AssetFieldMeta::getSeq, seq));
             assetFieldValueService.remove(new LambdaQueryWrapper<AssetFieldValue>().eq(AssetFieldValue::getSeq, seq));
         }
     }
@@ -1739,7 +1686,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         List<AssetAsset> assetList = this.list();
 
         // 支持 ping 的 state_conf
-        List<AssetStateConf> stateConfList = stateConfService.list(new LambdaQueryWrapper<AssetStateConf>().eq(AssetStateConf::getPing,1));
+        List<AssetStateConf> stateConfList = stateConfService.list(new LambdaQueryWrapper<AssetStateConf>().eq(AssetStateConf::getPing, 1));
         List<Integer> enablePingStateConfIdList = stateConfList.stream().map(AssetStateConf::getId).collect(Collectors.toList());
 
         // 支持 ping 的 asset
@@ -1772,14 +1719,16 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
     @Override
     public List<VisualChart> getAssetsWithTagByChartIds(List<Integer> chartIds) {
-        List<VisualChart> chartIdWithAssetEntity = assetDao.getAssetsByChartIds(chartIds);
-        if(CollectionUtils.isEmpty(chartIdWithAssetEntity)){
+        List<VisualChart> chartIdWithAssetEntity = this.baseMapper.getAssetsByChartIds(chartIds);
+        if (CollectionUtils.isEmpty(chartIdWithAssetEntity)) {
             return Collections.emptyList();
         }
         return chartIdWithAssetEntity;
     }
 
-    private List<Map<String, String>> saveAssetsFromImportDataList(List<Map<Integer, String>> importDataList, List<String> headerInfos, Map<String, Object> params) {
+    private Map saveAssetsFromImportDataList(List<Map<Integer, String>> importDataList, List<String> headerInfos, Map<String, Object> params) {
+        String seq = StrUtil.uuid();
+        params.put("seq", seq);
         // 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
         String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
 
@@ -1791,6 +1740,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 .existed(existed).headerInfos(headerInfos)
                 .build();
 
+        Integer successNum = 0, failNum = 0, addNum = 0, updateNum = 0;
         // 处理 excel 数据，将含宿主机资产排到前面
         List<Map<Integer, String>> handleImportData = this.handleImportData(importDataList);
         for (int i = 0; i < handleImportData.size(); i++) {
@@ -1804,6 +1754,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             // 索引列重复 & 忽略标识，提示忽略本行
             if (BooleanUtil.and(indexDuplicate, StrUtil.equals("2", existed))) {
                 validateUtil.ignoreThisRow(lineNum, AssetImportEnum.NAME.getIndex());
+                failNum++;
                 continue;
             }
 
@@ -1994,6 +1945,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 // 结束本次导入，自导入行开始 到结尾数据行，提示错误信息
                 for (int j = i; j < handleImportData.size(); j++) {
                     validateUtil.recordImportAttrErr(j + 1, RCode.IMPORT_ERROR_STOP);
+                    failNum++;
                 }
                 break;
             }
@@ -2062,19 +2014,39 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 asset.setClientToken(clientToken);
                 asset.setClientEnable(Integer.valueOf(StrUtil.emptyToDefault(clientEnable, "0")));
                 saveEntitys.put("asset", asset);
-                TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
+                TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(new DefaultTransactionDefinition());
                 try {
                     this.saveOrUpdateRowData(saveEntitys, params);
                     dataSourceTransactionManager.commit(transactionStatus);
+                    successNum++;
+                    // save or update
+                    Object saveFlay = params.get("save");
+                    if (ObjectUtil.isNotNull(saveFlay)) {
+                        addNum++;
+                    } else {
+                        updateNum++;
+                    }
                 } catch (Exception e) {
+                    failNum++;
                     dataSourceTransactionManager.rollback(transactionStatus);
                     validateUtil.recordImportAttrErr(lineNum, RCode.ERROR);
                     logger.error("Asset import roll back the transaction failure", e);
                 }
+            } else {
+                failNum++;
             }
         }
-        // 返回错误信息
-        return validateUtil.getImportErrMsg();
+        //  返回统计信息
+        Map<Object, Object> statMap = Tool.MapUtil.builder()
+                .put("seq", seq)
+                .put("totalNum", handleImportData.size())
+                .put("successNum", successNum)
+                .put("failNum", failNum)
+                .put("addNum", addNum)
+                .put("updateNum", updateNum)
+                .put("failDetail", validateUtil.getImportErrMsg())
+                .build();
+        return statMap;
     }
 
     private List<AssetFieldValue> getFieldsByFieldsStr(String fieldsStr, String seq) {
@@ -2106,7 +2078,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
     private Cabinet validateCabinet(String cabinetName, Integer dcId, Integer defaultCabinetUsize, Map saveEntitys) {
         // 返回机柜信息中包含所属的资产 起始位置 数据
-        List<Cabinet> cabinetList = cabinetDao.getCabinetWithAssetPositionInfo();
+        List<Cabinet> cabinetList = cabinetService.getCabinetWithAssetPositionInfo();
         Cabinet cabinet = new Cabinet();
         boolean flag = false;
         for (Cabinet entity : cabinetList) {
@@ -2205,6 +2177,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
         AssetAsset oldAsset = this.getOne(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getName, asset.getName()));
         if (StrUtil.equals("1", existed) && oldAsset != null) {
+            params.put("update", true);
             // 更新 & 同步
             asset.setId(oldAsset.getId());
             if (asset.getPid() == null || asset.getPid().equals(-1)) {
@@ -2254,6 +2227,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 }
             }
         } else {
+            params.put("save", true);
             this.save(asset);
             // asset panel & info chart
             this.saveAssetInfoPanel(asset);
@@ -2288,20 +2262,18 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         for (AssetAsset asset : list) {
             List<String> tempList = new ArrayList<>();
 
-           tempList.add(asset.getName());
-           tempList.add(asset.getSn());
-           tempList.add(ToolUtil.isEmpty(asset.getParent()) ? "" : asset.getParent().getName());
-           tempList.add(asset.getManageIp());
-           tempList.add(asset.getBrand().getName());
-           tempList.add(asset.getModel().getName());
-           tempList.add(asset.getDc().getName());
-           tempList.add(ToolUtil.isEmpty(asset.getCabinet()) ? "" : asset.getCabinet().getName());
-           tempList.add(ToolUtil.isEmpty(asset.getCabinetStart()) ? "" : String.valueOf(asset.getCabinetStart()));
-           tempList.add(ToolUtil.isEmpty(asset.getCabinetEnd()) ? "" : String.valueOf(asset.getCabinetEnd()));
+            tempList.add(asset.getName());
+            tempList.add(asset.getSn());
+            tempList.add(ToolUtil.isEmpty(asset.getParent()) ? "" : asset.getParent().getName());
+            tempList.add(asset.getManageIp());
+            tempList.add(asset.getBrand().getName());
+            tempList.add(asset.getModel().getName());
+            tempList.add(asset.getDc().getName());
+            tempList.add(ToolUtil.isEmpty(asset.getCabinet()) ? "" : asset.getCabinet().getName());
+            tempList.add(ToolUtil.isEmpty(asset.getCabinetStart()) ? "" : String.valueOf(asset.getCabinetStart()));
+            tempList.add(ToolUtil.isEmpty(asset.getCabinetEnd()) ? "" : String.valueOf(asset.getCabinetEnd()));
             tempList.add(asset.getState().getName());
             tempList.add(asset.getType().getName());
-
-            
             tempList.add(asset.getPurchaseDate());
             if (CollectionUtils.isNotEmpty(asset.getFields())) {
                 String fieldStr = "";
@@ -2312,13 +2284,13 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             } else {
                 tempList.add(StrUtil.EMPTY);
             }
-            
+
             tempList.add(ToolUtil.isEmpty(asset.getAuthProtocolPort()) ? "" : String.valueOf(asset.getAuthProtocolPort()));
             tempList.add(ToolUtil.isEmpty(asset.getAuthType()) ? "" : String.valueOf(asset.getAuthType()));
             tempList.add(ToolUtil.isEmpty(asset.getAuthUsername()) ? "" : asset.getAuthUsername());
-//            row.createCell(17).setCellValue(ToolUtil.isEmpty(asset.getAuthPin()) ? "" : asset.getAuthPin());
-//            row.createCell(18).setCellValue(ToolUtil.isEmpty(asset.getAuthPriKey()) ? "" : asset.getAuthPriKey());
+            // asset.getAuthPin()
             tempList.add("");
+            // asset.getAuthPriKey()
             tempList.add("");
             tempList.add(ToolUtil.isEmpty(asset.getAuthUserTip()) ? "" : asset.getAuthUserTip());
             tempList.add(ToolUtil.isEmpty(asset.getAuthPinTip()) ? "" : asset.getAuthPinTip());
@@ -2331,7 +2303,6 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             tempList.add(snmpCredentialName);
 
             tempList.add(ObjectUtil.defaultIfNull(asset.getClientUser(), ""));
-//            row.createCell(23).setCellValue(asset.getClientPin());
             // client pin
             tempList.add(StrUtil.EMPTY);
             tempList.add(ObjectUtil.defaultIfNull(asset.getClientToken(), ""));
@@ -2342,97 +2313,97 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         return exportDataList;
     }
 
-	@Override
+    @Override
     @Transactional(rollbackFor = Exception.class)
-	public void bulkEdit(Map<String, Object> params) {
-		
-		ValidateUtils.is(params.get("editType")).notNull(RCode.ASSET_EDITTYPE_ISNULL)
-		.and(params.get("ids")).notNull(RCode.ASSET_ID_ISNULL);
-		Integer editType = (Integer) params.get("editType");
-		List<Integer> ids = (List<Integer>) params.get("ids");
-		
-		switch(editType) {
-			// 1 account 2 label 3 state 4 snmp credentials
-			case 1:
-				Integer authType = (Integer) params.get("authType");
-				String authUsername	= (String) params.get("authUsername");
-				String authPin	= (String) params.get("authPin");
-				if(StrUtil.isNotBlank(authPin)) {
-					params.put("authPin",Base64.getEncoder().encodeToString(authPin.getBytes()));
-		        }
-				String authPriKey	= (String) params.get("authPriKey");
-				if(ObjectUtil.equal(authType, 1)) {
-		        	ValidateUtils.is(authUsername).notNull(RCode.ASSET_AUTHUSERNAME_ISNULL)
-		        	.and(authPin).notNull(RCode.ASSET_AUTHPIN_ISNULL);
-		        }else if(ObjectUtil.equal(authType, 2)){
-		        	ValidateUtils.is(authPriKey).notNull(RCode.ASSET_AUTHPRIKEY_ISNULL);
-		        }
-				this.baseMapper.updateAssetStateBatch(ids, params);
-				break;
-			case 2:
-				List<Map<String,Object>> object = (List<Map<String, Object>>) params.get("fields");
-				if(ToolUtil.isEmpty(object)) {
-					break;
-				}
-				// 将标签操作区分 批量删除还是批量新增或者更新
-				List<Integer> removeFieldIds = new ArrayList<Integer>();
-				List<AssetFieldValue> addOrUpdateFields = new ArrayList<AssetFieldValue>();
-				for(Map<String,Object> map : object) {
-					Integer action = (Integer) map.get("action");
-					if(ToolUtil.equals(action, 1)) {
-						removeFieldIds.add((Integer)map.get("id"));
-					}else {
-						List<AssetFieldValue> assetFieldValues = assetFieldValueService.list(new QueryWrapper<AssetFieldValue>().lambda()
-								.eq(AssetFieldValue::getMetaId, map.get("id"))
-								.in(AssetFieldValue::getAssetId,ids));
-						// 分拣出更新数据和新增数据
-						List<Integer> assetIds = assetFieldValues.stream().map(AssetFieldValue::getAssetId).collect(Collectors.toList());
-						List<Integer> addIds = ids.stream().filter(item -> !assetIds.contains(item)).collect(Collectors.toList());
-						
-						for(AssetFieldValue assetFieldValue : assetFieldValues) {
-							assetFieldValue.setValue((String)map.get("value"));
-							addOrUpdateFields.add(assetFieldValue);
-						}
-						
-						for(Integer id : addIds) {
-							AssetFieldValue data  = new AssetFieldValue();
-							data.setAssetId(id);
-							data.setMetaId((Integer)map.get("id"));
-							data.setValue((String)map.get("value"));
-							addOrUpdateFields.add(data);
-						}
-					}
-				}
-				
-				if(ToolUtil.isNotEmpty(removeFieldIds)) {
-					assetFieldValueService.remove(new QueryWrapper<AssetFieldValue>()
-							.lambda().in(AssetFieldValue::getMetaId, removeFieldIds)
-							.in(AssetFieldValue::getAssetId, ids));
-				}
-				
-				if(ToolUtil.isNotEmpty(addOrUpdateFields)) {
-					assetFieldValueService.saveOrUpdateBatch(addOrUpdateFields);
-				}
-				break;
-			case 3:
-				ValidateUtils.is(params.get("stateId")).notNull(RCode.ASSET_STATE_ID_ISNULL);
-				this.baseMapper.updateAssetStateBatch(ids, params);
-				break;
-			case 4:
-				ValidateUtils.is(params.get("snmpCredentialId")).notNull(RCode.SNMP_CREDENTIAL_ID_ISNULL);
-				this.baseMapper.updateAssetStateBatch(ids, params);
-				break;
-			default:
-				break;
-		}
-	}
+    public void bulkEdit(Map<String, Object> params) {
+        ValidateUtils.is(params.get("editType")).notNull(RCode.ASSET_EDITTYPE_ISNULL)
+                .and(params.get("ids")).notNull(RCode.ASSET_ID_ISNULL);
+        Integer editType = (Integer) params.get("editType");
+        List<Integer> ids = (List<Integer>) params.get("ids");
 
-	public AssetAsset getAssetByIP(String ip) {
-		if(Tool.StrUtil.isBlank(ip)) {
-			return null;
-		}
-		return this.getOne(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getManageIp, ip));
-	}
+        switch (editType) {
+            // 1 account 2 label 3 state 4 snmp credentials
+            case 1:
+                Integer authType = (Integer) params.get("authType");
+                String authUsername = (String) params.get("authUsername");
+                String authPin = (String) params.get("authPin");
+                if (StrUtil.isNotBlank(authPin)) {
+                    params.put("authPin", Base64.getEncoder().encodeToString(authPin.getBytes()));
+                }
+                String authPriKey = (String) params.get("authPriKey");
+                if (ObjectUtil.equal(authType, 1)) {
+                    ValidateUtils.is(authUsername).notNull(RCode.ASSET_AUTHUSERNAME_ISNULL)
+                            .and(authPin).notNull(RCode.ASSET_AUTHPIN_ISNULL);
+                } else if (ObjectUtil.equal(authType, 2)) {
+                    ValidateUtils.is(authPriKey).notNull(RCode.ASSET_AUTHPRIKEY_ISNULL);
+                }
+                this.baseMapper.updateAssetStateBatch(ids, params);
+                break;
+            case 2:
+                List<Map<String, Object>> object = (List<Map<String, Object>>) params.get("fields");
+                if (ToolUtil.isEmpty(object)) {
+                    break;
+                }
+                // 将标签操作区分 批量删除还是批量新增或者更新
+                List<Integer> removeFieldIds = new ArrayList<Integer>();
+                List<AssetFieldValue> addOrUpdateFields = new ArrayList<AssetFieldValue>();
+                for (Map<String, Object> map : object) {
+                    Integer action = (Integer) map.get("action");
+                    if (ToolUtil.equals(action, 1)) {
+                        removeFieldIds.add((Integer) map.get("id"));
+                    } else {
+                        List<AssetFieldValue> assetFieldValues = assetFieldValueService.list(new QueryWrapper<AssetFieldValue>().lambda()
+                                .eq(AssetFieldValue::getMetaId, map.get("id"))
+                                .in(AssetFieldValue::getAssetId, ids));
+                        // 分拣出更新数据和新增数据
+                        List<Integer> assetIds = assetFieldValues.stream().map(AssetFieldValue::getAssetId).collect(Collectors.toList());
+                        List<Integer> addIds = ids.stream().filter(item -> !assetIds.contains(item)).collect(Collectors.toList());
+
+                        for (AssetFieldValue assetFieldValue : assetFieldValues) {
+                            assetFieldValue.setValue((String) map.get("value"));
+                            addOrUpdateFields.add(assetFieldValue);
+                        }
+
+                        for (Integer id : addIds) {
+                            AssetFieldValue data = new AssetFieldValue();
+                            data.setAssetId(id);
+                            data.setMetaId((Integer) map.get("id"));
+                            data.setValue((String) map.get("value"));
+                            addOrUpdateFields.add(data);
+                        }
+                    }
+                }
+
+                if (ToolUtil.isNotEmpty(removeFieldIds)) {
+                    assetFieldValueService.remove(new QueryWrapper<AssetFieldValue>()
+                            .lambda().in(AssetFieldValue::getMetaId, removeFieldIds)
+                            .in(AssetFieldValue::getAssetId, ids));
+                }
+
+                if (ToolUtil.isNotEmpty(addOrUpdateFields)) {
+                    assetFieldValueService.saveOrUpdateBatch(addOrUpdateFields);
+                }
+                break;
+            case 3:
+                ValidateUtils.is(params.get("stateId")).notNull(RCode.ASSET_STATE_ID_ISNULL);
+                this.baseMapper.updateAssetStateBatch(ids, params);
+                break;
+            case 4:
+                ValidateUtils.is(params.get("snmpCredentialId")).notNull(RCode.SNMP_CREDENTIAL_ID_ISNULL);
+                this.baseMapper.updateAssetStateBatch(ids, params);
+                break;
+            default:
+                break;
+        }
+    }
+
+    @Override
+    public AssetAsset getAssetByIP(String ip) {
+        if (Tool.StrUtil.isBlank(ip)) {
+            return null;
+        }
+        return this.getOne(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getManageIp, ip));
+    }
 
     @Override
     public List<MonitorEndpoint> getEndpointListByAssetId(Integer assetId) {
@@ -2445,7 +2416,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     public List<MonitorModule> getModuleListByAssetId(Integer assetId) {
         ValidateUtils.is(assetId).notNull(RCode.ASSET_ID_ISNULL);
         List<MonitorEndpoint> endpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getAssetId, assetId));
-        if(Tool.CollectionUtil.isEmpty(endpointList)) return Collections.emptyList();
+        if (Tool.CollectionUtil.isEmpty(endpointList)) return Collections.emptyList();
 
         List<Integer> moduleIds = endpointList.stream().map(MonitorEndpoint::getModuleId).distinct().collect(Collectors.toList());
         List<MonitorModule> moduleList = moduleService.list(new LambdaQueryWrapper<MonitorModule>().in(MonitorModule::getId, moduleIds));
@@ -2456,7 +2427,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     public List<MonitorProject> getProjectListByAssetId(Integer assetId) {
         ValidateUtils.is(assetId).notNull(RCode.ASSET_ID_ISNULL);
         List<MonitorEndpoint> endpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getAssetId, assetId));
-        if(Tool.CollectionUtil.isEmpty(endpointList)) return Collections.emptyList();
+        if (Tool.CollectionUtil.isEmpty(endpointList)) return Collections.emptyList();
 
         List<Integer> moduleIds = endpointList.stream().map(MonitorEndpoint::getModuleId).distinct().collect(Collectors.toList());
         List<MonitorModule> moduleList = moduleService.list(new LambdaQueryWrapper<MonitorModule>().in(MonitorModule::getId, moduleIds));
@@ -2468,7 +2439,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
     @Override
     public List<AssetAsset> getTsgAssetListbyModel() {
-        List<AssetAsset> tsgAssetList = assetDao.getTsgAssetListbyModel();
+        List<AssetAsset> tsgAssetList = this.baseMapper.getTsgAssetListbyModel();
         return tsgAssetList;
     }
 }

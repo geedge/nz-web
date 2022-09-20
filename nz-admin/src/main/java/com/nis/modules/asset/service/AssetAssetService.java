@@ -41,8 +41,6 @@ public interface AssetAssetService extends IService<AssetAsset> {
      */
     List<Map> deleteAsset(Integer force, Integer... ids);
 
-//    Map alertStatByAsset(Integer assetId);
-
     Map endpointStatByAsset(Integer id);
 
     Map featureStatByAsset(Integer assetId);
