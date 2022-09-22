@@ -221,7 +221,7 @@
 		<repository>
 			<id>nexus</id>
 			<name>Team Nexus Repository</name>
-			<url>http://192.168.40.125:8099/content/groups/public/</url>
+			<url>http://192.168.40.153:8099/content/groups/public/</url>
 		</repository>
 		<repository>
 			<id>public</id>
@@ -251,7 +251,7 @@
 		<pluginRepository>
 			<id>nexus</id>
 			<name>Team Nexus Repository</name>
-			<url>http://192.168.40.125:8099/content/groups/public/</url>
+			<url>http://192.168.40.153:8099/content/groups/public/</url>
 		</pluginRepository>
 		<pluginRepository>
 			<id>public</id>
