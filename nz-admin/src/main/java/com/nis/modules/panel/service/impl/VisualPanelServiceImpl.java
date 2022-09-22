@@ -798,7 +798,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                             JSONObject jsonObject = null;
                             try {
                                 if(StrUtil.equals("metrics",datasource)){
-                                    jsonObject = promApiService.query_range(expr, start, end, step, chartParam.get("nullType").toString(), null);
+                                    jsonObject = promApiService.query_range(expr, start, end, step, ToolUtil.toStr(chartParam.get("nullType"), null), null);
                                 } else if(StrUtil.equals("logs",datasource)){
                                     jsonObject = lokiApiService.query_range(expr, start, end, limit, step, null, "backward", "1", null);
                                 }
