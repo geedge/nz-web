@@ -290,6 +290,8 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 		AlertMessageReceiveDTO dto = new AlertMessageReceiveDTO();
 		LinkedHashMap alertLabels = new LinkedHashMap(labels);
 		alertLabels.put("alertname", alertRuleEntity.getId().toString());
+		alertLabels.put("rule_id", alertRuleEntity.getId().toString());
+		alertLabels.put("rule_name", alertRuleEntity.getName());
 		// 添加label
 		String ruleType = alertRuleEntity.getType() == 1 ? "metrics" : "logs";
 		alertLabels.put("rule_type", ruleType);

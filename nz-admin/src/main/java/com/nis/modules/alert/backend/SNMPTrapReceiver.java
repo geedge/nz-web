@@ -274,6 +274,8 @@ public class SNMPTrapReceiver implements CommandResponder,ApplicationRunner {
 			labels.put("source", source);
 		}
 		labels.put("alertname", rule.getId().toString());
+		labels.put("rule_id", rule.getId().toString());
+		labels.put("rule_name", rule.getName());
 		labels.put("oid", trapOID);
 		
 		dto.setStartsAt(Tool.AlertUtil.formatMessageDate(trap.getTimestamp()));
