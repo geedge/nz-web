@@ -101,8 +101,7 @@ dev_build:
     - cd ./nz-admin/target
     - go build xjar.go
     - chmod +x xjar
-    - "git log -100 --pretty=format:'%ad : %s' >> git-log.html"
-    - tar -zcvf $FILE_NAME xjar nz-admin.xjar git-log.html
+    - tar -zcvf $FILE_NAME xjar nz-admin.xjar
     # 将 文件 上传到 minio
     - mc alias set nz $MINIO_HOST $MINIO_USER $MINIO_PWD
     - mc cp $FILE_NAME nz/ci-cd/nz-web/$FILE_NAME
