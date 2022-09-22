@@ -47,5 +47,4 @@ public interface MonitorModuleService extends IService<MonitorModule> {
 
     String queryAssetMoudules(Integer assetId);
 
-    void deleteModuleChartTemps(List<Integer> chartIdList);
 }

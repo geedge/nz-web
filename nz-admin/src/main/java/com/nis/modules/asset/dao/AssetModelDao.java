@@ -27,6 +27,4 @@ public interface AssetModelDao extends BaseMapper<AssetModel> {
     List<MetricsDto> nzAssetNumsMetric();
 
     void insertModel(@Param("model") AssetModel assetModel);
-
-    void deleteModelChartTemps(List<Integer> chartIdList);
 }

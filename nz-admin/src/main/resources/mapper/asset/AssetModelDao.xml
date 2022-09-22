@@ -110,16 +110,4 @@
         VALUES
         (#{model.id}, #{model.brandId}, #{model.name}, #{model.remark},#{model.seq}, #{model.usize}, #{model.chartIds},#{model.typeId},#{model.sysObjectId});
     </insert>
-
-    <update id="deleteModelChartTemps">
-        UPDATE asset_model SET chart_ids =
-        <foreach collection="list" item="item" index="index" open="TRIM(BOTH ',' FROM " separator="(" close="(">
-            REPLACE
-        </foreach>
-        CONCAT(',',chart_ids,',')
-        <foreach collection="list" item="item" index="index" open="," separator=",',')," close=",','))">
-            CONCAT(',',#{item},',')
-        </foreach>
-        WHERE chart_ids != ''
-    </update>
 </mapper>

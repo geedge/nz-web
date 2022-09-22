@@ -1001,6 +1001,4 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
         return this.baseMapper.queryAssetMoudules(assetId);
     }
 
-    @Override
-    public void deleteModuleChartTemps(List<Integer> chartIdList) { monitorModuleDao.deleteModuleChartTemps(chartIdList); }
 }

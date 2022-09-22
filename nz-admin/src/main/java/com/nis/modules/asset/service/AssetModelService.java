@@ -42,5 +42,4 @@ public interface AssetModelService extends IService<AssetModel> {
 
     void cancelImport(String seq);
 
-    void deleteModelChartTemps(List<Integer> asList);
 }

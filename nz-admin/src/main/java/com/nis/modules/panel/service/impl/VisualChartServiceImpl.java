@@ -522,9 +522,19 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		List<Integer> idList = new ArrayList<>(Arrays.asList(ids));
 
 		// 删除 Endpoint modules 引用的 chart templates
-		monitorModuleService.deleteModuleChartTemps(idList);
+		List<MonitorModule> monitorModuleList = monitorModuleService.list(new QueryWrapper<MonitorModule>().lambda().isNotNull(MonitorModule::getChartIds).ne(MonitorModule::getChartIds, ""));
+		for (MonitorModule monitorModule : monitorModuleList) {
+			monitorModule.setChartIds(this.delIds(monitorModule.getChartIds(), idList));
+		}
+		if(Tool.CollUtil.isNotEmpty(monitorModuleList))
+			monitorModuleService.saveOrUpdateBatch(monitorModuleList);
 		// 删除 Asset models 引用的 chart templates
-		assetModelService.deleteModelChartTemps(idList);
+		List<AssetModel> assetModelList = assetModelService.list(new QueryWrapper<AssetModel>().lambda().isNotNull(AssetModel::getChartIds).ne(AssetModel::getChartIds, ""));
+		for (AssetModel assetModel : assetModelList) {
+			assetModel.setChartIds(this.delIds(assetModel.getChartIds(), idList));
+		}
+		if(Tool.CollUtil.isNotEmpty(assetModelList))
+			assetModelService.saveOrUpdateBatch(assetModelList);
 
 		// 如果删除 ids 中 type 为 group ，则补充 group 包含的 chart ids
 		List<VisualChart> childrenCharts = this.list(new LambdaQueryWrapper<VisualChart>().in(VisualChart::getGroupId, Arrays.asList(ids)));
@@ -538,6 +548,16 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 
         // 删除char element
         chartElementService.delElementByChartIds(idList);
+	}
+
+	private String delIds(String chartIds, List<Integer> chartIdList){
+		String str = "";
+		for (String chartId : chartIds.split(",")) {
+			if(!chartIdList.contains(Integer.valueOf(chartId))){
+				str += "," + chartId;
+			}
+		}
+		return StrUtil.isBlank(str) ? str : str.substring(1);
 	}
 	
 	@Override

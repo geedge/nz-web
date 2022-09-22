@@ -584,7 +584,4 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
         brandService.remove(new LambdaQueryWrapper<AssetBrand>().eq(AssetBrand::getSeq, seq));
     }
 
-    @Override
-    public void deleteModelChartTemps(List<Integer> chartIdList) { assetModelDao.deleteModelChartTemps(chartIdList); }
-
 }
