@@ -1,19 +1,46 @@
 package com.nis.modules.asset.service.impl;
 
-import cn.hutool.core.util.BooleanUtil;
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import java.io.IOException;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServletResponse;
+
+import org.snmp4j.util.SimpleOIDTextFormat;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.*;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.ImportValidateUtil;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.Query;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.asset.dao.AssetAssetDao;
 import com.nis.modules.asset.dao.AssetModelDao;
-import com.nis.modules.asset.entity.*;
+import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.asset.entity.AssetBrand;
+import com.nis.modules.asset.entity.AssetModel;
+import com.nis.modules.asset.entity.AssetModelImportEnum;
+import com.nis.modules.asset.entity.AssetTypeConf;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetBrandService;
 import com.nis.modules.asset.service.AssetModelService;
@@ -27,19 +54,11 @@ import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-import com.sun.jmx.snmp.SnmpOid;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.DefaultTransactionDefinition;
-import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
+import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 
 /**
  * 资产型号 service 实现类
@@ -194,10 +213,10 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
         if (StrUtil.isNotEmpty(model.getSysObjectId())) {
             // format
             try {
-                new SnmpOid(model.getSysObjectId());
-            } catch (IllegalArgumentException e) {
-                throw new NZException(RCode.ASSET_MODEL_OID_INCORRECT);
-            }
+            	SimpleOIDTextFormat.parseOID(model.getSysObjectId());
+            } catch (ParseException e) {
+            	throw new NZException(RCode.ASSET_MODEL_OID_INCORRECT);
+			}
 
             // only
             List<AssetModel> tmplList = this.list(new QueryWrapper<AssetModel>().lambda().eq(AssetModel::getSysObjectId, model.getSysObjectId()));
