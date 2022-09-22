@@ -1,17 +1,18 @@
 package com.nis.common.utils;
 
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.util.*;
+import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.ReUtil;
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
-import com.nis.modules.ipam.entity.IpamSubnet;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysI18nService;
-import com.sun.jmx.snmp.SnmpOid;
 import lombok.Builder;
 import lombok.Data;
+import org.snmp4j.util.SimpleOIDTextFormat;
 
-import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -243,18 +244,15 @@ public class ImportValidateUtil {
     }
 
     /**
-     *
      * 校验 SNMP OID 是否符合规范
      */
-    public SnmpOid validateSnmpOID(String oid, int lineNum, int headerIndex) {
+    public void validateSnmpOID(String oid, int lineNum, int headerIndex) {
         try {
-            SnmpOid snmpOid = new SnmpOid(oid);
-            return snmpOid;
-        } catch (IllegalArgumentException e) {
+            SimpleOIDTextFormat.parseOID(oid);
+        } catch (ParseException e) {
             String header = headerInfos.get(headerIndex);
             this.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(header));
         }
-        return null;
     }
 
     /**
