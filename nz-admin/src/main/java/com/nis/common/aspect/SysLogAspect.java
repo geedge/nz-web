@@ -38,7 +38,9 @@ import java.util.*;
 @Aspect
 @Component
 public class SysLogAspect {
-	private static final Log logger = Log.get();
+
+	private static final Log log = Log.get();
+
 	@Autowired
 	private SysLogService sysLogService;
 
@@ -73,7 +75,11 @@ public class SysLogAspect {
 		long time = System.currentTimeMillis() - beginTime;
 
 		// 保存日志
-		saveSysLog(point, time, result, currentLoginUser, paramResult);
+		try {
+			saveSysLog(point, time, result, currentLoginUser, paramResult);
+		} catch (Exception e) {
+			log.error(e);
+		}
 
 		return result;
 	}
@@ -86,80 +92,83 @@ public class SysLogAspect {
 	 */
 	@AfterThrowing(pointcut = "logPointCut()", throwing = "e")
 	public void saveExceptionLog(JoinPoint joinPoint, Throwable e) {
-		R r = new R();
-		if (e instanceof NZException) {
-			r = R.error(((NZException) e).getCode(), ((NZException) e).getMsg());
-		} else {
-			r = R.error(999, e.getMessage());
-		}
-
-		MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-		Method method = signature.getMethod();
-
-		SysLogEntity sysLog = new SysLogEntity();
-		SysLog syslog = method.getAnnotation(SysLog.class);
-
-		String operationType = syslog.operation().getValue();
-
-		sysLog.setOperation(operationType);
-		sysLog.setType(syslog.type().getValue());
-		sysLog.setResponse(JSON.toJSONString(r));
-		sysLog.setException(Tool.StrUtil.utf8Str(r.get("msg")));
-		sysLog.setTime(0L);
-
-		// 获取request
-		HttpServletRequest request = HttpContextUtils.getHttpServletRequest();
-		// 设置IP地址
-		sysLog.setIp(IPUtils.getIpAddr(request));
-		// 请求的方法名
-		String className = joinPoint.getTarget().getClass().getName();
-		String methodName = signature.getName();
-		sysLog.setMethod(className + "." + methodName + "()");
-
-		// 请求的参数
-		Object[] args = joinPoint.getArgs();
-		List<Object> params = this.getRecordParams(args);
-
-		// 获取请求参数名
-		String oepraId = "";
-		if ("update".equals(operationType)) {
-			oepraId = getOpId(params);
-		}
-		sysLog.setOperaId(oepraId);
-
-		// 处理参数记录
-		String paramResult = this.handleArgs(syslog, args, ShiroUtils.getUserEntity());
-		paramResult = this.handleLogParam(request.getRequestURI(), paramResult);
-		if (paramResult.getBytes().length > Constant.MYSQL_TEXT_MAXLENGTH) {
-			paramResult = StringUtils.cutString(paramResult, Constant.MYSQL_TEXT_MAXLENGTH);
-		}
-		sysLog.setParams(paramResult);
-
-		// 登录出现异常时
-		if ("login".equals(operationType)) {
-			sysLog.setUserId(null);
-			Map map = gson.fromJson(gson.toJson(params.get(0)), Map.class);
-			map.remove("pin");
-			String logParams = gson.toJson(map);
-			logParams = ToolUtil.isEmpty(logParams) ? "" : logParams;
-			if (logParams.getBytes().length > Constant.MYSQL_TEXT_MAXLENGTH) {
-				logParams = StringUtils.cutString(logParams, Constant.MYSQL_TEXT_MAXLENGTH);
+		try {
+			R r = new R();
+			if (e instanceof NZException) {
+				r = R.error(((NZException) e).getCode(), ((NZException) e).getMsg());
+			} else {
+				r = R.error(999, e.getMessage());
 			}
-			sysLog.setParams(logParams);
-		} else {
-			Object principal = SecurityUtils.getSubject().getPrincipal();
-			if (principal != null) {
-				Long userId = ((SysUserEntity) principal).getId();
-				sysLog.setUserId(userId == null ? null : userId.intValue());
-				sysLog.setApiKeyId(((SysUserEntity) principal).getApiKeyId());
+
+			MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+			Method method = signature.getMethod();
+
+			SysLogEntity sysLog = new SysLogEntity();
+			SysLog syslog = method.getAnnotation(SysLog.class);
+
+			String operationType = syslog.operation().getValue();
+
+			sysLog.setOperation(operationType);
+			sysLog.setType(syslog.type().getValue());
+			sysLog.setResponse(JSON.toJSONString(r));
+			sysLog.setException(Tool.StrUtil.utf8Str(r.get("msg")));
+			sysLog.setTime(0L);
+
+			// 获取request
+			HttpServletRequest request = HttpContextUtils.getHttpServletRequest();
+			// 设置IP地址
+			sysLog.setIp(IPUtils.getIpAddr(request));
+			// 请求的方法名
+			String className = joinPoint.getTarget().getClass().getName();
+			String methodName = signature.getName();
+			sysLog.setMethod(className + "." + methodName + "()");
+
+			// 请求的参数
+			Object[] args = joinPoint.getArgs();
+			List<Object> params = this.getRecordParams(args);
+
+			// 获取请求参数名
+			String oepraId = "";
+			if ("update".equals(operationType)) {
+				oepraId = getOpId(params);
 			}
+			sysLog.setOperaId(oepraId);
+
+			// 处理参数记录
+			String paramResult = this.handleArgs(syslog, args, ShiroUtils.getUserEntity());
+			paramResult = this.handleLogParam(request.getRequestURI(), paramResult);
+			if (paramResult.getBytes().length > Constant.MYSQL_TEXT_MAXLENGTH) {
+				paramResult = StringUtils.cutString(paramResult, Constant.MYSQL_TEXT_MAXLENGTH);
+			}
+			sysLog.setParams(paramResult);
+
+			// 登录出现异常时
+			if ("login".equals(operationType)) {
+				sysLog.setUserId(null);
+				Map map = gson.fromJson(gson.toJson(params.get(0)), Map.class);
+				map.remove("pin");
+				String logParams = gson.toJson(map);
+				logParams = ToolUtil.isEmpty(logParams) ? "" : logParams;
+				if (logParams.getBytes().length > Constant.MYSQL_TEXT_MAXLENGTH) {
+					logParams = StringUtils.cutString(logParams, Constant.MYSQL_TEXT_MAXLENGTH);
+				}
+				sysLog.setParams(logParams);
+			} else {
+				Object principal = SecurityUtils.getSubject().getPrincipal();
+				if (principal != null) {
+					Long userId = ((SysUserEntity) principal).getId();
+					sysLog.setUserId(userId == null ? null : userId.intValue());
+					sysLog.setApiKeyId(((SysUserEntity) principal).getApiKeyId());
+				}
+			}
+
+			sysLog.setCreateDate(new Date());
+			sysLog.setState("fail");
+
+			sysLogService.save(sysLog);
+		} catch (Exception ex) {
+			log.error(ex);
 		}
-
-		sysLog.setCreateDate(new Date());
-		sysLog.setState("fail");
-
-
-		sysLogService.save(sysLog);
 	}
 
 	private void saveSysLog(ProceedingJoinPoint joinPoint, long time, Object result, SysUserEntity currentLoginUser,
@@ -401,30 +410,34 @@ public class SysLogAspect {
 	 * @return
 	 */
 	public String handleArgs(SysLog syslog, Object[] args, SysUserEntity currentLoginUser) {
-		// 需要记录的
-		List<Object> list = this.getRecordParams(args);
+		String result = StrUtil.EMPTY;
+		try {
+			// 需要记录的
+			List<Object> list = this.getRecordParams(args);
 
-		String result = "";
-		String operationType = syslog.operation().getValue();
-		// 退出操作
-		if ("logout".equals(operationType)) {
-			// 补全 params 为 当前退出者
-			Map map = new HashMap();
-			map.put("username", currentLoginUser.getName());
-			result = gson.toJson(map);
-		} else if ("login".equals(operationType)) {
-			String params = gson.toJson(list.get(0));
-			Map map = gson.fromJson(params, Map.class);
-			map.remove("pin");
-			result = gson.toJson(map);
-		} else {
-			if (ToolUtil.isNotEmpty(list)) {
-				Map map = new LinkedHashMap();
-				for (int i = 0; i < list.size(); i++) {
-					map.put("arg" + (i + 1), list.get(i));
-				}
+			String operationType = syslog.operation().getValue();
+			// 退出操作
+			if ("logout".equals(operationType)) {
+				// 补全 params 为 当前退出者
+				Map map = new HashMap(2);
+				map.put("username", currentLoginUser.getName());
 				result = gson.toJson(map);
+			} else if ("login".equals(operationType)) {
+				String params = gson.toJson(list.get(0));
+				Map map = gson.fromJson(params, Map.class);
+				map.remove("pin");
+				result = gson.toJson(map);
+			} else {
+				if (ToolUtil.isNotEmpty(list)) {
+					Map map = new LinkedHashMap();
+					for (int i = 0; i < list.size(); i++) {
+						map.put("arg" + (i + 1), list.get(i));
+					}
+					result = gson.toJson(map);
+				}
 			}
+		} catch (Exception e) {
+			log.error(e);
 		}
 		return result;
 	}
