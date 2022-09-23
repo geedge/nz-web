@@ -24,7 +24,7 @@
     
     <select id="queryPage" resultMap="ipamSubnet">
     	select ipam.*,
-        ip.used as used,
+        IFNULL( ip.used, 0 ) as used,
     	dc.name as dc_name,
         IFNULL( sta.starred, 0 ) AS starred
     	from ipam_subnet ipam left join dc on ipam.dc_id = dc.id
