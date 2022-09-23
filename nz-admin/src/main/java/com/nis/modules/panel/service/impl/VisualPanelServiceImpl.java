@@ -52,7 +52,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-
 @Service("visualPanelService")
 public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPanel> implements VisualPanelService {
 
@@ -262,51 +261,6 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             }
         }
         return resultList;
-    }
-
-    /**
-     * 处理删除后的位置
-     * @param sequentialPanelList      删除之前有序的链表
-     * @param deleteIds                删除的 IDS
-     */
-    @Override
-    public void handlePositionAfterDelete(List<VisualPanel> sequentialPanelList, List<Integer> deleteIds) {
-        // 1. 全删除了
-        if (sequentialPanelList.size() == deleteIds.size()) {
-            return;
-        }
-
-        // 2. 删除之后的剩余元素  有序
-        List<VisualPanel> deletedPanelList = new ArrayList<>();
-        for (VisualPanel obj : sequentialPanelList) {
-            if (!deleteIds.contains(obj.getId())) {
-                deletedPanelList.add(obj);
-            }
-        }
-
-        // 开头 panel
-        VisualPanel firstPanel = deletedPanelList.get(0);
-
-        // 剩余一个
-        if (deletedPanelList.size() == 1) {
-            this.updateById(firstPanel);
-        } else {
-            // 剩余数量大于 1
-            List<VisualPanel> updatePanels = new ArrayList<>();
-
-            // 批量更新
-            VisualPanel tempPanel = null;
-            int size = deletedPanelList.size();
-            for (int i = 0; i < size; i++) {
-                if (i == 0) {
-                    updatePanels.add(firstPanel);
-                } else {
-                    tempPanel = deletedPanelList.get(i);
-                    updatePanels.add(tempPanel);
-                }
-            }
-            this.saveOrUpdateBatch(updatePanels);
-        }
     }
 
     /**
@@ -531,39 +485,6 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         }
 
         this.getBaseMapper().updateWeightBatch(panelList);
-    }
-
-    @Override
-    public List<VisualPanel> getSequentialPanelList(List<VisualPanel> panels) {
-        if (CollectionUtils.isEmpty(panels)) {
-            return new ArrayList<>();
-        }
-        List<VisualPanel> resultList = new ArrayList<>();
-
-        // 按照prev升序排序
-//        panels = panels.stream().sorted(Comparator.comparing(VisualPanel::getPrev)).collect(Collectors.toList());
-
-        Map<Integer, VisualPanel> idAndPanelMap = new HashMap<>();
-        for (VisualPanel panel : panels) {
-            idAndPanelMap.put(panel.getId(), panel);
-        }
-
-        VisualPanel firstPanel = panels.get(0);
-
-        VisualPanel tempPanel = firstPanel;
-        resultList.add(firstPanel);
-        VisualPanel nextPanel = null;
-
-        while (true) {
-//            nextPanel = idAndPanelMap.get(tempPanel.getNext());
-            if (nextPanel != null) {
-                resultList.add(nextPanel);
-                tempPanel = nextPanel;
-            } else {
-                break;
-            }
-        }
-        return resultList;
     }
 
     @Override
@@ -875,7 +796,6 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, formatStr, fileName);
         }
     }
-    
 
 	private String getChartTemplateConfigKeyByType(String type) {
         // 默认 dashboard 类型
@@ -901,7 +821,6 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         }
         return chartTemplateTyep;
     }
-
 
     private List<List<String>> handleAssetEndpointChartExportDataList(List<VisualChart> charts) {
         Map<Integer, String> varTypeIdAndNameMap = new HashMap<>(4);
@@ -1239,7 +1158,6 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                         chartElementService.saveBatch(chartElements);
                     }
                     dataSourceTransactionManager.commit(transactionStatus);
-                    // panelNameAndIdMap.put(panelName, panelId);
                     successNum++;
                 } catch (RuntimeException e) {
                     dataSourceTransactionManager.rollback(transactionStatus);
@@ -1300,9 +1218,6 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 if (ToolUtil.isEmpty(element.getName())) {
                     return RCode.CHARTELEMENT_NAME_ISNULL.getMsg();
                 }
-                /*if (ToolUtil.isEmpty(element.getType())) {
-                    return RCode.CHARTELEMENT_TYPE_ISNULL.getMsg();
-                }*/
             }
         }
         return "";
@@ -1369,7 +1284,6 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         return panelId;
     }
 
-    
     private String validateChartParamForImport(String type, String param, String panelType) {
         switch (type){
             // url
@@ -1765,8 +1679,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             chartList.addAll(this.queryChartsByPanelId(panelId, chartId,params));
         }else if (ToolUtil.isEmpty(panelId)) {
             // 导出所有 dashboard panel
-            List<VisualPanel> panelList = this.list(new QueryWrapper<VisualPanel>().lambda().eq(VisualPanel::getType, Constant.PanelType.DASHBOARD.getValue()).orderByAsc(VisualPanel::getWeight, VisualPanel::getId));
-           // panelList = panelService.getSequentialPanelList(panelList);
+            List<VisualPanel> panelList = this.list(new LambdaQueryWrapper<VisualPanel>()
+                                .eq(VisualPanel::getType, Constant.PanelType.DASHBOARD.getValue())
+                                .orderByAsc(VisualPanel::getWeight, VisualPanel::getId));
             for (VisualPanel panel : panelList) {
             	Map<String, Object> param = new HashMap<String,Object>();
             	param.put("panelType", panelType);

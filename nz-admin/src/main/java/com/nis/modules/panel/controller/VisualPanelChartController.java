@@ -139,7 +139,7 @@ public class VisualPanelChartController {
     @PostMapping(value = {"/syncTmpl"})
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.VISUALCHART)
     @RequiresPermissions({"visual:chart:save"})
-    public R syncTmpl(@RequestBody Map<String,Object> params) {
+    public synchronized R syncTmpl(@RequestBody Map<String,Object> params) {
     	Integer total = visualChartService.syncTmpl(params);
     	return R.ok().putData("total", total);
     }

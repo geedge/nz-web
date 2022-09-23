@@ -21,10 +21,6 @@ public interface VisualPanelService extends IService<VisualPanel> {
 
     void delPanelsAndChartInfoByPanelIds(Set<Integer> visualPanelIds);
 
-    List<VisualPanel> getSequentialPanelList(List<VisualPanel> visualPanels);
-
-    void handlePositionAfterDelete(List<VisualPanel> sequentialVisualPanelanelList, List<Integer> deleteIds);
-
     void saveVisualPanel(VisualPanel visualPanel);
 
     void updateVisualPanel(VisualPanel visualPanel);
