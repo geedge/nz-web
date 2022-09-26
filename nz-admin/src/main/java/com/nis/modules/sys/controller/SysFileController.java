@@ -63,8 +63,8 @@ public class SysFileController {
      * @param uuid
      * @return
      */
-    @PostMapping("/download/{uuid}")
-    @RequiresPermissions({"sysFile:download"})
+    @RequestMapping("/download/{uuid}")
+//    @RequiresPermissions({"sysFile:download"})
     public void sysFileDownload(@PathVariable("uuid") String uuid, HttpServletResponse response) throws IOException {
         sysFileService.sysFileDownload(uuid, response);
     }
