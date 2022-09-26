@@ -125,6 +125,8 @@ public class ShiroConfig {
 		filterMap.put("/sys/appearance","anon"); //系统外观配置查询接口
 		filterMap.put("/ctl/**","anon"); //管理员账号密码重置接口
 		filterMap.put("/ui/**", "anon"); // UI 接口
+		filterMap.put("/file/download/**", "anon"); // 文件下载接口
+		
 		/*
 		 * 自定义 过滤器
 		 */
