@@ -428,6 +428,7 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 		RecordRuleEntity oldRecordRule = this.getOne(new LambdaQueryWrapper<RecordRuleEntity>().eq(RecordRuleEntity::getName, recordRule.getName()));
 		if (StrUtil.equals("1", existed) && oldRecordRule != null) {
 			// update
+			recordRule.setId(oldRecordRule.getId());
 			recordRule.setUid(Integer.parseInt(id.toString()));
 			recordRule.setUts(new Date().getTime());
 			this.updateById(recordRule);
