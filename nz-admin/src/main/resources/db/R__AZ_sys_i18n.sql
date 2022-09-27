@@ -4669,5 +4669,17 @@ INSERT INTO `sys_i18n` VALUES (7393, '641007', 'zh', 'VSYS_TASK_CREATE_ERROR', '
 INSERT INTO `sys_i18n` VALUES (7395, '646008', 'zh', 'VSYS_TASK_NOT_FOUND', 'VSYS任务未找到', '', '2022-09-14 06:09:14', 1);
 INSERT INTO `sys_i18n` VALUES (7397, '641009', 'zh', 'VSYS_TASK_UUID_ISNULL', 'VSYS任务UUID不能为空', '', '2022-09-14 06:09:14', 1);
 INSERT INTO `sys_i18n` VALUES (7399, '641010', 'zh', 'VSYS_ID_ISNULL', 'VSYS ID不能为空', '', '2022-09-14 06:09:14', 1);
+INSERT INTO `sys_i18n` VALUES (7401, 'overall.comments', 'en', 'overall.comments', 'Comments', '', '2022-09-20 08:05:17', 415);
+INSERT INTO `sys_i18n` VALUES (7403, 'overall.comments', 'zh', 'overall.comments', '评论', '', '2022-09-20 08:05:34', 415);
+INSERT INTO `sys_i18n` VALUES (7405, 'overall.addComment', 'en', 'overall.addComment', 'Add comment', '', '2022-09-20 08:07:27', 415);
+INSERT INTO `sys_i18n` VALUES (7407, 'overall.addComment', 'zh', 'overall.addComment', '添加评论', '', '2022-09-20 08:07:44', 415);
+INSERT INTO `sys_i18n` VALUES (7409, 'tip.imgSize', 'en', 'tip.imgSize', 'Upload image size should not exceed 4MB!', '', '2022-09-23 10:00:33', 407);
+INSERT INTO `sys_i18n` VALUES (7411, 'tip.imgSize', 'zh', 'tip.imgSize', '上传图片大小不能超过 4MB!', '', '2022-09-23 10:00:48', 407);
+INSERT INTO `sys_i18n` VALUES (7413, 'config.record.inr', 'en', 'config.record.inr', 'Inr', '', '2022-09-27 06:09:14', 1);
+INSERT INTO `sys_i18n` VALUES (7415, 'config.record.inr', 'zh', 'config.record.inr', '周期', '', '2022-09-27 06:09:14', 1);
+INSERT INTO `sys_i18n` VALUES (7417, 'config.record.inr.comment', 'en', 'config.record.inr.comment', 'Performance Cycle Default: 0, unit: S Example: 10 ', '', '2022-09-27 06:09:14', 1);
+INSERT INTO `sys_i18n` VALUES (7419, 'config.record.inr.comment', 'zh', 'config.record.inr.comment', '执行周期 默认值:0，单位:s 示例: 10', '', '2022-09-27 06:09:14', 1);
+INSERT INTO `sys_i18n` VALUES (7421, 'config.record.labels.comment', 'en', 'config.record.labels.comment', 'Record rule labels Format: json Example: {}', '', '2022-09-27 06:09:14', 1);
+INSERT INTO `sys_i18n` VALUES (7423, 'config.record.labels.comment', 'zh', 'config.record.labels.comment', '记录规则标签 格式：json 事例：{}', '', '2022-09-27 06:09:14', 1);
 
 SET FOREIGN_KEY_CHECKS = 1;

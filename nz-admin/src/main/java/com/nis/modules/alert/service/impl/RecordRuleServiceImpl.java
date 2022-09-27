@@ -1,10 +1,25 @@
 package com.nis.modules.alert.service.impl;
 
+import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.core.util.ObjectUtil;
+import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.nis.common.utils.*;
+import com.nis.modules.alert.entity.AlertNotifyMethod;
+import com.nis.modules.alert.entity.AlertRuleEntity;
+import com.nis.modules.alert.entity.RecordRuleEnum;
+import com.nis.modules.asset.entity.Dc;
+import com.nis.modules.endpoint.entity.MonitorEndpointImportEnum;
+import com.nis.modules.ipam.entity.IpamSubnet;
+import com.nis.modules.ipam.entity.IpamSubnetEum;
+import com.nis.modules.sys.service.BasicImportAndExportServices;
+import com.nis.modules.sys.service.SysConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
@@ -32,6 +47,9 @@ import com.nis.modules.sys.shiro.ShiroUtils;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.servlet.http.HttpServletResponse;
 
 @Service
 public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRuleEntity> implements RecordRuleService {
@@ -48,6 +66,12 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 
 	@Autowired
 	private RedisTemplate<String, Object> redisTemplate;
+
+	@Autowired
+	private SysConfigService configService;
+
+	@Autowired
+	private BasicImportAndExportServices basicImportAndExportServices;
 
 	/**
 	 * record list max size
@@ -230,4 +254,191 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 			log.warn("trim record_data_cache size : {}", size - maxRecordSize);
 		}
 	}
+
+	@Override
+	public void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException {
+		String sysHeaderJsonStr = configService.getValue(Constant.SYSCONFIG_KEY_RUCORDRULE_IMPORT_HEADER);
+		String fileName = "RecordRuleTemplate";
+		basicImportAndExportServices.getTemplate(sysHeaderJsonStr, format, fileName, response);
+	}
+
+	@Override
+	public void export(HttpServletResponse response, Map<String, Object> params) throws IOException {
+		String maxLine = configService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
+		long exportMaxLine = Integer.parseInt(StrUtil.emptyToDefault(maxLine, "10000"));
+		// 导出最大条数限制
+		Object limit = params.get(Constant.LIMIT) == null ? Constant.PAGESIZE : params.get(Constant.LIMIT);
+		Long pageSize = Long.parseLong(limit.toString());
+		if (pageSize == -1) {
+			// 导出所有直接限制 pageSize
+			params.put(Constant.PAGE, "1");
+			params.put(Constant.LIMIT, Long.toString(exportMaxLine));
+		} else if (pageSize > exportMaxLine) {
+			// 分页超过最大限制 则设置最大限制为 系统配置值，和 pageSize == -1 判断区别在于 pageNo
+			params.put(Constant.LIMIT, Long.toString(exportMaxLine));
+		}
+
+		// 导出查询与列表查询一致
+		PageUtils page = this.list(params);
+		List<RecordRuleEntity> list = (List<RecordRuleEntity>) page.getList();
+
+		List<List<String>> exportDataList = this.handleExportDataList(list);
+
+		String sysHeaderJsonStr = configService.getValue(Constant.SYSCONFIG_KEY_RUCORDRULE_IMPORT_HEADER);
+		String fileName = "RecordRules";
+		String formatStr = params.get("format").toString();
+		basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, formatStr, fileName);
+	}
+
+	private List<List<String>> handleExportDataList(List<RecordRuleEntity> list) {
+		List<List<String>> exportDataList = new ArrayList<>();
+		for (RecordRuleEntity recordRule : list) {
+			List<String> tempList = new ArrayList<>();
+			tempList.add(recordRule.getName());
+			tempList.add(recordRule.getType().toString());
+			tempList.add(recordRule.getExpr());
+			tempList.add(recordRule.getInr().toString());
+			tempList.add(recordRule.getState().toString());
+			tempList.add(recordRule.getLabels());
+			tempList.add(recordRule.getRemark());
+			exportDataList.add(tempList);
+		}
+		return exportDataList;
+	}
+
+	@Override
+	public Map importData(MultipartFile excelFile, Map<String, Object> params) throws IOException {
+
+		String sysHeaderJsonStr = configService.getValue(Constant.SYSCONFIG_KEY_RUCORDRULE_IMPORT_HEADER);
+		Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
+		List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(excelFile, sysHeaderJsonStr);
+
+		String seq = UUID.randomUUID().toString();
+		params.put("seq", seq);
+
+		// 表头信息 国际化之后的
+		List<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
+
+		int totalNum = importDataList.size();
+		List<Map<String, String>> failDetailList = this.saveRulesFromImportDataList(importDataList, headerInfos, params);
+
+		// 从错误信息中获取失败导入行数量
+		int failNum = (int) failDetailList.stream().map(map -> Integer.valueOf(map.get("lineNo"))).distinct().count();
+
+		Map resultMap = new HashMap(8);
+		resultMap.put("seq", seq);
+		resultMap.put("totalNum", totalNum);
+		resultMap.put("successNum", totalNum - failNum);
+		resultMap.put("failNum", failNum);
+		resultMap.put("failDetail", failDetailList);
+		return resultMap;
+	}
+
+	private List<Map<String, String>> saveRulesFromImportDataList(List<Map<Integer, String>> importDataList, List<String> headerInfos, Map<String, Object> params) {
+		// 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
+		String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
+
+		// 创建导入校验对象
+		ImportValidateUtil validateUtil = ImportValidateUtil.builder()
+				.existed(existed).headerInfos(headerInfos)
+				.build();
+		for (int i = 0; i < importDataList.size(); i++) {
+			int lineNum = i + 1;
+			Map<Integer, String> dataMap = importDataList.get(i);
+
+			//name 校验
+			String name = dataMap.get(RecordRuleEnum.NAME.getIndex());
+			validateUtil.validateRequired(name, lineNum, RecordRuleEnum.NAME.getIndex());
+			validateUtil.validateRegex(name, Constant.PROMETHEUS_LABELNAME_EXPRESSION, lineNum, RecordRuleEnum.NAME.getIndex());
+			boolean indexDuplicate = validateUtil.validateIndexDuplicate("record_rule", "name", name, lineNum, RecordRuleEnum.NAME.getIndex());
+			// 索引列重复 & 忽略标识，提示忽略本行
+			if (BooleanUtil.and(indexDuplicate, StrUtil.equals("2", existed))) {
+				validateUtil.ignoreThisRow(lineNum, RecordRuleEnum.NAME.getIndex());
+				continue;
+			}
+
+			//type 校验
+			String type = dataMap.get(RecordRuleEnum.TYPE.getIndex());
+			validateUtil.validateRequired(type, lineNum, RecordRuleEnum.TYPE.getIndex());
+			validateUtil.validateEnumValArr(type, Arrays.asList("1", "2"), lineNum, RecordRuleEnum.TYPE.getIndex());
+
+			//expr
+			String expr = dataMap.get(RecordRuleEnum.EXPR.getIndex());
+			validateUtil.validateRequired(expr, lineNum, RecordRuleEnum.EXPR.getIndex());
+
+			//inr
+			String inr = dataMap.get(RecordRuleEnum.INR.getIndex());
+
+
+			//state
+			String state = dataMap.get(RecordRuleEnum.STATE.getIndex());
+			validateUtil.validateRequired(state, lineNum, RecordRuleEnum.STATE.getIndex());
+			validateUtil.validateEnumValArr(state, Arrays.asList("0", "1"), lineNum, RecordRuleEnum.STATE.getIndex());
+
+			//labels
+			String labels = dataMap.get(RecordRuleEnum.LABELS.getIndex());
+			Map<String, String> label = JSONObject.parseObject(labels, Map.class);
+			if (MapUtil.isNotEmpty(label) && label.size() != 0){
+				for (String key : label.keySet()) {
+					validateUtil.validateRegex(key, Constant.PROMETHEUS_LABELNAME_EXPRESSION, lineNum, RecordRuleEnum.LABELS.getIndex());
+				}
+			}
+
+
+			// 遇到错误是否继续导入，可选值： 0：不继续    1：继续    默认值：1
+			String ignoreError = Tool.ObjectUtil.defaultIfEmpty((String) params.get("ignoreError"), "1");
+			List<Map<String, String>> errMsgForThisLine = validateUtil.getImportErrMsgForThisLine(lineNum);
+			if (BooleanUtil.and(Tool.StrUtil.equals("0", ignoreError), Tool.CollUtil.isNotEmpty(errMsgForThisLine))) {
+				// 结束本次导入，自导入行开始 到结尾数据行，提示错误信息
+				for (int j = i; j < importDataList.size(); j++) {
+					validateUtil.recordImportAttrErr(j + 1, RCode.IMPORT_ERROR_STOP);
+				}
+				break;
+			}
+			if (Tool.CollUtil.isEmpty(errMsgForThisLine)) {
+				String remark = dataMap.get(RecordRuleEnum.REMARK.getIndex());
+
+				RecordRuleEntity recordRule = new RecordRuleEntity();
+				recordRule.setName(name);
+				recordRule.setType(Integer.valueOf(type));
+				recordRule.setExpr(expr);
+				recordRule.setInr(inr.length() == 0 ? 0 : Integer.valueOf(inr));
+				recordRule.setState(Integer.valueOf(state));
+				recordRule.setLabels(labels);
+				recordRule.setRemark(remark);
+				recordRule.setSeq(params.get("seq").toString());
+
+				try {
+					this.saveOrUpdateRowData(recordRule, params);
+				} catch (Exception e) {
+					validateUtil.recordImportAttrErr(lineNum, RCode.ERROR);
+					log.error("record rule import roll back the transaction failure", e);
+				}
+			}
+		}
+		return validateUtil.getImportErrMsg();
+	}
+
+	private void saveOrUpdateRowData(RecordRuleEntity recordRule, Map<String, Object> params) {
+		// 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
+		String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
+
+		Long id = ShiroUtils.getUserEntity().getId();
+
+		RecordRuleEntity oldRecordRule = this.getOne(new LambdaQueryWrapper<RecordRuleEntity>().eq(RecordRuleEntity::getName, recordRule.getName()));
+		if (StrUtil.equals("1", existed) && oldRecordRule != null) {
+			// update
+			recordRule.setUid(Integer.parseInt(id.toString()));
+			recordRule.setUts(new Date().getTime());
+			this.updateById(recordRule);
+		} else {
+			// insert
+			recordRule.setCid(Integer.parseInt(id.toString()));
+			recordRule.setUid(Integer.parseInt(id.toString()));
+			recordRule.setCts(new Date().getTime());
+			recordRule.setUts(new Date().getTime());
+			this.save(recordRule);
+		}
+	}
 }
+

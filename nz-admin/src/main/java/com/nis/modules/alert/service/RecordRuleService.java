@@ -4,7 +4,10 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.protobuf.Types.TimeSeries;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.alert.entity.RecordRuleEntity;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -28,4 +31,10 @@ public interface RecordRuleService extends IService<RecordRuleEntity> {
 	void rightPushRecordToRedis(List<TimeSeries> timeSeriesList);
 
 	void rightPushRecordToRedis(TimeSeries timeSeries);
+
+	void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException;
+
+	void export(HttpServletResponse response, Map<String, Object> params) throws IOException;
+
+	Map importData(MultipartFile excelFile, Map<String, Object> params) throws IOException;
 }

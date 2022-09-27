@@ -1,15 +1,22 @@
 package com.nis.modules.alert.controller;
 
 import com.nis.common.annotation.SysLog;
+import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.entity.RecordRuleEntity;
 import com.nis.modules.alert.entity.RecordRuleEvalLog;
 import com.nis.modules.alert.service.RecordRuleEvalLogService;
 import com.nis.modules.alert.service.RecordRuleService;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -97,6 +104,58 @@ public class RecordRuleController {
         ValidateUtils.is(id).notNull(RCode.RECORD_RULE_ID_ISNULL);
         List<RecordRuleEvalLog> recordRuleEvalLogs = recordRuleEvalLogService.queryListByRuleId(id);
         return R.ok().putData("list",recordRuleEvalLogs);
+    }
+
+
+    /**
+     * 模板
+     * @param
+     * @return
+     */
+    @GetMapping("/template")
+    public void getTemplate(HttpServletResponse response,
+                         @RequestParam(required = false, defaultValue = "en") String language,
+                         @RequestParam(required = false, defaultValue = "1") String format) throws IOException {
+
+        // 校验 LANGUAGE
+        if (!Arrays.asList(Constant.LANGUAGE_VALUES).contains(language)) {
+            throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
+        }
+        // 校验 FORMAT
+        if (!Arrays.asList(Constant.IMPORTFILE_TYPE_INTVALUES).contains(format)) {
+            throw new NZException(RCode.EXCELFILE_TYPE_ERROR);
+        }
+
+        recordRuleService.getTemplateByLanguage(response,format);
+    }
+
+    @GetMapping("/export")
+    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.ALERTRULE)
+    public void export(HttpServletResponse response, @RequestParam Map<String, Object> params) throws IOException {
+        Object format = params.get("format");
+        String formatStr = format == null ? "1" : format.toString();
+        // 校验 FORMAT
+        if (!Arrays.asList(Constant.IMPORTFILE_TYPE_INTVALUES).contains(formatStr)) {
+            throw new NZException(RCode.EXCELFILE_TYPE_ERROR);
+        }
+        params.put("format", formatStr);
+
+        recordRuleService.export(response, params);
+    }
+
+
+    @PostMapping("/import")
+    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.ALERTRULE)
+    @RequiresPermissions({"record:rule:save"})
+    public R importDate(@RequestParam(value = "file") MultipartFile excelFile, HttpServletRequest request, @RequestParam Map<String, Object> params) throws IOException {
+        String language = request.getHeader(Constant.LANGUAGE);
+        ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL);
+        // 校验 LANGUAGE
+        if (!Arrays.asList(Constant.LANGUAGE_VALUES).contains(language)) {
+            throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
+        }
+
+        return R.ok(recordRuleService.importData(excelFile, params));
     }
 
 

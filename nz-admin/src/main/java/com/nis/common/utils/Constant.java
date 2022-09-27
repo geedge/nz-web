@@ -1214,6 +1214,8 @@ public class Constant {
 	public static final String SYSCONFIG_KEY_IPAMIP_EXPORT_HEADER="ipam_ip_export_header";
 
 	public static final String SYSCONFIG_KEY_IPAMIP_IMPORT_HEADER="ipam_ip_import_header";
+
+	public static final String SYSCONFIG_KEY_RUCORDRULE_IMPORT_HEADER="record_rule_import_header";
 	/**
 	 * 告警消息状态
 	 */
