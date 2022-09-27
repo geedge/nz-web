@@ -1,10 +1,13 @@
 package com.nis.modules.vsys.controller;
 
 import cn.hutool.log.Log;
+import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.OperationEnum;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
+import com.nis.common.utils.TypeEnum;
 import com.nis.modules.vsys.entity.VsysAssetRel;
 import com.nis.modules.vsys.entity.VsysTask;
 import com.nis.modules.vsys.service.VsysAssetRelService;
@@ -15,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
-
 
 @RestController
 @RequestMapping("/vsys")
@@ -40,6 +42,7 @@ public class VSYSController {
      * @return
      */
     @PostMapping("/task")
+    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.VSYS)
     public R createTask(@RequestBody VsysTask task) {
         try {
             String taskId = vsysTaskService.createTask(task);
@@ -62,6 +65,7 @@ public class VSYSController {
      * @return
      */
     @GetMapping("/result/{uuid}")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.VSYS)
     public R queryTaskProgress(@PathVariable("uuid") String uuid) {
         ValidateUtils.is(uuid).notNull(RCode.VSYS_TASK_UUID_ISNULL);
 
@@ -79,6 +83,7 @@ public class VSYSController {
      * @return
      */
     @GetMapping("/asset")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.VSYS)
     public R queryAssetVsys(@RequestParam(required = false) Integer vsysId,
                             @RequestParam(required = false) Integer assetId) {
 

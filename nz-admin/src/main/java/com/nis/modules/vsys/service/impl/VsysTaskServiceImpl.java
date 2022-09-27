@@ -82,7 +82,7 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
         for (VsysTask vsysInfo : vsysInfos) {
             Integer type = vsysInfo.getType();
 
-            ValidateUtils.is(vsysInfo.getVsysId()).notNull(RCode.VSYS_ID_ISNULL)
+            ValidateUtils.is(vsysInfo.getId()).notNull(RCode.VSYS_ID_ISNULL)
                     .and(type).notNull(RCode.VSYS_TASK_TYPE_ISNULL);
 
             if (!typeEnumValueList.contains(type)) {
@@ -131,6 +131,9 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
 
         String taskUuid = Tool.StrUtil.uuid();
         for (VsysTask vsysTask : task.getVsysInfos()) {
+            Integer vsysId = vsysTask.getId();
+            vsysTask.setVsysId(vsysId);
+            vsysTask.setId(null);
             vsysTask.setTaskUuid(taskUuid);
             vsysTask.setConcurrency(concurrency);
             vsysTask.setRetry(retry);
