@@ -608,7 +608,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         String snapshotStr = this.genSnapshotByTemplate(panelId, start, end, language, vars);
         // 目前下载名称由前端控制
         // String downFileName = String.format("%s-%s.%s", "panel", panel.getName(), StrUtil.emptyToDefault(format, "html"));
-        ResponseUtil.downloadFile(response, "", snapshotStr.getBytes());
+        ResponseUtil.downloadFile(response, "panel.html", snapshotStr.getBytes());
     }
 
     @Override

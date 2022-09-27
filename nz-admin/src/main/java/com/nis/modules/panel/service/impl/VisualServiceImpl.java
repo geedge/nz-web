@@ -92,7 +92,7 @@ public class VisualServiceImpl implements VisualService {
         String snapshotTemplate = this.replaceSnapshotTemplate(resultMap);
         // 目前下载名称由前端控制
         // String downFileName = String.format("%s-%s.%s", "explore", System.currentTimeMillis(), StrUtil.emptyToDefault(format, "html"));
-        ResponseUtil.downloadFile(response, "", snapshotTemplate.getBytes());
+        ResponseUtil.downloadFile(response, "exploreSnapshot.html", snapshotTemplate.getBytes());
     }
 
     /**
