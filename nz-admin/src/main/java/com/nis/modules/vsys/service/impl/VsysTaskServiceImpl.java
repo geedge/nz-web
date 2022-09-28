@@ -337,8 +337,12 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
                         // 直至重试最后一次，更新状态为 FAILURE，并设置错误消息
                         if (currentExecNum == execNum) {
                             res.setState(VsysConstant.ResultState.FAILURE.getValue());
-                            String msg = Tool.StrUtil.concat(true, (String) sfResult.get("msg"), (String) ruleSetResult.get("msg"), (String) chainResult.get("msg"));
-                            res.setMsg(StrUtil.subWithLength(msg, 0, Constant.MYSQL_TEXT_MAXLENGTH));
+                            String sfErrMsg = (String) sfResult.get("msg");
+                            String ruleSetErrMsg = (String) ruleSetResult.get("msg");
+                            String chainErrMsg = (String) chainResult.get("msg");
+
+                            String msg = this.handleTaskErrorMsg(sfErrMsg, ruleSetErrMsg, chainErrMsg);
+                            res.setMsg(msg);
                             // task progress
                             this.updateTaskProgress(vsysTask.getId(), false, true);
                         }
@@ -369,8 +373,12 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
                         // failure
                         if (currentExecNum == execNum) {
                             res.setState(VsysConstant.ResultState.FAILURE.getValue());
-                            String msg = Tool.StrUtil.concat(true, (String) sfResult.get("msg"), (String) ruleSetResult.get("msg"), (String) chainResult.get("msg"));
-                            res.setMsg(StrUtil.subWithLength(msg, 0, Constant.MYSQL_TEXT_MAXLENGTH));
+                            String sfErrMsg = (String) sfResult.get("msg");
+                            String ruleSetErrMsg = (String) ruleSetResult.get("msg");
+                            String chainErrMsg = (String) chainResult.get("msg");
+
+                            String msg = this.handleTaskErrorMsg(sfErrMsg, ruleSetErrMsg, chainErrMsg);
+                            res.setMsg(msg);
                             // task progress
                             this.updateTaskProgress(vsysTask.getId(), false, true);
                         }
@@ -385,6 +393,26 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
                     .eq(VsysResult::getTaskId, vsysTask.getId())
                     .eq(VsysResult::getAssetId, asset.getId()));
         }
+    }
+
+    /**
+     * 对错误信息进行处理
+     *
+     * @param sfErrMsg
+     * @param ruleSetErrMsg
+     * @param chainErrMsg
+     * @return
+     */
+    private String handleTaskErrorMsg(String sfErrMsg, String ruleSetErrMsg, String chainErrMsg) {
+        sfErrMsg = StrUtil.isNotEmpty(sfErrMsg) ? StrUtil.concat(true, " SF: ", sfErrMsg) : sfErrMsg;
+        ruleSetErrMsg = StrUtil.isNotEmpty(ruleSetErrMsg) ? StrUtil.concat(true, " RuleSet: ", ruleSetErrMsg) : ruleSetErrMsg;
+        chainErrMsg = StrUtil.isNotEmpty(chainErrMsg) ? StrUtil.concat(true, " Chain: ", chainErrMsg) : chainErrMsg;
+
+        String msg = Tool.StrUtil.concat(true, sfErrMsg, ruleSetErrMsg, chainErrMsg);
+
+        // 超长截断
+        String str = StrUtil.subWithLength(msg, 0, Constant.MYSQL_TEXT_MAXLENGTH);
+        return str;
     }
 
     /**
