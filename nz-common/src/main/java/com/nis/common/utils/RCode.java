@@ -835,6 +835,8 @@ public enum RCode {
     VSYS_TASK_NOT_FOUND(646008, "Vsys task not found"),
     VSYS_TASK_UUID_ISNULL(641009, "Vsys task uuid can not be empty"),
     VSYS_ID_ISNULL(641010, "Vsys id can not be empty"),
+    VSYS_ONLY_SUPPORTS_IP_RULE(644011, "Vsys only supports the rules of the type of IP"),
+    VSYS_IP_RULE_CONFIGDUPLICATE(624012, "Vsys ip type rules configuration duplicate"),
 
     /**
      * agent相关

@@ -231,7 +231,7 @@ INSERT INTO `sys_i18n` VALUES (314, 'search.recentSearch', 'en', 'search.recentS
 INSERT INTO `sys_i18n` VALUES (315, 'search.noRecentSearch', 'en', 'search.noRecentSearch', 'No recent search', '历史记录/无搜索记录；', '2022-07-12 09:57:26', 415);
 INSERT INTO `sys_i18n` VALUES (316, 'search.searchTip', 'en', 'search.searchTip', 'Enter to search', '点击或回车执行搜索', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (317, 'system.notification.notification', 'en', 'system.notification.notification', 'Notification methods', '系统配置/通知配置/自定义通知方式/通知方式；', '2022-07-08 14:32:08', 415);
-INSERT INTO `sys_i18n` VALUES (318, 'system.apikey.apiKey', 'en', 'system.apikey.apiKey', 'Api keys', '管理/日志/；', '2022-07-08 14:13:16', 415);
+INSERT INTO `sys_i18n` VALUES (318, 'system.apikey.apiKey', 'en', 'system.apikey.apiKey', 'API keys', '管理/日志/；', '2022-09-27 07:32:44', 409);
 INSERT INTO `sys_i18n` VALUES (320, 'alert.severity', 'en', 'alert.severity', 'Priority', '告警/告警信息/表头等级；\n告警/告警规则/表头等级', '2022-07-21 06:18:50', 1);
 INSERT INTO `sys_i18n` VALUES (321, 'alert.summary', 'en', 'alert.summary', 'Summary', '告警/告警信息/概要；\n告警/告警规则/概要', '2022-07-21 06:18:50', 1);
 INSERT INTO `sys_i18n` VALUES (322, 'alert.P1Rule', 'en', 'alert.P1Rule', 'P1: Critical, alert that can cause business paralysis', '', '2022-07-20 02:16:50', 425);
@@ -663,7 +663,7 @@ INSERT INTO `sys_i18n` VALUES (991, 'config.system.monitor.metrics_storage_s3_ac
 INSERT INTO `sys_i18n` VALUES (993, 'config.system.monitor.metrics_storage_type', 'en', 'config.system.monitor.metrics_storage_type', 'Storage backend', '\n系统配置/个性化配置/保存模式', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (994, 'config.system.monitor.logsTitle', 'en', 'config.system.monitor.logsTitle', 'Logs configuration', '\n系统配置/个性化配置/日志配置', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (996, 'config.system.monitor.logs_query_range_default_limit', 'en', 'config.system.monitor.logs_query_range_default_limit', 'Query line limit', '\n系统配置/个性化配置\n', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (997, 'config.system.terminal.localRetention', 'en', 'config.system.terminal.localRetention', 'Local retention', '\n系统配置/个性化配置/本地存储', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (997, 'config.system.terminal.localRetention', 'en', 'config.system.terminal.localRetention', 'Retention days', '\n系统配置/个性化配置/本地存储', '2022-09-27 08:44:16', 409);
 INSERT INTO `sys_i18n` VALUES (998, 'config.system.terminal.terminalNum', 'en', 'config.system.terminal.terminalNum', 'Max terminal number', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (999, 'config.system.terminal.userTip', 'en', 'config.system.terminal.userTip', 'Telnet user prompt', '\n系统配置/个性化配置\n/远程登陆用户名提示', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1000, 'config.system.terminal.terminal', 'en', 'config.system.terminal.terminal', 'Terminal', '\n系统配置/个性化配置\n/终端', '2021-11-02 00:00:00', 1);
@@ -3980,8 +3980,8 @@ INSERT INTO `sys_i18n` VALUES (6197, 'dashboard.title', 'en', 'dashboard.title',
 INSERT INTO `sys_i18n` VALUES (6198, 'dashboard.title', 'zh', 'dashboard.title', '仪表盘', '', '2022-06-16 09:27:06', 381);
 INSERT INTO `sys_i18n` VALUES (6199, '807', 'en', 'UNDO_IMPORT_SEQ_ISNULL', 'Undo import sequence number cannot be empty', '响应消息->撤消导入序列编号不能为空', '2022-06-17 06:20:03', 1);
 INSERT INTO `sys_i18n` VALUES (6200, '807', 'zh', 'UNDO_IMPORT_SEQ_ISNULL', '撤消导入序列编号不能为空', '响应消息->撤消导入序列编号不能为空', '2022-06-17 06:20:27', 1);
-INSERT INTO `sys_i18n` VALUES (6201, 'profile.box.newApiKey', 'en', 'profile.box.newApiKey', 'New api key', '', '2022-06-17 08:32:08', 381);
-INSERT INTO `sys_i18n` VALUES (6202, 'profile.box.newApiKey', 'zh', 'profile.box.newApiKey', '新增 api key', '', '2022-06-17 08:33:17', 381);
+INSERT INTO `sys_i18n` VALUES (6201, 'profile.box.newApiKey', 'en', 'profile.box.newApiKey', 'New API key', '', '2022-09-27 07:33:03', 409);
+INSERT INTO `sys_i18n` VALUES (6202, 'profile.box.newApiKey', 'zh', 'profile.box.newApiKey', '新增API key', '', '2022-09-27 07:33:12', 409);
 INSERT INTO `sys_i18n` VALUES (6209, '231013', 'en', 'ENDPOINT_MODULE_ASSET_ID_ISALLNULL', 'Endpoint id, Module id and Asset id can not be all empty', '响应消息->endpoint配置同步接口', '2022-06-20 05:50:44', 1);
 INSERT INTO `sys_i18n` VALUES (6210, '231013', 'zh', 'ENDPOINT_MODULE_ASSET_ID_ISALLNULL', '端点ID、模块ID和资产ID不能全部为空', '响应消息->endpoint配置同步接口', '2022-08-01 06:03:07', 415);
 INSERT INTO `sys_i18n` VALUES (6211, 'overall.english', 'en', 'overall.english', 'English', '', '2022-06-20 05:54:05', 415);
@@ -4681,5 +4681,9 @@ INSERT INTO `sys_i18n` VALUES (7417, 'config.record.inr.comment', 'en', 'config.
 INSERT INTO `sys_i18n` VALUES (7419, 'config.record.inr.comment', 'zh', 'config.record.inr.comment', '执行周期 默认值:0，单位:s 示例: 10', '', '2022-09-27 06:09:14', 1);
 INSERT INTO `sys_i18n` VALUES (7421, 'config.record.labels.comment', 'en', 'config.record.labels.comment', 'Record rule labels Format: json Example: {}', '', '2022-09-27 06:09:14', 1);
 INSERT INTO `sys_i18n` VALUES (7423, 'config.record.labels.comment', 'zh', 'config.record.labels.comment', '记录规则标签 格式：json 事例：{}', '', '2022-09-27 06:09:14', 1);
+INSERT INTO `sys_i18n` VALUES (7425, '644011', 'en', 'VSYS_ONLY_SUPPORTS_IP_RULE', 'Vsys only supports the rules of the type of IP', '', '2022-09-28 06:35:49', 1);
+INSERT INTO `sys_i18n` VALUES (7427, '644011', 'zh', 'VSYS_ONLY_SUPPORTS_IP_RULE', 'VSYS  仅支持 IP 类型的规则配置', '', '2022-09-28 06:37:00', 1);
+INSERT INTO `sys_i18n` VALUES (7429, '624012', 'en', 'VSYS_IP_RULE_CONFIGDUPLICATE', 'Vsys ip type rules configuration duplicate', '', '2022-09-28 06:36:31', 1);
+INSERT INTO `sys_i18n` VALUES (7431, '624012', 'zh', 'VSYS_IP_RULE_CONFIGDUPLICATE', 'VSYS IP 类型规则配置重复', '', '2022-09-28 06:37:04', 1);
 
 SET FOREIGN_KEY_CHECKS = 1;

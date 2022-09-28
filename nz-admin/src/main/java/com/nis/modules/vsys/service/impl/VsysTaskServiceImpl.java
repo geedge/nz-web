@@ -101,12 +101,48 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
                 }
             }
 
-            // osQuotas not null
-            Map osQuotas = vsysInfo.getOsQuotas();
-            ValidateUtils.is(osQuotas).notNull(RCode.VSYS_TASK_PARAM_OSQUOTAS_ISNULL);
+            // 添加|修改 时校验必填项
+            if (type == 1 || type == 2) {
+                // osQuotas not null
+                Map osQuotas = vsysInfo.getOsQuotas();
+                ValidateUtils.is(osQuotas).notNull(RCode.VSYS_TASK_PARAM_OSQUOTAS_ISNULL);
 
-            // classification Rule
-            // Map classificationRule = vsysInfo.getClassificationRule();
+                // classification Rule
+                Map classificationRule = vsysInfo.getClassificationRule();
+                if (Tool.MapUtil.isNotEmpty(classificationRule)) {
+                    // 当前默认取 andRules[0].orRules 配置
+                    List<Map> orRules = (List<Map>) JSONPath.read(JSONObject.toJSONString(classificationRule), "andRules[0].orRules");
+                    if (Tool.CollUtil.isNotEmpty(orRules)) {
+                        // 当前只处理 IP 类型，存在其他类型配置则报错
+                        List<Map> otherRuleConfigList = orRules.stream().filter(map -> {
+                            String str = ObjectUtil.defaultIfNull(map.get("type"), StrUtil.EMPTY).toString();
+                            return !StrUtil.equalsIgnoreCase("ip", str);
+                        }).collect(Collectors.toList());
+                        // 存在其他类型的配置，提示错误
+                        if (Tool.CollUtil.isNotEmpty(otherRuleConfigList))
+                            throw new NZException(RCode.VSYS_ONLY_SUPPORTS_IP_RULE);
+
+                        // ip rule 配置不能重复
+                        List<Map> ipRuleConfigList = orRules.stream().filter(map -> {
+                            String str = ObjectUtil.defaultIfNull(map.get("type"), StrUtil.EMPTY).toString();
+                            return StrUtil.equalsIgnoreCase("ip", str);
+                        }).collect(Collectors.toList());
+
+                        List<String> distinctConfigList = ipRuleConfigList.stream().map(map -> {
+                            // sip & dip 不能重复
+                            Map ruleMap = (Map) ObjectUtil.defaultIfNull(map.get("rule"), Tool.MapUtil.empty());
+                            String sip = (String) ruleMap.get("sip");
+                            String dip = (String) ruleMap.get("dip");
+                            sip = StrUtil.emptyToDefault(sip, "sip");
+                            dip = StrUtil.emptyToDefault(dip, "dip");
+                            return StrUtil.concat(true, sip, dip);
+                        }).distinct().collect(Collectors.toList());
+
+                        if (ipRuleConfigList.size() != distinctConfigList.size())
+                            throw new NZException(RCode.VSYS_IP_RULE_CONFIGDUPLICATE);
+                    }
+                }
+            }
         }
     }
 
@@ -444,9 +480,11 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
                 Map ruleMap = (Map) ObjectUtil.defaultIfNull(orRules.get(i).get("rule"), Tool.MapUtil.empty());
 
                 Object sip = ruleMap.get("sip");
-                Object dip = ruleMap.get("dip");
-                if (ObjectUtil.isAllNotEmpty(sip, dip)) {
+                if (ObjectUtil.isNotEmpty(sip)) {
                     tm.put("ipv4-sip", sip.toString());
+                }
+                Object dip = ruleMap.get("dip");
+                if (ObjectUtil.isNotEmpty(dip)) {
                     tm.put("ipv4-dip", dip.toString());
                 }
                 ruleConfigListMap.add(tm);
@@ -456,8 +494,11 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
         // ruleset body
         Map<Object, Object> ruleSetMap = Tool.MapUtil.builder()
                 .put("name", ruleSetName)
-                .put("rule", ruleConfigListMap)
                 .build();
+
+        if (Tool.CollUtil.isNotEmpty(ruleConfigListMap)) {
+            ruleSetMap.put("rule", ruleConfigListMap);
+        }
 
         Map<Object, Object> ruleSetBody = Tool.MapUtil.builder()
                 .put("tsg-os-mgnt-srv:ruleset", ruleSetMap)
