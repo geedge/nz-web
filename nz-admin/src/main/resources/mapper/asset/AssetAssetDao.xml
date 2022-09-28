@@ -262,7 +262,7 @@
 			LEFT JOIN (select fv.meta_id,fv.`value` as val,fm.name, fv.asset_id from asset_field_value fv LEFT JOIN asset_field_meta fm on fv.meta_id = fm.id where fm.search = 1 AND fv.value != '' GROUP BY fv.meta_id,fv.`value`,fv.asset_id ) fvm ON asset.id = fvm.asset_id
         <where>
              <if test="params.ids != null">
-                 asset.id in 
+                 asset.id in
 					<foreach item="id" collection="params.ids" separator="," open="(" close=")" index="">
 			       		#{id}
 				     </foreach>
@@ -428,4 +428,15 @@
         WHERE
             model_id = #{modelId}
     </update>
+
+
+    <select id="getTsgAssetListbyModel" resultType="com.nis.modules.asset.entity.AssetAsset">
+        SELECT
+            ass.*
+        FROM
+            asset_asset ass
+            LEFT JOIN asset_model model ON ass.model_id = model.id
+        WHERE
+            model.tsg_appliance = 1
+    </select>
 </mapper>
