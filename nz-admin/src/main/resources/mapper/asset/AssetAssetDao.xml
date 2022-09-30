@@ -241,6 +241,13 @@
                 </if>
             </if>
 
+            <if test="params.innerAssetIdsByComment != null and params.innerAssetIdsByComment.size > 0">
+                AND asset.id IN
+                <foreach collection="params.innerAssetIdsByComment" item="tmplId" index="no" open="(" separator="," close=")">
+                    #{tmplId}
+                </foreach>
+            </if>
+
          </where>
         <if test="params.orderBy == null or params.orderBy == ''">
             ORDER BY asset.id

@@ -158,6 +158,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     @Autowired
     private DataSourceTransactionManager dataSourceTransactionManager;
 
+
+    @Autowired
+    private AssetCommentService assetCommentService;
+
     @SuppressWarnings("unchecked")
     @Override
     public AssetAsset queryAssetInfo(Integer id) {
@@ -336,6 +340,16 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 assetIds.add(-99999);
             }
             params.put("innerAssetIdsByFields", assetIds);
+        }
+
+        if (ToolUtil.isNotEmpty(params.get("comment"))) {
+            Map commentParams = JSONUtil.toBean(JSONUtil.createObj().set("pageSize", "-1").set("content", params.get("comment")), Map.class);
+            List<AssetComment> assetComments = (List<AssetComment>)assetCommentService.queryCommentPage(commentParams).getList();
+            List<Integer> assetIds = assetComments.stream().map(AssetComment::getAssetId).collect(Collectors.toList());
+            if(Tool.CollectionUtil.isEmpty(assetComments)){
+                assetIds.add(-99999);
+            }
+            params.put("innerAssetIdsByComment", assetIds);
         }
     }
 
