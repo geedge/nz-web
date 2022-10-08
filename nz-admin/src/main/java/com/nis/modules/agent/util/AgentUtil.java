@@ -141,7 +141,8 @@ public class AgentUtil {
 	public static ResponseEntity<String> remoteWrite(List<TimeSeries> timeSeriesList) throws UnsupportedEncodingException, IOException, RestClientException, URISyntaxException {
 		Agent server = promApiService.getOneAvaliableGlobalAgent();
 		String pathPrefix = promApiService.getPromApiProxyPathPrefix();
-		String path = Tool.StrUtil.contains(pathPrefix, "/cortex") ? String.format("%s%s", pathPrefix,"/api/v1/push") : String.format("%s%s", pathPrefix,"/api/v1/write");
+		// cortex /api/v1/push 接口，不存在 /prometheus 前缀，此处 replaceAll 处理
+		String path = Tool.StrUtil.contains(pathPrefix, "/cortex") ? String.format("%s%s", pathPrefix.replaceAll("/prometheus", ""),"/api/v1/push") : String.format("%s%s", pathPrefix,"/api/v1/write");
 		String token = server.getToken();
 		// 构造请求路径
 		UrlBuilder urlBuilder = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
