@@ -44,8 +44,10 @@ public class VsysResult implements Serializable {
 
     /**
      * 状态
-     * 0：失败
-     * 1：成功
+     * 0 未执行
+     * 1 执行中
+     * 2 执行失败
+     * 3 执行成功
      */
     private Integer state;
 

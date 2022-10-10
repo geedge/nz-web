@@ -33,14 +33,29 @@ public class VsysAssetRel implements Serializable {
     private Integer vsysId;
 
     /**
+     * 下发状态
+     * 记录下发最终结果
+     * 1：成功  0：失败
+     */
+    private Integer state;
+
+    /**
+     * 是否删除
+     * 1：是 0：否  默认：0
+     */
+    private Integer delFlag;
+
+    /**
      * 时间戳
      */
     private Long uts;
 
-    public VsysAssetRel(Integer id, Integer assetId, Integer vsysId, Long uts) {
+    public VsysAssetRel(Integer id, Integer assetId, Integer vsysId, Integer state, Integer delFlag, Long uts) {
         this.id = id;
         this.assetId = assetId;
         this.vsysId = vsysId;
+        this.state = state;
+        this.delFlag = delFlag;
         this.uts = uts;
     }
 

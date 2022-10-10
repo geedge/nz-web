@@ -20,6 +20,8 @@ public interface VsysAssetRelService extends IService<VsysAssetRel> {
      *
      * @param vsysId
      * @param assetId
+     * @param state
+     * @param delFlag
      */
-    void saveOrUpdateRelObj(Integer vsysId, Integer assetId);
+    void saveOrUpdateRelObj(Integer vsysId, Integer assetId, Integer state, Integer delFlag);
 }

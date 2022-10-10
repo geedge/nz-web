@@ -22,6 +22,25 @@ public class VsysConstant {
      */
     public static final String VSYS_TSG_OS_DEFAULT_PORT = "8447";
 
+    /**
+     * VSYS_ASSET_REL state SUCCESS
+     */
+    public static final Integer REL_SUCCESS = 1;
+
+    /**
+     * VSYS_ASSET_REL state FAIL
+     */
+    public static final Integer REL_FAIL = 0;
+
+    /**
+     * VSYS_ASSET_REL del_flag DELETE
+     */
+    public static final Integer REL_DEL = 1;
+
+    /**
+     * VSYS_ASSET_REL del_flag NOT DELETE
+     */
+    public static final Integer REL_NOT_DEL = 0;
 
     /**
      * vsys result enum

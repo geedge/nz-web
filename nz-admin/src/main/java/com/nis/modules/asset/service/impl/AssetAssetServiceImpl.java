@@ -1,5 +1,6 @@
 package com.nis.modules.asset.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
@@ -48,6 +49,8 @@ import com.nis.modules.sys.service.SnmpCredentialService;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import com.nis.modules.vsys.entity.VsysAssetRel;
+import com.nis.modules.vsys.service.VsysAssetRelService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.shiro.UnavailableSecurityManagerException;
 import org.snmp4j.smi.TimeTicks;
@@ -154,6 +157,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
     @Autowired
     private SysUserStarredService starredService;
+
+    @Autowired
+    private VsysAssetRelService vsysAssetRelService;
 
     @Autowired
     private DataSourceTransactionManager dataSourceTransactionManager;
@@ -837,7 +843,42 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         // 通过 model chart tepmlate 新增 asset charts
         this.saveAssetChartsViaModelChartTmpl(asset);
+
+        // 保存 默认 VSYS 和 Asset 关联关系
+        this.saveOrUpdateDefaultVsysAssetRel(asset.getId(), asset.getModelId());
         return asset.getId();
+    }
+
+    /**
+     * 保存 默认 VSYS 和 Asset 关联关系
+     *
+     * @param assetId
+     * @param modelId
+     */
+    private void saveOrUpdateDefaultVsysAssetRel(Integer assetId, Integer modelId) {
+        //  hasEmpty return
+        if (ObjectUtil.hasEmpty(assetId, modelId)) return;
+
+        AssetModel model = modelService.getById(modelId);
+        if (model.getTsgAppliance() == 1) {
+            // tsg asset
+            // 先查询是否存在对应关系，存在则不添加默认关联关系
+            List<VsysAssetRel> relList = vsysAssetRelService.list(new LambdaQueryWrapper<VsysAssetRel>().eq(VsysAssetRel::getAssetId, assetId));
+            if (CollUtil.isNotEmpty(relList)) return;
+
+            VsysAssetRel rel = new VsysAssetRel();
+            rel.setAssetId(assetId);
+            rel.setVsysId(1);
+            rel.setState(1);
+            rel.setDelFlag(0);
+            rel.setUts(System.currentTimeMillis());
+            vsysAssetRelService.save(rel);
+        } else {
+            // not tsg asset
+            // remove rel
+            vsysAssetRelService.remove(new LambdaQueryWrapper<VsysAssetRel>()
+                    .eq(VsysAssetRel::getAssetId, assetId));
+        }
     }
 
     /**
@@ -976,6 +1017,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         // 保存 asset 关联数据
         this.saveAssetRelData(asset);
+
+        // 保存 默认 VSYS 和 Asset 关联关系
+        this.saveOrUpdateDefaultVsysAssetRel(asset.getId(), asset.getModelId());
 
         // 修改后处理 ping & Talon 数据
         this.afterUpdateAsset(asset.getId());
@@ -1124,6 +1168,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 .eq(SysUserStarredEntity::getType, "asset")
                 .in(SysUserStarredEntity::getTid, removeAssetIdList)
         );
+
+        // vsys asset rel
+        vsysAssetRelService.remove(new LambdaQueryWrapper<VsysAssetRel>()
+                .in(VsysAssetRel::getAssetId, removeAssetIdList));
         return delRelObjectMsgList;
     }
 
@@ -2248,6 +2296,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             // 通过 model chart tepmlate 新增 asset charts
             this.saveAssetChartsViaModelChartTmpl(asset);
         }
+
+        // 保存 默认 VSYS 和 Asset 关联关系
+        this.saveOrUpdateDefaultVsysAssetRel(asset.getId(), asset.getModelId());
 
         // 如果没有指定 meta, 则视为删除，先删后增
         assetFieldValueService.remove(new LambdaQueryWrapper<AssetFieldValue>().eq(AssetFieldValue::getAssetId, asset.getId()));

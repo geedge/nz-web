@@ -329,7 +329,7 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
                         // success
                         res.setState(VsysConstant.ResultState.SUCCESS.getValue());
                         // save|update vsys asset rel
-                        vsysAssetRelService.saveOrUpdateRelObj(vsysTask.getVsysId(), asset.getId());
+                        vsysAssetRelService.saveOrUpdateRelObj(vsysTask.getVsysId(), asset.getId(), VsysConstant.REL_SUCCESS, VsysConstant.REL_NOT_DEL);
                         // task progress
                         this.updateTaskProgress(vsysTask.getId(), true, false);
                     } else {
@@ -343,6 +343,8 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
 
                             String msg = this.handleTaskErrorMsg(sfErrMsg, ruleSetErrMsg, chainErrMsg);
                             res.setMsg(msg);
+                            // save|update vsys asset rel
+                            vsysAssetRelService.saveOrUpdateRelObj(vsysTask.getVsysId(), asset.getId(), VsysConstant.REL_FAIL, VsysConstant.REL_NOT_DEL);
                             // task progress
                             this.updateTaskProgress(vsysTask.getId(), false, true);
                         }
@@ -379,6 +381,8 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
 
                             String msg = this.handleTaskErrorMsg(sfErrMsg, ruleSetErrMsg, chainErrMsg);
                             res.setMsg(msg);
+                            // save|update vsys asset rel
+                            vsysAssetRelService.saveOrUpdateRelObj(vsysTask.getVsysId(), asset.getId(), VsysConstant.REL_FAIL, VsysConstant.REL_DEL);
                             // task progress
                             this.updateTaskProgress(vsysTask.getId(), false, true);
                         }

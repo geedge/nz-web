@@ -49,7 +49,7 @@ public class VsysAssetRelServiceImpl extends ServiceImpl<VsysAssetRelDao, VsysAs
     }
 
     @Override
-    public void saveOrUpdateRelObj(Integer vsysId, Integer assetId) {
+    public void saveOrUpdateRelObj(Integer vsysId, Integer assetId, Integer state, Integer delFlag) {
         // 先查询是否存在对应关系
         VsysAssetRel rel = this.getOne(new LambdaQueryWrapper<VsysAssetRel>()
                 .eq(VsysAssetRel::getVsysId, vsysId)
@@ -57,9 +57,11 @@ public class VsysAssetRelServiceImpl extends ServiceImpl<VsysAssetRelDao, VsysAs
 
         // save
         if (rel == null) {
-            rel = new VsysAssetRel(null, assetId, vsysId, System.currentTimeMillis());
+            rel = new VsysAssetRel(null, assetId, vsysId, state, delFlag, System.currentTimeMillis());
         } else {
-            // update uts
+            // update state delFlag uts
+            rel.setState(state);
+            rel.setDelFlag(delFlag);
             rel.setUts(System.currentTimeMillis());
         }
         this.saveOrUpdate(rel);
