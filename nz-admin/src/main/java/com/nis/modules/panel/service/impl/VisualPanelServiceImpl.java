@@ -151,9 +151,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 	@Value("${snapshot.capacity:10000}")
 	private Integer snapshotCapacity;
 	// snapshot 执行线程池，避免大量请求访问 prometheus 服务
-	private ExecutorService snapshotThreadPool = new ThreadPoolExecutor(0,
-			snapshotConcurrency != null ? snapshotConcurrency : 10, 60L, TimeUnit.SECONDS,
-			new LinkedBlockingQueue<Runnable>(snapshotCapacity), new NamedThreadFactory("SNAPSHOT-", true));
+	private ExecutorService snapshotThreadPool;
 
 	@Override
 	public VisualPanel queryInfo(Integer id) {
@@ -786,7 +784,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 					ok.put("eleIndex", "0");
 					ok.put("chartId", chart.getId());
 					return ok;
-				}, snapshotThreadPool));
+				}, this.getSnapshotThreadPool()));
 			} else {
 				if (Tool.CollUtil.isNotEmpty(chart.getElements())) {
 					Integer eleIndex = 0;
@@ -811,12 +809,12 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 								log.error(e);
 							}
 							return jsonObject;
-						}, snapshotThreadPool));
+						}, this.getSnapshotThreadPool()));
 					}
 				} else {
 					futureList.add(CompletableFuture.supplyAsync(() -> JSONUtil
 							.toBean(JSONUtil.createObj().set("eleIndex", 0).set("chartId", chart.getId()), Map.class),
-							snapshotThreadPool));
+							this.getSnapshotThreadPool()));
 				}
 			}
 		}
@@ -1974,4 +1972,13 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 		list.addAll(importDataList);
 		return list;
 	}
+
+	private synchronized ExecutorService getSnapshotThreadPool() {
+		if (snapshotThreadPool == null) {
+			snapshotThreadPool = new ThreadPoolExecutor(0, snapshotConcurrency, 60L, TimeUnit.SECONDS,
+					new LinkedBlockingQueue<Runnable>(snapshotCapacity), new NamedThreadFactory("SNAPSHOT-", true));
+		}
+		return snapshotThreadPool;
+	}
+
 }
