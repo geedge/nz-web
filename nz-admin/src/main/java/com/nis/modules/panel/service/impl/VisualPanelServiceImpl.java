@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -714,21 +715,21 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
 			// 将chartsData获取任务装入futureList
 			List<CompletableFuture<Map>> futureList = this.recursionChartsData(chartsList, resultMap, varList);
+			Map chartsDataMap = new HashMap();
 			try {
-				Map chartsDataMap = new HashMap();
-				CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0])).get(timeout,
-						TimeUnit.MILLISECONDS);
-				futureList.forEach(future -> {
-					Map<String, Object> result = future.getNow(null);
-					if (Tool.MapUtil.isNotEmpty(result)) {
-						chartsDataMap.put(StrUtil.concat(true, StrUtil.toString(result.get("chartId")), "_",
-								StrUtil.toString(result.get("eleIndex"))), result);
-					}
-				});
-				resultMap.put("chartsData", chartsDataMap);
-			} catch (InterruptedException | ExecutionException | TimeoutException e) {
-				log.error(e);
+				CompletableFuture completableFuture = CompletableFuture.anyOf(futureList.toArray(new CompletableFuture[0]));
+				completableFuture.get(timeout,TimeUnit.MILLISECONDS);
+			} catch (Exception e) {
+				log.error(e, "snapshot query timeout");
 			}
+			futureList.forEach(future -> {
+				Map<String, Object> result = future.getNow(null);
+				if (Tool.MapUtil.isNotEmpty(result)) {
+					chartsDataMap.put(StrUtil.concat(true, StrUtil.toString(result.get("chartId")), "_",
+							StrUtil.toString(result.get("eleIndex"))), result);
+				}
+			});
+			resultMap.put("chartsData", chartsDataMap);
 			resultMap.remove("step");
 			resultMap.put("panel", R.ok(panel));
 			resultMap.put("charts", R.ok(chartPageUtils));
@@ -1983,7 +1984,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 	private synchronized ExecutorService getSnapshotThreadPool() {
 		if (snapshotThreadPool == null) {
 			snapshotThreadPool = new ThreadPoolExecutor(snapshotCorePoolSize, snapshotConcurrency,
-					snapshotKeepAliveTime, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(snapshotCapacity),
+					snapshotKeepAliveTime, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(snapshotCapacity),
 					new NamedThreadFactory("SNAPSHOT-", true));
 		}
 		return snapshotThreadPool;
