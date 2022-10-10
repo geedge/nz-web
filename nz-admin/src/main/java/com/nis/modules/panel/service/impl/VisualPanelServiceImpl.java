@@ -94,8 +94,11 @@ import cn.hutool.log.Log;
 public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPanel> implements VisualPanelService {
 
 	private Log log = Log.get();
-    @Value("${connect.timeout:30000}")
-    private Integer connectTimeout;
+	/**
+	 * dashboard snapshot 查询超时时间，单位：ms
+	 */
+	@Value("${dashboard.snapshot.timeout:300000}")
+	private Integer timeout;
 
     @Autowired
     private VisualChartService visualChartService;
@@ -806,7 +809,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             try {
                 Map chartsDataMap = new HashMap();
                 CompletableFuture.allOf((CompletableFuture<?>[]) futureList.toArray(new CompletableFuture[0]))
-                        .get(connectTimeout, TimeUnit.MILLISECONDS);
+                        .get(timeout, TimeUnit.MILLISECONDS);
                 futureList.forEach(future -> {
                     Map<String, Object> result = future.getNow(null);
                     if (Tool.MapUtil.isNotEmpty(result)) {
