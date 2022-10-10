@@ -1,9 +1,44 @@
 package com.nis.modules.panel.service.impl;
 
-import cn.hutool.core.io.IoUtil;
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.quartz.SchedulerException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
@@ -14,7 +49,15 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.*;
+import com.nis.common.utils.CommonUtils;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.JSONUtil;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.StringUtils;
+import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.agent.service.LokiApiService;
 import com.nis.modules.agent.service.PromApiService;
 import com.nis.modules.asset.service.AssetAssetService;
@@ -33,32 +76,18 @@ import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.entity.Timezone;
-import com.nis.modules.sys.service.*;
+import com.nis.modules.sys.service.BasicImportAndExportServices;
+import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysDictService;
+import com.nis.modules.sys.service.SysUserStarredService;
+import com.nis.modules.sys.service.TimezoneService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-import org.apache.commons.collections.CollectionUtils;
-import org.quartz.SchedulerException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
+import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.thread.NamedThreadFactory;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 
 
 @Service("visualPanelService")
@@ -119,6 +148,14 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
     @Autowired
     private TimezoneService timezoneService;
 
+    @Value("${snapshot.concurrency:10}")
+    private Integer snapshotConcurrency;
+    // snapshot 执行线程池，避免大量请求访问 prometheus 服务
+    private ExecutorService snapshotThreadPool = new ThreadPoolExecutor(0, snapshotConcurrency != null ? snapshotConcurrency: 10,
+            60L, TimeUnit.SECONDS,
+            new SynchronousQueue<Runnable>(),
+            new NamedThreadFactory("SNAPSHOT-", true));
+    
     @Override
     public VisualPanel queryInfo(Integer id) {
     	VisualPanel visualPanel = this.baseMapper.queryInfo(id);
@@ -843,7 +880,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                         ok.put("eleIndex", "0");
                         ok.put("chartId", chart.getId());
                         return ok;
-                    });
+                    }, snapshotThreadPool);
                 }else if(StrUtil.equals("endpointInfo",chart.getType())){
                     mapCompletableFuture = CompletableFuture.supplyAsync(() -> {
                         VisualPanel visualPanel = this.getById(chart.getPanelId());
@@ -852,7 +889,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                         ok.put("eleIndex", "0");
                         ok.put("chartId", chart.getId());
                         return ok;
-                    });
+                    }, snapshotThreadPool);
                 }else{
                     mapCompletableFuture = CompletableFuture.supplyAsync(() -> {
                         JSONObject dataSource = JSONArray.parseArray(JSONObject.toJSONString(chartParam.get("datasource"))).getJSONObject(0);
@@ -867,7 +904,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                         resultMap.put("chartId", chart.getId());
                         resultMap.putAll(statServiceImpl.queryAnalyse(analyseMap));
                         return resultMap;
-                    });
+                    }, snapshotThreadPool);
                 }
                 futureList.add(mapCompletableFuture);
             } else {
@@ -889,9 +926,11 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                                         jsonObject = promApiService.query_range(expr, start, end, step, chartParam.get("nullType").toString(), null);
                                         jsonObject.put("eleIndex", indexStr);
                                         jsonObject.put("chartId", chart.getId());
-                                    }catch (NZException e){}
+                                    }catch (NZException e){
+                                    	log.error(e);
+                                    }
                                     return jsonObject;
-                                }));
+                                }, snapshotThreadPool));
                                 break;
                             case "logs":
                                 String limit = chartParam.get("limit") == null ? "100" : chartParam.get("limit").toString();
@@ -901,9 +940,11 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                                         jsonObject = lokiApiService.query_range(expr, start, end, limit, step, null, "backward", "1", null);
                                         jsonObject.put("eleIndex", indexStr);
                                         jsonObject.put("chartId", chart.getId());
-                                    }catch (NZException e){}
+                                    }catch (NZException e){
+                                    	log.error(e);
+                                    }
                                     return jsonObject;
-                                }));
+                                }, snapshotThreadPool));
                                 break;
                             default:break;
                         }
@@ -914,7 +955,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                         emptyElementsMap.put("eleIndex", 0);
                         emptyElementsMap.put("chartId", chart.getId());
                         return emptyElementsMap;
-                    }));
+                    }, snapshotThreadPool));
                 }
             }
         }
