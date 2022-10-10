@@ -14,7 +14,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -145,10 +148,12 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
 	@Value("${snapshot.concurrency:10}")
 	private Integer snapshotConcurrency;
+	@Value("${snapshot.capacity:10000}")
+	private Integer snapshotCapacity;
 	// snapshot 执行线程池，避免大量请求访问 prometheus 服务
 	private ExecutorService snapshotThreadPool = new ThreadPoolExecutor(0,
 			snapshotConcurrency != null ? snapshotConcurrency : 10, 60L, TimeUnit.SECONDS,
-			new SynchronousQueue<Runnable>(), new NamedThreadFactory("SNAPSHOT-", true));
+			new LinkedBlockingQueue<Runnable>(snapshotCapacity), new NamedThreadFactory("SNAPSHOT-", true));
 
 	@Override
 	public VisualPanel queryInfo(Integer id) {
@@ -706,7 +711,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 			List<CompletableFuture<Map>> futureList = this.recursionChartsData(chartsList, resultMap, varList);
 			try {
 				Map chartsDataMap = new HashMap();
-				CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0])).get(timeout,TimeUnit.MILLISECONDS);
+				CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0])).get(timeout,
+						TimeUnit.MILLISECONDS);
 				futureList.forEach(future -> {
 					Map<String, Object> result = future.getNow(null);
 					if (Tool.MapUtil.isNotEmpty(result)) {
@@ -809,7 +815,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 					}
 				} else {
 					futureList.add(CompletableFuture.supplyAsync(() -> JSONUtil
-							.toBean(JSONUtil.createObj().set("eleIndex", 0).set("chartId", chart.getId()), Map.class), snapshotThreadPool));
+							.toBean(JSONUtil.createObj().set("eleIndex", 0).set("chartId", chart.getId()), Map.class),
+							snapshotThreadPool));
 				}
 			}
 		}
