@@ -844,24 +844,26 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
 			// 将chartsData获取任务装入futureList
 			List<CompletableFuture<Map>> futureList = this.recursionChartsData(chartsList, basicQueryParam, varList);
+			
+			Map chartsDataMap = new HashMap();
 			try {
-				Map chartsDataMap = new HashMap();
-				CompletableFuture.allOf((CompletableFuture<?>[]) futureList.toArray(new CompletableFuture[0]))
-						.get(timeout, TimeUnit.MILLISECONDS);
-				futureList.forEach(future -> {
-					Map<String, Object> result = future.getNow(null);
-					if (Tool.MapUtil.isNotEmpty(result)) {
-						if (Tool.MapUtil.isNotEmpty(result)) { // &&
-																// Tool.StrUtil.equals("success",Tool.StrUtil.toString(result.get("status")))
-							chartsDataMap.put(StrUtil.concat(true, StrUtil.toString(result.get("chartId")), "_",
-									StrUtil.toString(result.get("eleIndex"))), result);
-						}
-					}
-				});
-				resultMap.put("chartsData", chartsDataMap);
-			} catch (InterruptedException | ExecutionException | TimeoutException e) {
-				log.error(e);
+				CompletableFuture completableFuture = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0]));
+				completableFuture.get(timeout,TimeUnit.MILLISECONDS);
+			} catch (Exception e) {
+				log.error(e, "snapshot query timeout");
 			}
+			futureList.forEach(future -> {
+				Map<String, Object> result = future.getNow(null);
+				if (Tool.MapUtil.isNotEmpty(result)) {
+					if (Tool.MapUtil.isNotEmpty(result)) { // &&
+															// Tool.StrUtil.equals("success",Tool.StrUtil.toString(result.get("status")))
+						chartsDataMap.put(StrUtil.concat(true, StrUtil.toString(result.get("chartId")), "_",
+								StrUtil.toString(result.get("eleIndex"))), result);
+					}
+				}
+			});
+			resultMap.put("chartsData", chartsDataMap);
+			
 		}
 		// 读取模板，替换数据
 		BufferedReader reader = null;
