@@ -19,6 +19,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -153,11 +154,12 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
     @Value("${snapshot.concurrency:10}")
     private Integer snapshotConcurrency;
+    
+    @Value("${snapshot.capacity:10000}")
+	private Integer snapshotCapacity;
+
     // snapshot 执行线程池，避免大量请求访问 prometheus 服务
-    private ExecutorService snapshotThreadPool = new ThreadPoolExecutor(0, snapshotConcurrency != null ? snapshotConcurrency: 10,
-            60L, TimeUnit.SECONDS,
-            new SynchronousQueue<Runnable>(),
-            new NamedThreadFactory("SNAPSHOT-", true));
+    private ExecutorService snapshotThreadPool;
     
     @Override
     public VisualPanel queryInfo(Integer id) {
@@ -883,7 +885,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                         ok.put("eleIndex", "0");
                         ok.put("chartId", chart.getId());
                         return ok;
-                    }, snapshotThreadPool);
+                    }, this.getSnapshotThreadPool());
                 }else if(StrUtil.equals("endpointInfo",chart.getType())){
                     mapCompletableFuture = CompletableFuture.supplyAsync(() -> {
                         VisualPanel visualPanel = this.getById(chart.getPanelId());
@@ -892,7 +894,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                         ok.put("eleIndex", "0");
                         ok.put("chartId", chart.getId());
                         return ok;
-                    }, snapshotThreadPool);
+                    }, this.getSnapshotThreadPool());
                 }else{
                     mapCompletableFuture = CompletableFuture.supplyAsync(() -> {
                         JSONObject dataSource = JSONArray.parseArray(JSONObject.toJSONString(chartParam.get("datasource"))).getJSONObject(0);
@@ -907,7 +909,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                         resultMap.put("chartId", chart.getId());
                         resultMap.putAll(statServiceImpl.queryAnalyse(analyseMap));
                         return resultMap;
-                    }, snapshotThreadPool);
+                    }, this.getSnapshotThreadPool());
                 }
                 futureList.add(mapCompletableFuture);
             } else {
@@ -933,7 +935,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                                     	log.error(e);
                                     }
                                     return jsonObject;
-                                }, snapshotThreadPool));
+                                }, this.getSnapshotThreadPool()));
                                 break;
                             case "logs":
                                 String limit = chartParam.get("limit") == null ? "100" : chartParam.get("limit").toString();
@@ -947,7 +949,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                                     	log.error(e);
                                     }
                                     return jsonObject;
-                                }, snapshotThreadPool));
+                                }, this.getSnapshotThreadPool()));
                                 break;
                             default:break;
                         }
@@ -958,7 +960,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                         emptyElementsMap.put("eleIndex", 0);
                         emptyElementsMap.put("chartId", chart.getId());
                         return emptyElementsMap;
-                    }, snapshotThreadPool));
+                    }, this.getSnapshotThreadPool()));
                 }
             }
         }
@@ -2025,4 +2027,12 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         list.addAll(importDataList);
         return list;
     }
+    
+	private synchronized ExecutorService getSnapshotThreadPool() {
+		if (snapshotThreadPool == null) {
+			snapshotThreadPool = new ThreadPoolExecutor(0, snapshotConcurrency, 60L, TimeUnit.SECONDS,
+					new LinkedBlockingQueue<Runnable>(snapshotCapacity), new NamedThreadFactory("SNAPSHOT-", true));
+		}
+		return snapshotThreadPool;
+	}
 }
