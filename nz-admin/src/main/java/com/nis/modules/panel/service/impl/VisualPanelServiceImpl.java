@@ -148,6 +148,13 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
 	@Value("${snapshot.concurrency:10}")
 	private Integer snapshotConcurrency;
+
+	@Value("${snapshot.corePoolSize:5}")
+	private Integer snapshotCorePoolSize;
+
+	@Value("${snapshot.keepAliveTime:30}")
+	private Long snapshotKeepAliveTime;
+
 	@Value("${snapshot.capacity:10000}")
 	private Integer snapshotCapacity;
 	// snapshot 执行线程池，避免大量请求访问 prometheus 服务
@@ -1975,8 +1982,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
 	private synchronized ExecutorService getSnapshotThreadPool() {
 		if (snapshotThreadPool == null) {
-			snapshotThreadPool = new ThreadPoolExecutor(0, snapshotConcurrency, 60L, TimeUnit.SECONDS,
-					new LinkedBlockingQueue<Runnable>(snapshotCapacity), new NamedThreadFactory("SNAPSHOT-", true));
+			snapshotThreadPool = new ThreadPoolExecutor(snapshotCorePoolSize, snapshotConcurrency,
+					snapshotKeepAliveTime, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(snapshotCapacity),
+					new NamedThreadFactory("SNAPSHOT-", true));
 		}
 		return snapshotThreadPool;
 	}
