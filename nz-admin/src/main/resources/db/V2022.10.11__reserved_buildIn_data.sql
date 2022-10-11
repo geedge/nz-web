@@ -136,7 +136,7 @@ WHERE NOT EXISTS (SELECT name FROM `asset_brand` WHERE name = "Generic");
 
 INSERT INTO `asset_brand` (`id`, `name`, `remark`, `seq`)
 SELECT
-1, 'GDNT', '', 'build-in'
+2, 'GDNT', '', 'build-in'
 WHERE NOT EXISTS (SELECT name FROM `asset_brand` WHERE name = "GDNT");
 
 
