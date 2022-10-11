@@ -101,14 +101,9 @@ dev_build:
     - cd ./nz-admin/target
     - go build xjar.go
     - chmod +x xjar
-    - echo "<html>" > ./git-log.html
-    - echo "<head>" >> ./git-log.html
-    - echo '<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">' >> ./git-log.html
-    - echo "</head>" >> ./git-log.html
-    - echo "<pre>" >> ./git-log.html
-    - "git log -100 --pretty=format:'%ad : %s' >> ./git-log.html"
-    - echo "</pre></html>" >> ./git-log.html
-    - tar -zcvf $FILE_NAME xjar nz-admin.xjar git-log.html
+    - echo $(git log -100 --pretty=format:'%ad:%s')
+    - "git log -100 --pretty=format:'%ad : %s' >> git-log.log"
+    - tar -zcvf $FILE_NAME xjar nz-admin.xjar git-log.log
     # 将 文件 上传到 minio
     - mc alias set nz $MINIO_HOST $MINIO_USER $MINIO_PWD
     - mc cp $FILE_NAME nz/ci-cd/nz-web/$FILE_NAME
