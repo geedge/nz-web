@@ -65,6 +65,7 @@
             <result property="id" column="id"/>
             <result property="name" column="name"/>
             <result property="remark" column="remark"/>
+            <result property="tsgAppliance" column="tsg_appliance"/>
         </association>
 
 		<association property="pingInfo" columnPrefix="assp_" javaType="com.nis.modules.asset.entity.AssetPing">
@@ -103,6 +104,7 @@
 			cab.NAME AS c_name,
 			model.id AS m_id,
 			model.NAME AS m_name,
+            model.tsg_appliance AS m_tsg_appliance,
 			assp.STATUS AS assp_status,
 			talon.STATUS AS talon_status,
 			IFNULL( me.endpointNum, 0 ) AS endpointNum,

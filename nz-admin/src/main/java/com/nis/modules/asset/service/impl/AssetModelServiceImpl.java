@@ -231,6 +231,9 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
                 throw new NZException(RCode.ASSET_MODEL_OID_DUPLICATE);
             }
         }
+        //检查tsgAppliance
+        if (model.getTsgAppliance() == null) model.setTsgAppliance(0);
+
     }
 
     @Override

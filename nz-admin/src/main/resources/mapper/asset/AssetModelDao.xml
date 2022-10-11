@@ -14,6 +14,7 @@
         <result property="chartIds" column="chart_ids"/>
         <result property="assetNum" column="assetNum"/>
         <result property="starred" column="starred"/>
+        <result property="tsgAppliance" column="tsg_appliance"/>
 
         <association property="brand" columnPrefix="b_" javaType="com.nis.modules.asset.entity.AssetBrand">
             <id property="id" column="id"/>
