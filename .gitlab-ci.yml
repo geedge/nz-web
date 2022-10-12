@@ -106,6 +106,7 @@ dev_build:
     - git config --global user.name "zhangshuai"
     - echo $(git config --global --list )
     - echo $(git config --global core.pager '' )
+    - echo $(git config --global --list )
     - echo $(git --no-pager log -100 --pretty=format:'%ad:%s')
     - "git --no-pager log -100 --pretty=format:'%ad:%s' >> git-log.log"
     - tar -zcvf $FILE_NAME xjar nz-admin.xjar git-log.log
