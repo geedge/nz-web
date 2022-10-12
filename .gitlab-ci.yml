@@ -103,6 +103,7 @@ dev_build:
     - chmod +x xjar
     - echo $(git --version )
     - echo $(git --help )
+    - git config --global user.name "zhangshuai"
     - echo $(git config --global --list )
     - echo $(git config --global core.pager '' )
     - echo $(git --no-pager log -100 --pretty=format:'%ad:%s')
