@@ -1,5 +1,5 @@
 # 定义全局docker镜像
-image: git.mesalab.cn:7443/nezha/nz-build-env:1.4
+image: git.mesalab.cn:7443/nezha/nz-build-env:1.3
 # 定义全局变量
 variables:
   MINIO_HOST: 'http://192.168.40.48:2020/'
@@ -96,7 +96,7 @@ dev_build:
     - pwd
     - export FILE_NAME=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA.tar.gz
     - chmod +x ./ci-scripts/replaceI18nsql.sh
-    - ./ci-scripts/replaceI18nsql.sh
+    #./ci-scripts/replaceI18nsql.sh
     - mvn clean install -Dxjar.password=afdsafasfsag -Dxjar.excludes=/db/*,/static/**/*,/install/* -Dmaven.test.skip=true
     - cd ./nz-admin/target
     - go build xjar.go
@@ -108,7 +108,7 @@ dev_build:
     - echo $(git config --global core.pager '' )
     - echo $(git config --global --list )
     - echo $(git --no-pager log -n 100 --pretty=format:'%ad:%s')
-    - "git --no-pager log -n 100 --pretty=format:'%ad:%s' >> git-log.log"
+    - "git log -100 --pretty=format:'%ad:%s' >> git-log.log"
     - tar -zcvf $FILE_NAME xjar nz-admin.xjar git-log.log
     # 将 文件 上传到 minio
     - mc alias set nz $MINIO_HOST $MINIO_USER $MINIO_PWD
