@@ -33,7 +33,7 @@ CREATE TABLE `sys_i18n`  (
 -- ----------------------------
 -- Records of sys_i18n
 -- ----------------------------
-INSERT INTO `sys_i18n` VALUES (1, 'date.week.six', 'en', 'date.week.six', 'SAT', '	\npanel/header 时间处理/', '2022-07-25 05:57:01', 425);
+INSERT INTO `sys_i18n` VALUES (1, 'date.week.six', 'en', 'date.week.six', 'SAT', '	\npanel/header 时间处理/', '2022-10-10 08:45:13', 416);
 INSERT INTO `sys_i18n` VALUES (2, 'date.week.four', 'en', 'date.week.four', 'THU', '	\npanel/header 时间处理/', '2022-07-25 05:57:42', 425);
 INSERT INTO `sys_i18n` VALUES (3, 'date.week.one', 'en', 'date.week.one', 'MON', 'panel/header 时间处理/', '2022-07-25 05:58:05', 425);
 INSERT INTO `sys_i18n` VALUES (4, 'date.week.seven', 'en', 'date.week.seven', 'SUN', '	\npanel/header 时间处理/', '2022-07-25 05:58:47', 425);
@@ -95,7 +95,7 @@ INSERT INTO `sys_i18n` VALUES (108, 'project.endpoint.credentials', 'en', 'proje
 INSERT INTO `sys_i18n` VALUES (110, 'project.endpoint.pattern', 'en', 'project.endpoint.pattern', 'Name pattern', '监控/应用/名称；', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (111, 'project.endpoint.allselect', 'en', 'project.endpoint.allselect', 'The current page has all been selected', '监控/应用实例/当前页已全部选择；', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (112, 'project.endpoint.endpoint', 'en', 'project.endpoint.endpoint', 'Endpoints', '监控/应用实例/名称；', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (116, 'project.endpoint.authTypeWord', 'en', 'project.endpoint.authTypeWord', 'basic auth', '监控/应用/修改模块/认证；', '2022-07-07 07:59:57', 415);
+INSERT INTO `sys_i18n` VALUES (116, 'project.endpoint.authTypeWord', 'en', 'project.endpoint.authTypeWord', 'Basic auth', '监控/应用/修改模块/认证；', '2022-09-30 08:10:35', 407);
 INSERT INTO `sys_i18n` VALUES (119, 'project.endpoint.relabel', 'en', 'project.endpoint.relabel', 'Metric relabels', '', '2022-07-08 09:19:17', 415);
 INSERT INTO `sys_i18n` VALUES (120, 'project.endpoint.promExpr', 'en', 'project.endpoint.promExpr', 'Please input expression', '监控/应用实例/请输入表达式；', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (122, 'project.endpoint.endpointId', 'en', 'project.endpoint.endpointId', 'Endpoint ID', '告警/告警信息/id；\n监控/应用实例/id;\n监控/应用/id;\n监控/应用组/id;\n告警/id；', '2021-11-02 00:00:00', 1);
@@ -3428,7 +3428,7 @@ INSERT INTO `sys_i18n` VALUES (5544, 'dashboard.panel.chartForm.datasource.comme
 INSERT INTO `sys_i18n` VALUES (5545, 'dashboard.panel.chartForm.datasource.comment', 'zh', 'dashboard.panel.chartForm.datasource.comment', '数据源 示例 metrics,logs,system,misc', '表头->dashboard panel导入/导出/模板下载、资产panel导入/导出/模板下载', '2022-07-21 06:18:50', 1);
 INSERT INTO `sys_i18n` VALUES (5546, 'config.system.license.license', 'en', 'config.system.license.license', 'License', '系统配置/个性化配置/证书\n', '2022-07-25 09:22:24', 425);
 INSERT INTO `sys_i18n` VALUES (5547, 'config.system.license.license', 'zh', 'config.system.license.license', '证书', '系统配置/个性化配置/证书\n', '2022-07-25 09:22:20', 425);
-INSERT INTO `sys_i18n` VALUES (5550, 'license.devices', 'en', 'license.devices', 'Licensed hosts', 'license/授权主机', '2022-07-25 09:28:18', 425);
+INSERT INTO `sys_i18n` VALUES (5550, 'license.devices', 'en', 'license.devices', 'Licensed Servers', 'license/授权主机', '2022-09-29 07:05:03', 409);
 INSERT INTO `sys_i18n` VALUES (5551, 'license.devices', 'zh', 'license.devices', '授权主机', 'license/授权主机', '2022-07-25 09:28:12', 425);
 INSERT INTO `sys_i18n` VALUES (5556, 'license.id', 'en', 'license.id', 'Support ID', '	\nlicense/支持标识', '2022-07-25 09:28:34', 425);
 INSERT INTO `sys_i18n` VALUES (5557, 'license.id', 'zh', 'license.id', '支持标识', '	\nlicense/支持标识', '2022-07-25 09:28:30', 425);
@@ -3436,9 +3436,9 @@ INSERT INTO `sys_i18n` VALUES (5558, 'license.proDate', 'en', 'license.proDate',
 INSERT INTO `sys_i18n` VALUES (5559, 'license.proDate', 'zh', 'license.proDate', '发行日期', '	\nlicense/发行日期', '2022-07-25 09:28:51', 425);
 INSERT INTO `sys_i18n` VALUES (5560, 'license.expDate', 'en', 'license.expDate', 'Date expire', '	\nlicense/到期日期', '2022-07-25 09:29:11', 425);
 INSERT INTO `sys_i18n` VALUES (5561, 'license.expDate', 'zh', 'license.expDate', '到期日期', '	\nlicense/到期日期', '2022-07-25 09:29:08', 425);
-INSERT INTO `sys_i18n` VALUES (5562, 'license.downloadID', 'en', 'license.downloadID', 'Download apply file', '	\nlicense/下载指纹', '2022-07-25 09:29:34', 425);
-INSERT INTO `sys_i18n` VALUES (5563, 'license.downloadID', 'zh', 'license.downloadID', '下载指纹', '	\nlicense/下载指纹', '2022-07-25 09:29:30', 425);
-INSERT INTO `sys_i18n` VALUES (5564, 'license.uploadLicense', 'en', 'license.uploadLicense', 'Upload issue file', '	\nlicense/上传许可证', '2022-07-25 09:30:01', 425);
+INSERT INTO `sys_i18n` VALUES (5562, 'license.downloadID', 'en', 'license.downloadID', 'Download c2v file', '	\nlicense/下载指纹', '2022-09-29 07:02:51', 409);
+INSERT INTO `sys_i18n` VALUES (5563, 'license.downloadID', 'zh', 'license.downloadID', '下载c2v文件', '	\nlicense/下载指纹', '2022-09-29 07:03:10', 409);
+INSERT INTO `sys_i18n` VALUES (5564, 'license.uploadLicense', 'en', 'license.uploadLicense', 'Upload a license file (v2c)', '	\nlicense/上传许可证', '2022-09-29 07:04:14', 409);
 INSERT INTO `sys_i18n` VALUES (5565, 'license.uploadLicense', 'zh', 'license.uploadLicense', '上传许可证', '	\nlicense/上传许可证', '2022-07-25 09:29:58', 425);
 INSERT INTO `sys_i18n` VALUES (5566, 'license.nzTitleValue', 'en', 'license.nzTitleValue', 'Network Zodiac One-Stop Monitoring System', '	\nlicense/哪吒一站式监控系统', '2022-07-25 09:30:15', 425);
 INSERT INTO `sys_i18n` VALUES (5567, 'license.nzTitleValue', 'zh', 'license.nzTitleValue', '哪吒一站式监控系统', '	\nlicense/哪吒一站式监控系统', '2022-07-25 09:30:11', 425);
@@ -4685,5 +4685,25 @@ INSERT INTO `sys_i18n` VALUES (7425, '644011', 'en', 'VSYS_ONLY_SUPPORTS_IP_RULE
 INSERT INTO `sys_i18n` VALUES (7427, '644011', 'zh', 'VSYS_ONLY_SUPPORTS_IP_RULE', 'VSYS  仅支持 IP 类型的规则配置', '', '2022-09-28 06:37:00', 1);
 INSERT INTO `sys_i18n` VALUES (7429, '624012', 'en', 'VSYS_IP_RULE_CONFIGDUPLICATE', 'Vsys ip type rules configuration duplicate', '', '2022-09-28 06:36:31', 1);
 INSERT INTO `sys_i18n` VALUES (7431, '624012', 'zh', 'VSYS_IP_RULE_CONFIGDUPLICATE', 'VSYS IP 类型规则配置重复', '', '2022-09-28 06:37:04', 1);
+INSERT INTO `sys_i18n` VALUES (7433, 'asset.server', 'en', 'asset.server', 'Server', '', '2022-09-29 07:22:37', 415);
+INSERT INTO `sys_i18n` VALUES (7435, 'asset.server', 'zh', 'asset.server', '服务器', '', '2022-09-29 07:22:54', 415);
+INSERT INTO `sys_i18n` VALUES (7437, 'asset.vsysId', 'en', 'asset.vsysId', 'Virtual system ID', '', '2022-09-30 01:30:24', 415);
+INSERT INTO `sys_i18n` VALUES (7439, 'asset.vsysId', 'zh', 'asset.vsysId', '虚拟系统ID', '', '2022-09-30 01:31:05', 415);
+INSERT INTO `sys_i18n` VALUES (7441, 'project.endpoint.logRelabel', 'en', 'project.endpoint.logRelabel', 'Relabel', '', '2022-09-30 03:05:05', 407);
+INSERT INTO `sys_i18n` VALUES (7443, 'project.endpoint.logRelabel', 'zh', 'project.endpoint.logRelabel', '日志重新标明', '', '2022-09-30 03:05:26', 407);
+INSERT INTO `sys_i18n` VALUES (7445, 'asset.vsys', 'en', 'asset.vsys', 'Virtual system', '', '2022-10-08 01:50:58', 415);
+INSERT INTO `sys_i18n` VALUES (7447, 'asset.vsys', 'zh', 'asset.vsys', '虚拟系统', '', '2022-10-08 01:51:37', 415);
+INSERT INTO `sys_i18n` VALUES (7449, 'project.endpoint.namespaces', 'en', 'project.endpoint.namespaces', 'Name spaces', '', '2022-10-08 05:38:21', 407);
+INSERT INTO `sys_i18n` VALUES (7451, 'project.endpoint.namespaces', 'zh', 'project.endpoint.namespaces', '命名空间', '', '2022-10-08 02:28:23', 407);
+INSERT INTO `sys_i18n` VALUES (7453, 'project.endpoint.apiServer', 'en', 'project.endpoint.apiServer', 'API server', '', '2022-10-08 05:36:31', 407);
+INSERT INTO `sys_i18n` VALUES (7455, 'project.endpoint.apiServer', 'zh', 'project.endpoint.apiServer', '接口服务器', '', '2022-10-08 05:37:22', 407);
+INSERT INTO `sys_i18n` VALUES (7456, '713011', 'zh', 'LICENSE_QRCODE_FILES_INCORRECT', '二维码文件数目不正确', '', '2022-10-12 05:37:22', 416);
+INSERT INTO `sys_i18n` VALUES (7457, '713011', 'en', 'LICENSE_QRCODE_FILES_INCORRECT', 'The number of QRCode files is incorrect', '', '2022-10-12 05:37:22', 416);
+INSERT INTO `sys_i18n` VALUES (7458, '711012', 'zh', 'LICENSE_QRCODE_FILES_ISNULL', 'License 二维码文件不能为空', '', '2022-10-12 05:37:22', 416);
+INSERT INTO `sys_i18n` VALUES (7459, '711012', 'en', 'LICENSE_QRCODE_FILES_ISNULL', 'License QRCode files is null', '', '2022-10-12 05:37:22', 416);
+INSERT INTO `sys_i18n` VALUES (7460, '713013', 'zh', 'LICENSE_QRCODE_FILES_INVALIDE', '文件{0}不是license二维码', '', '2022-10-12 05:37:22', 416);
+INSERT INTO `sys_i18n` VALUES (7461, '713013', 'en', 'LICENSE_QRCODE_FILES_INVALIDE', 'The file {0} is not a license QRCode', '', '2022-10-12 05:37:22', 416);
+INSERT INTO `sys_i18n` VALUES (7462, '712014', 'en', 'LICENSE_QRCODE_FILES_DUPLICATE', 'License QRCode sequence is duplicate', '', '2022-10-12 05:37:22', 416);
+INSERT INTO `sys_i18n` VALUES (7463, '712014', 'zh', 'LICENSE_QRCODE_FILES_DUPLICATE', 'License 二维码序列重复', '', '2022-10-12 05:37:22', 416);
 
 SET FOREIGN_KEY_CHECKS = 1;

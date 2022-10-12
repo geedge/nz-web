@@ -1,21 +1,12 @@
 package com.nis.modules.sys.service.impl;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import org.dom4j.DocumentException;
-import org.dom4j.DocumentHelper;
-import org.dom4j.Element;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
+import Aladdin.HaspStatus;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.extra.qrcode.QrCodeException;
+import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.jcraft.jsch.Logger;
 import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.LicenseUtil;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
@@ -25,10 +16,20 @@ import com.nis.modules.sys.entity.Signature;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.LicenseService;
 import com.nis.modules.sys.service.SysConfigService;
+import org.dom4j.DocumentException;
+import org.dom4j.DocumentHelper;
+import org.dom4j.Element;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
-import Aladdin.HaspStatus;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class LicenseServiceImpl implements LicenseService {
@@ -262,5 +263,32 @@ public class LicenseServiceImpl implements LicenseService {
 		}
 		return license;
 	}
-	
+
+	/**
+	 * 解析license二维码 生成c2v文件
+	 */
+	public String qrdecode(MultipartFile[] files) throws IOException {
+		ValidateUtils validate = ValidateUtils.is(files).notNull(RCode.LICENSE_QRCODE_FILES_ISNULL);
+		String[] contents = null;
+		for (MultipartFile file : files) {
+			try {
+				// 解析二维码
+				String decodeStr = Tool.QrCodeUtil.decode(file.getInputStream());
+				if(contents == null){
+					Integer size = Integer.parseInt(decodeStr.substring(0, 2));
+					validate.and(size).equalsIgnoreCase(ToolUtil.toStr(files.length), RCode.LICENSE_QRCODE_FILES_INCORRECT);
+					// 二维码顺序从1开始
+					contents = new String[size + 1];
+					contents[0] = "";
+				}
+				Integer index = Integer.parseInt(decodeStr.substring(2, 4));
+				if(contents[index] != null) throw new NZException(RCode.LICENSE_QRCODE_FILES_DUPLICATE);
+				contents[index] = decodeStr.substring(20);
+			} catch (NumberFormatException | ArrayIndexOutOfBoundsException | QrCodeException e){
+				throw new NZException(RCode.LICENSE_QRCODE_FILES_INVALIDE.setParam(file.getOriginalFilename()));
+			}
+		}
+		return Arrays.asList(contents).stream().collect(Collectors.joining());
+	}
+
 }

@@ -927,7 +927,11 @@ public enum RCode {
 	LICENSE_SUPPORT_ID_ISNULL(715008,"License params support id can not be null"),
 	LICENSE_ORGANIZATION_ISNULL(715009,"License params organization can not be null"),
 	LICENSE_TYPE_ISNULL(715010,"License params type can not be null"),
-	
+	LICENSE_QRCODE_FILES_INCORRECT(713011,"The number of QRCode files is incorrect"),
+	LICENSE_QRCODE_FILES_ISNULL(711012,"License QRCode files is null"),
+	LICENSE_QRCODE_FILES_INVALIDE(713013,"The file {0} is not a license QRCode"),
+	LICENSE_QRCODE_FILES_DUPLICATE(712014,"License QRCode sequence is duplicate"),
+
 	/**
 	 * Ipamsubnet 相关
 	 */

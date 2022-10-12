@@ -1,9 +1,10 @@
 package com.nis.modules.sys.service;
 
-import java.util.Map;
-
 import org.dom4j.DocumentException;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.Map;
 
 public interface LicenseService {
 
@@ -44,4 +45,6 @@ public interface LicenseService {
 	 * 生成v2c文件
 	 */
 	String gen(MultipartFile[] files,Map<String,Object> params);
+
+	String qrdecode(MultipartFile[] files) throws IOException;
 }
