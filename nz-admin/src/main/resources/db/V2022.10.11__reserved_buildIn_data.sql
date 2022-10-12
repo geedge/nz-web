@@ -198,3 +198,16 @@ SELECT
 9, @GDNTBrandId, 'TSG-9140',         '', 'builld-in', 1, '', 3, '', 0
 WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "TSG-9140");
 
+/**
+ * update table auto_increment
+ */
+ALTER TABLE asset_field_group auto_increment = 100000;
+ALTER TABLE asset_field_meta auto_increment = 100000;
+ALTER TABLE alert_rule auto_increment = 100000;
+ALTER TABLE record_rule auto_increment = 100000;
+ALTER TABLE visual_chart_element auto_increment = 100000;
+ALTER TABLE visual_chart auto_increment = 100000;
+ALTER TABLE visual_panel auto_increment = 100000;
+ALTER TABLE asset_brand auto_increment = 100000;
+ALTER TABLE asset_model auto_increment = 100000;
+
