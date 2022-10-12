@@ -101,8 +101,8 @@ dev_build:
     - cd ./nz-admin/target
     - go build xjar.go
     - chmod +x xjar
-    - echo $(git --no-pager log -p -100 --pretty=format:'%ad:%s')
-    - "git --no-pager log -p -100 --pretty=format:'%ad : %s' >> git-log.log"
+    - echo $(git --no-pager log -100 --pretty=format:'%ad:%s')
+    - "git --no-pager log -100 --pretty=format:'%ad:%s' >> git-log.log"
     - tar -zcvf $FILE_NAME xjar nz-admin.xjar git-log.log
     # 将 文件 上传到 minio
     - mc alias set nz $MINIO_HOST $MINIO_USER $MINIO_PWD
