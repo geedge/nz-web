@@ -119,6 +119,7 @@ UPDATE visual_chart SET id = id + 100000 WHERE 	build_in != 1 ORDER BY id DESC;
 
 UPDATE visual_chart vc LEFT JOIN visual_panel vp ON vc.panel_id = vp.id SET vc.panel_id = vc.panel_id + 100000 WHERE vp.build_in != 1;
 
+UPDATE visual_panel a LEFT JOIN visual_panel b ON a.pid = b.id SET a.pid = a.pid + 100000 WHERE a.pid != 0 	AND b.build_in != 1;
 UPDATE visual_panel SET id = id + 100000 WHERE build_in != 1 ORDER BY id DESC;
 
 
