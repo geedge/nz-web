@@ -90,7 +90,7 @@ public class AssetTalonStatusJob extends QuartzJobBean {
         try {
             this.updateTalonState();
         } catch (RuntimeException e) {
-            log.error("asset talon 状态更新异常", e);
+            log.error(e,"asset talon 状态更新异常");
         } finally {
             sw.stop();
             log.info("asset talon state Run Time: {}", sw.toString());
