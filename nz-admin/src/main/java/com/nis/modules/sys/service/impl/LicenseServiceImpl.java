@@ -7,10 +7,7 @@ import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.LicenseUtil;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
+import com.nis.common.utils.*;
 import com.nis.modules.sys.entity.LicenseEntity;
 import com.nis.modules.sys.entity.Signature;
 import com.nis.modules.sys.entity.SysConfigEntity;
@@ -267,28 +264,41 @@ public class LicenseServiceImpl implements LicenseService {
 	/**
 	 * 解析license二维码 生成c2v文件
 	 */
-	public String qrdecode(MultipartFile[] files) throws IOException {
+	public String qrdecode(MultipartFile[] files){
 		ValidateUtils validate = ValidateUtils.is(files).notNull(RCode.LICENSE_QRCODE_FILES_ISNULL);
 		String[] contents = null;
+		String c2vMd5 = null;
 		for (MultipartFile file : files) {
 			try {
 				// 解析二维码
-				String decodeStr = Tool.QrCodeUtil.decode(file.getInputStream());
+				String decodeStr = Tool.QrCodeUtil.qrDecode(file.getInputStream());
 				if(contents == null){
 					Integer size = Integer.parseInt(decodeStr.substring(0, 2));
 					validate.and(size).equalsIgnoreCase(ToolUtil.toStr(files.length), RCode.LICENSE_QRCODE_FILES_INCORRECT);
 					// 二维码顺序从1开始
 					contents = new String[size + 1];
 					contents[0] = "";
+					c2vMd5 = decodeStr.substring(4, 12);
 				}
 				Integer index = Integer.parseInt(decodeStr.substring(2, 4));
-				if(contents[index] != null) throw new NZException(RCode.LICENSE_QRCODE_FILES_DUPLICATE);
+				if(contents[index] != null){
+					// 序列重复
+					throw new NZException(RCode.LICENSE_QRCODE_FILES_DUPLICATE);
+				}
 				contents[index] = decodeStr.substring(20);
-			} catch (NumberFormatException | ArrayIndexOutOfBoundsException | QrCodeException e){
+				// 所有c2v文件md5必须一致   当前c2v文件md5必须与当前内容一致
+				validate.and(c2vMd5).equalsIgnoreCase(decodeStr.substring(4, 12), RCode.LICENSE_QRCODE_FILES_ALL_INCONSISTENT)
+						.and(decodeStr.substring(12, 20)).equalsIgnoreCase(
+								DigestUtils.md5Hex(contents[index]).substring(0, 8),
+								RCode.LICENSE_QRCODE_FILES_INCONSISTENT.setParam(file.getOriginalFilename()));
+			} catch (NumberFormatException | ArrayIndexOutOfBoundsException | QrCodeException | IOException e){
 				throw new NZException(RCode.LICENSE_QRCODE_FILES_INVALIDE.setParam(file.getOriginalFilename()));
 			}
 		}
-		return Arrays.asList(contents).stream().collect(Collectors.joining());
+		String licenseInfo = Arrays.asList(contents).stream().collect(Collectors.joining());
+		// c2v文件md5必须与全内容一致
+		validate.and(c2vMd5).equalsIgnoreCase(DigestUtils.md5Hex(licenseInfo).substring(0, 8), RCode.LICENSE_QRCODE_FILES_ALL_INCONSISTENT);
+		return licenseInfo;
 	}
 
 }

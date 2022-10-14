@@ -2,6 +2,7 @@ package com.nis.common.utils;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
+import cn.hutool.extra.qrcode.QrCodeException;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -10,12 +11,15 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.ref.*;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
-import java.net.*;
+import java.net.Socket;
+import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -1033,6 +1037,15 @@ public class Tool {
 	 * @since 4.0.2
 	 */
 	public static class QrCodeUtil extends cn.hutool.extra.qrcode.QrCodeUtil {
+		public static String qrDecode(InputStream inputStream) {
+			BufferedImage image = ImgUtil.read(inputStream);
+			try {
+				return QrCodeUtil.decode(image);
+			} catch (QrCodeException e){
+				/*二维码照片优化解析*/
+				return QrCodeUtil.decode(QRCodeImageUtil.binarization(image));
+			}
+		}
 	}
 
 	/**
