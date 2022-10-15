@@ -1,13 +1,43 @@
 package com.nis.modules.endpoint.service.impl;
 
-import cn.hutool.core.lang.Pair;
-import cn.hutool.core.lang.hash.MurmurHash;
-import cn.hutool.core.map.MapUtil;
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.ReUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
-import com.alibaba.fastjson.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpMethod;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONException;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.JSONPath;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -16,7 +46,17 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.smartvalidate.utils.CommonUtil;
-import com.nis.common.utils.*;
+import com.nis.common.utils.CommonUtils;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.Query;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.StringUtils;
+import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
+import com.nis.modules.agent.entity.Agent;
+import com.nis.modules.agent.service.AgentService;
+import com.nis.modules.agent.service.PromApiService;
 import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
@@ -41,38 +81,24 @@ import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
-import com.nis.modules.agent.entity.Agent;
-import com.nis.modules.agent.service.AgentService;
-import com.nis.modules.agent.service.PromApiService;
 import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.entity.SnmpCredential;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
-import com.nis.modules.sys.service.*;
+import com.nis.modules.sys.service.BasicImportAndExportServices;
+import com.nis.modules.sys.service.SnmpCredentialService;
+import com.nis.modules.sys.service.SysConfService;
+import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysI18nService;
+import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.shiro.UnavailableSecurityManagerException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.DefaultTransactionDefinition;
-import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import cn.hutool.core.lang.Pair;
+import cn.hutool.core.lang.hash.MurmurHash;
+import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.ReUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 
 @Service
 public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, MonitorEndpoint> implements MonitorEndpointService {
@@ -176,8 +202,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                     .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId().intValue())
             );
             endpoint.setStarred(count == 0 ? 0 : 1);
-        }catch (UnavailableSecurityManagerException e){
+        }catch (Exception e){
             // 快照线程无法获取ShiroSession
+        	log.warn(e);
         }
         // 获取agent信息
         Map endpointProm = redisTemplate.opsForHash().entries(Constant.REDIS_KEY_ENDPOINT_PROM);

@@ -924,36 +924,50 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 				CompletableFuture<Map> mapCompletableFuture = null;
 				if (StrUtil.equals("assetInfo", chart.getType())) {
 					mapCompletableFuture = CompletableFuture.supplyAsync(() -> {
-						VisualPanel visualPanel = this.getById(chart.getPanelId());
-						R ok = R.ok(assetAssetService.queryAssetInfo(visualPanel.getLink()));
-						ok.put("status", "success");
-						ok.put("eleIndex", "0");
-						ok.put("chartId", chart.getId());
+						R ok = null;
+						try {
+							VisualPanel visualPanel = this.getById(chart.getPanelId());
+							ok = R.ok(assetAssetService.queryAssetInfo(visualPanel.getLink()));
+							ok.put("status", "success");
+							ok.put("eleIndex", "0");
+							ok.put("chartId", chart.getId());
+						} catch (Exception e) {
+							log.warn(e);
+						}
 						return ok;
 					}, this.getSnapshotThreadPool());
 				} else if (StrUtil.equals("endpointInfo", chart.getType())) {
 					mapCompletableFuture = CompletableFuture.supplyAsync(() -> {
-						VisualPanel visualPanel = this.getById(chart.getPanelId());
-						R ok = R.ok(monitorEndpointService.queryEndpointEntity(visualPanel.getLink()));
-						ok.put("status", "success");
-						ok.put("eleIndex", "0");
-						ok.put("chartId", chart.getId());
+						R ok = null;
+						try {
+							VisualPanel visualPanel = this.getById(chart.getPanelId());
+							ok = R.ok(monitorEndpointService.queryEndpointEntity(visualPanel.getLink()));
+							ok.put("status", "success");
+							ok.put("eleIndex", "0");
+							ok.put("chartId", chart.getId());
+						} catch (Exception e) {
+							log.warn(e);
+						}
 						return ok;
 					}, this.getSnapshotThreadPool());
 				} else {
 					mapCompletableFuture = CompletableFuture.supplyAsync(() -> {
-						JSONObject dataSource = JSONArray
-								.parseArray(JSONObject.toJSONString(chartParam.get("datasource"))).getJSONObject(0);
-						JSONArray selectAry = new JSONArray();
-						selectAry.add(dataSource.get("select"));
-						dataSource.put("select", selectAry);
-						HashMap analyseMap = new HashMap();
-						analyseMap.put("q", dataSource.toJSONString());
 						Map resultMap = new HashMap<>();
-						resultMap.put("status", "success");
-						resultMap.put("eleIndex", "0");
-						resultMap.put("chartId", chart.getId());
-						resultMap.putAll(statServiceImpl.queryAnalyse(analyseMap));
+						try {
+							JSONObject dataSource = JSONArray
+									.parseArray(JSONObject.toJSONString(chartParam.get("datasource"))).getJSONObject(0);
+							JSONArray selectAry = new JSONArray();
+							selectAry.add(dataSource.get("select"));
+							dataSource.put("select", selectAry);
+							HashMap analyseMap = new HashMap();
+							analyseMap.put("q", dataSource.toJSONString());
+							resultMap.put("status", "success");
+							resultMap.put("eleIndex", "0");
+							resultMap.put("chartId", chart.getId());
+							resultMap.putAll(statServiceImpl.queryAnalyse(analyseMap));
+						} catch (Exception e) {
+							log.warn(e);
+						}
 						return resultMap;
 					}, this.getSnapshotThreadPool());
 				}
@@ -978,7 +992,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 											chartParam.get("nullType").toString(), null);
 									jsonObject.put("eleIndex", indexStr);
 									jsonObject.put("chartId", chart.getId());
-								} catch (NZException e) {
+								} catch (Exception e) {
 									log.error(e);
 								}
 								return jsonObject;
@@ -993,7 +1007,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 											"backward", "1", null);
 									jsonObject.put("eleIndex", indexStr);
 									jsonObject.put("chartId", chart.getId());
-								} catch (NZException e) {
+								} catch (Exception e) {
 									log.error(e);
 								}
 								return jsonObject;
