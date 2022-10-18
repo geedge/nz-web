@@ -157,47 +157,56 @@ UPDATE asset_model SET id = id + 100000 WHERE name NOT IN ( 'Generic Linux', 'Ge
 INSERT INTO `asset_model` (`id`, `brand_id`, `name`, `remark`, `seq`, `usize`, `chart_ids`, `type_id`, `sys_object_id`, `tsg_appliance`)
 SELECT
 1, @GenericBrandId, 'Generic Linux',    '', 'builld-in', 1, '', 6, '', 0
-WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "Generic Linux");
+WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "Generic Linux")
+AND EXISTS ( SELECT NAME FROM `asset_type_conf` WHERE id = 6 );
 
 INSERT INTO `asset_model` (`id`, `brand_id`, `name`, `remark`, `seq`, `usize`, `chart_ids`, `type_id`, `sys_object_id`, `tsg_appliance`)
 SELECT
 2, @GenericBrandId, 'Generic switch',   '', 'builld-in', 1, '', 4, '', 0
-WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "Generic switch");
+WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "Generic switch")
+AND EXISTS ( SELECT NAME FROM `asset_type_conf` WHERE id = 4 );
 
 INSERT INTO `asset_model` (`id`, `brand_id`, `name`, `remark`, `seq`, `usize`, `chart_ids`, `type_id`, `sys_object_id`, `tsg_appliance`)
 SELECT
 3, @GenericBrandId, 'Generic router',   '', 'builld-in', 1, '', 2, '', 0
-WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "Generic router");
+WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "Generic router")
+AND EXISTS ( SELECT NAME FROM `asset_type_conf` WHERE id = 2 );
 
 INSERT INTO `asset_model` (`id`, `brand_id`, `name`, `remark`, `seq`, `usize`, `chart_ids`, `type_id`, `sys_object_id`, `tsg_appliance`)
 SELECT
 4, @GenericBrandId, 'Generic firewall', '', 'builld-in', 1, '', 3, '', 0
-WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "Generic firewall");
+WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "Generic firewall")
+AND EXISTS ( SELECT NAME FROM `asset_type_conf` WHERE id = 3 );
 
 INSERT INTO `asset_model` (`id`, `brand_id`, `name`, `remark`, `seq`, `usize`, `chart_ids`, `type_id`, `sys_object_id`, `tsg_appliance`)
 SELECT
 5, @GenericBrandId, 'Generic VM',       '', 'builld-in', 1, '', 7, '', 0
-WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "Generic VM");
+WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "Generic VM")
+AND EXISTS ( SELECT NAME FROM `asset_type_conf` WHERE id = 7 );
 
 INSERT INTO `asset_model` (`id`, `brand_id`, `name`, `remark`, `seq`, `usize`, `chart_ids`, `type_id`, `sys_object_id`, `tsg_appliance`)
 SELECT
 6, @GenericBrandId, 'Generic computer', '', 'builld-in', 1, '', 5, '', 0
-WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "Generic computer");
+WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "Generic computer")
+AND EXISTS ( SELECT NAME FROM `asset_type_conf` WHERE id = 5 );
 
 INSERT INTO `asset_model` (`id`, `brand_id`, `name`, `remark`, `seq`, `usize`, `chart_ids`, `type_id`, `sys_object_id`, `tsg_appliance`)
 SELECT
 7, @GDNTBrandId, 'TSG-X',            '', 'builld-in', 1, '', 3, '', 1
-WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "TSG-X");
+WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "TSG-X")
+AND EXISTS ( SELECT NAME FROM `asset_type_conf` WHERE id = 3 );
 
 INSERT INTO `asset_model` (`id`, `brand_id`, `name`, `remark`, `seq`, `usize`, `chart_ids`, `type_id`, `sys_object_id`, `tsg_appliance`)
 SELECT
 8, @GDNTBrandId, 'TSG-7400',         '', 'builld-in', 1, '', 8, '', 0
-WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "TSG-7400");
+WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "TSG-7400")
+AND EXISTS ( SELECT NAME FROM `asset_type_conf` WHERE id = 8 );
 
 INSERT INTO `asset_model` (`id`, `brand_id`, `name`, `remark`, `seq`, `usize`, `chart_ids`, `type_id`, `sys_object_id`, `tsg_appliance`)
 SELECT
 9, @GDNTBrandId, 'TSG-9140',         '', 'builld-in', 1, '', 3, '', 0
-WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "TSG-9140");
+WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "TSG-9140")
+AND EXISTS ( SELECT NAME FROM `asset_type_conf` WHERE id = 3 );
 
 /**
  * update table auto_increment
