@@ -67,12 +67,6 @@ public class MonitorEndpoint implements Serializable {
 	@TableField(exist = false)
 	private Map config;
 
-	/**
-	 * 该配置项来源于 关联的 Module configs metrics relabel_config []
-	 */
-	@TableField(exist = false)
-	private String relabelConfigListJsonString;
-
 	@TableField(exist = false)
 	private MonitorEndpointConfig endpointConfig;
 

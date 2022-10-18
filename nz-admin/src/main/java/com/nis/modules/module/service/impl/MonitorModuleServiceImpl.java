@@ -313,8 +313,19 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
             if (ToolUtil.isNotEmpty(logsConfigMap.get("config"))) {
                 List<Map> configMaps = (List<Map>) logsConfigMap.get("config");
                 for (Map configMap : configMaps) {
-                    if ("file".equals(configMap.get("type").toString()) && ToolUtil.isEmpty(configMap.get("fileName"))) {
-                        throw new NZException(RCode.MODULE_CONFIG_FILENAME_ISNULL);
+                    String type = configMap.get("type").toString();
+                    if (StrUtil.equals("file", type)) {
+                        ValidateUtils.is(configMap.get("fileName")).notNull(RCode.MODULE_CONFIG_FILENAME_ISNULL);
+                    } else if (StrUtil.equals("journal", type)) {
+                        ValidateUtils.is(configMap.get("unit")).notNull(RCode.MODULE_CONFIG_JOURNALUNIT_ISNULL);
+                    } else if (StrUtil.equals("syslog", type)) {
+                        ValidateUtils.is(configMap.get("appName")).notNull(RCode.MODULE_CONFIG_SYSLOG_APPNAME_ISNULL)
+                                .and(configMap.get("listenAddress")).notNull(RCode.MODULE_CONFIG_SYSLOG_ADDRESS_ISNULL);
+                    } else if (StrUtil.equals("kubernetes", type)) {
+                        List<String> roleList = ListUtil.of("endpoints", "service", "pod", "node", "ingress");
+                        if (!roleList.contains(configMap.get("role").toString())) {
+                            throw new NZException(RCode.MODULE_CONFIG_KUBERNETES_ROLE_INVALID);
+                        }
                     }
                 }
             }
@@ -784,13 +795,17 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
                 if (Tool.CollUtil.isNotEmpty(logsConfigMap) && ToolUtil.isNotEmpty(logsConfigMap.get("config"))) {
                     List<Map> configMaps = (List<Map>) logsConfigMap.get("config");
                     for (Map configMap : configMaps) {
-                        if ("file".equals(configMap.get("type").toString())) {
+                        String type = configMap.get("type").toString();
+                        if (StrUtil.equals("file", type)) {
                             validateUtil.validateRequired(configMap.get("fileName"), lineNum, MonitorModuleImportEnum.CONFIGURATIONS.getIndex());
-                        } else if ("journal".equals(configMap.get("type").toString())) {
+                        } else if (StrUtil.equals("journal", type)) {
                             validateUtil.validateRequired(configMap.get("unit"), lineNum, MonitorModuleImportEnum.CONFIGURATIONS.getIndex());
-                        } else if ("syslog".equals(configMap.get("type").toString())) {
+                        } else if (StrUtil.equals("syslog", type)) {
                             validateUtil.validateRequired(configMap.get("appName"), lineNum, MonitorModuleImportEnum.CONFIGURATIONS.getIndex());
                             validateUtil.validateRequired(configMap.get("listenAddress"), lineNum, MonitorModuleImportEnum.CONFIGURATIONS.getIndex());
+                        } else if (StrUtil.equals("kubernetes", type)) {
+                            List<String> roleList = ListUtil.of("endpoints", "service", "pod", "node", "ingress");
+                            validateUtil.validateEnumValArr(configMap.get("role").toString(), roleList, lineNum, MonitorModuleImportEnum.CONFIGURATIONS.getIndex());
                         } else {
                             validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_ENUM_VALUE_ERROR.setParam(MonitorModuleImportEnum.CONFIGURATIONS.getIndex()));
                         }

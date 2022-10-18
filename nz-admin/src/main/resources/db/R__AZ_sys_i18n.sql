@@ -667,7 +667,7 @@ INSERT INTO `sys_i18n` VALUES (997, 'config.system.terminal.localRetention', 'en
 INSERT INTO `sys_i18n` VALUES (998, 'config.system.terminal.terminalNum', 'en', 'config.system.terminal.terminalNum', 'Max terminal number', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (999, 'config.system.terminal.userTip', 'en', 'config.system.terminal.userTip', 'Telnet user prompt', '\n系统配置/个性化配置\n/远程登陆用户名提示', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1000, 'config.system.terminal.terminal', 'en', 'config.system.terminal.terminal', 'Terminal', '\n系统配置/个性化配置\n/终端', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (1002, 'config.system.terminal.pinTip', 'en', 'config.system.terminal.pinTip', 'Ternet password prompt', '\n系统配置/个性化配置\n/标签', '2022-07-21 06:11:26', 425);
+INSERT INTO `sys_i18n` VALUES (1002, 'config.system.terminal.pinTip', 'en', 'config.system.terminal.pinTip', 'Telnet password prompt', '\n系统配置/个性化配置\n/标签', '2022-10-18 07:13:08', 415);
 INSERT INTO `sys_i18n` VALUES (1003, 'config.system.basic.timezone', 'en', 'config.system.basic.timezone', 'Time zone', '\n系统配置/个性化配置\n/时区', '2021-11-22 03:09:22', 1);
 INSERT INTO `sys_i18n` VALUES (1004, 'config.system.basic.sysLogo', 'en', 'config.system.basic.sysLogo', 'System logo', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1007, 'config.system.basic.mapTitle', 'en', 'config.system.basic.mapTitle', 'Configurate map', '\n系统配置/个性化配置/', '2021-11-02 00:00:00', 1);
@@ -1710,7 +1710,7 @@ INSERT INTO `sys_i18n` VALUES (2691, 'config.assetLabel.isCheck', 'zh', 'config.
 INSERT INTO `sys_i18n` VALUES (2692, 'config.assetLabel.labelOptionNull', 'zh', 'config.assetLabel.labelOptionNull', '请填写选项信息', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2693, 'config.assetLabel.operate', 'zh', 'config.assetLabel.operate', '操作', '	\n资产/资产列表 /操作', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2694, 'config.assetLabel.decimals', 'zh', 'config.assetLabel.decimals', '精度', '	\n资产/资产列表 /精度', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2698, 'config.assetLabel.interval', 'zh', 'config.assetLabel.interval', '区间', '资产/资产列表 /区间', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2698, 'config.assetLabel.interval', 'zh', 'config.assetLabel.interval', '区间', '资产/资产列表/区间', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2699, 'config.assetLabel.multitext', 'zh', 'config.assetLabel.multitext', '多行文本', '	\n资产/资产列表 /', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2701, 'config.assetLabel.option', 'zh', 'config.assetLabel.option', '选项', '	\n资产/资产列表 /选项', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2706, 'config.model.name', 'zh', 'config.model.name', '资产型号', '资产/资产列表\n/资产型号；\n表头->资产model导入/导出/模板下载', '2022-07-21 06:18:50', 1);
@@ -4579,7 +4579,7 @@ INSERT INTO `sys_i18n` VALUES (7221, 'batch.prepare', 'en', 'batch.prepare', 'Ar
 INSERT INTO `sys_i18n` VALUES (7223, 'batch.prepare', 'zh', 'batch.prepare', '是否删除这{dataLength}处的数据？', '批量删除 -> 首次提示', '2022-08-29 01:38:05', 1);
 INSERT INTO `sys_i18n` VALUES (7225, 'batch.process', 'en', 'batch.process', 'These {title} cannot be deleted.If you want to continue to delete,please check the \"Force delete\" action.', '批量删除确认', '2022-08-29 01:47:03', 1);
 INSERT INTO `sys_i18n` VALUES (7227, 'batch.process', 'zh', 'batch.process', '这些{title}不能被删除。如果要继续删除，请勾选“强制删除”操作。', '批量删除 -> 确认', '2022-08-29 01:50:11', 1);
-INSERT INTO `sys_i18n` VALUES (7229, 'batch.finish', 'en', 'batch.finish', 'These {{title}} delete complete.', '批量删除 -》 成功', '2022-08-29 01:53:02', 1);
+INSERT INTO `sys_i18n` VALUES (7229, 'batch.finish', 'en', 'batch.finish', 'These {title} delete complete.', '批量删除 -》 成功', '2022-10-13 02:21:48', 381);
 INSERT INTO `sys_i18n` VALUES (7231, 'batch.finish', 'zh', 'batch.finish', '这些{title}删除完成。', '批量删除 -》 成功', '2022-08-29 01:53:48', 1);
 INSERT INTO `sys_i18n` VALUES (7232, '511049', 'en', 'SYS_USER_NEWPWD_ISNULL', 'User new password can not be empty', '响应消息->个人中心密码修改', '2022-08-30 15:43:43', 416);
 INSERT INTO `sys_i18n` VALUES (7233, '511049', 'zh', 'SYS_USER_NEWPWD_ISNULL', '新密码不能为空', '响应消息->个人中心密码修改', '2022-08-30 15:43:43', 416);
@@ -4699,8 +4699,8 @@ INSERT INTO `sys_i18n` VALUES (7453, 'project.endpoint.apiServer', 'en', 'projec
 INSERT INTO `sys_i18n` VALUES (7455, 'project.endpoint.apiServer', 'zh', 'project.endpoint.apiServer', '接口服务器', '', '2022-10-08 05:37:22', 407);
 INSERT INTO `sys_i18n` VALUES (7456, '713011', 'zh', 'LICENSE_QRCODE_FILES_INCORRECT', '二维码文件数目不正确', '', '2022-10-12 05:37:22', 416);
 INSERT INTO `sys_i18n` VALUES (7457, '713011', 'en', 'LICENSE_QRCODE_FILES_INCORRECT', 'The number of QRCode files is incorrect', '', '2022-10-12 05:37:22', 416);
-INSERT INTO `sys_i18n` VALUES (7458, '711012', 'zh', 'LICENSE_QRCODE_FILES_ISNULL', 'License 二维码文件不能为空', '', '2022-10-12 05:37:22', 416);
-INSERT INTO `sys_i18n` VALUES (7459, '711012', 'en', 'LICENSE_QRCODE_FILES_ISNULL', 'License QRCode files is null', '', '2022-10-12 05:37:22', 416);
+INSERT INTO `sys_i18n` VALUES (7458, '711012', 'zh', 'LICENSE_QRCODE_FILES_ISNULL', '二维码文件不能为空', '', '2022-10-12 05:37:22', 416);
+INSERT INTO `sys_i18n` VALUES (7459, '711012', 'en', 'LICENSE_QRCODE_FILES_ISNULL', 'QRCode files is null', '', '2022-10-12 05:37:22', 416);
 INSERT INTO `sys_i18n` VALUES (7460, '713013', 'zh', 'LICENSE_QRCODE_FILES_INVALIDE', '二维码文件 {0} 解析失败', '', '2022-10-12 05:37:22', 416);
 INSERT INTO `sys_i18n` VALUES (7461, '713013', 'en', 'LICENSE_QRCODE_FILES_INVALIDE', 'The QRCode file {0} analyzing failed', '', '2022-10-12 05:37:22', 416);
 INSERT INTO `sys_i18n` VALUES (7462, '712014', 'en', 'LICENSE_QRCODE_FILES_DUPLICATE', 'License QRCode sequence is duplicate', '', '2022-10-12 05:37:22', 416);
@@ -4709,5 +4709,7 @@ INSERT INTO `sys_i18n` VALUES (7464, '713015', 'zh', 'LICENSE_QRCODE_FILES_ALL_I
 INSERT INTO `sys_i18n` VALUES (7465, '713015', 'en', 'LICENSE_QRCODE_FILES_ALL_INCONSISTENT', 'License md5 is inconsistent', '', '2022-10-12 05:37:22', 416);
 INSERT INTO `sys_i18n` VALUES (7466, '713016', 'zh', 'LICENSE_QRCODE_FILES_INCONSISTENT', '文件 {0} md5值无效', '', '2022-10-12 05:37:22', 416);
 INSERT INTO `sys_i18n` VALUES (7467, '713016', 'en', 'LICENSE_QRCODE_FILES_INCONSISTENT', 'The file {0} md5 is inconsistent', '', '2022-10-12 05:37:22', 416);
+INSERT INTO `sys_i18n` VALUES (7471, '224041', 'en', 'MODULE_CONFIG_KUBERNETES_ROLE_INVALID', 'Module kubernetes role value is not in the enum range', '', '2022-10-18 08:27:16', 1);
+INSERT INTO `sys_i18n` VALUES (7472, '224041', 'zh', 'MODULE_CONFIG_KUBERNETES_ROLE_INVALID', '模块kubernetes角色值不在枚举范围内', '', '2022-10-18 08:27:43', 1);
 
 SET FOREIGN_KEY_CHECKS = 1;

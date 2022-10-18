@@ -1,5 +1,6 @@
 package com.nis.modules.endpoint.service.impl;
 
+import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.lang.Pair;
 import cn.hutool.core.lang.hash.MurmurHash;
 import cn.hutool.core.map.MapUtil;
@@ -472,6 +473,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             }else if(StrUtil.equals("syslog", logType)){
                 displaceVal(logConfigMap,oldLogConfigMap,"appName");
                 displaceVal(logConfigMap,oldLogConfigMap,"listenAddress");
+            } else if (StrUtil.equals("kubernetes", logType)) {
+                displaceVal(logConfigMap, oldLogConfigMap, "role");
+                displaceVal(logConfigMap, oldLogConfigMap, "apiServer");
             }
             // Labels
             String logLabelsStr = String.valueOf(logConfigMap.get("labels"));
@@ -508,6 +512,46 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                     newpipelineList.add(pipeline);
                 }
                 logConfigMap.put("pipeline",newpipelineList);
+            }
+            // Metric relabel
+            if(StrUtil.isNotBlank(logConfigMap.get("relabel_config").toString())){
+                List<Map> relabelConfig = JSONObject.parseArray(logConfigMap.get("relabel_config").toString(), Map.class);
+                List<Map> newRelabelConfig = new ArrayList<>();
+                for (Map abelConfig: relabelConfig) {
+                    String action = String.valueOf(abelConfig.get("action"));
+                    if(StrUtil.isNotBlank(action)){
+                        Map oldAbelConfigMap = null;
+                        if(StrUtil.isNotBlank(String.valueOf(oldLogConfigMap.get("relabel_config")))){
+                            List<Map> relabelConfigMapList = JSONObject.parseArray(String.valueOf(oldLogConfigMap.get("relabel_config").toString()), Map.class);
+                            oldAbelConfigMap = relabelConfigMapList.stream().filter(oldAbelConfig -> {
+                                return StrUtil.equals(action, String.valueOf(oldAbelConfig.get("action")));
+                            }).findFirst().orElse(null);
+                        }
+                        if(StrUtil.equals("replace",action) || StrUtil.equals("keep",action) || StrUtil.equals("drop",action)){
+                            displaceVal(abelConfig,oldAbelConfigMap,"source_labels");
+                        }
+                        if(StrUtil.equals("replace",action)){
+                            displaceVal(abelConfig,oldAbelConfigMap,"target_label");
+                        }
+                        displaceVal(abelConfig,oldAbelConfigMap,"regex");
+                        if(StrUtil.equals("replace",action) || StrUtil.equals("labelmap",action)){
+                            displaceVal(abelConfig,oldAbelConfigMap,"replacement");
+                        }
+                        newRelabelConfig.add(abelConfig);
+                    }
+                }
+                logConfigMap.put("relabel_config",newRelabelConfig);
+            }
+            // Authentication
+            if (StrUtil.isNotBlank(logConfigMap.get("basic_auth").toString())) {
+                Map basicAuth = JSONObject.parseObject(logConfigMap.get("basic_auth").toString(), Map.class);
+                Map oldBasicAuth = JSONObject.parseObject(oldLogConfigMap.get("basic_auth").toString(), Map.class);
+                displaceVal(basicAuth, oldBasicAuth, "username");
+                displaceVal(basicAuth, oldBasicAuth, "password");
+                logConfigMap.put("basic_auth", basicAuth);
+            }
+            if (correctVal(logConfigMap.get("bearer_token").toString())) {
+                logConfigMap.put("bearer_token", oldLogConfigMap.get("bearer_token").toString());
             }
         }
         return logConfigMapList;
@@ -1140,13 +1184,17 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 if (Tool.CollUtil.isNotEmpty(logsConfigMap) && ToolUtil.isNotEmpty(logsConfigMap.get("config"))) {
                     List<Map> configMaps = (List<Map>) logsConfigMap.get("config");
                     for (Map configMap : configMaps) {
-                        if ("file".equals(configMap.get("type").toString())) {
+                        String type = configMap.get("type").toString();
+                        if (StrUtil.equals("file", type)) {
                             validateUtil.validateRequired(configMap.get("fileName"), lineNum, MonitorEndpointImportEnum.CONFIGURATIONS.getIndex());
-                        } else if ("journal".equals(configMap.get("type").toString())) {
+                        } else if (StrUtil.equals("journal", type)) {
                             validateUtil.validateRequired(configMap.get("unit"), lineNum, MonitorEndpointImportEnum.CONFIGURATIONS.getIndex());
-                        } else if ("syslog".equals(configMap.get("type").toString())) {
+                        } else if (StrUtil.equals("syslog", type)) {
                             validateUtil.validateRequired(configMap.get("appName"), lineNum, MonitorEndpointImportEnum.CONFIGURATIONS.getIndex());
                             validateUtil.validateRequired(configMap.get("listenAddress"), lineNum, MonitorEndpointImportEnum.CONFIGURATIONS.getIndex());
+                        } else if (StrUtil.equals("kubernetes", type)) {
+                            List<String> roleList = ListUtil.of("endpoints", "service", "pod", "node", "ingress");
+                            validateUtil.validateEnumValArr(configMap.get("role").toString(), roleList, lineNum, MonitorEndpointImportEnum.CONFIGURATIONS.getIndex());
                         } else {
                             validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_ENUM_VALUE_ERROR.setParam(MonitorEndpointImportEnum.CONFIGURATIONS.getIndex()));
                         }
@@ -1344,15 +1392,18 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 List<Map> configMaps = JSONArray.parseArray(String.valueOf(logsConfigMap.get("config")), Map.class);
                 for (Map configMap : configMaps) {
                     // Basic
-                    if ("file".equals(configMap.get("type").toString()) && ToolUtil.isEmpty(configMap.get("fileName"))) {
-                        throw new NZException(RCode.MODULE_CONFIG_FILENAME_ISNULL);
-                    }else if ("journal".equals(configMap.get("type").toString()) && ToolUtil.isEmpty(configMap.get("unit"))) {
-                        throw new NZException(RCode.MODULE_CONFIG_JOURNALUNIT_ISNULL);
-                    }else if ("syslog".equals(configMap.get("type").toString())) {
-                        if(ToolUtil.isEmpty(configMap.get("appName"))){
-                            throw new NZException(RCode.MODULE_CONFIG_SYSLOG_APPNAME_ISNULL);
-                        }else if(ToolUtil.isEmpty(configMap.get("listenAddress"))){
-                            throw new NZException(RCode.MODULE_CONFIG_SYSLOG_ADDRESS_ISNULL);
+                    String type = configMap.get("type").toString();
+                    if (StrUtil.equals("file", type)) {
+                        ValidateUtils.is(configMap.get("fileName")).notNull(RCode.MODULE_CONFIG_FILENAME_ISNULL);
+                    } else if (StrUtil.equals("journal", type)) {
+                        ValidateUtils.is(configMap.get("unit")).notNull(RCode.MODULE_CONFIG_JOURNALUNIT_ISNULL);
+                    } else if (StrUtil.equals("syslog", type)) {
+                        ValidateUtils.is(configMap.get("appName")).notNull(RCode.MODULE_CONFIG_SYSLOG_APPNAME_ISNULL)
+                                .and(configMap.get("listenAddress")).notNull(RCode.MODULE_CONFIG_SYSLOG_ADDRESS_ISNULL);
+                    } else if (StrUtil.equals("kubernetes", type)) {
+                        List<String> roleList = ListUtil.of("endpoints", "service", "pod", "node", "ingress");
+                        if (!roleList.contains(configMap.get("role").toString())) {
+                            throw new NZException(RCode.MODULE_CONFIG_KUBERNETES_ROLE_INVALID);
                         }
                     }
                     // Pipeline

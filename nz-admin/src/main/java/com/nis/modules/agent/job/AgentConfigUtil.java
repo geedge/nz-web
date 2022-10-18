@@ -1167,18 +1167,6 @@ public class AgentConfigUtil {
 			Map endpointConfigFieldMap = JSONObject.parseObject(endpoint.getEndpointConfig().getConfig(), Map.class);
 			endpoint.setConfig(endpointConfigFieldMap);
 
-			List<Map> endpointRelabelConfig = ObjectUtil
-					.defaultIfNull((List<Map>) endpointConfigFieldMap.get("relabel_config"), new ArrayList<>());
-			Map jobLabeldrop = new HashMap();
-			jobLabeldrop.put("regex", "job");
-			jobLabeldrop.put("action", "labeldrop");
-			endpointRelabelConfig.add(jobLabeldrop);
-			Map instanceLabeldrop = new HashMap();
-			instanceLabeldrop.put("regex", "instance");
-			instanceLabeldrop.put("action", "labeldrop");
-			endpointRelabelConfig.add(instanceLabeldrop);
-			endpoint.setRelabelConfigListJsonString(JSONObject.toJSONString(endpointRelabelConfig));
-
 			// project name 处理
 			MonitorProject project = endpoint.getProject();
 			project.setName(ToolUtil.string2Json(project.getName()));
