@@ -23,6 +23,11 @@ public class VsysAssetRel implements Serializable {
     private Integer id;
 
     /**
+     * task id
+     */
+    private Integer taskId;
+
+    /**
      * 资产id
      */
     private Integer assetId;
@@ -50,9 +55,10 @@ public class VsysAssetRel implements Serializable {
      */
     private Long uts;
 
-    public VsysAssetRel(Integer id, Integer assetId, Integer vsysId, Integer state, Integer delFlag, Long uts) {
+    public VsysAssetRel(Integer id, Integer assetId, Integer taskId, Integer vsysId, Integer state, Integer delFlag, Long uts) {
         this.id = id;
         this.assetId = assetId;
+        this.taskId = taskId;
         this.vsysId = vsysId;
         this.state = state;
         this.delFlag = delFlag;

@@ -868,6 +868,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
             VsysAssetRel rel = new VsysAssetRel();
             rel.setAssetId(assetId);
+            // taskId = 0 代表 内置 VSYS_ID
+            rel.setTaskId(0);
+            // 内置 VSYS_ID = 1
             rel.setVsysId(1);
             rel.setState(1);
             rel.setDelFlag(0);
