@@ -1175,6 +1175,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // vsys asset rel
         vsysAssetRelService.remove(new LambdaQueryWrapper<VsysAssetRel>()
                 .in(VsysAssetRel::getAssetId, removeAssetIdList));
+
+        // comment
+        assetCommentService.remove(new LambdaQueryWrapper<AssetComment>()
+                .in(AssetComment::getAssetId, removeAssetIdList));
         return delRelObjectMsgList;
     }
 
