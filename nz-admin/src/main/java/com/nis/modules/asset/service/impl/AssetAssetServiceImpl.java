@@ -2,6 +2,7 @@ package com.nis.modules.asset.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
+import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
@@ -1809,7 +1810,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 .existed(existed).headerInfos(headerInfos)
                 .build();
 
-        Integer successNum = 0, failNum = 0, addNum = 0, updateNum = 0;
+        Integer addNum = 0, updateNum = 0;
+        // 记录导入失败内容
+        List<Map<Integer, String>> failContentList = ListUtil.list(true);
         // 处理 excel 数据，将含宿主机资产排到前面
         List<Map<Integer, String>> handleImportData = this.handleImportData(importDataList);
         for (int i = 0; i < handleImportData.size(); i++) {
@@ -1823,7 +1826,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             // 索引列重复 & 忽略标识，提示忽略本行
             if (BooleanUtil.and(indexDuplicate, StrUtil.equals("2", existed))) {
                 validateUtil.ignoreThisRow(lineNum, AssetImportEnum.NAME.getIndex());
-                failNum++;
+                failContentList.add(dataMap);
                 continue;
             }
 
@@ -2014,7 +2017,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 // 结束本次导入，自导入行开始 到结尾数据行，提示错误信息
                 for (int j = i; j < handleImportData.size(); j++) {
                     validateUtil.recordImportAttrErr(j + 1, RCode.IMPORT_ERROR_STOP);
-                    failNum++;
+                    failContentList.add(handleImportData.get(j));
                 }
                 break;
             }
@@ -2087,33 +2090,35 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 try {
                     this.saveOrUpdateRowData(saveEntitys, params);
                     dataSourceTransactionManager.commit(transactionStatus);
-                    successNum++;
                     // save or update
-                    Object saveFlay = params.get("save");
-                    if (ObjectUtil.isNotNull(saveFlay)) {
+                    Object saveFlag = params.get("save");
+                    if (ObjectUtil.isNotNull(saveFlag)) {
                         addNum++;
                     } else {
                         updateNum++;
                     }
                 } catch (Exception e) {
-                    failNum++;
+                    failContentList.add(dataMap);
                     dataSourceTransactionManager.rollback(transactionStatus);
                     validateUtil.recordImportAttrErr(lineNum, RCode.ERROR);
                     logger.error("Asset import roll back the transaction failure", e);
                 }
             } else {
-                failNum++;
+                failContentList.add(dataMap);
             }
         }
+        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_ASSET_ASSET_EXPORT_HEADER);
+        String failedContentFileBase64Str = basicImportAndExportServices.getFailedContentFileBase64Str(failContentList, sysHeaderJsonStr, Constant.ImportFileType.EXCEL.getValue());
         //  返回统计信息
         Map<Object, Object> statMap = Tool.MapUtil.builder()
                 .put("seq", seq)
                 .put("totalNum", handleImportData.size())
-                .put("successNum", successNum)
-                .put("failNum", failNum)
+                .put("successNum", addNum + updateNum)
+                .put("failNum", failContentList.size())
                 .put("addNum", addNum)
                 .put("updateNum", updateNum)
                 .put("failDetail", validateUtil.getImportErrMsg())
+                .put("failContent", failedContentFileBase64Str)
                 .build();
         return statMap;
     }
@@ -2175,6 +2180,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
      * @param params
      */
     public void saveOrUpdateRowData(Map saveEntitys, Map<String, Object> params) {
+        MapUtil.removeAny(params, "save", "update");
         String seq = params.get("seq").toString();
 
         Dc dc = (Dc) saveEntitys.get("dc");

@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 /**
@@ -81,8 +82,9 @@ public class AlertMessageController {
 	public void export(HttpServletResponse response, @RequestParam Map<String, Object> params) throws IOException {
 		Object format = params.get("format");
 		String formatStr = format == null ? "1" : format.toString();
-		// 校验 FORMAT
-		if (!Arrays.asList(Constant.IMPORTFILE_TYPE_INTVALUES).contains(formatStr)) {
+        // 校验 FORMAT
+		List<String> supportImportingFileTypes = Arrays.asList(Constant.ImportFileType.values()).stream().map(Constant.ImportFileType::getValue).collect(Collectors.toList());
+		if (!supportImportingFileTypes.contains(formatStr)) {
 			throw new NZException(RCode.EXCELFILE_TYPE_ERROR);
 		}
 		params.put("format", formatStr);

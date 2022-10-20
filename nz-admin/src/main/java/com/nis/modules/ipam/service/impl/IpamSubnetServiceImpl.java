@@ -1,10 +1,11 @@
 package com.nis.modules.ipam.service.impl;
 
+import cn.hutool.core.collection.ListUtil;
+import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
-import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -15,7 +16,6 @@ import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.Dc;
-import com.nis.modules.asset.entity.DcImportEnum;
 import com.nis.modules.asset.service.DcService;
 import com.nis.modules.ipam.dao.IpamIpDao;
 import com.nis.modules.ipam.dao.IpamSubnetDao;
@@ -23,7 +23,6 @@ import com.nis.modules.ipam.entity.IpamIp;
 import com.nis.modules.ipam.entity.IpamSubnet;
 import com.nis.modules.ipam.entity.IpamSubnetEum;
 import com.nis.modules.ipam.service.IpamSubnetService;
-import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
@@ -36,15 +35,16 @@ import inet.ipaddr.IncompatibleAddressException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.ObjectUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet> implements IpamSubnetService {
@@ -273,30 +273,17 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 		String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_IPAMSUBNET_IMPORT_HEADER);
 		Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
         List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
+		// 表头信息 国际化之后的
+		List<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
 
-        String seqUUID = UUID.randomUUID().toString();
-        params.put("seq",seqUUID);
-
-        //表头信息
-        ArrayList<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
-		int totalNum = importDataList.size();
-		List<Map<String, String>> failDetailList = this.saveIpamSubnetsFromImportDataList(importDataList, headerInfos, params);
-
-		// 从错误信息中获取失败导入行数量
-		int failNum = (int) failDetailList.stream().map(map -> Integer.valueOf(map.get("lineNo"))).distinct().count();
-
-
-
-        Map resultMap = new HashMap(8);
-        resultMap.put("seq", seqUUID);
-        resultMap.put("totalNum", totalNum);
-        resultMap.put("successNum", totalNum - failNum);
-        resultMap.put("failNum", failNum);
-        resultMap.put("failDetail", failDetailList);
-        return resultMap;
+		// 返回统计信息
+		Map statMap = this.saveIpamSubnetsFromImportDataList(importDataList, headerInfos, params);
+		return statMap;
 	}
 	
-	private List<Map<String, String>> saveIpamSubnetsFromImportDataList(List<Map<Integer, String>> importDataList, ArrayList<String> headerInfos, Map<String,Object> params) throws AddressStringException, IncompatibleAddressException {
+	private Map saveIpamSubnetsFromImportDataList(List<Map<Integer, String>> importDataList, List<String> headerInfos, Map<String,Object> params) throws AddressStringException, IncompatibleAddressException {
+		String seq = StrUtil.uuid();
+		params.put("seq", seq);
 		// 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
 		String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
 
@@ -304,6 +291,9 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 		ImportValidateUtil validateUtil = ImportValidateUtil.builder()
 				.existed(existed).headerInfos(headerInfos)
 				.build();
+		Integer addNum = 0, updateNum = 0;
+		// 记录导入失败内容
+		List<Map<Integer, String>> failContentList = ListUtil.list(true);
         for (int i = 0; i < importDataList.size(); i++) {
 			int lineNum = i + 1;
             Map<Integer, String> dataMap = importDataList.get(i);
@@ -315,6 +305,7 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 			// 索引列重复 & 忽略标识，提示忽略本行
 			if (BooleanUtil.and(indexDuplicate, StrUtil.equals("2" , existed))){
 				validateUtil.ignoreThisRow(lineNum, IpamSubnetEum.NAME.getIndex());
+				failContentList.add(dataMap);
 				continue;
 			}
 
@@ -358,6 +349,7 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 				// 结束本次导入，自导入行开始 到结尾数据行，提示错误信息
 				for (int j = i; j < importDataList.size(); j++) {
 					validateUtil.recordImportAttrErr(j + 1, RCode.IMPORT_ERROR_STOP);
+					failContentList.add(importDataList.get(j));
 				}
 				break;
 			}
@@ -378,22 +370,46 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 				ipamSubnet.setDcId(dc.getId());
 				try {
 					this.saveOrUpdateRowData(ipamSubnet,params);
+					// save or update
+					Object saveFlag = params.get("save");
+					if (ObjectUtil.isNotNull(saveFlag)) {
+						addNum++;
+					} else {
+						updateNum++;
+					}
 				} catch (Exception e) {
+					failContentList.add(dataMap);
 					validateUtil.recordImportAttrErr(lineNum, RCode.ERROR);
 					log.error("ipamSubnet import roll back the transaction failure", e);
 				}
+			} else {
+				failContentList.add(dataMap);
 			}
 		}
-        //返回错误信息
-        return validateUtil.getImportErrMsg();
+		String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_IPAMSUBNET_IMPORT_HEADER);
+		String failedContentFileBase64Str = basicImportAndExportServices.getFailedContentFileBase64Str(failContentList, sysHeaderJsonStr, Constant.ImportFileType.EXCEL.getValue());
+		//  返回统计信息
+		Map<Object, Object> statMap = Tool.MapUtil.builder()
+				.put("seq", seq)
+				.put("totalNum", importDataList.size())
+				.put("successNum", addNum + updateNum)
+				.put("failNum", failContentList.size())
+				.put("addNum", addNum)
+				.put("updateNum", updateNum)
+				.put("failDetail", validateUtil.getImportErrMsg())
+				.put("failContent", failedContentFileBase64Str)
+				.build();
+		return statMap;
     }
 
 	private void saveOrUpdateRowData(IpamSubnet ipamSubnet, Map<String,Object> params) {
+		MapUtil.removeAny(params, "save", "update");
 		// 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
 		String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
 
 		IpamSubnet oldIpamSubnet = this.getOne(new LambdaQueryWrapper<IpamSubnet>().eq(IpamSubnet::getName, ipamSubnet.getName()));
 		if (StrUtil.equals("1", existed) && oldIpamSubnet != null) {
+			params.put("update", true);
 			// update
 			ipamSubnet.setId(oldIpamSubnet.getId());
 
@@ -408,6 +424,7 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 					.set(IpamSubnet::getSeq, ipamSubnet.getSeq());
 			this.update(ipamSubnet, updateWrapper);
 		} else {
+			params.put("save", true);
 			// insert
 			this.save(ipamSubnet);
 		}

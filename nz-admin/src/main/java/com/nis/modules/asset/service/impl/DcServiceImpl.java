@@ -1,5 +1,7 @@
 package com.nis.modules.asset.service.impl;
 
+import cn.hutool.core.collection.ListUtil;
+import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
@@ -50,7 +52,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -479,27 +484,17 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
         Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
         List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
 
-        String seq = UUID.randomUUID().toString();
-        params.put("seq", seq);
         // 表头信息 国际化之后的
         List<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
 
-        int totalNum = importDataList.size();
-        List<Map<String, String>> failDetailList = this.saveDatacentersFromImportDataList(importDataList, headerInfos, params);
-
-        // 从错误信息中获取失败导入行数量
-        int failNum = (int) failDetailList.stream().map(map -> Integer.valueOf(map.get("lineNo"))).distinct().count();
-
-        Map resultMap = new HashMap(8);
-        resultMap.put("seq", seq);
-        resultMap.put("totalNum", totalNum);
-        resultMap.put("successNum", totalNum - failNum);
-        resultMap.put("failNum", failNum);
-        resultMap.put("failDetail", failDetailList);
-        return resultMap;
+        // 返回统计信息
+        Map statMap = this.saveDatacentersFromImportDataList(importDataList, headerInfos, params);
+        return statMap;
     }
 
-    private List<Map<String, String>> saveDatacentersFromImportDataList(List<Map<Integer, String>> importDataList, List<String> headerInfos, Map<String, Object> params) {
+    private Map saveDatacentersFromImportDataList(List<Map<Integer, String>> importDataList, List<String> headerInfos, Map<String, Object> params) {
+        String seq = StrUtil.uuid();
+        params.put("seq", seq);
         // 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
         String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
 
@@ -507,6 +502,9 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
         ImportValidateUtil validateUtil = ImportValidateUtil.builder()
                 .existed(existed).headerInfos(headerInfos)
                 .build();
+        Integer addNum = 0, updateNum = 0;
+        // 记录导入失败内容
+        List<Map<Integer, String>> failContentList = ListUtil.list(true);
         for (int i = 0; i < importDataList.size(); i++) {
             int lineNum = i + 1;
             Map<Integer, String> dataMap = importDataList.get(i);
@@ -517,6 +515,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
             // 索引列重复 & 忽略标识，提示忽略本行
             if (BooleanUtil.and(indexDuplicate, StrUtil.equals("2", existed))) {
                 validateUtil.ignoreThisRow(lineNum, DcImportEnum.NAME.getIndex());
+                failContentList.add(dataMap);
                 continue;
             }
 
@@ -550,6 +549,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
                 // 结束本次导入，自导入行开始 到结尾数据行，提示错误信息
                 for (int j = i; j < importDataList.size(); j++) {
                     validateUtil.recordImportAttrErr(j + 1, RCode.IMPORT_ERROR_STOP);
+                    failContentList.add(importDataList.get(j));
                 }
                 break;
             }
@@ -573,17 +573,40 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
                 }
                 try {
                     this.saveOrUpdateRowData(dc, params);
+                    // save or update
+                    Object saveFlag = params.get("save");
+                    if (ObjectUtil.isNotNull(saveFlag)) {
+                        addNum++;
+                    } else {
+                        updateNum++;
+                    }
                 } catch (Exception e) {
+                    failContentList.add(dataMap);
                     validateUtil.recordImportAttrErr(lineNum, RCode.ERROR);
                     log.error("Dc import roll back the transaction failure", e);
                 }
+            } else {
+                failContentList.add(dataMap);
             }
         }
-        // 返回错误信息
-        return validateUtil.getImportErrMsg();
+        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_DC_EXPORT_HEADER);
+        String failedContentFileBase64Str = basicImportAndExportServices.getFailedContentFileBase64Str(failContentList, sysHeaderJsonStr, Constant.ImportFileType.EXCEL.getValue());
+        //  返回统计信息
+        Map<Object, Object> statMap = Tool.MapUtil.builder()
+                .put("seq", seq)
+                .put("totalNum", importDataList.size())
+                .put("successNum", addNum + updateNum)
+                .put("failNum", failContentList.size())
+                .put("addNum", addNum)
+                .put("updateNum", updateNum)
+                .put("failDetail", validateUtil.getImportErrMsg())
+                .put("failContent", failedContentFileBase64Str)
+                .build();
+        return statMap;
     }
 
     private void saveOrUpdateRowData(Dc dc, Map<String, Object> params) {
+        MapUtil.removeAny(params, "save", "update");
         String seq = params.get("seq").toString();
         dc.setSeq(seq);
 
@@ -601,6 +624,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
         String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
         Dc oldDc = this.getOne(new LambdaQueryWrapper<Dc>().eq(Dc::getName, dc.getName()));
         if (StrUtil.equals("1", existed) && oldDc != null) {
+            params.put("update", true);
             // update
             dc.setId(oldDc.getId());
 
@@ -613,6 +637,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
                     .set(Dc::getTel, dc.getTel());
             this.update(dc, updateWrapper);
         } else {
+            params.put("save", true);
             // insert
             // default value
             dc.setY(1);

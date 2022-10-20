@@ -948,25 +948,12 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
         List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
 
-        String seq = UUID.randomUUID().toString();
-        params.put("seq", seq);
-
         // 表头信息 国际化之后的
         List<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
 
-        int totalNum = importDataList.size();
-        List<Map<String, String>> failDetailList = this.saveEndpointsFromImportDataList(importDataList, headerInfos, params);
-
-        // 从错误信息中获取失败导入行数量
-        int failNum = (int) failDetailList.stream().map(map -> Integer.valueOf(map.get("lineNo"))).distinct().count();
-
-        Map resultMap = new HashMap(8);
-        resultMap.put("seq", seq);
-        resultMap.put("totalNum", totalNum);
-        resultMap.put("successNum", totalNum - failNum);
-        resultMap.put("failNum", failNum);
-        resultMap.put("failDetail", failDetailList);
-        return resultMap;
+        // 返回统计信息
+        Map statMap = this.saveEndpointsFromImportDataList(importDataList, headerInfos, params);
+        return statMap;
     }
 
     @Override
@@ -1072,7 +1059,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         return enableEndpointInfoList;
     }
 
-    private List<Map<String, String>> saveEndpointsFromImportDataList(List<Map<Integer, String>> importDataList, List<String> headerInfos, Map<String, Object> params) {
+    private Map saveEndpointsFromImportDataList(List<Map<Integer, String>> importDataList, List<String> headerInfos, Map<String, Object> params) {
+        String seq = StrUtil.uuid();
+        params.put("seq", seq);
         // 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
         String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
 
@@ -1084,6 +1073,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         List<AssetAsset> assetList = assetService.list();
         List<MonitorProject> projectList = monitorProjectService.list();
         List<MonitorModule> moduleList = monitorModuleService.list();
+        Integer addNum = 0, updateNum = 0;
+        // 记录导入失败内容
+        List<Map<Integer, String>> failContentList = ListUtil.list(true);
         for (int i = 0; i < importDataList.size(); i++) {
             Integer lineNum = i + 1;
             Map<Integer, String> dataMap = importDataList.get(i);
@@ -1218,6 +1210,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 // 索引列重复 & 忽略标识，提示忽略本行
                 if (BooleanUtil.and(indexDuplicate, StrUtil.equals("2", existed))) {
                     validateUtil.ignoreThisRow(lineNum, MonitorEndpointImportEnum.NAME.getIndex());
+                    failContentList.add(dataMap);
                     continue;
                 }
             }
@@ -1229,6 +1222,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 // 结束本次导入，自导入行开始 到结尾数据行，提示错误信息
                 for (int j = i; j < importDataList.size(); j++) {
                     validateUtil.recordImportAttrErr(j + 1, RCode.IMPORT_ERROR_STOP);
+                    failContentList.add(importDataList.get(j));
                 }
                 break;
             }
@@ -1252,18 +1246,41 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 try {
                     this.saveOrUpdateRowData(monitorEndpoint, params);
                     dataSourceTransactionManager.commit(transactionStatus);
+                    // save or update
+                    Object saveFlag = params.get("save");
+                    if (ObjectUtil.isNotNull(saveFlag)) {
+                        addNum++;
+                    } else {
+                        updateNum++;
+                    }
                 } catch (Exception e) {
+                    failContentList.add(dataMap);
                     dataSourceTransactionManager.rollback(transactionStatus);
                     validateUtil.recordImportAttrErr(lineNum, RCode.ERROR);
                     log.error("Endpoint import roll back the transaction failure", e);
                 }
+            } else {
+                failContentList.add(dataMap);
             }
         }
-        // 返回错误信息
-        return validateUtil.getImportErrMsg();
+        String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_MONITORENDPOINT_EXPORT_HEADER);
+        String failedContentFileBase64Str = basicImportAndExportServices.getFailedContentFileBase64Str(failContentList, sysHeaderJsonStr, Constant.ImportFileType.EXCEL.getValue());
+        //  返回统计信息
+        Map<Object, Object> statMap = Tool.MapUtil.builder()
+                .put("seq", seq)
+                .put("totalNum", importDataList.size())
+                .put("successNum", addNum + updateNum)
+                .put("failNum", failContentList.size())
+                .put("addNum", addNum)
+                .put("updateNum", updateNum)
+                .put("failDetail", validateUtil.getImportErrMsg())
+                .put("failContent", failedContentFileBase64Str)
+                .build();
+        return statMap;
     }
 
     private void saveOrUpdateRowData(MonitorEndpoint endpoint, Map<String, Object> params) {
+        MapUtil.removeAny(params, "save", "update");
         String seq = params.get("seq").toString();
         endpoint.setSeq(seq);
 
@@ -1272,6 +1289,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         MonitorEndpoint oldEndpoint = this.getOne(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getName, endpoint.getName()));
 
         if (StrUtil.equals("1", existed) && ObjectUtil.isNotEmpty(oldEndpoint)) {
+            params.put("update", true);
             // update & sync
             endpoint.setId(oldEndpoint.getId());
 
@@ -1293,6 +1311,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 }
             }
         } else {
+            params.put("save", true);
             // endpoint
             this.save(endpoint);
             // endpoint panel & info chart

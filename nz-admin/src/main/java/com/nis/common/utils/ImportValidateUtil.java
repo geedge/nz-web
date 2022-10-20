@@ -249,7 +249,7 @@ public class ImportValidateUtil {
     public void validateSnmpOID(String oid, int lineNum, int headerIndex) {
         try {
             SimpleOIDTextFormat.parseOID(oid);
-        } catch (ParseException e) {
+        } catch (Exception e) {
             String header = headerInfos.get(headerIndex);
             this.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(header));
         }

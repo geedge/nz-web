@@ -1194,10 +1194,31 @@ public class Constant {
 
 
 	public static final String[] LANGUAGE_VALUES = {"en", "zh"};
-	//1: XLSX， 2: CSV， 3: JSON
-	public static final String[] IMPORTFILE_TYPE_INTVALUES = {"1", "2", "3"};
 
-	public static final String[] IMPORTFILE_TYPE_STRVALUES = {"xlsx", "xls", "csv", "json"};
+    /**
+     * 导入导出支持的文件类型
+     */
+    public enum ImportFileType {
+        EXCEL("1"),
+        CSV("2"),
+        JSON("3");
+
+        private String value;
+
+        public String getValue() {
+            return value;
+        }
+
+        ImportFileType(String value) {
+            this.value = value;
+        }
+
+        public static ImportFileType getType(String value) {
+            for (ImportFileType v : values())
+                if (v.getValue().equalsIgnoreCase(value)) return v;
+            throw new IllegalArgumentException();
+        }
+    }
 
 	public static final String ENDPOINT_METRICS_STATE_CACHE_KEY = "endpoint_metrics_state";
 

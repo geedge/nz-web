@@ -1,25 +1,30 @@
 package com.nis.modules.alert.service.impl;
 
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.*;
-import java.util.stream.Collectors;
-
+import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nis.common.exception.NZException;
+import com.nis.common.protobuf.Types.TimeSeries;
+import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
-import com.nis.modules.alert.entity.AlertNotifyMethod;
-import com.nis.modules.alert.entity.AlertRuleEntity;
+import com.nis.modules.alert.dao.RecordRuleDao;
+import com.nis.modules.alert.entity.RecordRuleEntity;
 import com.nis.modules.alert.entity.RecordRuleEnum;
-import com.nis.modules.asset.entity.Dc;
-import com.nis.modules.endpoint.entity.MonitorEndpointImportEnum;
-import com.nis.modules.ipam.entity.IpamSubnet;
-import com.nis.modules.ipam.entity.IpamSubnetEum;
+import com.nis.modules.alert.service.RecordRuleService;
+import com.nis.modules.sys.dao.SysUserDao;
+import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysUserStarredService;
+import com.nis.modules.sys.shiro.ShiroUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
@@ -29,27 +34,15 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.nis.common.exception.NZException;
-import com.nis.common.protobuf.Types.TimeSeries;
-import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.modules.alert.dao.RecordRuleDao;
-import com.nis.modules.alert.entity.RecordRuleEntity;
-import com.nis.modules.alert.service.RecordRuleService;
-import com.nis.modules.sys.dao.SysUserDao;
-import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.entity.SysUserStarredEntity;
-import com.nis.modules.sys.service.SysUserStarredService;
-import com.nis.modules.sys.shiro.ShiroUtils;
-
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRuleEntity> implements RecordRuleService {
@@ -158,8 +151,8 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 		Long id = ShiroUtils.getUserEntity().getId();
 		recordRule.setCid(Integer.parseInt(id.toString()));
 		recordRule.setUid(Integer.parseInt(id.toString()));
-		recordRule.setCts(new Date().getTime());
-		recordRule.setUts(new Date().getTime());
+		recordRule.setCts(System.currentTimeMillis());
+		recordRule.setUts(System.currentTimeMillis());
 		this.save(recordRule);
 		return recordRule.getId();
 	}
@@ -181,7 +174,7 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 		}
 		Long uid = ShiroUtils.getUserEntity().getId();
 		recordRule.setUid(Integer.parseInt(uid.toString()));
-		recordRule.setUts(new Date().getTime());
+		recordRule.setUts(System.currentTimeMillis());
 		this.updateById(recordRule);
 		return recordRule.getId();
 	}
@@ -308,33 +301,21 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 
 	@Override
 	public Map importData(MultipartFile excelFile, Map<String, Object> params) throws IOException {
-
 		String sysHeaderJsonStr = configService.getValue(Constant.SYSCONFIG_KEY_RUCORDRULE_IMPORT_HEADER);
 		Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
 		List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(excelFile, sysHeaderJsonStr);
 
-		String seq = UUID.randomUUID().toString();
-		params.put("seq", seq);
-
 		// 表头信息 国际化之后的
 		List<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
 
-		int totalNum = importDataList.size();
-		List<Map<String, String>> failDetailList = this.saveRulesFromImportDataList(importDataList, headerInfos, params);
-
-		// 从错误信息中获取失败导入行数量
-		int failNum = (int) failDetailList.stream().map(map -> Integer.valueOf(map.get("lineNo"))).distinct().count();
-
-		Map resultMap = new HashMap(8);
-		resultMap.put("seq", seq);
-		resultMap.put("totalNum", totalNum);
-		resultMap.put("successNum", totalNum - failNum);
-		resultMap.put("failNum", failNum);
-		resultMap.put("failDetail", failDetailList);
-		return resultMap;
+		// 返回统计信息
+		Map statMap = this.saveRulesFromImportDataList(importDataList, headerInfos, params);
+		return statMap;
 	}
 
-	private List<Map<String, String>> saveRulesFromImportDataList(List<Map<Integer, String>> importDataList, List<String> headerInfos, Map<String, Object> params) {
+	private Map saveRulesFromImportDataList(List<Map<Integer, String>> importDataList, List<String> headerInfos, Map<String, Object> params) {
+		String seq = StrUtil.uuid();
+		params.put("seq", seq);
 		// 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
 		String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
 
@@ -342,6 +323,9 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 		ImportValidateUtil validateUtil = ImportValidateUtil.builder()
 				.existed(existed).headerInfos(headerInfos)
 				.build();
+		Integer addNum = 0, updateNum = 0;
+		// 记录导入失败内容
+		List<Map<Integer, String>> failContentList = ListUtil.list(true);
 		for (int i = 0; i < importDataList.size(); i++) {
 			int lineNum = i + 1;
 			Map<Integer, String> dataMap = importDataList.get(i);
@@ -354,6 +338,7 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 			// 索引列重复 & 忽略标识，提示忽略本行
 			if (BooleanUtil.and(indexDuplicate, StrUtil.equals("2", existed))) {
 				validateUtil.ignoreThisRow(lineNum, RecordRuleEnum.NAME.getIndex());
+				failContentList.add(dataMap);
 				continue;
 			}
 
@@ -369,7 +354,6 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 			//inr
 			String inr = dataMap.get(RecordRuleEnum.INR.getIndex());
 
-
 			//state
 			String state = dataMap.get(RecordRuleEnum.STATE.getIndex());
 			validateUtil.validateRequired(state, lineNum, RecordRuleEnum.STATE.getIndex());
@@ -384,7 +368,6 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 				}
 			}
 
-
 			// 遇到错误是否继续导入，可选值： 0：不继续    1：继续    默认值：1
 			String ignoreError = Tool.ObjectUtil.defaultIfEmpty((String) params.get("ignoreError"), "1");
 			List<Map<String, String>> errMsgForThisLine = validateUtil.getImportErrMsgForThisLine(lineNum);
@@ -392,6 +375,7 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 				// 结束本次导入，自导入行开始 到结尾数据行，提示错误信息
 				for (int j = i; j < importDataList.size(); j++) {
 					validateUtil.recordImportAttrErr(j + 1, RCode.IMPORT_ERROR_STOP);
+					failContentList.add(importDataList.get(j));
 				}
 				break;
 			}
@@ -410,16 +394,40 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 
 				try {
 					this.saveOrUpdateRowData(recordRule, params);
+					// save or update
+					Object saveFlag = params.get("save");
+					if (ObjectUtil.isNotNull(saveFlag)) {
+						addNum++;
+					} else {
+						updateNum++;
+					}
 				} catch (Exception e) {
+					failContentList.add(dataMap);
 					validateUtil.recordImportAttrErr(lineNum, RCode.ERROR);
 					log.error("record rule import roll back the transaction failure", e);
 				}
+			} else {
+				failContentList.add(dataMap);
 			}
 		}
-		return validateUtil.getImportErrMsg();
+		String sysHeaderJsonStr = configService.getValue(Constant.SYSCONFIG_KEY_RUCORDRULE_IMPORT_HEADER);
+		String failedContentFileBase64Str = basicImportAndExportServices.getFailedContentFileBase64Str(failContentList, sysHeaderJsonStr, Constant.ImportFileType.EXCEL.getValue());
+		//  返回统计信息
+		Map<Object, Object> statMap = Tool.MapUtil.builder()
+				.put("seq", seq)
+				.put("totalNum", importDataList.size())
+				.put("successNum", addNum + updateNum)
+				.put("failNum", failContentList.size())
+				.put("addNum", addNum)
+				.put("updateNum", updateNum)
+				.put("failDetail", validateUtil.getImportErrMsg())
+				.put("failContent", failedContentFileBase64Str)
+				.build();
+		return statMap;
 	}
 
 	private void saveOrUpdateRowData(RecordRuleEntity recordRule, Map<String, Object> params) {
+		MapUtil.removeAny(params, "save", "update");
 		// 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
 		String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
 
@@ -427,17 +435,19 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 
 		RecordRuleEntity oldRecordRule = this.getOne(new LambdaQueryWrapper<RecordRuleEntity>().eq(RecordRuleEntity::getName, recordRule.getName()));
 		if (StrUtil.equals("1", existed) && oldRecordRule != null) {
+			params.put("update", true);
 			// update
 			recordRule.setId(oldRecordRule.getId());
 			recordRule.setUid(Integer.parseInt(id.toString()));
-			recordRule.setUts(new Date().getTime());
+			recordRule.setUts(System.currentTimeMillis());
 			this.updateById(recordRule);
 		} else {
+			params.put("save", true);
 			// insert
 			recordRule.setCid(Integer.parseInt(id.toString()));
 			recordRule.setUid(Integer.parseInt(id.toString()));
-			recordRule.setCts(new Date().getTime());
-			recordRule.setUts(new Date().getTime());
+			recordRule.setCts(System.currentTimeMillis());
+			recordRule.setUts(System.currentTimeMillis());
 			this.save(recordRule);
 		}
 	}

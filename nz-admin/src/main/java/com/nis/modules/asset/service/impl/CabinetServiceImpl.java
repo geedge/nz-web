@@ -1,5 +1,7 @@
 package com.nis.modules.asset.service.impl;
 
+import cn.hutool.core.collection.ListUtil;
+import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
@@ -389,27 +391,17 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
         Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
         List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
 
-        String seq = UUID.randomUUID().toString();
-        params.put("seq", seq);
         // 表头信息 国际化之后的
         List<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
 
-        int totalNum = importDataList.size();
-        List<Map<String, String>> failDetailList = this.saveCabinetsFromImportDataList(importDataList, headerInfos, params);
-
-        // 从错误信息中获取失败导入行数量
-        int failNum = (int) failDetailList.stream().map(map -> Integer.valueOf(map.get("lineNo"))).distinct().count();
-
-        Map resultMap = new HashMap(8);
-        resultMap.put("seq", seq);
-        resultMap.put("totalNum", totalNum);
-        resultMap.put("successNum", totalNum - failNum);
-        resultMap.put("failNum", failNum);
-        resultMap.put("failDetail", failDetailList);
-        return resultMap;
+        // 返回统计信息
+        Map statMap = this.saveCabinetsFromImportDataList(importDataList, headerInfos, params);
+        return statMap;
     }
 
-    private List<Map<String, String>> saveCabinetsFromImportDataList(List<Map<Integer, String>> importDataList, List<String> headerInfos, Map<String, Object> params) {
+    private Map saveCabinetsFromImportDataList(List<Map<Integer, String>> importDataList, List<String> headerInfos, Map<String, Object> params) {
+        String seq = StrUtil.uuid();
+        params.put("seq", seq);
         // 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
         String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
 
@@ -418,6 +410,9 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
                 .existed(existed).headerInfos(headerInfos)
                 .build();
         List<Dc> dcList = dcService.list();
+        Integer addNum = 0, updateNum = 0;
+        // 记录导入失败内容
+        List<Map<Integer, String>> failContentList = ListUtil.list(true);
         for (int i = 0; i < importDataList.size(); i++) {
             int lineNum = i + 1;
             Map<Integer, String> dataMap = importDataList.get(i);
@@ -447,6 +442,7 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
                         validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_DUPLICATE.setParam(CabinetImportEnum.NAME.getIndex()));
                     } else if (StrUtil.equals("2", existed)) {
                         validateUtil.ignoreThisRow(lineNum, CabinetImportEnum.NAME.getIndex());
+                        failContentList.add(dataMap);
                         continue;
                     }
                 }
@@ -488,6 +484,7 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
                 // 结束本次导入，自导入行开始 到结尾数据行，提示错误信息
                 for (int j = i; j < importDataList.size(); j++) {
                     validateUtil.recordImportAttrErr(j + 1, RCode.IMPORT_ERROR_STOP);
+                    failContentList.add(importDataList.get(j));
                 }
                 break;
             }
@@ -503,17 +500,40 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
                 if (StrUtil.isNotEmpty(uSize)) cabinet.setuSize(Double.valueOf(uSize).intValue());
                 try {
                     this.saveOrUpdateRowData(dc, cabinet, params);
+                    // save or update
+                    Object saveFlag = params.get("save");
+                    if (ObjectUtil.isNotNull(saveFlag)) {
+                        addNum++;
+                    } else {
+                        updateNum++;
+                    }
                 } catch (Exception e) {
+                    failContentList.add(dataMap);
                     validateUtil.recordImportAttrErr(lineNum, RCode.ERROR);
                     log.error("Cabinet import roll back the transaction failure", e);
                 }
+            } else {
+                failContentList.add(dataMap);
             }
         }
-        // 返回错误信息
-        return validateUtil.getImportErrMsg();
+        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_CABINET_EXPORT_HEADER);
+        String failedContentFileBase64Str = basicImportAndExportServices.getFailedContentFileBase64Str(failContentList, sysHeaderJsonStr, Constant.ImportFileType.EXCEL.getValue());
+        //  返回统计信息
+        Map<Object, Object> statMap = Tool.MapUtil.builder()
+                .put("seq", seq)
+                .put("totalNum", importDataList.size())
+                .put("successNum", addNum + updateNum)
+                .put("failNum", failContentList.size())
+                .put("addNum", addNum)
+                .put("updateNum", updateNum)
+                .put("failDetail", validateUtil.getImportErrMsg())
+                .put("failContent", failedContentFileBase64Str)
+                .build();
+        return statMap;
     }
 
     private void saveOrUpdateRowData(Dc dc, Cabinet cabinet, Map<String, Object> params) {
+        MapUtil.removeAny(params, "save", "update");
         String seq = params.get("seq").toString();
         cabinet.setSeq(seq);
         cabinet.setDcId(dc.getId());
@@ -529,6 +549,7 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
                 .eq(Cabinet::getName, cabinet.getName())
                 .eq(Cabinet::getDcId, dc.getId()));
         if (StrUtil.equals("1", existed) && oldCabinet != null) {
+            params.put("update", true);
             // update
             cabinet.setId(oldCabinet.getId());
 
@@ -538,6 +559,7 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
                     .set(Cabinet::getX, cabinet.getX());
             this.update(cabinet, updateWrapper);
         } else {
+            params.put("save", true);
             // insert
             this.save(cabinet);
         }

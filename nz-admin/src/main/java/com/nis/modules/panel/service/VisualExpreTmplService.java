@@ -37,7 +37,7 @@ public interface VisualExpreTmplService extends IService<VisualExpressionTmpl> {
 
     void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException;
 
-    Map importTmpls(MultipartFile excelFile) throws IOException;
+    Map importTmpls(MultipartFile excelFile, Map<String, Object> params) throws IOException;
 
     void export(HttpServletResponse response, Map<String, Object> params) throws IOException;
 

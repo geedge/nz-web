@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 /**
@@ -238,7 +239,8 @@ public class AssetController {
             throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
         }
         // 校验 FORMAT
-        if (!Arrays.asList(Constant.IMPORTFILE_TYPE_INTVALUES).contains(format)) {
+        List<String> supportImportingFileTypes = Arrays.asList(Constant.ImportFileType.values()).stream().map(Constant.ImportFileType::getValue).collect(Collectors.toList());
+        if (!supportImportingFileTypes.contains(format)) {
             throw new NZException(RCode.EXCELFILE_TYPE_ERROR);
         }
 
@@ -291,7 +293,8 @@ public class AssetController {
         Object format = params.get("format");
         String formatStr = format == null ? "1" : format.toString();
         // 校验 FORMAT
-        if (!Arrays.asList(Constant.IMPORTFILE_TYPE_INTVALUES).contains(formatStr)) {
+        List<String> supportImportingFileTypes = Arrays.asList(Constant.ImportFileType.values()).stream().map(Constant.ImportFileType::getValue).collect(Collectors.toList());
+        if (!supportImportingFileTypes.contains(formatStr)) {
             throw new NZException(RCode.EXCELFILE_TYPE_ERROR);
         }
         params.put("format", formatStr);

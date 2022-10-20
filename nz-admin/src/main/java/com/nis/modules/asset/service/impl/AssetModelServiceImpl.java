@@ -1,46 +1,21 @@
 package com.nis.modules.asset.service.impl;
 
-import java.io.IOException;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import javax.servlet.http.HttpServletResponse;
-
-import org.snmp4j.util.SimpleOIDTextFormat;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.DefaultTransactionDefinition;
-import org.springframework.web.multipart.MultipartFile;
-
+import cn.hutool.core.collection.ListUtil;
+import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.ImportValidateUtil;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
+import com.nis.common.utils.*;
 import com.nis.modules.asset.dao.AssetAssetDao;
 import com.nis.modules.asset.dao.AssetModelDao;
-import com.nis.modules.asset.entity.AssetAsset;
-import com.nis.modules.asset.entity.AssetBrand;
-import com.nis.modules.asset.entity.AssetModel;
-import com.nis.modules.asset.entity.AssetModelImportEnum;
-import com.nis.modules.asset.entity.AssetTypeConf;
+import com.nis.modules.asset.entity.*;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetBrandService;
 import com.nis.modules.asset.service.AssetModelService;
@@ -54,11 +29,22 @@ import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import org.snmp4j.util.SimpleOIDTextFormat;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
+import org.springframework.web.multipart.MultipartFile;
 
-import cn.hutool.core.util.BooleanUtil;
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 资产型号 service 实现类
@@ -214,7 +200,7 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
             // format
             try {
             	SimpleOIDTextFormat.parseOID(model.getSysObjectId());
-            } catch (ParseException e) {
+            } catch (Exception e) {
             	throw new NZException(RCode.ASSET_MODEL_OID_INCORRECT);
 			}
 
@@ -378,28 +364,17 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
         Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
         List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
 
-        String seq = UUID.randomUUID().toString();
-        params.put("seq", seq);
-
         // 表头信息 国际化之后的
         List<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
 
-        int totalNum = importDataList.size();
-        List<Map<String, String>> failDetailList = this.saveAssetModelsFromImportDataList(importDataList, headerInfos, params);
-
-        // 从错误信息中获取失败导入行数量
-        int failNum = (int) failDetailList.stream().map(map -> Integer.valueOf(map.get("lineNo"))).distinct().count();
-
-        Map resultMap = new HashMap(8);
-        resultMap.put("seq", seq);
-        resultMap.put("totalNum", totalNum);
-        resultMap.put("successNum", totalNum - failNum);
-        resultMap.put("failNum", failNum);
-        resultMap.put("failDetail", failDetailList);
-        return resultMap;
+        // 返回统计信息
+        Map statMap = this.saveAssetModelsFromImportDataList(importDataList, headerInfos, params);
+        return statMap;
     }
 
-    private List<Map<String, String>> saveAssetModelsFromImportDataList(List<Map<Integer, String>> importDataList, List<String> headerInfos, Map<String, Object> params) {
+    private Map saveAssetModelsFromImportDataList(List<Map<Integer, String>> importDataList, List<String> headerInfos, Map<String, Object> params) {
+        String seq = StrUtil.uuid();
+        params.put("seq", seq);
         // 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
         String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
 
@@ -407,6 +382,9 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
         ImportValidateUtil validateUtil = ImportValidateUtil.builder()
                 .existed(existed).headerInfos(headerInfos)
                 .build();
+        Integer addNum = 0, updateNum = 0;
+        // 记录导入失败内容
+        List<Map<Integer, String>> failContentList = ListUtil.list(true);
         for (int i = 0; i < importDataList.size(); i++) {
             int lineNum = i + 1;
             Map saveEntitys = Tool.MapUtil.newHashMap();
@@ -434,6 +412,7 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
                         validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_DUPLICATE.setParam(AssetModelImportEnum.NAME.getIndex()));
                     } else if (StrUtil.equals("2", existed)) {
                         validateUtil.ignoreThisRow(lineNum, AssetModelImportEnum.NAME.getIndex());
+                        failContentList.add(dataMap);
                         continue;
                     }
                 }
@@ -478,6 +457,7 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
                 // 结束本次导入，自导入行开始 到结尾数据行，提示错误信息
                 for (int j = i; j < importDataList.size(); j++) {
                     validateUtil.recordImportAttrErr(j + 1, RCode.IMPORT_ERROR_STOP);
+                    failContentList.add(importDataList.get(j));
                 }
                 break;
             }
@@ -502,18 +482,41 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
                 try {
                     this.saveOrUpdateRowData(saveEntitys, params);
                     dataSourceTransactionManager.commit(transactionStatus);
+                    // save or update
+                    Object saveFlag = params.get("save");
+                    if (ObjectUtil.isNotNull(saveFlag)) {
+                        addNum++;
+                    } else {
+                        updateNum++;
+                    }
                 } catch (Exception e) {
+                    failContentList.add(dataMap);
                     dataSourceTransactionManager.rollback(transactionStatus);
                     validateUtil.recordImportAttrErr(lineNum, RCode.ERROR);
                     log.error("Asset model import roll back the transaction failure", e);
                 }
+            } else {
+                failContentList.add(dataMap);
             }
         }
-        // 返回错误信息
-        return validateUtil.getImportErrMsg();
+        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_MODEL_EXPORT_HEADER);
+        String failedContentFileBase64Str = basicImportAndExportServices.getFailedContentFileBase64Str(failContentList, sysHeaderJsonStr, Constant.ImportFileType.EXCEL.getValue());
+        //  返回统计信息
+        Map<Object, Object> statMap = Tool.MapUtil.builder()
+                .put("seq", seq)
+                .put("totalNum", importDataList.size())
+                .put("successNum", addNum + updateNum)
+                .put("failNum", failContentList.size())
+                .put("addNum", addNum)
+                .put("updateNum", updateNum)
+                .put("failDetail", validateUtil.getImportErrMsg())
+                .put("failContent", failedContentFileBase64Str)
+                .build();
+        return statMap;
     }
 
     private void saveOrUpdateRowData(Map saveEntitys, Map<String, Object> params) {
+        MapUtil.removeAny(params, "save", "update");
         String seq = params.get("seq").toString();
 
         AssetBrand brand = (AssetBrand) saveEntitys.get("brand");
@@ -535,10 +538,12 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
                 .eq(AssetModel::getName, model.getName())
                 .eq(AssetModel::getBrandId, model.getBrandId()));
         if (StrUtil.equals("1", existed) && oldModel != null) {
+            params.put("update", true);
             // update
             model.setId(oldModel.getId());
             this.updateById(model);
         } else {
+            params.put("save", true);
             // insert
             this.save(model);
         }

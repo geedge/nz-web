@@ -1,5 +1,8 @@
 package com.nis.modules.sys.service.impl;
 
+import cn.hutool.core.codec.Base64;
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.text.csv.CsvData;
@@ -21,18 +24,22 @@ import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.util.TempFile;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URLEncoder;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -45,9 +52,6 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
 
     @Autowired
     private BasicMapper basicMapper;
-
-    @Autowired
-    private RedisTemplate redisTemplate;
 
     @Override
     public Map<String, String> getI18nHeaderMap(String sysHeaderJsonStr) {
@@ -74,7 +78,7 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
                     response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
                     workbook.write(response.getOutputStream());
                 } finally {
-                    if (workbook != null) IOUtils.closeQuietly(workbook);
+                    IOUtils.closeQuietly(workbook);
                 }
                 break;
             }
@@ -136,7 +140,7 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
                 for (int i = sheet.getFirstRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
                     Row row = sheet.getRow(i);
                     if (row == null) continue;
-                    Map<Integer, String> tmpMap = new HashMap<>();
+                    Map<Integer, String> tmpMap = Tool.MapUtil.newHashMap();
                     for (int j = 0; j < headerInfos.size(); j++) {
                         tmpMap.put(j, ExcelUtils.getCellValue(row.getCell(j)));
                     }
@@ -154,7 +158,7 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
                 }
                 for (int i = 1; i < rows.size(); i++) {
                     CsvRow csvRow = rows.get(i);
-                    Map<Integer, String> tmpMap = new HashMap<>();
+                    Map<Integer, String> tmpMap = Tool.MapUtil.newHashMap();
                     for (int j = 0; j < headerInfos.size(); j++) {
                         tmpMap.put(j, csvRow.get(j));
                     }
@@ -175,7 +179,7 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
                 }
                 mapList.forEach(linkedHashMap -> {
                     List<String> keys = new ArrayList<>(linkedHashMap.keySet());
-                    Map<Integer, String> tmpMap = new HashMap<>();
+                    Map<Integer, String> tmpMap = Tool.MapUtil.newHashMap();
                     for (int i = 0; i < keys.size(); i++) {
                         Object o = linkedHashMap.get(keys.get(i));
                         String var = o == null ? StrUtil.EMPTY : o.toString().trim();
@@ -195,9 +199,9 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
     @Override
     public void exportDataByFormat(HttpServletResponse response, List<List<String>> exportDataList, String sysHeaderJsonStr, String format, String fileName) throws IOException {
         Map<String, String> exportHeaderMap = this.getI18nHeaderMap(sysHeaderJsonStr);
-        String formatStr = format.toString();
-        switch (formatStr) {
-            case "1": { // XLSX
+        Constant.ImportFileType fileType = Constant.ImportFileType.getType(format);
+        switch (fileType) {
+            case EXCEL: {
                 SXSSFWorkbook workbook = null;
                 try {
                     String sheetName = "Datasheet";
@@ -218,11 +222,11 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
                     response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
                     workbook.write(response.getOutputStream());
                 } finally {
-                    if (workbook != null) IOUtils.closeQuietly(workbook);
+                    IOUtils.closeQuietly(workbook);
                 }
                 break;
             }
-            case "2": {// CSV
+            case CSV: {
                 fileName += ".csv";
                 File file = FileUtil.file(Constant.TMP_ROOT_PATH + fileName);
                 try {
@@ -241,7 +245,7 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
                 }
                 break;
             }
-            case "3": {// JSON
+            case JSON: {
                 List list = new ArrayList();
                 List<String> keyList = new ArrayList<>(exportHeaderMap.keySet());
                 exportDataList.forEach(dataList -> {
@@ -264,6 +268,96 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
                 break;
             }
         }
+    }
+
+    @Override
+    public String getFailedContentFileBase64Str(List<Map<Integer, String>> failContentList, String sysHeaderJsonStr, String format) {
+        if (CollUtil.isEmpty(failContentList)) return StrUtil.EMPTY;
+
+        List<List<String>> list = ListUtil.list(true);
+        failContentList.stream().forEach(dataMap -> {
+            List<String> valueList = dataMap.values().stream().collect(Collectors.toList());
+            list.add(valueList);
+        });
+
+        Map<String, String> exportHeaderMap = this.getI18nHeaderMap(sysHeaderJsonStr);
+        format = StrUtil.emptyToDefault(format, Constant.ImportFileType.EXCEL.getValue());
+        Constant.ImportFileType fileType = Constant.ImportFileType.getType(format);
+        try {
+            switch (fileType) {
+                case EXCEL: {
+                    String sheetName = "Datasheet";
+                    SXSSFWorkbook workbook = ExcelUtils.createExcel07(exportHeaderMap, sheetName, true);
+                    SXSSFSheet sheet = workbook.getSheet(sheetName);
+                    CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
+                    int rowNum = 1;
+                    for (List<String> dataList : list) {
+                        Row row = sheet.createRow(rowNum++);
+                        for (int i = 0; i < dataList.size(); i++) {
+                            row.createCell(i).setCellValue(dataList.get(i));
+                        }
+                        ExcelUtils.setDataCellStyle(dataStyle, row, dataList.size());
+                    }
+                    // Save the template
+                    File tmplFile = TempFile.createTempFile("poi-sxssf-template", ".xlsx");
+                    FileOutputStream os = new FileOutputStream(tmplFile);
+                    try {
+                        workbook.write(os);
+                        return Base64.encode(tmplFile);
+                    } finally {
+                        IOUtils.closeQuietly(os, workbook);
+                        if (!tmplFile.delete()) {
+                            throw new IOException("Could not delete temporary file after processing: " + tmplFile);
+                        }
+                    }
+                }
+                case CSV: {
+                    File tmplFile = TempFile.createTempFile("csv-template", ".csv");
+                    CsvWriter writer = CsvUtil.getWriter(tmplFile, CharsetUtil.CHARSET_UTF_8);
+                    try {
+                        writer.write(
+                                exportHeaderMap.keySet().toArray(new String[]{})
+                        );
+                        list.forEach(dataList -> {
+                            writer.write(
+                                    dataList.toArray(new String[]{})
+                            );
+                        });
+                        return Base64.encode(tmplFile);
+                    } finally {
+                        IOUtils.closeQuietly(writer);
+                        if (!tmplFile.delete()) {
+                            throw new IOException("Could not delete temporary file after processing: " + tmplFile);
+                        }
+                    }
+                }
+                case JSON: {
+                    List jsonObjectList = new ArrayList();
+                    List<String> keyList = new ArrayList<>(exportHeaderMap.keySet());
+                    list.forEach(dataList -> {
+                        Map<String, String> tempMap = new LinkedHashMap<>();
+                        for (int i = 0; i < dataList.size(); i++) {
+                            tempMap.put(keyList.get(i), dataList.get(i));
+                        }
+                        jsonObjectList.add(tempMap);
+                    });
+                    File tmplFile = TempFile.createTempFile("json-template", ".json");
+                    try {
+                        FileUtil.writeUtf8String(JSONObject.toJSONString(jsonObjectList, SerializerFeature.PrettyFormat), tmplFile);
+                        return Base64.encode(tmplFile);
+                    } finally {
+                        if (!tmplFile.delete()) {
+                            throw new IOException("Could not delete temporary file after processing: " + tmplFile);
+                        }
+                    }
+                }
+                default:
+            }
+        } catch (Exception e) {
+            log.error(e);
+            return RCode.ERROR.getMsg();
+        }
+        return StrUtil.EMPTY;
     }
 
     @Override

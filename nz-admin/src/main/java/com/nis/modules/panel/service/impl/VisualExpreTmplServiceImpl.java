@@ -1,9 +1,14 @@
 package com.nis.modules.panel.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.ListUtil;
+import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
@@ -17,6 +22,7 @@ import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.panel.dao.VisualExpreTmplDao;
+import com.nis.modules.panel.entity.ExprTmplImportEnum;
 import com.nis.modules.panel.entity.VisualExpressionTmpl;
 import com.nis.modules.panel.service.VisualExpreTmplService;
 import com.nis.modules.project.entity.MonitorProject;
@@ -31,7 +37,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -265,90 +274,140 @@ public class VisualExpreTmplServiceImpl extends ServiceImpl<VisualExpreTmplDao, 
     }
 
     @Override
-    public Map importTmpls(MultipartFile multipartFile) throws IOException {
+    public Map importTmpls(MultipartFile multipartFile, Map<String, Object> params) throws IOException {
         String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_EXPRETMPL_EXPORT_HEADER);
         Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
         List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
 
-        List<Map> failDetails = new ArrayList<>();
-        String seqUUID = UUID.randomUUID().toString();
+        // 表头信息 国际化之后的
+        List<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
 
-        int successNum = this.saveTmplsFromImportDataList(importDataList, failDetails, new ArrayList<>(exportHeaderMap.keySet()), seqUUID);
-        int totalNum = importDataList.size();
-
-        Map resultMap = new HashMap(8);
-        resultMap.put("seq", seqUUID);
-        resultMap.put("totalNum", totalNum);
-        resultMap.put("successNum", successNum);
-        resultMap.put("failNum", totalNum - successNum);
-        resultMap.put("failDetail", CommonUtils.handleImportFailDetails(failDetails));
-        return resultMap;
+        // 返回统计信息
+        Map statMap = this.saveTmplsFromImportDataList(importDataList, headerInfos, params);
+        return statMap;
     }
 
-    private int saveTmplsFromImportDataList(List<Map<Integer, String>> importDataList, List<Map> failDetails, List<String> headerInfos, String seqUUID) {
-        List<VisualExpressionTmpl> tmpls = this.list();
-        List<String> ganmes = tmpls.stream().map(VisualExpressionTmpl::getGname).distinct().collect(Collectors.toList());
-        Map<String, List<String>> gnameAndTmplNameMap = new HashMap();
-        ganmes.stream().forEach(gname -> {
-            List<String> tmplNames = tmpls.stream().filter(tmpl -> tmpl.getGname().equals(gname)).map(VisualExpressionTmpl::getName).collect(Collectors.toList());
-            gnameAndTmplNameMap.put(gname, tmplNames);
-        });
+    private Map saveTmplsFromImportDataList(List<Map<Integer, String>> importDataList, List<String> headerInfos, Map<String, Object> params) {
+        String seq = StrUtil.uuid();
+        params.put("seq", seq);
+        // 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
+        String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
 
-        int successNum = 0;
+        // 创建导入校验对象
+        ImportValidateUtil validateUtil = ImportValidateUtil.builder()
+                .existed(existed).headerInfos(headerInfos)
+                .build();
+        Integer addNum = 0, updateNum = 0;
+        // 记录导入失败内容
+        List<Map<Integer, String>> failContentList = ListUtil.list(true);
         for (int i = 0; i < importDataList.size(); i++) {
-            int dataFromExcelRowNum = i + 1;
-            boolean saveFlag = true;
+            int lineNum = i + 1;
             Map<Integer, String> dataMap = importDataList.get(i);
 
-            String name = dataMap.get(0);
-            String gname = dataMap.get(1);
-            gname = StringUtils.isEmpty(gname) ? "default" : gname;
+            String name = dataMap.get(ExprTmplImportEnum.NAME.getIndex());
+            validateUtil.validateRequired(name, lineNum, ExprTmplImportEnum.NAME.getIndex());
 
-            if (StringUtils.isEmpty(name)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.EXPRETMPL_NAME_ISNULL.getMsg());
-            } else {
-                // 校验 名称是否重复
-                List<String> nameLisInGroup = gnameAndTmplNameMap.get(gname);
-                if (CollectionUtils.isNotEmpty(nameLisInGroup) && nameLisInGroup.contains(name)) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.EXPRETMPL_NAME_DUPLICATE.getMsg());
+            String gname = dataMap.get(1);
+            gname = StrUtil.emptyToDefault(gname, "default");
+
+            if (StrUtil.isNotEmpty(name)) {
+                List<VisualExpressionTmpl> tList = this.list(new LambdaQueryWrapper<VisualExpressionTmpl>()
+                        .eq(VisualExpressionTmpl::getGname, gname)
+                        .eq(VisualExpressionTmpl::getName, name));
+                if (Tool.CollUtil.isNotEmpty(tList)) {
+                    if (StrUtil.equals("0", existed)) {
+                        validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_DUPLICATE.setParam(ExprTmplImportEnum.NAME.getIndex()));
+                    } else if (StrUtil.equals("2", existed)) {
+                        validateUtil.ignoreThisRow(lineNum, ExprTmplImportEnum.NAME.getIndex());
+                        failContentList.add(dataMap);
+                        continue;
+                    }
                 }
             }
-            String expression = dataMap.get(2);
-            if (StringUtils.isEmpty(expression)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.EXPRETMPL_EXPRESSION_ISNULL.getMsg());
+
+            String expression = dataMap.get(ExprTmplImportEnum.EXPRESSION.getIndex());
+            validateUtil.validateRequired(expression, lineNum, ExprTmplImportEnum.EXPRESSION.getIndex());
+
+            String remark = dataMap.get(ExprTmplImportEnum.REMARK.getIndex());
+
+            // 遇到错误是否继续导入，可选值： 0：不继续    1：继续    默认值：1
+            String ignoreError = Tool.ObjectUtil.defaultIfEmpty((String) params.get("ignoreError"), "1");
+
+            List<Map<String, String>> errMsgForThisLine = validateUtil.getImportErrMsgForThisLine(lineNum);
+            if (BooleanUtil.and(Tool.StrUtil.equals("0", ignoreError), Tool.CollUtil.isNotEmpty(errMsgForThisLine))) {
+                // 结束本次导入，自导入行开始 到结尾数据行，提示错误信息
+                for (int j = i; j < importDataList.size(); j++) {
+                    validateUtil.recordImportAttrErr(j + 1, RCode.IMPORT_ERROR_STOP);
+                    failContentList.add(importDataList.get(j));
+                }
+                break;
             }
-            if (saveFlag) {
-                String remark = dataMap.get(3);
+
+            if (Tool.CollUtil.isEmpty(errMsgForThisLine)) {
                 VisualExpressionTmpl tmpl = new VisualExpressionTmpl();
                 tmpl.setName(name);
                 tmpl.setGname(gname);
                 tmpl.setExpression(expression);
                 tmpl.setRemark(remark);
-                tmpl.setSeq(seqUUID);
                 try {
-                    this.save(tmpl);
-                    successNum++;
-                    List<String> nameLisInGroup = gnameAndTmplNameMap.get(gname);
-                    nameLisInGroup = CollectionUtils.isEmpty(nameLisInGroup) ? new ArrayList<>() : nameLisInGroup;
-                    nameLisInGroup.add(name);
-                    gnameAndTmplNameMap.put(gname, nameLisInGroup);
-                } catch (RuntimeException e) {
-                    logger.error(String.format("表达式模板导入保存失败,表达式信息是：%s,错误信息是：%s", tmpl.toString(), e));
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, "System", RCode.EXPRETMPL_IMPORT_ERROR.getMsg());
+                    this.saveOrUpdateRowData(tmpl, params);
+                    // save or update
+                    Object saveFlag = params.get("save");
+                    if (ObjectUtil.isNotNull(saveFlag)) {
+                        addNum++;
+                    } else {
+                        updateNum++;
+                    }
+                } catch (Exception e) {
+                    failContentList.add(dataMap);
+                    validateUtil.recordImportAttrErr(lineNum, RCode.ERROR);
+                    logger.error("Visual Expression Tmpl import roll back the transaction failure", e);
                 }
+            } else {
+                failContentList.add(dataMap);
             }
         }
-        return successNum;
+        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_EXPRETMPL_EXPORT_HEADER);
+        String failedContentFileBase64Str = basicImportAndExportServices.getFailedContentFileBase64Str(failContentList, sysHeaderJsonStr, Constant.ImportFileType.EXCEL.getValue());
+        //  返回统计信息
+        Map<Object, Object> statMap = Tool.MapUtil.builder()
+                .put("seq", seq)
+                .put("totalNum", importDataList.size())
+                .put("successNum", addNum + updateNum)
+                .put("failNum", failContentList.size())
+                .put("addNum", addNum)
+                .put("updateNum", updateNum)
+                .put("failDetail", validateUtil.getImportErrMsg())
+                .put("failContent", failedContentFileBase64Str)
+                .build();
+        return statMap;
     }
 
-    private void addFailDetail(int i, List<Map> failDetails, String headerInfo, String msg) {
-        Map failDetail = new HashMap(4);
-        failDetail.put("lineNo", i);
-        failDetail.put("errorMsg", headerInfo + ": " + msg);
-        failDetails.add(failDetail);
+    private void saveOrUpdateRowData(VisualExpressionTmpl tmpl, Map<String, Object> params) {
+        MapUtil.removeAny(params, "save", "update");
+        String seq = params.get("seq").toString();
+        tmpl.setSeq(seq);
+
+        // 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore   在此只需要处理更新即可
+        String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
+        VisualExpressionTmpl oldTmpl = this.getOne(new LambdaQueryWrapper<VisualExpressionTmpl>()
+                .eq(VisualExpressionTmpl::getGname, tmpl.getGname())
+                .eq(VisualExpressionTmpl::getName, tmpl.getName()));
+        if (StrUtil.equals("1", existed) && oldTmpl != null) {
+            params.put("update", true);
+            // update
+            tmpl.setId(oldTmpl.getId());
+
+            LambdaUpdateWrapper<VisualExpressionTmpl> updateWrapper = new LambdaUpdateWrapper<VisualExpressionTmpl>()
+                    .eq(VisualExpressionTmpl::getId, tmpl.getId())
+                    .set(VisualExpressionTmpl::getRemark, tmpl.getRemark());
+
+            this.update(tmpl, updateWrapper);
+        } else {
+            params.put("save", true);
+            // insert
+            this.save(tmpl);
+        }
     }
 
     @Override
