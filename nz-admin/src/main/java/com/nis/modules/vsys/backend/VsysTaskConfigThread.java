@@ -135,7 +135,7 @@ public class VsysTaskConfigThread implements Runnable {
                 sw.stop();
                 log.info("vsys task config Run Time:{}", sw.prettyPrint());
             } catch (Exception e) {
-                log.error(e, "vsys task config error");
+                log.error(e, "VsysTaskConfigThread error");
             }
         }
     }

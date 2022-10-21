@@ -24,9 +24,11 @@ import com.nis.modules.asset.service.AssetFieldValueService;
 import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.vsys.dao.VsysTaskDao;
 import com.nis.modules.vsys.entity.VsysAssetRel;
+import com.nis.modules.vsys.entity.VsysInfo;
 import com.nis.modules.vsys.entity.VsysResult;
 import com.nis.modules.vsys.entity.VsysTask;
 import com.nis.modules.vsys.service.VsysAssetRelService;
+import com.nis.modules.vsys.service.VsysInfoService;
 import com.nis.modules.vsys.service.VsysResultService;
 import com.nis.modules.vsys.service.VsysTaskService;
 import com.nis.modules.vsys.utils.VsysConfigUtil;
@@ -54,6 +56,9 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
 
     @Autowired
     private AssetAssetService assetService;
+
+    @Autowired
+    private VsysInfoService vsysInfoService;
 
     @Autowired
     private VsysResultService vsysResultService;
@@ -189,6 +194,10 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
             // total
             vsysTask.setTotal(vsysAssetIdList.size());
 
+            // asset ids
+            String assetIds = StrUtil.join(StrUtil.COMMA, vsysAssetIdList);
+            vsysTask.setAssetIds(assetIds);
+
             if (deviceTag != null) {
                 vsysTask.setDeviceTag(JSONObject.toJSONString(deviceTag));
             }
@@ -221,6 +230,27 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
 
         // record 未执行状态日志
         this.recordUnExecStateLog(vsysTask, vsysAssetIdList);
+
+        // vsys info
+        // update state
+        LambdaUpdateWrapper updateWrapper = new LambdaUpdateWrapper<VsysInfo>()
+                .set(VsysInfo::getState, 0)
+                .eq(VsysInfo::getVsysId, vsysTask.getVsysId());
+        vsysInfoService.update(new VsysInfo(), updateWrapper);
+
+        // insert
+        VsysInfo info = new VsysInfo();
+        info.setTaskId(vsysTask.getId());
+        info.setVsysId(vsysTask.getVsysId());
+
+        Object deviceTag = vsysTask.getDeviceTag();
+        if (deviceTag != null) {
+            info.setDeviceTag(deviceTag.toString());
+        }
+        info.setParams(vsysTask.getParams());
+        info.setState(1);
+        info.setTs(System.currentTimeMillis());
+        vsysInfoService.save(info);
 
         // save redis
         redisTemplate.opsForList().leftPush(VsysConstant.VSYS_TASK_QUEUE, JSONObject.toJSONString(vsysTask));
@@ -281,6 +311,8 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
                 vsysAssetIdList.addAll(set);
             }
         }
+        // 去重
+        vsysAssetIdList = vsysAssetIdList.stream().distinct().collect(Collectors.toList());
         return vsysAssetIdList;
     }
 

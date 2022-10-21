@@ -28,6 +28,11 @@ public class VsysAssetRel implements Serializable {
     private Integer taskId;
 
     /**
+     * end result Id
+     */
+    private Integer resultId;
+
+    /**
      * 资产id
      */
     private Integer assetId;
@@ -70,5 +75,14 @@ public class VsysAssetRel implements Serializable {
      */
     @TableField(exist = false)
     private Object asset;
+
+    @TableField(exist = false)
+    private VsysTask vsysTask;
+
+    @TableField(exist = false)
+    private VsysResult vsysResult;
+
+    @TableField(exist = false)
+    private VsysInfo vsysInfo;
 
 }

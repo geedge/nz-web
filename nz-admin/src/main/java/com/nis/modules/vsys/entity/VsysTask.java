@@ -41,6 +41,10 @@ public class VsysTask implements Serializable {
     private Integer vsysId;
 
     /**
+     * asset Ids
+     */
+    private String assetIds;
+    /**
      * 设备组
      */
     private Object deviceTag;
