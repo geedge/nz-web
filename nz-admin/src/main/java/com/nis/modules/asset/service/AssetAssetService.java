@@ -2,6 +2,7 @@ package com.nis.modules.asset.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.R;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetFieldMeta;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
@@ -39,7 +40,7 @@ public interface AssetAssetService extends IService<AssetAsset> {
      * @param ids
      * @return
      */
-    List<Map> deleteAsset(Integer force, Integer... ids);
+    R deleteAsset(Integer force, Integer... ids);
 
     Map endpointStatByAsset(Integer id);
 

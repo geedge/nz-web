@@ -1,19 +1,17 @@
 package com.nis.modules.ipam.service;
 
+import com.baomidou.mybatisplus.extension.service.IService;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.R;
+import com.nis.modules.ipam.entity.IpamSubnet;
+import inet.ipaddr.AddressStringException;
+import inet.ipaddr.IncompatibleAddressException;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletResponse;
-
-import org.springframework.web.multipart.MultipartFile;
-
-import com.baomidou.mybatisplus.extension.service.IService;
-import com.nis.common.utils.PageUtils;
-import com.nis.modules.ipam.entity.IpamSubnet;
-
-import inet.ipaddr.AddressStringException;
-import inet.ipaddr.IncompatibleAddressException;
 
 public interface IpamSubnetService extends IService<IpamSubnet> {
 	
@@ -29,7 +27,7 @@ public interface IpamSubnetService extends IService<IpamSubnet> {
 	 * @param ids
 	 * @return
 	 */
-	List<Map> delIpamSubnets(Integer force, List<Integer> ids);
+	R delIpamSubnets(Integer force, List<Integer> ids);
 
 	void getTemplateByLanguage(HttpServletResponse response,String format) throws IOException;
 	

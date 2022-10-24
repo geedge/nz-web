@@ -93,27 +93,28 @@ public class AssetBrandServiceImpl extends ServiceImpl<AssetBrandDao, AssetBrand
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public List<Map> delete(Integer force, Integer... ids) {
-        List<Map> delRelObjectMsgList = Tool.ListUtil.list(true);
-
+    public R delete(Integer force, Integer... ids) {
+        boolean forceData = false;
         List<Integer> idList = new ArrayList<>(Arrays.asList(ids));
-        List<AssetBrand> delAssetBrands = this.list(new LambdaQueryWrapper<AssetBrand>().in(AssetBrand::getId, idList));
+        List delAssetBrands = this.list(new LambdaQueryWrapper<AssetBrand>().in(AssetBrand::getId, idList));
         if (Tool.CollUtil.isEmpty(delAssetBrands)) {
-            return delRelObjectMsgList;
+            return  R.ok().putData("list", Tool.ListUtil.list(true));
         }
 
-        delAssetBrands.forEach(assetBrand -> {
+        for (int i = 0; i < delAssetBrands.size(); i++) {
+            AssetBrand assetBrand = (AssetBrand) delAssetBrands.get(i);
             Map<Object, Object> relObjectInfoMap = this.getAssetBrandDelRelObjectInfoMap(assetBrand);
             if (Tool.CollUtil.isNotEmpty(relObjectInfoMap)) {
-                delRelObjectMsgList.add(relObjectInfoMap);
+                delAssetBrands.set(i, relObjectInfoMap);
+                forceData = true;
             }
-        });
+        }
 
         force = Tool.ObjectUtil.defaultIfNull(force, 0);
         switch (force) {
             case 0: {// 0：存在关联数据时，删除失败
-                if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
-                    return delRelObjectMsgList;
+                if (forceData) {
+                    return R.error(RCode.ASSET_BRAND_RELOBJ_CAN_NOT_REMOVE).putData("list", delAssetBrands);
                 }
             }
             case 1:  // 1：存在关联数据时，同时删除关联数据
@@ -139,7 +140,7 @@ public class AssetBrandServiceImpl extends ServiceImpl<AssetBrandDao, AssetBrand
             Integer[] removeAssetIdList = assetList.stream().map(AssetAsset::getId).toArray(n -> new Integer[n]);
             assetService.deleteAsset(1, removeAssetIdList);
         }
-        return delRelObjectMsgList;
+        return R.ok().putData("list", delAssetBrands);
     }
 
     /**

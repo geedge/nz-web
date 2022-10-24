@@ -238,27 +238,28 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public List<Map> deleteByIds(Integer force, Integer... ids) {
-        List<Map> delRelObjectMsgList = Tool.ListUtil.list(true);
-
+    public R deleteByIds(Integer force, Integer... ids) {
+        boolean forceData = false;
         List<Integer> idList = new ArrayList<>(Arrays.asList(ids));
-        List<Cabinet> delCabinets = this.list(new LambdaQueryWrapper<Cabinet>().in(Cabinet::getId, idList));
+        List delCabinets = this.list(new LambdaQueryWrapper<Cabinet>().in(Cabinet::getId, idList));
         if (Tool.CollUtil.isEmpty(delCabinets)) {
-            return delRelObjectMsgList;
+            return  R.ok().putData("list", Tool.ListUtil.list(true));
         }
 
-        delCabinets.forEach(cabinetEntity -> {
+        for (int i = 0; i < delCabinets.size(); i++) {
+            Cabinet cabinetEntity = (Cabinet) delCabinets.get(i);
             Map<Object, Object> relObjectInfoMap = this.getCabinetDelRelObjectInfoMap(cabinetEntity);
             if (Tool.CollUtil.isNotEmpty(relObjectInfoMap)) {
-                delRelObjectMsgList.add(relObjectInfoMap);
+                delCabinets.set(i, relObjectInfoMap);
+                forceData = true;
             }
-        });
+        }
 
         force = Tool.ObjectUtil.defaultIfNull(force, 0);
         switch (force) {
             case 0: {// 0：存在关联数据时，删除失败
-                if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
-                    return delRelObjectMsgList;
+                if (forceData) {
+                    return R.error(RCode.CABINET_RELOBJ_CAN_NOT_REMOVE).putData("list", delCabinets);
                 }
             }
             case 1:  // 1：存在关联数据时，同时删除关联数据
@@ -284,7 +285,7 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
                         .eq(SysUserStarredEntity::getType, "cabinet")
                         .in(SysUserStarredEntity::getTid, idList)
         );
-        return delRelObjectMsgList;
+        return R.ok().putData("list", delCabinets);
     }
 
     /**

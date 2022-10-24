@@ -205,13 +205,14 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public List<Map> deleteBatch(Integer force, Integer... roleIds) {
-        List<Map> delRelObjectMsgList = Tool.ListUtil.list(true);
+    public R deleteBatch(Integer force, Integer... roleIds) {
+        boolean forceData = false;
+        List resultList = Tool.ListUtil.list(true);
 
         List<Integer> idList = new ArrayList<>(Arrays.asList(roleIds));
         List<SysRoleEntity> delRoles = this.list(new LambdaQueryWrapper<SysRoleEntity>().in(SysRoleEntity::getId, idList));
         if (Tool.CollUtil.isEmpty(delRoles)) {
-            return delRelObjectMsgList;
+            return R.ok().putData("list", resultList);
         }
 
         // 内置 role 不能删除
@@ -220,19 +221,21 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
             throw new NZException(RCode.SYS_ROLE_CANNOT_DELETE);
         }
 
-
-        delRoles.forEach(roleEntity -> {
+        for (SysRoleEntity roleEntity : delRoles) {
             Map<Object, Object> relObjectInfoMap = this.getRoleDelRelObjectInfoMap(roleEntity);
             if (Tool.CollUtil.isNotEmpty(relObjectInfoMap)) {
-                delRelObjectMsgList.add(relObjectInfoMap);
+                resultList.add(relObjectInfoMap);
+                forceData = true;
+            } else {
+                resultList.add(roleEntity);
             }
-        });
+        }
 
         force = Tool.ObjectUtil.defaultIfNull(force, 0);
         switch (force) {
             case 0: {// 0：存在关联数据时，删除失败
-                if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
-                    return delRelObjectMsgList;
+                if (forceData) {
+                    return R.error(RCode.SYS_ROLE_RELOBJ_CAN_NOT_REMOVE).putData("list", resultList);
                 }
             }
             case 1:  // 1：存在关联数据时，同时删除关联数据
@@ -257,7 +260,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
 
         // role_user
         sysUserRoleService.deleteBatch(roleIds);
-        return delRelObjectMsgList;
+        return R.ok().putData("list", resultList);
     }
 
 

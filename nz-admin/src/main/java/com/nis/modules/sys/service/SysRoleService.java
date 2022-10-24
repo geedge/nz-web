@@ -2,9 +2,9 @@ package com.nis.modules.sys.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.R;
 import com.nis.modules.sys.entity.SysRoleEntity;
 
-import java.util.List;
 import java.util.Map;
 
 public interface SysRoleService extends IService<SysRoleEntity> {
@@ -21,7 +21,7 @@ public interface SysRoleService extends IService<SysRoleEntity> {
      * @param ids
      * @return
      */
-    List<Map> deleteBatch(Integer force, Integer... ids);
+    R deleteBatch(Integer force, Integer... ids);
 
     Map getMenuListByRoleId(Integer roleId);
 }

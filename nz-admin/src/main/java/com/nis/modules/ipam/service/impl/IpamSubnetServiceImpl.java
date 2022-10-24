@@ -178,26 +178,28 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 
 	@Override
 	@Transactional(rollbackFor = Exception.class)
-	public List<Map> delIpamSubnets(Integer force, List<Integer> idList) {
-		List<Map> delRelObjectMsgList = Tool.ListUtil.list(true);
+	public R delIpamSubnets(Integer force, List<Integer> idList) {
+		boolean forceData = false;
 
-		List<IpamSubnet> delIpamSubnets = this.list(new LambdaQueryWrapper<IpamSubnet>().in(IpamSubnet::getId, idList));
+		List delIpamSubnets = this.list(new LambdaQueryWrapper<IpamSubnet>().in(IpamSubnet::getId, idList));
 		if (Tool.CollUtil.isEmpty(delIpamSubnets)) {
-			return delRelObjectMsgList;
+			return  R.ok().putData("list", Tool.ListUtil.list(true));
 		}
 
-		delIpamSubnets.forEach(ipamSubnet -> {
+		for (int i = 0; i < delIpamSubnets.size(); i++) {
+			IpamSubnet ipamSubnet = (IpamSubnet) delIpamSubnets.get(i);
 			Map<Object, Object> relObjectInfoMap = this.getIpamSubnetDelRelObjectInfoMap(ipamSubnet);
 			if (Tool.CollUtil.isNotEmpty(relObjectInfoMap)) {
-				delRelObjectMsgList.add(relObjectInfoMap);
+				delIpamSubnets.set(i, relObjectInfoMap);
+				forceData = true;
 			}
-		});
+		}
 
 		force = Tool.ObjectUtil.defaultIfNull(force, 0);
 		switch (force) {
 			case 0: {// 0：存在关联数据时，删除失败
-				if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
-					return delRelObjectMsgList;
+				if (forceData) {
+					return R.error(RCode.IPAM_SUBNET_RELOBJ_CAN_NOT_REMOVE).putData("list", delIpamSubnets);
 				}
 			}
 			case 1:  // 1：存在关联数据时，同时删除关联数据
@@ -223,7 +225,7 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 						.eq(SysUserStarredEntity::getType, "ipamSubnet")
 						.in(SysUserStarredEntity::getTid, idList)
 		);
-		return delRelObjectMsgList;
+		return R.ok().putData("list", delIpamSubnets);
 	}
 
 	/**

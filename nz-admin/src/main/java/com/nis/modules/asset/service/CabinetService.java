@@ -2,6 +2,7 @@ package com.nis.modules.asset.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.R;
 import com.nis.modules.asset.entity.Cabinet;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -57,7 +58,7 @@ public interface CabinetService extends IService<Cabinet> {
      * @param ids
      * @return
      */
-    List<Map> deleteByIds(Integer force, Integer... ids);
+    R deleteByIds(Integer force, Integer... ids);
 
     /**
      * 机柜u位查询

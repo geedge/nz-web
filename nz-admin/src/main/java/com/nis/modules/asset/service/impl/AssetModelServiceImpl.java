@@ -253,27 +253,28 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public List<Map> delete(Integer force, Integer... ids) {
-        List<Map> delRelObjectMsgList = Tool.ListUtil.list(true);
-
+    public R delete(Integer force, Integer... ids) {
+        boolean forceData = false;
         List<Integer> idList = new ArrayList<>(Arrays.asList(ids));
-        List<AssetModel> delAssetModels = this.list(new LambdaQueryWrapper<AssetModel>().in(AssetModel::getId, idList));
+        List delAssetModels = this.list(new LambdaQueryWrapper<AssetModel>().in(AssetModel::getId, idList));
         if (Tool.CollUtil.isEmpty(delAssetModels)) {
-            return delRelObjectMsgList;
+            return  R.ok().putData("list", Tool.ListUtil.list(true));
         }
 
-        delAssetModels.forEach(modelEntity -> {
+        for (int i = 0; i < delAssetModels.size(); i++) {
+            AssetModel modelEntity = (AssetModel) delAssetModels.get(i);
             Map<Object, Object> relObjectInfoMap = this.getAssetModelDelRelObjectInfoMap(modelEntity);
             if (Tool.CollUtil.isNotEmpty(relObjectInfoMap)) {
-                delRelObjectMsgList.add(relObjectInfoMap);
+                delAssetModels.set(i, relObjectInfoMap);
+                forceData = true;
             }
-        });
+        }
 
         force = Tool.ObjectUtil.defaultIfNull(force, 0);
         switch (force) {
             case 0: {// 0：存在关联数据时，删除失败
-                if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
-                    return delRelObjectMsgList;
+                if (forceData) {
+                    return R.error(RCode.ASSET_MODEL_RELOBJ_CAN_NOT_REMOVE).putData("list", delAssetModels);
                 }
             }
             case 1:  // 1：存在关联数据时，同时删除关联数据
@@ -298,7 +299,7 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
                 .eq(SysUserStarredEntity::getType, "assetModel")
                 .in(SysUserStarredEntity::getTid, idList)
         );
-        return delRelObjectMsgList;
+        return R.ok().putData("list", delAssetModels);
     }
 
     /**

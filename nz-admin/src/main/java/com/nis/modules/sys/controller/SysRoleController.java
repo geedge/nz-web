@@ -9,7 +9,6 @@ import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -88,16 +87,6 @@ public class SysRoleController extends AbstractController {
 	public R delete(@RequestParam(required = false, defaultValue = "0") Integer force, Integer... ids) {
 		ValidateUtils.is(ids).notNull(RCode.SYS_ROLE_ID_ISNULL);
 
-		List<Map> delRelObjectMsgList = sysRoleService.deleteBatch(force, ids);
-		switch (force) {
-			case 0: {// 0：存在关联数据时，删除失败
-				if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
-					return R.error(RCode.SYS_ROLE_RELOBJ_CAN_NOT_REMOVE).putData("list", delRelObjectMsgList);
-				}
-			}
-			case 1: // 1：存在关联数据时，同时删除关联数据
-			default:
-				return R.ok().putData("list", delRelObjectMsgList);
-		}
+		return sysRoleService.deleteBatch(force, ids);
 	}
 }

@@ -78,17 +78,7 @@ public class AssetBrandModelController {
     public R deleteAssetBrands(@RequestParam(required = false, defaultValue = "0") Integer force, Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.ASSET_BRAND_ID_ISNULL);
 
-        List<Map> delRelObjectMsgList = brandService.delete(force, ids);
-        switch (force) {
-            case 0: {// 0：存在关联数据时，删除失败
-                if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
-                    return R.error(RCode.ASSET_BRAND_RELOBJ_CAN_NOT_REMOVE).putData("list", delRelObjectMsgList);
-                }
-            }
-            case 1: // 1：存在关联数据时，同时删除关联数据
-            default:
-                return R.ok().putData("list", delRelObjectMsgList);
-        }
+        return brandService.delete(force, ids);
     }
 
     @GetMapping("/asset/model/{id}")
@@ -138,17 +128,7 @@ public class AssetBrandModelController {
     public R deleteAssetModels(@RequestParam(required = false, defaultValue = "0") Integer force, Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.ASSET_MODELID_ISNULL);
 
-        List<Map> delRelObjectMsgList = modelService.delete(force, ids);
-        switch (force) {
-            case 0: {// 0：存在关联数据时，删除失败
-                if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
-                    return R.error(RCode.ASSET_MODEL_RELOBJ_CAN_NOT_REMOVE).putData("list", delRelObjectMsgList);
-                }
-            }
-            case 1: // 1：存在关联数据时，同时删除关联数据
-            default:
-                return R.ok().putData("list", delRelObjectMsgList);
-        }
+        return modelService.delete(force, ids);
     }
 
 

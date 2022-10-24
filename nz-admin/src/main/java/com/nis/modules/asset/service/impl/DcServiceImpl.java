@@ -294,27 +294,29 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public List<Map> delete(Integer force, Integer... ids) {
-        List<Map> delRelObjectMsgList = Tool.ListUtil.list(true);
+    public R delete(Integer force, Integer... ids) {
+        boolean forceData = false;
 
         List<Integer> idList = new ArrayList<>(Arrays.asList(ids));
-        List<Dc> delDcs = this.list(new LambdaQueryWrapper<Dc>().in(Dc::getId, idList));
+        List delDcs = this.list(new LambdaQueryWrapper<Dc>().in(Dc::getId, idList));
         if (Tool.CollUtil.isEmpty(delDcs)) {
-            return delRelObjectMsgList;
+            return R.ok().putData("list", Tool.ListUtil.list(true));
         }
 
-        delDcs.forEach(dcEntity -> {
+        for (int i = 0; i < delDcs.size(); i++) {
+            Dc dcEntity = (Dc) delDcs.get(i);
             Map<Object, Object> relObjectInfoMap = this.getDcDelRelObjectInfoMap(dcEntity);
             if (Tool.CollUtil.isNotEmpty(relObjectInfoMap)) {
-                delRelObjectMsgList.add(relObjectInfoMap);
+                delDcs.set(i, relObjectInfoMap);
+                forceData = true;
             }
-        });
+        }
 
         force = Tool.ObjectUtil.defaultIfNull(force, 0);
         switch (force) {
             case 0: {// 0：存在关联数据时，删除失败
-                if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
-                    return delRelObjectMsgList;
+                if (forceData) {
+                    return R.error(RCode.DC_RELOBJ_CAN_NOT_REMOVE).putData("list", delDcs);
                 }
             }
             case 1:  // 1：存在关联数据时，同时删除关联数据
@@ -360,7 +362,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
                         .eq(SysUserStarredEntity::getType, "datacenter")
                         .in(SysUserStarredEntity::getTid, idList)
         );
-        return delRelObjectMsgList;
+        return R.ok().putData("list", delDcs);
     }
 
     /**

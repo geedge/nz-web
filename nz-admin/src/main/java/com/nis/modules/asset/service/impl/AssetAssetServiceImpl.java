@@ -1096,26 +1096,30 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public List<Map> deleteAsset(Integer force, Integer... ids) {
-        List<Map> delRelObjectMsgList = Tool.ListUtil.list(true);
+    public R deleteAsset(Integer force, Integer... ids) {
+        boolean forceData = false;
+        List resultList = Tool.ListUtil.list(true);
 
         List<Integer> idList = new ArrayList<>(Arrays.asList(ids));
         List<AssetAsset> delAssets = this.list(new LambdaQueryWrapper<AssetAsset>().in(AssetAsset::getId, idList));
         if (Tool.CollUtil.isEmpty(delAssets)) {
-            return delRelObjectMsgList;
+            return  R.ok().putData("list", resultList);
         }
 
-        delAssets.forEach(assetEntity -> {
+        for (AssetAsset assetEntity : delAssets) {
             Map<Object, Object> relObjectInfoMap = this.getAssetDelRelObjectInfoMap(assetEntity);
             if (Tool.CollUtil.isNotEmpty(relObjectInfoMap)) {
-                delRelObjectMsgList.add(relObjectInfoMap);
+                resultList.add(relObjectInfoMap);
+                forceData = true;
+            } else {
+                resultList.add(assetEntity);
             }
-        });
+        }
 
         switch (force) {
             case 0: {// 0：存在关联数据时，删除失败
-                if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
-                    return delRelObjectMsgList;
+                if (forceData) {
+                    return R.error(RCode.ASSET_RELOBJ_CAN_NOT_REMOVE).putData("list", resultList);
                 }
             }
             case 1:  // 1：存在关联数据时，同时删除关联数据
@@ -1180,7 +1184,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // comment
         assetCommentService.remove(new LambdaQueryWrapper<AssetComment>()
                 .in(AssetComment::getAssetId, removeAssetIdList));
-        return delRelObjectMsgList;
+        return R.ok().putData("list", resultList);
     }
 
     /**

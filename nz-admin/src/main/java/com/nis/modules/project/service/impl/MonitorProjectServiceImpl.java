@@ -147,13 +147,14 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public List<Map> delete(Integer force, Integer... ids) {
-        List<Map> delRelObjectMsgList = Tool.ListUtil.list(true);
+    public R delete(Integer force, Integer... ids) {
+        boolean forceData = false;
+        List resultList = Tool.ListUtil.list(true);
 
         List<Integer> idList = new ArrayList<>(Arrays.asList(ids));
         List<MonitorProject> delProjects = this.list(new LambdaQueryWrapper<MonitorProject>().in(MonitorProject::getId, idList));
         if (Tool.CollUtil.isEmpty(delProjects)) {
-            return delRelObjectMsgList;
+            return R.ok().putData("list", resultList);
         }
 
         // 内置 project 不能删除
@@ -162,18 +163,21 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
             throw new NZException(RCode.PROJECT_BUILDIN_CAN_NOT_REMOVE.setParam(buildInIdList.toString()));
         }
 
-        delProjects.forEach(projectEntity -> {
+        for (MonitorProject projectEntity : delProjects) {
             Map<Object, Object> relObjectInfoMap = this.getProjectDelRelObjectInfoMap(projectEntity);
             if (Tool.CollUtil.isNotEmpty(relObjectInfoMap)) {
-                delRelObjectMsgList.add(relObjectInfoMap);
+                resultList.add(relObjectInfoMap);
+                forceData = true;
+            } else {
+                resultList.add(projectEntity);
             }
-        });
+        }
 
         force = Tool.ObjectUtil.defaultIfNull(force, 0);
         switch (force) {
             case 0: {// 0：存在关联数据时，删除失败
-                if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
-                    return delRelObjectMsgList;
+                if (forceData) {
+                    return R.error(RCode.PROJECT_RELOBJ_CAN_NOT_REMOVE).putData("list", resultList);
                 }
             }
             case 1:  // 1：存在关联数据时，同时删除关联数据
@@ -200,7 +204,7 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
 
         // alert
         alertMessageService.removeByProjectIds(idList);
-        return delRelObjectMsgList;
+        return R.ok().putData("list", resultList);
     }
 
 

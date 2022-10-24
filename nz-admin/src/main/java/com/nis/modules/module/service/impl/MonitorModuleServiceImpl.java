@@ -430,13 +430,14 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public List<Map> removeModules(Integer force, Integer... ids) {
-        List<Map> delRelObjectMsgList = Tool.ListUtil.list(true);
+    public R removeModules(Integer force, Integer... ids) {
+        boolean forceData = false;
+        List resultList = Tool.ListUtil.list(true);
 
         List<Integer> idList = new ArrayList<>(Arrays.asList(ids));
         List<MonitorModule> delModules = this.list(new LambdaQueryWrapper<MonitorModule>().in(MonitorModule::getId, idList));
         if (Tool.CollUtil.isEmpty(delModules)) {
-            return delRelObjectMsgList;
+            return R.ok().putData("list", resultList);
         }
 
         // 内置 module 不能删除
@@ -445,18 +446,21 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
             throw new NZException(RCode.MODULE_BUILDIN_CAN_NOT_REMOVE.setParam(buildInIdList.toString()));
         }
 
-        delModules.forEach(moduleEntity -> {
+        for (MonitorModule moduleEntity : delModules) {
             Map<Object, Object> relObjectInfoMap = this.getModuleEntityDelRelObjectInfoMap(moduleEntity);
             if (Tool.CollUtil.isNotEmpty(relObjectInfoMap)) {
-                delRelObjectMsgList.add(relObjectInfoMap);
+                resultList.add(relObjectInfoMap);
+                forceData = true;
+            } else {
+                resultList.add(moduleEntity);
             }
-        });
+        }
 
         force = Tool.ObjectUtil.defaultIfNull(force, 0);
         switch (force) {
             case 0: {// 0：存在关联数据时，删除失败
-                if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
-                    return delRelObjectMsgList;
+                if (forceData) {
+                    return R.error(RCode.MODULE_RELOBJ_CAN_NOT_REMOVE).putData("list", resultList);
                 }
             }
             case 1:  // 1：存在关联数据时，同时删除关联数据
@@ -486,7 +490,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
         // alert
         alertMessageService.removeByModuleIds(idList);
-        return delRelObjectMsgList;
+        return R.ok().putData("list", resultList);
     }
 
     /**

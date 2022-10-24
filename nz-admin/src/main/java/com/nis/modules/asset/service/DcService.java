@@ -2,6 +2,7 @@ package com.nis.modules.asset.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.R;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
@@ -56,7 +57,7 @@ public interface DcService extends IService<Dc> {
      * @param ids
      * @return
      */
-    List<Map> delete(Integer force, Integer... ids);
+    R delete(Integer force, Integer... ids);
 
     void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException;
 

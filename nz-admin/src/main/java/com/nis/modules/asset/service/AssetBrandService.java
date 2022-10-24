@@ -2,9 +2,9 @@ package com.nis.modules.asset.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.R;
 import com.nis.modules.asset.entity.AssetBrand;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -29,5 +29,5 @@ public interface AssetBrandService extends IService<AssetBrand> {
      * @param ids
      * @return
      */
-    List<Map> delete(Integer force, Integer... ids);
+    R delete(Integer force, Integer... ids);
 }

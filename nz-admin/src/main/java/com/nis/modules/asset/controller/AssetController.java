@@ -162,17 +162,7 @@ public class AssetController {
     public R deleteAsset(@RequestParam(required = false, defaultValue = "0") Integer force, Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.ASSET_ID_ISNULL);
 
-        List<Map> delRelObjectMsgList = assetAssetService.deleteAsset(force, ids);
-        switch (force) {
-            case 0: {// 0：存在关联数据时，删除失败
-                if (Tool.CollUtil.isNotEmpty(delRelObjectMsgList)) {
-                    return R.error(RCode.ASSET_RELOBJ_CAN_NOT_REMOVE).putData("list", delRelObjectMsgList);
-                }
-            }
-            case 1: // 1：存在关联数据时，同时删除关联数据
-            default:
-                return R.ok().putData("list", delRelObjectMsgList);
-        }
+        return assetAssetService.deleteAsset(force, ids);
     }
 
     /**

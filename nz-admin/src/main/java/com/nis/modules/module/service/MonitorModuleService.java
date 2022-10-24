@@ -2,6 +2,7 @@ package com.nis.modules.module.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.R;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.module.entity.MonitorModule;
@@ -31,7 +32,7 @@ public interface MonitorModuleService extends IService<MonitorModule> {
      * @param ids
      * @return
      */
-    List<Map> removeModules(Integer force, Integer... ids);
+    R removeModules(Integer force, Integer... ids);
 
     void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException;
 
