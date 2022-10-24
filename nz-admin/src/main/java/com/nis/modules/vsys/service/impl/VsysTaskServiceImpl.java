@@ -1,5 +1,6 @@
 package com.nis.modules.vsys.service.impl;
 
+import cn.hutool.core.lang.Validator;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
@@ -545,11 +546,45 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
 
                 Object sip = ruleMap.get("sip");
                 if (ObjectUtil.isNotEmpty(sip)) {
-                    tm.put("ipv4-sip", sip.toString());
+                    String sipStr = sip.toString();
+                    String validateSipStr = sipStr;
+                    if (sipStr.lastIndexOf("/") != StrUtil.INDEX_NOT_FOUND) {
+                        validateSipStr = sipStr.substring(0, sipStr.lastIndexOf("/"));
+                    }
+                    boolean ipv4 = Validator.isIpv4(validateSipStr);
+                    boolean ipv6 = Validator.isIpv6(validateSipStr);
+
+                    if (ipv4) {
+                        tm.put("ipv4-sip", sipStr);
+                    } else if (ipv6) {
+                        tm.put("ipv6-sip", sipStr);
+                    }
+
+                    if (ObjectUtil.isAllEmpty(tm.get("ipv4-sip"), tm.get("ipv6-sip"))) {
+                        log.info("vsys ruleset sip format error,sip: {}, task: {}", sipStr, JSONObject.toJSONString(vsysTask));
+                        tm.put("ipv4-sip", sipStr);
+                    }
                 }
                 Object dip = ruleMap.get("dip");
                 if (ObjectUtil.isNotEmpty(dip)) {
-                    tm.put("ipv4-dip", dip.toString());
+                    String dipStr = dip.toString();
+                    String validateDipStr = dipStr;
+                    if (dipStr.lastIndexOf("/") != StrUtil.INDEX_NOT_FOUND) {
+                        validateDipStr = dipStr.substring(0, dipStr.lastIndexOf("/"));
+                    }
+                    boolean ipv4 = Validator.isIpv4(validateDipStr);
+                    boolean ipv6 = Validator.isIpv6(validateDipStr);
+
+                    if (ipv4) {
+                        tm.put("ipv4-dip", dipStr);
+                    } else if (ipv6) {
+                        tm.put("ipv6-dip", dipStr);
+                    }
+
+                    if (ObjectUtil.isAllEmpty(tm.get("ipv4-dip"), tm.get("ipv6-dip"))) {
+                        log.info("vsys ruleset dip format error,dip: {}, task: {}", dipStr, JSONObject.toJSONString(vsysTask));
+                        tm.put("ipv4-dip", dipStr);
+                    }
                 }
                 ruleConfigListMap.add(tm);
             }
