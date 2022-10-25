@@ -85,14 +85,17 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
             case "2": {// CSV
                 fileName += ".csv";
                 File file = FileUtil.file(Constant.TMP_ROOT_PATH + fileName);
+                FileOutputStream fos = new FileOutputStream(file);
+                fos.write(new byte[] { (byte) 0xEF, (byte) 0xBB,(byte) 0xBF});
                 try {
-                    CsvWriter writer = CsvUtil.getWriter(file, CharsetUtil.CHARSET_UTF_8);
+                    CsvWriter writer = CsvUtil.getWriter(file, CharsetUtil.CHARSET_UTF_8, true);
                     writer.write(
                             exportHeaderMap.keySet().toArray(new String[]{})
                     );
                     Tool.ResponseUtil.downloadFile(response, fileName, FileUtil.readBytes(file));
                 } finally {
                     if (file != null && file.exists()) file.delete();
+                    IoUtil.close(fos);
                 }
                 break;
             }
