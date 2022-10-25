@@ -229,8 +229,11 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
             case CSV: {
                 fileName += ".csv";
                 File file = FileUtil.file(Constant.TMP_ROOT_PATH + fileName);
+                // https://hutool.cn/docs 注意 CSV文件本身为一种简单文本格式，有编码区分。Excel读取CSV文件中含有中文时时必须为GBK编码（Windows平台下），否则会出现乱码；或者增加BOM头
+                FileOutputStream fos = new FileOutputStream(file);
+                fos.write(new byte[] { (byte) 0xEF, (byte) 0xBB,(byte) 0xBF});
                 try {
-                    CsvWriter writer = CsvUtil.getWriter(file, CharsetUtil.CHARSET_UTF_8);
+                    CsvWriter writer = CsvUtil.getWriter(file, CharsetUtil.CHARSET_UTF_8, true);
                     writer.write(
                             exportHeaderMap.keySet().toArray(new String[]{})
                     );
@@ -242,6 +245,7 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
                     Tool.ResponseUtil.downloadFile(response, fileName, FileUtil.readBytes(file));
                 } finally {
                     if (file != null && file.exists()) file.delete();
+                    IoUtil.close(fos);
                 }
                 break;
             }
@@ -251,7 +255,7 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
                 exportDataList.forEach(dataList -> {
                     Map<String, String> tempMap = new LinkedHashMap<>();
                     for (int i = 0; i < dataList.size(); i++) {
-                        tempMap.put(keyList.get(i), dataList.get(i));
+                        tempMap.put(keyList.get(i), StrUtil.emptyToDefault(dataList.get(i), ""));
                     }
                     list.add(tempMap);
                 });

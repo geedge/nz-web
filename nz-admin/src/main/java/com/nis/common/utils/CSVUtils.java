@@ -28,8 +28,7 @@ public class CSVUtils {
         try {
             FileUtils.copyInputStreamToFile(multipartFile.getInputStream(), tempCsvFile);
             //data = reader.read(tempCsvFile);
-            // https://hutool.cn/docs 注意 CSV文件本身为一种简单文本格式，有编码区分。Excel读取CSV文件中含有中文时时必须为GBK编码（Windows平台下），否则会出现乱码。
-            data = reader.read(ResourceUtil.getReader(tempCsvFile.getPath(), CharsetUtil.CHARSET_GBK));
+            data = reader.read(ResourceUtil.getReader(tempCsvFile.getPath(), CharsetUtil.CHARSET_UTF_8));
         } catch (IOException e) {
             logger.error(e);
         } finally {
@@ -40,7 +39,9 @@ public class CSVUtils {
 
     public static boolean validateCSVHeader(CsvRow headers, List<String> headerInfos) {
         for (int i = 0; i < headerInfos.size(); i++) {
-            if (!Tool.StrUtil.equalsIgnoreCase(headerInfos.get(i), headers.get(i))) {
+            String header = headers.get(i);
+            if(header.indexOf("\uFEFF") >= 0) header = header.substring(1); //去除BOM头
+            if (!Tool.StrUtil.equalsIgnoreCase(headerInfos.get(i), header)) {
                 return false;
             }
         }
