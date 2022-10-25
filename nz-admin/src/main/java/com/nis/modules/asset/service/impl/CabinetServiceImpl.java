@@ -240,26 +240,25 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
     @Transactional(rollbackFor = Exception.class)
     public R deleteByIds(Integer force, Integer... ids) {
         boolean forceData = false;
+        List resultList = Tool.ListUtil.list(true);
+
         List<Integer> idList = new ArrayList<>(Arrays.asList(ids));
-        List delCabinets = this.list(new LambdaQueryWrapper<Cabinet>().in(Cabinet::getId, idList));
+        List<Cabinet> delCabinets = this.list(new LambdaQueryWrapper<Cabinet>().in(Cabinet::getId, idList));
         if (Tool.CollUtil.isEmpty(delCabinets)) {
-            return  R.ok().putData("list", Tool.ListUtil.list(true));
+            return  R.ok().putData("list", resultList);
         }
 
-        for (int i = 0; i < delCabinets.size(); i++) {
-            Cabinet cabinetEntity = (Cabinet) delCabinets.get(i);
+        for (Cabinet cabinetEntity : delCabinets) {
             Map<Object, Object> relObjectInfoMap = this.getCabinetDelRelObjectInfoMap(cabinetEntity);
-            if (Tool.CollUtil.isNotEmpty(relObjectInfoMap)) {
-                delCabinets.set(i, relObjectInfoMap);
-                forceData = true;
-            }
+            if (Tool.CollUtil.isNotEmpty((List) relObjectInfoMap.get("relates"))) forceData = true;
+            resultList.add(relObjectInfoMap);
         }
 
         force = Tool.ObjectUtil.defaultIfNull(force, 0);
         switch (force) {
             case 0: {// 0：存在关联数据时，删除失败
                 if (forceData) {
-                    return R.error(RCode.CABINET_RELOBJ_CAN_NOT_REMOVE).putData("list", delCabinets);
+                    return R.error(RCode.CABINET_RELOBJ_CAN_NOT_REMOVE).putData("list", resultList);
                 }
             }
             case 1:  // 1：存在关联数据时，同时删除关联数据
@@ -285,7 +284,7 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
                         .eq(SysUserStarredEntity::getType, "cabinet")
                         .in(SysUserStarredEntity::getTid, idList)
         );
-        return R.ok().putData("list", delCabinets);
+        return R.ok().putData("list", resultList);
     }
 
     /**
@@ -326,17 +325,14 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
             }
         }
 
-        if (Tool.CollUtil.isNotEmpty(relatesList)) {
-            Map<Object, Object> delRelObjectMap = Tool.MapUtil.builder()
-                    .put("id", cabinet.getId())
-                    .put("name", cabinet.getName())
-                    .put("type", "cabinet")
-                    .put("relates", relatesList)
-                    .build();
+        Map<Object, Object> delRelObjectMap = Tool.MapUtil.builder()
+                .put("id", cabinet.getId())
+                .put("name", cabinet.getName())
+                .put("type", "cabinet")
+                .put("relates", relatesList)
+                .build();
 
-            return delRelObjectMap;
-        }
-        return Tool.MapUtil.empty();
+        return delRelObjectMap;
     }
 
     @Override

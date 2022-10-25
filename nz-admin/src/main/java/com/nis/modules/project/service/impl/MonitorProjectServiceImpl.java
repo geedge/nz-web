@@ -165,12 +165,8 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
 
         for (MonitorProject projectEntity : delProjects) {
             Map<Object, Object> relObjectInfoMap = this.getProjectDelRelObjectInfoMap(projectEntity);
-            if (Tool.CollUtil.isNotEmpty(relObjectInfoMap)) {
-                resultList.add(relObjectInfoMap);
-                forceData = true;
-            } else {
-                resultList.add(projectEntity);
-            }
+            if (Tool.CollUtil.isNotEmpty((List) relObjectInfoMap.get("relates"))) forceData = true;
+            resultList.add(relObjectInfoMap);
         }
 
         force = Tool.ObjectUtil.defaultIfNull(force, 0);
@@ -243,17 +239,14 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
             }
         }
 
-        if (Tool.CollUtil.isNotEmpty(relatesList)) {
-            Map<Object, Object> delRelObjectMap = Tool.MapUtil.builder()
-                    .put("id", project.getId())
-                    .put("name", project.getName())
-                    .put("type", "project")
-                    .put("relates", relatesList)
-                    .build();
+        Map<Object, Object> delRelObjectMap = Tool.MapUtil.builder()
+                .put("id", project.getId())
+                .put("name", project.getName())
+                .put("type", "project")
+                .put("relates", relatesList)
+                .build();
 
-            return delRelObjectMap;
-        }
-        return Tool.MapUtil.empty();
+        return delRelObjectMap;
     }
 
     @Override

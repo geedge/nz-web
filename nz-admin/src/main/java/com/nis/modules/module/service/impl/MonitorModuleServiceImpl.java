@@ -448,12 +448,8 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
         for (MonitorModule moduleEntity : delModules) {
             Map<Object, Object> relObjectInfoMap = this.getModuleEntityDelRelObjectInfoMap(moduleEntity);
-            if (Tool.CollUtil.isNotEmpty(relObjectInfoMap)) {
-                resultList.add(relObjectInfoMap);
-                forceData = true;
-            } else {
-                resultList.add(moduleEntity);
-            }
+            if (Tool.CollUtil.isNotEmpty((List) relObjectInfoMap.get("relates"))) forceData = true;
+            resultList.add(relObjectInfoMap);
         }
 
         force = Tool.ObjectUtil.defaultIfNull(force, 0);
@@ -514,17 +510,14 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
                 relatesList.add(map);
             }
         }
-        if (Tool.CollUtil.isNotEmpty(relatesList)) {
-            Map<Object, Object> delRelObjectMap = Tool.MapUtil.builder()
-                    .put("id", module.getId())
-                    .put("name", module.getName())
-                    .put("type", "module")
-                    .put("relates", relatesList)
-                    .build();
+        Map<Object, Object> delRelObjectMap = Tool.MapUtil.builder()
+                .put("id", module.getId())
+                .put("name", module.getName())
+                .put("type", "module")
+                .put("relates", relatesList)
+                .build();
 
-            return delRelObjectMap;
-        }
-        return Tool.MapUtil.empty();
+        return delRelObjectMap;
     }
 
     private Map handleGenerateParam(String snmpCredentialsId, String moduleConfigs) {

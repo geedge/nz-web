@@ -223,12 +223,8 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
 
         for (SysRoleEntity roleEntity : delRoles) {
             Map<Object, Object> relObjectInfoMap = this.getRoleDelRelObjectInfoMap(roleEntity);
-            if (Tool.CollUtil.isNotEmpty(relObjectInfoMap)) {
-                resultList.add(relObjectInfoMap);
-                forceData = true;
-            } else {
-                resultList.add(roleEntity);
-            }
+            if (Tool.CollUtil.isNotEmpty((List) relObjectInfoMap.get("relates"))) forceData = true;
+            resultList.add(relObjectInfoMap);
         }
 
         force = Tool.ObjectUtil.defaultIfNull(force, 0);
@@ -285,17 +281,13 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
                 relatesList.add(map);
             }
         }
+        Map<Object, Object> delRelObjectMap = Tool.MapUtil.builder()
+                .put("id", role.getId())
+                .put("name", role.getName())
+                .put("type", "role")
+                .put("relates", relatesList)
+                .build();
 
-        if (Tool.CollUtil.isNotEmpty(relatesList)) {
-            Map<Object, Object> delRelObjectMap = Tool.MapUtil.builder()
-                    .put("id", role.getId())
-                    .put("name", role.getName())
-                    .put("type", "role")
-                    .put("relates", relatesList)
-                    .build();
-
-            return delRelObjectMap;
-        }
-        return Tool.MapUtil.empty();
+        return delRelObjectMap;
     }
 }

@@ -255,26 +255,25 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
     @Transactional(rollbackFor = Exception.class)
     public R delete(Integer force, Integer... ids) {
         boolean forceData = false;
+        List resultList = Tool.ListUtil.list(true);
+
         List<Integer> idList = new ArrayList<>(Arrays.asList(ids));
-        List delAssetModels = this.list(new LambdaQueryWrapper<AssetModel>().in(AssetModel::getId, idList));
+        List<AssetModel> delAssetModels = this.list(new LambdaQueryWrapper<AssetModel>().in(AssetModel::getId, idList));
         if (Tool.CollUtil.isEmpty(delAssetModels)) {
-            return  R.ok().putData("list", Tool.ListUtil.list(true));
+            return  R.ok().putData("list", resultList);
         }
 
-        for (int i = 0; i < delAssetModels.size(); i++) {
-            AssetModel modelEntity = (AssetModel) delAssetModels.get(i);
+        for (AssetModel modelEntity : delAssetModels) {
             Map<Object, Object> relObjectInfoMap = this.getAssetModelDelRelObjectInfoMap(modelEntity);
-            if (Tool.CollUtil.isNotEmpty(relObjectInfoMap)) {
-                delAssetModels.set(i, relObjectInfoMap);
-                forceData = true;
-            }
+            if (Tool.CollUtil.isNotEmpty((List) relObjectInfoMap.get("relates"))) forceData = true;
+            resultList.add(relObjectInfoMap);
         }
 
         force = Tool.ObjectUtil.defaultIfNull(force, 0);
         switch (force) {
             case 0: {// 0：存在关联数据时，删除失败
                 if (forceData) {
-                    return R.error(RCode.ASSET_MODEL_RELOBJ_CAN_NOT_REMOVE).putData("list", delAssetModels);
+                    return R.error(RCode.ASSET_MODEL_RELOBJ_CAN_NOT_REMOVE).putData("list", resultList);
                 }
             }
             case 1:  // 1：存在关联数据时，同时删除关联数据
@@ -299,7 +298,7 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
                 .eq(SysUserStarredEntity::getType, "assetModel")
                 .in(SysUserStarredEntity::getTid, idList)
         );
-        return R.ok().putData("list", delAssetModels);
+        return R.ok().putData("list", resultList);
     }
 
     /**
@@ -339,17 +338,14 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
             }
         }
 
-        if (Tool.CollUtil.isNotEmpty(relatesList)) {
-            Map<Object, Object> delRelObjectMap = Tool.MapUtil.builder()
-                    .put("id", model.getId())
-                    .put("name", model.getName())
-                    .put("type", "model")
-                    .put("relates", relatesList)
-                    .build();
+        Map<Object, Object> delRelObjectMap = Tool.MapUtil.builder()
+                .put("id", model.getId())
+                .put("name", model.getName())
+                .put("type", "model")
+                .put("relates", relatesList)
+                .build();
 
-            return delRelObjectMap;
-        }
-        return Tool.MapUtil.empty();
+        return delRelObjectMap;
     }
 
     @Override

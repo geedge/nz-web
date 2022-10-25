@@ -1108,12 +1108,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         for (AssetAsset assetEntity : delAssets) {
             Map<Object, Object> relObjectInfoMap = this.getAssetDelRelObjectInfoMap(assetEntity);
-            if (Tool.CollUtil.isNotEmpty(relObjectInfoMap)) {
-                resultList.add(relObjectInfoMap);
-                forceData = true;
-            } else {
-                resultList.add(assetEntity);
-            }
+            if (Tool.CollUtil.isNotEmpty((List) relObjectInfoMap.get("relates"))) forceData = true;
+            resultList.add(relObjectInfoMap);
         }
 
         switch (force) {
@@ -1236,17 +1232,14 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             relatesList.add(map);
         }
 
-        if (Tool.CollUtil.isNotEmpty(relatesList)) {
-            Map<Object, Object> delRelObjectMap = Tool.MapUtil.builder()
-                    .put("id", asset.getId())
-                    .put("name", asset.getName())
-                    .put("type", "asset")
-                    .put("relates", relatesList)
-                    .build();
+        Map<Object, Object> delRelObjectMap = Tool.MapUtil.builder()
+                .put("id", asset.getId())
+                .put("name", asset.getName())
+                .put("type", "asset")
+                .put("relates", relatesList)
+                .build();
 
-            return delRelObjectMap;
-        }
-        return Tool.MapUtil.empty();
+        return delRelObjectMap;
     }
 
     @Override

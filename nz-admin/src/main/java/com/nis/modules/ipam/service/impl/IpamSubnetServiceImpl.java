@@ -180,26 +180,24 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 	@Transactional(rollbackFor = Exception.class)
 	public R delIpamSubnets(Integer force, List<Integer> idList) {
 		boolean forceData = false;
+		List resultList = Tool.ListUtil.list(true);
 
-		List delIpamSubnets = this.list(new LambdaQueryWrapper<IpamSubnet>().in(IpamSubnet::getId, idList));
+		List<IpamSubnet> delIpamSubnets = this.list(new LambdaQueryWrapper<IpamSubnet>().in(IpamSubnet::getId, idList));
 		if (Tool.CollUtil.isEmpty(delIpamSubnets)) {
-			return  R.ok().putData("list", Tool.ListUtil.list(true));
+			return  R.ok().putData("list", resultList);
 		}
 
-		for (int i = 0; i < delIpamSubnets.size(); i++) {
-			IpamSubnet ipamSubnet = (IpamSubnet) delIpamSubnets.get(i);
+		for (IpamSubnet ipamSubnet : delIpamSubnets) {
 			Map<Object, Object> relObjectInfoMap = this.getIpamSubnetDelRelObjectInfoMap(ipamSubnet);
-			if (Tool.CollUtil.isNotEmpty(relObjectInfoMap)) {
-				delIpamSubnets.set(i, relObjectInfoMap);
-				forceData = true;
-			}
+			if (Tool.CollUtil.isNotEmpty((List) relObjectInfoMap.get("relates"))) forceData = true;
+			resultList.add(relObjectInfoMap);
 		}
 
 		force = Tool.ObjectUtil.defaultIfNull(force, 0);
 		switch (force) {
 			case 0: {// 0：存在关联数据时，删除失败
 				if (forceData) {
-					return R.error(RCode.IPAM_SUBNET_RELOBJ_CAN_NOT_REMOVE).putData("list", delIpamSubnets);
+					return R.error(RCode.IPAM_SUBNET_RELOBJ_CAN_NOT_REMOVE).putData("list", resultList);
 				}
 			}
 			case 1:  // 1：存在关联数据时，同时删除关联数据
@@ -225,7 +223,7 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 						.eq(SysUserStarredEntity::getType, "ipamSubnet")
 						.in(SysUserStarredEntity::getTid, idList)
 		);
-		return R.ok().putData("list", delIpamSubnets);
+		return R.ok().putData("list", resultList);
 	}
 
 	/**
@@ -250,17 +248,14 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 			}
 		}
 
-		if (Tool.CollUtil.isNotEmpty(relatesList)) {
-			Map<Object, Object> delRelObjectMap = Tool.MapUtil.builder()
-					.put("id", subnet.getId())
-					.put("name", subnet.getName())
-					.put("type", "ipamSubnet")
-					.put("relates", relatesList)
-					.build();
+		Map<Object, Object> delRelObjectMap = Tool.MapUtil.builder()
+				.put("id", subnet.getId())
+				.put("name", subnet.getName())
+				.put("type", "ipamSubnet")
+				.put("relates", relatesList)
+				.build();
 
-			return delRelObjectMap;
-		}
-		return Tool.MapUtil.empty();
+		return delRelObjectMap;
 	}
 
 	@Override
