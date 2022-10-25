@@ -329,7 +329,7 @@ INSERT INTO `sys_i18n` VALUES (469, 'overall.result.successfully', 'en', 'overal
 INSERT INTO `sys_i18n` VALUES (470, 'overall.result.failedNum', 'en', 'overall.result.failedNum', '{failedNum} out of {total} records failed to import', '{total} 条记录中有 {failedNum} 条导入失败', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (471, 'overall.result.records', 'en', 'overall.result.records', 'records', '\n监控/应用实例\n/', '2022-07-20 02:34:29', 425);
 INSERT INTO `sys_i18n` VALUES (472, 'overall.result.success', 'en', 'overall.result.success', 'Success', '', '2022-07-20 02:38:11', 425);
-INSERT INTO `sys_i18n` VALUES (473, 'overall.result.line', 'en', 'overall.result.line', 'Line {0}:', '', '2022-07-21 01:17:55', 425);
+INSERT INTO `sys_i18n` VALUES (473, 'overall.result.line', 'en', 'overall.result.line', 'Line {0}', '', '2022-10-21 03:50:04', 407);
 INSERT INTO `sys_i18n` VALUES (474, 'overall.result.successNum', 'en', 'overall.result.successNum', '{successNum} records imported successfully', '', '2022-07-20 02:38:19', 425);
 INSERT INTO `sys_i18n` VALUES (475, 'overall.result.imported', 'en', 'overall.result.imported', 'You have imported', '	\n监控/应用实例/更多/导入', '2022-07-21 06:12:32', 425);
 INSERT INTO `sys_i18n` VALUES (476, 'overall.result.failed', 'en', 'overall.result.failed', 'Fail', '	\n搜索框组件/; 监控/应用组/;', '2022-07-22 02:05:12', 425);
@@ -1304,7 +1304,7 @@ INSERT INTO `sys_i18n` VALUES (2049, 'overall.result.successfully', 'zh', 'overa
 INSERT INTO `sys_i18n` VALUES (2050, 'overall.result.failedNum', 'zh', 'overall.result.failedNum', '{total} 条记录中有 {failedNum} 条导入失败', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2051, 'overall.result.records', 'zh', 'overall.result.records', '条记录', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2052, 'overall.result.success', 'zh', 'overall.result.success', '成功', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2053, 'overall.result.line', 'zh', 'overall.result.line', '第{0}行:', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2053, 'overall.result.line', 'zh', 'overall.result.line', '第{0}行', '', '2022-10-21 03:50:08', 407);
 INSERT INTO `sys_i18n` VALUES (2054, 'overall.result.successNum', 'zh', 'overall.result.successNum', '{successNum} 条记录导入成功', '监控/应用实例/;\n\n', '2022-07-22 02:18:52', 425);
 INSERT INTO `sys_i18n` VALUES (2055, 'overall.result.imported', 'zh', 'overall.result.imported', '已导入', '	\n监控/应用实例/更多/导入', '2022-07-21 06:12:25', 425);
 INSERT INTO `sys_i18n` VALUES (2056, 'overall.result.failed', 'zh', 'overall.result.failed', '失败', '搜索框组件/;\n监控/应用组/;', '2022-07-22 02:05:07', 425);
@@ -4574,11 +4574,11 @@ INSERT INTO `sys_i18n` VALUES (7213, '397012', 'zh', 'ISSUE_ACTIVITY_ONLYOWN_COM
 INSERT INTO `sys_i18n` VALUES (7214, '391013', 'en', 'ISSUE_ACTIVITY_TYPE_ISNULL', 'Issue activity type can not be empty', '响应消息->issue activity查询接口', '2022-08-25 11:36:13', 416);
 INSERT INTO `sys_i18n` VALUES (7215, '391013', 'zh', 'ISSUE_ACTIVITY_TYPE_ISNULL', '问题动态类型不能为空', '响应消息->issue activity查询接口', '2022-08-25 11:36:13', 416);
 INSERT INTO `sys_i18n` VALUES (7217, 'batch.forceDelete', 'en', 'batch.forceDelete', 'Force delete', '批量删除', '2022-08-29 01:23:58', 1);
-INSERT INTO `sys_i18n` VALUES (7219, 'batch.forceDelete', 'zh', 'batch.forceDelete', '关联删除', '批量刪除', '2022-08-29 01:39:15', 1);
+INSERT INTO `sys_i18n` VALUES (7219, 'batch.forceDelete', 'zh', 'batch.forceDelete', '强制删除', '批量刪除', '2022-10-21 08:18:07', 415);
 INSERT INTO `sys_i18n` VALUES (7221, 'batch.prepare', 'en', 'batch.prepare', 'Are you sure to delete these {dataLength} pleaces of data?', '批量删除 -> 首次提示', '2022-08-29 01:38:12', 1);
-INSERT INTO `sys_i18n` VALUES (7223, 'batch.prepare', 'zh', 'batch.prepare', '是否删除这{dataLength}处的数据？', '批量删除 -> 首次提示', '2022-08-29 01:38:05', 1);
+INSERT INTO `sys_i18n` VALUES (7223, 'batch.prepare', 'zh', 'batch.prepare', '是否删除这{dataLength}条数据？', '批量删除 -> 首次提示', '2022-10-21 08:21:05', 415);
 INSERT INTO `sys_i18n` VALUES (7225, 'batch.process', 'en', 'batch.process', 'These {title} cannot be deleted.If you want to continue to delete,please check the \"Force delete\" action.', '批量删除确认', '2022-08-29 01:47:03', 1);
-INSERT INTO `sys_i18n` VALUES (7227, 'batch.process', 'zh', 'batch.process', '这些{title}不能被删除。如果要继续删除，请勾选“强制删除”操作。', '批量删除 -> 确认', '2022-08-29 01:50:11', 1);
+INSERT INTO `sys_i18n` VALUES (7227, 'batch.process', 'zh', 'batch.process', '这些{title}不能被删除。如果要继续删除，请勾选“强制删除”操作。', '批量删除 -> 确认', '2022-10-21 08:18:16', 415);
 INSERT INTO `sys_i18n` VALUES (7229, 'batch.finish', 'en', 'batch.finish', 'These {title} delete complete.', '批量删除 -》 成功', '2022-10-13 02:21:48', 381);
 INSERT INTO `sys_i18n` VALUES (7231, 'batch.finish', 'zh', 'batch.finish', '这些{title}删除完成。', '批量删除 -》 成功', '2022-08-29 01:53:48', 1);
 INSERT INTO `sys_i18n` VALUES (7232, '511049', 'en', 'SYS_USER_NEWPWD_ISNULL', 'User new password can not be empty', '响应消息->个人中心密码修改', '2022-08-30 15:43:43', 416);
@@ -4711,5 +4711,25 @@ INSERT INTO `sys_i18n` VALUES (7466, '713016', 'zh', 'LICENSE_QRCODE_FILES_INCON
 INSERT INTO `sys_i18n` VALUES (7467, '713016', 'en', 'LICENSE_QRCODE_FILES_INCONSISTENT', 'The file {0} md5 is inconsistent', '', '2022-10-12 05:37:22', 416);
 INSERT INTO `sys_i18n` VALUES (7471, '224041', 'en', 'MODULE_CONFIG_KUBERNETES_ROLE_INVALID', 'Module kubernetes role value is not in the enum range', '', '2022-10-18 08:27:16', 1);
 INSERT INTO `sys_i18n` VALUES (7472, '224041', 'zh', 'MODULE_CONFIG_KUBERNETES_ROLE_INVALID', '模块kubernetes角色值不在枚举范围内', '', '2022-10-18 08:27:43', 1);
+INSERT INTO `sys_i18n` VALUES (7473, 'overall.result.successful', 'en', 'overall.result.successful', 'Number of successful imports', '', '2022-10-21 02:57:29', 407);
+INSERT INTO `sys_i18n` VALUES (7474, 'overall.result.successful', 'zh', 'overall.result.successful', '导入成功数量', '', '2022-10-21 06:24:23', 407);
+INSERT INTO `sys_i18n` VALUES (7475, 'overall.result.fail', 'en', 'overall.result.fail', 'Import failed count', '', '2022-10-21 02:58:57', 407);
+INSERT INTO `sys_i18n` VALUES (7476, 'overall.result.fail', 'zh', 'overall.result.fail', '导入失败数量', '', '2022-10-21 06:24:17', 407);
+INSERT INTO `sys_i18n` VALUES (7477, 'overall.result.newQuantity', 'en', 'overall.result.newQuantity', 'new quantity', '', '2022-10-21 03:27:21', 407);
+INSERT INTO `sys_i18n` VALUES (7478, 'overall.result.newQuantity', 'zh', 'overall.result.newQuantity', '新增数量', '', '2022-10-21 03:27:29', 407);
+INSERT INTO `sys_i18n` VALUES (7479, 'overall.result.updates', 'en', 'overall.result.updates', 'number of updates', '', '2022-10-21 03:02:01', 407);
+INSERT INTO `sys_i18n` VALUES (7480, 'overall.result.updates', 'zh', 'overall.result.updates', '更新数量', '', '2022-10-21 03:02:10', 407);
+INSERT INTO `sys_i18n` VALUES (7481, 'overall.result.downloadFail', 'en', 'overall.result.downloadFail', 'Download failed records', '', '2022-10-21 06:23:50', 407);
+INSERT INTO `sys_i18n` VALUES (7482, 'overall.result.downloadFail', 'zh', 'overall.result.downloadFail', '下载失败记录', '', '2022-10-21 06:24:09', 407);
+INSERT INTO `sys_i18n` VALUES (7483, 'overall.result.importedRecords', 'en', 'overall.result.importedRecords', 'Total number of imported records', '', '2022-10-21 07:51:24', 407);
+INSERT INTO `sys_i18n` VALUES (7484, 'overall.result.importedRecords', 'zh', 'overall.result.importedRecords', '导入记录总数', '', '2022-10-21 07:51:45', 407);
+INSERT INTO `sys_i18n` VALUES (7485, 'overall.result.newRecords', 'en', 'overall.result.newRecords', 'Number of new records', '', '2022-10-21 07:52:44', 407);
+INSERT INTO `sys_i18n` VALUES (7486, 'overall.result.newRecords', 'zh', 'overall.result.newRecords', '新纪录数量', '', '2022-10-21 07:53:14', 407);
+INSERT INTO `sys_i18n` VALUES (7487, 'overall.result.updatedRecords', 'en', 'overall.result.updatedRecords', 'Number of updated records', '', '2022-10-21 07:54:22', 407);
+INSERT INTO `sys_i18n` VALUES (7488, 'overall.result.updatedRecords', 'zh', 'overall.result.updatedRecords', '更新记录数量', '', '2022-10-21 07:54:37', 407);
+INSERT INTO `sys_i18n` VALUES (7489, 'deleteButton.confirm', 'en', 'deleteButton.confirm', 'Confirm', '', '2022-10-21 08:16:30', 415);
+INSERT INTO `sys_i18n` VALUES (7490, 'deleteButton.confirm', 'zh', 'deleteButton.confirm', '确认', '', '2022-10-21 08:17:12', 415);
+INSERT INTO `sys_i18n` VALUES (7491, '998', 'en', 'CONTENT_MORETHAN_MAXLENGTH', 'Field content length more than maxLength:{0}', '响应消息->字段长度校验', '2022-10-21 08:17:12', 416);
+INSERT INTO `sys_i18n` VALUES (7492, '998', 'zh', 'CONTENT_MORETHAN_MAXLENGTH', '字段内容长度超过最大值:{0}', '响应消息->字段长度校验', '2022-10-21 08:17:12', 416);
 
 SET FOREIGN_KEY_CHECKS = 1;

@@ -992,6 +992,7 @@ public enum RCode {
     TOOL_PING_IP_ISNULL(751000, "Ping ip can not be empty"),
     TOOL_TRACEROUTE_IP_ISNULL(751001, "Traceroute ip can not be empty"),
 
+    CONTENT_MORETHAN_MAXLENGTH(998, "Field content length more than {0}"),
     ERROR(999, "error"); //通用错误/未知错误
 
 

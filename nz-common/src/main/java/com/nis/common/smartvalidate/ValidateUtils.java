@@ -145,7 +145,7 @@ public class ValidateUtils {
      * @return ValidateUtils
      */
     public ValidateUtils maxLength(int max) {
-        return maxLength(max, null);
+        return maxLength(max, RCode.CONTENT_MORETHAN_MAXLENGTH.setParam(max));
     }
 
     /**
