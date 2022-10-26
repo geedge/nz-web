@@ -88,7 +88,8 @@ public class AssetFieldMetaServiceImpl extends ServiceImpl<AssetFieldMetaDao,Ass
 		if(!key.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
 			throw new NZException(RCode.ASSET_FIELD_META_KEY_ERROR);
 		}
-		
+
+		assetFieldMeta.setName(StrUtil.trim(assetFieldMeta.getName()));
 		List<AssetFieldMeta> list = this.list(new QueryWrapper<AssetFieldMeta>().lambda()
 				.ne(ObjectUtil.isNotEmpty(assetFieldMeta.getId()),AssetFieldMeta::getId, assetFieldMeta.getId())
 				.and(wrapper -> wrapper.eq(AssetFieldMeta::getMetaKey, key).or().eq(AssetFieldMeta::getName,assetFieldMeta.getName())));

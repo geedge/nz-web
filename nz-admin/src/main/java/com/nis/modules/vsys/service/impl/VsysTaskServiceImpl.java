@@ -155,6 +155,7 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
     @Override
     public String createTask(VsysTask task) throws Exception {
         // validate
+        task.setName(StrUtil.trim(task.getName()));
         this.validateTashInfo(task);
 
         Integer concurrency = task.getConcurrency();

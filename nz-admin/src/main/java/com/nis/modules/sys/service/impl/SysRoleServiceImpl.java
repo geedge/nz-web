@@ -109,6 +109,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
     @Transactional(rollbackFor = Exception.class)
     public void saveRole(SysRoleEntity role) {
         // 校验 角色 相关信息
+        role.setName(StrUtil.trim(role.getName()));
         this.validateRoleInfo(role);
 
         this.save(role);
@@ -120,6 +121,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
     @Transactional(rollbackFor = Exception.class)
     public void update(SysRoleEntity role) {
         // 校验 角色 相关信息
+        role.setName(StrUtil.trim(role.getName()));
         this.validateRoleInfo(role);
 
         SysRoleEntity oldRole = this.getById(role.getId());

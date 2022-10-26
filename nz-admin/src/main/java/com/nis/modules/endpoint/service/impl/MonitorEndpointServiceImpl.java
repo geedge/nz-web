@@ -1520,6 +1520,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     @Transactional(rollbackFor = Exception.class)
     public Integer saveEndpoint(MonitorEndpoint endpoint) {
         // 校验
+        endpoint.setName(StrUtil.trim(endpoint.getName()));
         this.validateEndpointInfo(endpoint);
 
         MonitorModule module = monitorModuleService.getById(endpoint.getModuleId());
@@ -1634,6 +1635,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     @Transactional(rollbackFor = Exception.class)
     public Integer updateEndpoint(MonitorEndpoint endpoint) {
         // 校验
+        endpoint.setName(StrUtil.trim(endpoint.getName()));
         this.validateEndpointInfo(endpoint);
 
         MonitorModule module = monitorModuleService.getById(endpoint.getModuleId());

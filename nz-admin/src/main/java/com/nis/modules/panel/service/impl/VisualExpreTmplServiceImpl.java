@@ -156,6 +156,8 @@ public class VisualExpreTmplServiceImpl extends ServiceImpl<VisualExpreTmplDao, 
     @Override
     public Integer saveTmpl(VisualExpressionTmpl tmpl) {
         // 1. 校验
+        tmpl.setGname(StrUtil.trim(tmpl.getGname()));
+        tmpl.setName(StrUtil.trim(tmpl.getName()));
         this.validateExpressionTmplInfo(tmpl);
 
         if (StringUtils.isEmpty(tmpl.getGname())) {
@@ -170,6 +172,8 @@ public class VisualExpreTmplServiceImpl extends ServiceImpl<VisualExpreTmplDao, 
     @Override
     public Integer updateTmpl(VisualExpressionTmpl tmpl) {
         // 1. 校验
+        tmpl.setGname(StrUtil.trim(tmpl.getGname()));
+        tmpl.setName(StrUtil.trim(tmpl.getName()));
         this.validateExpressionTmplInfo(tmpl);
 
         if (StringUtils.isEmpty(tmpl.getGname())) {

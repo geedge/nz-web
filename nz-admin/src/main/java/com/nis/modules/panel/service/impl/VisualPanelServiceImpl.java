@@ -447,6 +447,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 	@Override
 	@Transactional(rollbackFor = Exception.class)
 	public void saveVisualPanel(VisualPanel panel) {
+		panel.setName(StrUtil.trim(panel.getName()));
 		this.validatePanel(panel);
 
 		Long userId = ShiroUtils.getUserId();
@@ -491,6 +492,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 	@Override
 	@Transactional(rollbackFor = Exception.class)
 	public void updateVisualPanel(VisualPanel panel) {
+		panel.setName(StrUtil.trim(panel.getName()));
 		this.validatePanel(panel);
 
 		VisualPanel oldPanel = this.getById(panel.getId());

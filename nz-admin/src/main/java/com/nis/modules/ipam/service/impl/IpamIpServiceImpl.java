@@ -95,6 +95,7 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
                 .and(ipamIp.getName()).notNull(RCode.IPAM_IP_NAME_ISNULL);
 
         //判断name是否重复
+        ipamIp.setName(StrUtil.trim(ipamIp.getName()));
         IpamIp selectOne = ipamIpDao.selectOne(new LambdaQueryWrapper<IpamIp>().eq(IpamIp::getName, ipamIp.getName()));
         if ((Tool.ObjectUtil.isEmpty(ipamIp.getId()) && Tool.ObjectUtil.isNotEmpty(selectOne))
                 || (Tool.ObjectUtil.isNotEmpty(ipamIp.getId()) && Tool.ObjectUtil.isNotEmpty(selectOne) && !selectOne.getId().equals(ipamIp.getId()))) {

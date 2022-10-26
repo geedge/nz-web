@@ -141,6 +141,7 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 	public int saveRecordRule(RecordRuleEntity recordRule) {
 
 		// 校验参数
+		recordRule.setName(StrUtil.trim(recordRule.getName()));
 		this.validateParam(recordRule);
 		// 检查name
 		List<RecordRuleEntity> list = this

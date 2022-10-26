@@ -1,5 +1,6 @@
 package com.nis.modules.sys.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -99,6 +100,7 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuDao, SysMenuEntity> i
 	@Override
 	public void saveMenu(SysMenuEntity menu) {
 		// 参数信息校验
+		menu.setName(StrUtil.trim(menu.getName()));
 		this.validateMenuInfo(menu);
 
 		if (menu.getParentId() == null)
@@ -110,6 +112,7 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuDao, SysMenuEntity> i
 	@Override
 	public void updateMenu(SysMenuEntity menu) {
 		// 参数信息校验
+		menu.setName(StrUtil.trim(menu.getName()));
 		this.validateMenuInfo(menu);
 
 		if (menu.getParentId() == null)

@@ -1,5 +1,6 @@
 package com.nis.modules.sys.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
@@ -39,6 +40,7 @@ public class LinkServiceImpl extends ServiceImpl<LinkDao, Link> implements LinkS
         }else{
             link.setWeight(max.getWeight()+1);
         }
+        link.setName(StrUtil.trim(link.getName()));
         this.save(link);
 	}
 

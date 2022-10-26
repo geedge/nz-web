@@ -225,6 +225,7 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
     @Override
     public Integer saveModel(AssetModel model) {
         // 1. 校验
+        model.setName(StrUtil.trim(model.getName()));
         this.validateAssetModelInfo(model);
 
         // 保存
@@ -237,6 +238,7 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
     @Transactional(rollbackFor = Exception.class)
     public Integer updateModel(AssetModel model) {
         // 1. 校验
+        model.setName(StrUtil.trim(model.getName()));
         this.validateAssetModelInfo(model);
 
         AssetModel oldModel = this.getById(model.getId());

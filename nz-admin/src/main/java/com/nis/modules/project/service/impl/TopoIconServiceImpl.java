@@ -67,7 +67,7 @@ public class TopoIconServiceImpl extends ServiceImpl<TopoIconDao, TopoIcon> impl
         }
 
         TopoIcon topoIcon = new TopoIcon();
-        topoIcon.setName(icon.getName());
+        topoIcon.setName(StrUtil.trim(icon.getName()));
         topoIcon.setType(fileType);
         topoIcon.setUnit(icon.getUnit());
         topoIcon.setBytes(Base64.getEncoder().encodeToString(file.getBytes()));

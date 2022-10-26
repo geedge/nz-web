@@ -43,6 +43,7 @@ public class SysApiKeyServiceImpl extends ServiceImpl<SysApiKeyDao,SysApiKey> im
 	@Override
 	public Integer addSysApiKey(SysApiKey sysApiKey) {
 		// 校验名称不重复
+		sysApiKey.setName(StrUtil.trim(sysApiKey.getName()));
 		List<SysApiKey> sysApiKeys = this.list(new QueryWrapper<SysApiKey>().lambda().eq(SysApiKey::getName, sysApiKey.getName()));
 		if(ToolUtil.isNotEmpty(sysApiKeys)) {
 			throw new NZException(RCode.SYSAPIKEY_NAME_DUPLICATE);
@@ -90,6 +91,7 @@ public class SysApiKeyServiceImpl extends ServiceImpl<SysApiKeyDao,SysApiKey> im
 	@Override
 	public Map<String, Object> addSelfApiKey(SysApiKey sysApiKey) {
 		// 名称唯一
+		sysApiKey.setName(StrUtil.trim(sysApiKey.getName()));
 		List<SysApiKey> sysApiKeys = this.list(new LambdaQueryWrapper<SysApiKey>().eq(SysApiKey::getName, sysApiKey.getName()));
 		if (ToolUtil.isNotEmpty(sysApiKeys)) {
 			throw new NZException(RCode.SYSAPIKEY_NAME_DUPLICATE);

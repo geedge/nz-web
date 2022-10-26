@@ -145,7 +145,7 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
                     if (row == null) continue;
                     Map<Integer, String> tmpMap = Tool.MapUtil.newHashMap();
                     for (int j = 0; j < headerInfos.size(); j++) {
-                        tmpMap.put(j, ExcelUtils.getCellValue(row.getCell(j)));
+                        tmpMap.put(j, StrUtil.trim(ExcelUtils.getCellValue(row.getCell(j))));
                     }
                     importDataList.add(tmpMap);
                 }
@@ -163,7 +163,7 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
                     CsvRow csvRow = rows.get(i);
                     Map<Integer, String> tmpMap = Tool.MapUtil.newHashMap();
                     for (int j = 0; j < headerInfos.size(); j++) {
-                        tmpMap.put(j, csvRow.get(j));
+                        tmpMap.put(j, StrUtil.trim(csvRow.get(j)));
                     }
                     importDataList.add(tmpMap);
                 }
@@ -185,7 +185,7 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
                     Map<Integer, String> tmpMap = Tool.MapUtil.newHashMap();
                     for (int i = 0; i < keys.size(); i++) {
                         Object o = linkedHashMap.get(keys.get(i));
-                        String var = o == null ? StrUtil.EMPTY : o.toString().trim();
+                        String var = o == null ? StrUtil.EMPTY : StrUtil.trim(o.toString());
                         tmpMap.put(i, var);
                     }
                     importDataList.add(tmpMap);

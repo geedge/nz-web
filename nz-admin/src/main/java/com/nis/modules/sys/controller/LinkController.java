@@ -1,5 +1,6 @@
 package com.nis.modules.sys.controller;
 
+import cn.hutool.core.util.StrUtil;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.OperationEnum;
@@ -44,6 +45,7 @@ public class LinkController extends AbstractController{
 	@RequiresPermissions({"sys:link:update"})
 	public R update(@RequestBody Link link) {
 		ValidateUtils.is(link.getId()).notNull(RCode.LINK_ID_ISNULL);
+		link.setName(StrUtil.trim(link.getName()));
 		ValidateUtils.is(link.getName()).notNull(RCode.LINK_NAME_ISNULL).maxLength(64);
 		ValidateUtils.is(link.getUrl()).notNull(RCode.LINK_URL_ISNULL).maxLength(1024);
 		linkService.updateById(link);

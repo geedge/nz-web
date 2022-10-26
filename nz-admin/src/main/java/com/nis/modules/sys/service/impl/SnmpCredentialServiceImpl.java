@@ -9,16 +9,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.alibaba.fastjson.JSON;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.modules.asset.entity.AssetAsset;
-import com.nis.modules.asset.entity.AssetFieldGroup;
-import com.nis.modules.asset.entity.AssetFieldMeta;
-import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.sys.dao.SnmpCredentialDao;
 import com.nis.modules.sys.entity.SnmpCredential;
@@ -48,6 +44,7 @@ public class SnmpCredentialServiceImpl extends ServiceImpl<SnmpCredentialDao,Snm
 
 	@Override
 	public Integer saveSnmpCredential(SnmpCredential snmpCredential) {
+		snmpCredential.setName(Tool.StrUtil.trim(snmpCredential.getName()));
 		this.validateSnmpCredential(snmpCredential);
 		this.save(snmpCredential);
 		return snmpCredential.getId();
@@ -56,6 +53,7 @@ public class SnmpCredentialServiceImpl extends ServiceImpl<SnmpCredentialDao,Snm
 	@Override
 	public Integer modifySnmpCredential(SnmpCredential snmpCredential) {
 		ValidateUtils.is(snmpCredential.getId()).notNull(RCode.SNMP_CREDENTIAL_ID_ISNULL);
+		snmpCredential.setName(Tool.StrUtil.trim(snmpCredential.getName()));
 		this.validateSnmpCredential(snmpCredential);
 		this.updateById(snmpCredential);
 		return snmpCredential.getId();

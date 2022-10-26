@@ -43,7 +43,7 @@ public class AlertSeverityController {
     @SysLog(operation = OperationEnum.ADD,type = TypeEnum.ALERTSEVERITY)
     @RequiresPermissions({"alert:severity:save"})
     public R save(@RequestBody AlertSeverityConf alertSeverityConf){
-
+        alertSeverityConf.setName(Tool.StrUtil.trim(alertSeverityConf.getName()));
         alertSeverityService.validateSeverity(alertSeverityConf,false);
         alertSeverityService.saveSeverity(alertSeverityConf);
         return R.ok();
@@ -53,7 +53,7 @@ public class AlertSeverityController {
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERTSEVERITY)
     @RequiresPermissions({"alert:severity:update"})
     public R update(@RequestBody AlertSeverityConf alertSeverityConf){
-
+        alertSeverityConf.setName(Tool.StrUtil.trim(alertSeverityConf.getName()));
         alertSeverityService.validateSeverity(alertSeverityConf,true);
         alertSeverityService.updateSeverity(alertSeverityConf);
         return R.ok();

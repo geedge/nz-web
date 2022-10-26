@@ -266,6 +266,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
     @Override
     public Integer saveDc(Dc dc) {
         // 校验 dc 相关信息
+        dc.setName(StrUtil.trim(dc.getName()));
         this.validateDcInfo(dc);
 
         // 设置属性默认值
@@ -285,6 +286,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
     @Override
     public Integer updateDc(Dc dc) {
         // 校验 dc 相关信息
+        dc.setName(StrUtil.trim(dc.getName()));
         this.validateDcInfo(dc);
 
         // 保存

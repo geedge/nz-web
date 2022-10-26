@@ -803,6 +803,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     @Transactional(rollbackFor = Exception.class)
     public Integer saveAsset(AssetAsset asset) {
         // 校验参数
+        asset.setName(StrUtil.trim(asset.getName()));
         this.validateAssetInfo(asset);
 
         // 设置属性值
@@ -968,6 +969,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     @Transactional(rollbackFor = Exception.class)
     public Integer updateAsset(AssetAsset asset) {
         // 校验参数
+        asset.setName(StrUtil.trim(asset.getName()));
         this.validateAssetInfo(asset);
 
         // 设置属性值

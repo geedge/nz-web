@@ -124,6 +124,7 @@ public class AssetTypeConfServiceImpl extends ServiceImpl<AssetTypeConfDao, Asse
     @Override
     public Integer saveConf(AssetTypeConf conf) {
         // 1. 校验
+        conf.setName(StrUtil.trim(conf.getName()));
         this.validateAssetTypeConfInfo(conf);
 
         // 2. 保存
@@ -134,6 +135,7 @@ public class AssetTypeConfServiceImpl extends ServiceImpl<AssetTypeConfDao, Asse
     @Override
     public Integer updateConf(AssetTypeConf conf) {
         // 1. 校验
+        conf.setName(StrUtil.trim(conf.getName()));
         this.validateAssetTypeConfInfo(conf);
 
         // 2. 保存

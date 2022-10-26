@@ -309,6 +309,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	public Integer saveChart(VisualChart chart) {
     	// 1. 新增 chart 自动追加至末尾
         chart.setUpdateAt(new Date());
+		chart.setName(StrUtil.trim(chart.getName()));
         Object param = chart.getParam();
         if (param != null && param instanceof HashMap) {
             chart.setParam(JSONObject.toJSONString(param));
@@ -401,6 +402,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	@Transactional(rollbackFor = Exception.class)
 	public Integer updateChart(VisualChart chart) {
 		// 1. 校验
+		chart.setName(StrUtil.trim(chart.getName()));
         this.validateChart(chart);
 
         Object param = chart.getParam();

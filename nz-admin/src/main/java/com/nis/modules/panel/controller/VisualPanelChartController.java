@@ -66,7 +66,6 @@ public class VisualPanelChartController {
     public R chartUpdate(@RequestBody VisualChart chart){
         ValidateUtils.is(chart.getId()).notNull(RCode.CHART_ID_ISNULL);
 
-        visualChartService.validateChart(chart);
         Integer id = visualChartService.updateChart(chart);
         return R.ok().putData("id", id);
     }

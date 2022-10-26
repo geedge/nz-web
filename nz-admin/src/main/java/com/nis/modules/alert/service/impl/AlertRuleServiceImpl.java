@@ -181,6 +181,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     @Override
     public Integer saveOrUpdateAlertRule(AlertRuleEntity alertRule) {
         // 校验参数
+        alertRule.setName(StrUtil.trim(alertRule.getName()));
         this.validateParam(alertRule);
 
         // 校验名称重复

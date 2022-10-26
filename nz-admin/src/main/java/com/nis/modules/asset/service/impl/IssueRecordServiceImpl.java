@@ -167,6 +167,7 @@ public class IssueRecordServiceImpl extends ServiceImpl<IssueRecordDao, IssueRec
     public Integer saveIssue(IssueRecord issueRecord) {
         issueRecord.setId(null);
         // 属性校验
+        issueRecord.setName(StrUtil.trim(issueRecord.getName()));
         this.validateIssueInfo(issueRecord);
         // 设置属性值
         issueRecord.setCts(System.currentTimeMillis());
@@ -195,6 +196,7 @@ public class IssueRecordServiceImpl extends ServiceImpl<IssueRecordDao, IssueRec
     @Transactional(rollbackFor = Exception.class)
     public Integer updateIssue(IssueRecord issueRecord) {
         // 属性校验
+        issueRecord.setName(StrUtil.trim(issueRecord.getName()));
         this.validateIssueInfo(issueRecord);
         // 设置属性值
         issueRecord.setUts(System.currentTimeMillis());

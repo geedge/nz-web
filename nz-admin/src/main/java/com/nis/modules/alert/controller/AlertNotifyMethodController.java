@@ -1,5 +1,6 @@
 package com.nis.modules.alert.controller;
 
+import cn.hutool.core.util.StrUtil;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.entity.AlertNotifyMethod;
@@ -38,6 +39,7 @@ public class AlertNotifyMethodController {
     @SysLog(operation = OperationEnum.ADD,type = TypeEnum.ALERTNOTIFYMETHOD)
     @RequiresPermissions({"alert:notify:save"})
     public R save(@RequestBody AlertNotifyMethod alertNotifyMethod){
+        alertNotifyMethod.setName(StrUtil.trim(alertNotifyMethod.getName()));
         alertNotifyMethodService.validateNotifyMethod(alertNotifyMethod,false);
         alertNotifyMethod.setBuildIn(0);
         alertNotifyMethodService.save(alertNotifyMethod);
@@ -47,6 +49,7 @@ public class AlertNotifyMethodController {
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERTNOTIFYMETHOD)
     @RequiresPermissions({"alert:notify:update"})
     public R update(@RequestBody AlertNotifyMethod alertNotifyMethod){
+        alertNotifyMethod.setName(StrUtil.trim(alertNotifyMethod.getName()));
         alertNotifyMethodService.validateNotifyMethod(alertNotifyMethod,true);
         alertNotifyMethodService.updateById(alertNotifyMethod);
         return R.ok();

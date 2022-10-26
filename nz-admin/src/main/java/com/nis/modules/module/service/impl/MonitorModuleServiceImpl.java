@@ -335,6 +335,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
     @Override
     public Integer saveModule(MonitorModule module) {
         // 1. 校验
+        module.setName(StrUtil.trim(module.getName()));
         this.validateModuleInfo(module);
 
         List<Map> configMapList = JSONObject.parseArray(module.getConfigs(), Map.class);
@@ -394,6 +395,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
         }
 
         // 2. 校验
+        moduleEntity.setName(StrUtil.trim(moduleEntity.getName()));
         this.validateModuleInfo(moduleEntity);
 
         // 3. snmp yml

@@ -8,6 +8,7 @@
 
 package com.nis.modules.sys.controller;
 
+import cn.hutool.core.util.StrUtil;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
@@ -84,6 +85,7 @@ public class SysDictController extends AbstractController {
         ValidateUtils.is(dict.getType()).notNull(RCode.SYS_DICT_TYPE_ISNULL);
         ValidateUtils.is(dict.getValue()).notNull(RCode.SYS_DICT_VALUE_ISNULL);
 
+        dict.setName(StrUtil.trim(dict.getName()));
         sysDictService.saveSysDict(dict);
         Map<String, SysDictEntity> resultEntity = new HashMap<>(2);
         resultEntity.put("dictEntity", dict);
@@ -103,6 +105,7 @@ public class SysDictController extends AbstractController {
         if(StringUtils.isBlank(dict.getName())){
             dict.setName(dict.getValue());
         }
+        dict.setName(StrUtil.trim(dict.getName()));
         dict.setOperator(getUserId());
         dict.setOpTime(new Date());
         

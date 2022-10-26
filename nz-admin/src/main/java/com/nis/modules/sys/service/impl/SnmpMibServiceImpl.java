@@ -89,6 +89,7 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
 
     @Override
     public void saveOrUpdateSnmpMib(SnmpMib snmpMib, MultipartFile multipartFile) {
+        snmpMib.setName(StrUtil.trim(snmpMib.getName()));
         snmpMib.setUpdateBy(ShiroUtils.getUserId());
         snmpMib.setUpdateAt(new Date());
 

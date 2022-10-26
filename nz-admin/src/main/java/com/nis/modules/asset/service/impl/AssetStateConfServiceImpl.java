@@ -98,6 +98,7 @@ public class AssetStateConfServiceImpl extends ServiceImpl<AssetStateConfDao, As
     @Override
     public Integer saveConf(AssetStateConf conf) {
         // 1. 校验
+        conf.setName(Tool.StrUtil.trim(conf.getName()));
         this.validateAssetStateConfInfo(conf);
 
         // 2. 保存
@@ -108,6 +109,7 @@ public class AssetStateConfServiceImpl extends ServiceImpl<AssetStateConfDao, As
     @Override
     public Integer updateConf(AssetStateConf conf) {
         // 1. 校验
+        conf.setName(Tool.StrUtil.trim(conf.getName()));
         this.validateAssetStateConfInfo(conf);
 
         // 2. 保存

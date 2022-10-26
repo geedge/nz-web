@@ -138,6 +138,7 @@ public class AgentServiceImpl extends ServiceImpl<AgentDao, Agent> implements Ag
 	@Override
 	public Integer saveOrUpdateAgent(Agent agent, boolean modify) {
         // 校验
+		agent.setName(StrUtil.trim(agent.getName()));
 		this.validateParam(agent);
 
 		// 添加设置默认值

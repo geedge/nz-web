@@ -122,6 +122,7 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
     @Override
     public Integer saveProject(MonitorProject project) {
         // 1. 校验
+        project.setName(StrUtil.trim(project.getName()));
         this.validateProjectInfo(project);
 
         // 保存
@@ -138,6 +139,7 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
         }
 
         // 参数校验
+        project.setName(StrUtil.trim(project.getName()));
         this.validateProjectInfo(project);
 
         // 保存

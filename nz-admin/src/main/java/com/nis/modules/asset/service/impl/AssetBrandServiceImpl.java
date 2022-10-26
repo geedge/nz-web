@@ -76,6 +76,7 @@ public class AssetBrandServiceImpl extends ServiceImpl<AssetBrandDao, AssetBrand
     @Override
     public void saveBrand(AssetBrand brand) {
         // 1. 校验
+        brand.setName(Tool.StrUtil.trim(brand.getName()));
         this.validateAssetBrandInfo(brand);
 
         // 保存
@@ -85,6 +86,7 @@ public class AssetBrandServiceImpl extends ServiceImpl<AssetBrandDao, AssetBrand
     @Override
     public void updateBrand(AssetBrand brand) {
         // 1. 校验
+        brand.setName(Tool.StrUtil.trim(brand.getName()));
         this.validateAssetBrandInfo(brand);
 
         // 保存

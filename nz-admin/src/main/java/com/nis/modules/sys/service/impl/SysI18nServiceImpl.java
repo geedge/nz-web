@@ -153,6 +153,8 @@ public class SysI18nServiceImpl extends ServiceImpl<SysI18nDao, SysI18nEntity> i
 
 	@Override
 	public void saveI18n(SysI18nEntity sysI18nEntity) {
+		sysI18nEntity.setName(StrUtil.trim(sysI18nEntity.getName()));
+		sysI18nEntity.setCode(StrUtil.trim(sysI18nEntity.getCode()));
 		this.validateData(sysI18nEntity);
 		sysI18nEntity.setUtime(new Date());
 		sysI18nEntity.setUby(ShiroUtils.getUserId());
@@ -162,6 +164,8 @@ public class SysI18nServiceImpl extends ServiceImpl<SysI18nDao, SysI18nEntity> i
 	@Override
 	public void updateI18n(SysI18nEntity sysI18nEntity) {
 		ValidateUtils.is(sysI18nEntity.getId()).notNull();
+		sysI18nEntity.setName(StrUtil.trim(sysI18nEntity.getName()));
+		sysI18nEntity.setCode(StrUtil.trim(sysI18nEntity.getCode()));
 		this.validateData(sysI18nEntity);
 		sysI18nEntity.setUtime(new Date());
 		sysI18nEntity.setUby(ShiroUtils.getUserId());

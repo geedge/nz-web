@@ -164,6 +164,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		ValidateUtils.is(user.getPin()).notNull(RCode.SYS_USER_PASSWORD_ISNULL).maxLength(64);
 		user.setPinTime(new Date());
 		// 校验 user 相关信息
+		user.setName(StrUtil.trim(user.getName()));
 		this.validateUserInfo(user);
 		if(Tool.StrUtil.isBlank(user.getLang())) {
 			user.setLang("en");
@@ -188,6 +189,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 	public Integer update(SysUserEntity user) {
 
 		// 校验 user 相关信息
+		user.setName(StrUtil.trim(user.getName()));
 		this.validateUserInfo(user);
 		if(Tool.StrUtil.isBlank(user.getLang())) {
 			user.setLang("en");

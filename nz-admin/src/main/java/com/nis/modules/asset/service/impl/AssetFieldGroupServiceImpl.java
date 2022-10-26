@@ -47,6 +47,7 @@ public class AssetFieldGroupServiceImpl extends ServiceImpl<AssetFieldGroupDao,A
 	@Override
 	public Integer saveOrModifyAssetFieldGroup(AssetFieldGroup assetFieldGroup) {
 		// 校验name不重复
+		assetFieldGroup.setName(Tool.StrUtil.trim(assetFieldGroup.getName()));
 		String name = assetFieldGroup.getName();
 		List<AssetFieldGroup> list = this.list(new QueryWrapper<AssetFieldGroup>().lambda().eq(AssetFieldGroup::getName, name).ne(ObjectUtil.isNotEmpty(assetFieldGroup.getId()), AssetFieldGroup::getId,assetFieldGroup.getId()));
 		if(ObjectUtil.isNotEmpty(list)) {

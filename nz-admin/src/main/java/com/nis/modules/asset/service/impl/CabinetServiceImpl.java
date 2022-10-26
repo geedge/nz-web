@@ -213,6 +213,7 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
     @Override
     public Integer saveCabinet(Cabinet cabinet) {
         // 校验
+        cabinet.setName(StrUtil.trim(cabinet.getName()));
         this.validateCabinetInfo(cabinet);
 
         // Usize 为空 则从配置表中取出 cabinet u位默认值
@@ -229,6 +230,7 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
     @Override
     public Integer updateCabinet(Cabinet cabinet) {
         // 校验
+        cabinet.setName(StrUtil.trim(cabinet.getName()));
         this.validateCabinetInfo(cabinet);
 
         // 保存

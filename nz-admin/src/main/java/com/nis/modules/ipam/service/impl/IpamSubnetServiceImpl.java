@@ -118,6 +118,7 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 		.and(ipamSubnet.getMask()).notNull(RCode.IPAM_SUBNET_MASK_ISNULL)
 		.and(ipamSubnet.getDcId()).notNull(RCode.IPAM_SUBNET_DCID_ISNULL);
 
+		ipamSubnet.setName(StrUtil.trim(ipamSubnet.getName()));
 		IpamSubnet one = ipamSubnetDao.selectOne(new LambdaQueryWrapper<IpamSubnet>().eq(IpamSubnet::getName, ipamSubnet.getName()));
 		if ((Tool.ObjectUtil.isEmpty(ipamSubnet.getId()) && Tool.ObjectUtil.isNotEmpty(one))
 				|| (Tool.ObjectUtil.isNotEmpty(ipamSubnet.getId()) && Tool.ObjectUtil.isNotEmpty(one) && !one.getId().equals(ipamSubnet.getId()))) {

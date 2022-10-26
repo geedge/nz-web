@@ -81,6 +81,7 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 		if(Tool.CollUtil.isEmpty(matcherList)) {
 			throw new NZException(RCode.ALERTSILENCE_MATCHER_ISNULL);
 		}
+		conf.setName(Tool.StrUtil.trim(conf.getName()));
 		if(Tool.DateUtil.compare(conf.getStartAt(), now)<0) {//直接生效
 			conf.setState(Constant.ALERT_SILENCE_STATE_ACTIVE);
 			alertSilenceDao.insert(conf);
@@ -104,6 +105,7 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 	public void updateAlertSilenceConf(AlertSilenceConf conf) {
 		DateTime now = Tool.DateUtil.date();
 		conf.setUtime(now);
+		conf.setName(Tool.StrUtil.trim(conf.getName()));
 		if(Tool.DateUtil.compare(conf.getEndAt(), now)<0) {
 			throw new NZException(RCode.ALERTSILENCE_ENDTIME_MUSTGTNOW);
 		}
