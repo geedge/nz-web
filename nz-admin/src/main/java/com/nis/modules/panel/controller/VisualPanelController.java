@@ -109,7 +109,7 @@ public class VisualPanelController {
 	@PostMapping("/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.CHART)
 	@RequiresPermissions({ "visual:panel:save"})
-	public R importChartData(MultipartFile excelFile, String type, Integer linkId, HttpServletRequest request) throws IOException {
+	public R importChartData(@RequestParam(value = "file") MultipartFile excelFile, String type, Integer linkId, HttpServletRequest request) throws IOException {
 
 		String language = request.getHeader(Constant.LANGUAGE);
 		ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL)
