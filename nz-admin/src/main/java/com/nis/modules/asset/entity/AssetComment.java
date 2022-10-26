@@ -39,6 +39,11 @@ public class AssetComment implements Serializable {
     private String content;
 
     /**
+     * 评论内容 html 格式
+     */
+    private String html;
+
+    /**
      * 添加时间戳
      */
     private Long cts;
