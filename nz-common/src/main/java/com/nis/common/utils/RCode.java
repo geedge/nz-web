@@ -394,6 +394,7 @@ public enum RCode {
      */
     ASSET_COMMENT_ID_ISNULL(401000, "Asset comment id can not be empty"),
     ASSET_COMMENT_CONTENT_ISNULL(401001, "Asset comment content can not be empty"),
+    ASSET_COMMENT_HTML_ISNULL(401002, "Asset comment html can not be empty"),
 
     /**
      * alerts菜单栏相关

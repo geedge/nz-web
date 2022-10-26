@@ -4731,5 +4731,7 @@ INSERT INTO `sys_i18n` VALUES (7489, 'deleteButton.confirm', 'en', 'deleteButton
 INSERT INTO `sys_i18n` VALUES (7490, 'deleteButton.confirm', 'zh', 'deleteButton.confirm', '确认', '', '2022-10-21 08:17:12', 415);
 INSERT INTO `sys_i18n` VALUES (7491, '998', 'en', 'CONTENT_MORETHAN_MAXLENGTH', 'Field content length more than maxLength:{0}', '响应消息->字段长度校验', '2022-10-21 08:17:12', 416);
 INSERT INTO `sys_i18n` VALUES (7492, '998', 'zh', 'CONTENT_MORETHAN_MAXLENGTH', '字段内容长度超过最大值:{0}', '响应消息->字段长度校验', '2022-10-21 08:17:12', 416);
+INSERT INTO `sys_i18n` VALUES (7493, '401002', 'en', 'ASSET_COMMENT_HTML_ISNULL', 'Asset comment html can not be empty', '响应消息->资产评论新增/修改', '2022-10-26 08:17:12', 416);
+INSERT INTO `sys_i18n` VALUES (7494, '401002', 'zh', 'ASSET_COMMENT_HTML_ISNULL', '资产评论HTML格式不能为空', '响应消息->资产评论新增/修改', '2022-10-26 08:17:12', 416);
 
 SET FOREIGN_KEY_CHECKS = 1;

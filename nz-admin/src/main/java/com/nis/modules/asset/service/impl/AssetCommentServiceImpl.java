@@ -82,7 +82,8 @@ public class AssetCommentServiceImpl extends ServiceImpl<AssetCommentDao, AssetC
 
     private void validateCommentInfo(AssetComment assetComment) {
         ValidateUtils.is(assetComment.getAssetId()).notNull(RCode.ASSET_ID_ISNULL)
-            .and(assetComment.getContent()).notNull(RCode.ASSET_COMMENT_CONTENT_ISNULL);
+            .and(assetComment.getContent()).notNull(RCode.ASSET_COMMENT_CONTENT_ISNULL)
+            .and(assetComment.getHtml()).notNull(RCode.ASSET_COMMENT_HTML_ISNULL);
     }
 
     @Override

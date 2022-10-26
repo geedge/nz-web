@@ -8,6 +8,7 @@
         <result property="assetId" column="asset_id"/>
         <result property="replyId" column="reply_id"/>
         <result property="content" column="content"/>
+        <result property="html" column="html"/>
         <result property="cts" column="cts"/>
         <result property="uts" column="uts"/>
         <result property="cid" column="cid"/>
