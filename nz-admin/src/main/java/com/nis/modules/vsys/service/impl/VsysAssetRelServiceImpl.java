@@ -114,7 +114,7 @@ public class VsysAssetRelServiceImpl extends ServiceImpl<VsysAssetRelDao, VsysAs
             }
 
             this.saveOrUpdate(rel);
-            log.info("save vsys_asset_rel info: %s", JSONUtil.toJsonStr(rel));
+            log.info("save vsys_asset_rel info: {}", JSONUtil.toJsonStr(rel));
         } catch (Exception e) {
             log.error(e, "save vsys_asset_rel error,taskId: %s, vsysId: %s, assetId: %s, state: %s, delFlag: %s", taskId, vsysId, assetId, state, delFlag);
         }

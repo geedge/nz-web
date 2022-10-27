@@ -67,13 +67,13 @@ public class VsysConstant {
          */
         SUCCESS(3);
 
-        private int value;
+        private Integer value;
 
-        ResultState(int value) {
+        ResultState(Integer value) {
             this.value = value;
         }
 
-        public int getValue() {
+        public Integer getValue() {
             return value;
         }
     }

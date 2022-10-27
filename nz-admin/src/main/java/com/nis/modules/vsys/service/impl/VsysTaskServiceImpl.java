@@ -269,19 +269,75 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
         if (Tool.CollUtil.isEmpty(vsysAssetIdList)) return;
 
         List<VsysResult> resultList = Tool.ListUtil.list(true);
-        for (Integer assetId : vsysAssetIdList) {
+
+        Integer type = task.getType();
+        switch (type) {
+            // add & delete
+            case 1:
+            case 3: {
+                List<VsysResult> resultLogList = this.getUnExecStateLog(task, vsysAssetIdList, task.getType());
+                resultList.addAll(resultLogList);
+                break;
+            }
+            // update
+            case 2: {
+                // update include delete
+                List<VsysAssetRel> currentAssetRelOfVsys = vsysAssetRelService.list(new LambdaQueryWrapper<VsysAssetRel>().eq(VsysAssetRel::getVsysId, task.getVsysId()));
+                List<Integer> currentrelAssetIdsOfVsys = currentAssetRelOfVsys.stream().map(VsysAssetRel::getAssetId).distinct().collect(Collectors.toList());
+
+                // 之前下发过 VSYS，这次下发不更新了，做 删除 操作
+                currentrelAssetIdsOfVsys.removeAll(vsysAssetIdList);
+                List<VsysResult> delResultLogList = this.getUnExecStateLog(task, currentrelAssetIdsOfVsys, 3);
+                resultList.addAll(delResultLogList);
+
+                // update or add
+                List<VsysResult> updateResultLogList = this.getUnExecStateLog(task, vsysAssetIdList, task.getType());
+                resultList.addAll(updateResultLogList);
+
+                // 更新 vsys task total&assetIds = del + update
+                if (ObjectUtil.notEqual(task.getTotal(), resultList.size())) {
+                    List<Integer> realConfAssetIdList = resultList.stream().map(VsysResult::getAssetId).distinct().collect(Collectors.toList());
+                    String assetIds = StrUtil.join(StrUtil.COMMA, realConfAssetIdList);
+
+                    LambdaUpdateWrapper<VsysTask> updateWrapper = new LambdaUpdateWrapper<VsysTask>()
+                            .eq(VsysTask::getId, task.getId())
+                            .set(VsysTask::getTotal, resultList.size())
+                            .set(VsysTask::getAssetIds, assetIds);
+                    this.update(updateWrapper);
+                }
+                break;
+            }
+            default:
+                break;
+        }
+
+        if (Tool.CollUtil.isNotEmpty(resultList))
+            vsysResultService.saveBatch(resultList);
+    }
+
+    /**
+     * get UnExecStateLog by task&assetIdList&type
+     *
+     * @param task
+     * @param assetIdList
+     * @param type
+     * @return
+     */
+    private List<VsysResult> getUnExecStateLog(VsysTask task, List<Integer> assetIdList, Integer type) {
+        List<VsysResult> list = Tool.ListUtil.list(true);
+        for (Integer updateAssetId : assetIdList) {
             VsysResult result = new VsysResult();
             result.setTaskId(task.getId());
             result.setVsysId(task.getVsysId());
-            result.setAssetId(assetId);
-            result.setType(task.getType());
+            result.setAssetId(updateAssetId);
+            // 未指定 type 时，使用 task.type
+            result.setType(ObjectUtil.defaultIfNull(type, task.getType()));
             result.setState(VsysConstant.ResultState.NOT_EXEC.getValue());
             result.setTs(System.currentTimeMillis());
             result.setMsg(StrUtil.EMPTY);
-            resultList.add(result);
+            list.add(result);
         }
-
-        vsysResultService.saveBatch(resultList);
+        return list;
     }
 
 
@@ -322,17 +378,21 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
     public void vsysConfig(VsysTask vsysTask, AssetAsset asset) throws Exception {
         // target ip
         String manageIp = asset.getManageIp();
-        Integer type = vsysTask.getType();
         // retry
         int execNum = vsysTask.getRetry() == 0 ? 1 : vsysTask.getRetry();
         for (int i = 0; i < execNum; i++) {
             int currentExecNum = i + 1;
             VsysResult result = vsysResultService.getOne(new LambdaQueryWrapper<VsysResult>()
                     .eq(VsysResult::getAssetId, asset.getId())
-                    .eq(VsysResult::getTaskId, vsysTask.getId())
-                    .and(qw -> qw.eq(VsysResult::getState, VsysConstant.ResultState.SUCCESS.getValue())
-                            .or().eq(VsysResult::getState, VsysConstant.ResultState.FAILURE.getValue())));
-            if (result != null) {
+                    .eq(VsysResult::getTaskId, vsysTask.getId()));
+                    //.and(qw -> qw.eq(VsysResult::getState, VsysConstant.ResultState.SUCCESS.getValue())
+                            //.or().eq(VsysResult::getState, VsysConstant.ResultState.FAILURE.getValue())));
+
+            // vsys task detail operation type
+            Integer type = result.getType();
+
+            Integer state = result.getState();
+            if (StrUtil.equalsAny(state.toString(), VsysConstant.ResultState.SUCCESS.getValue().toString(), VsysConstant.ResultState.FAILURE.getValue().toString())) {
                 log.info("vsys task finished, ExecNum:{}, taskId:{}, type:{}, assetId:{}, ManageIp:{}", i, vsysTask.getId(), type, asset.getId(), manageIp);
                 break;
             }
