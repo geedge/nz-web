@@ -6,6 +6,7 @@ import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONArray;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -1969,7 +1970,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             validateUtil.validateDateFormat(purchaseDate, "yyyy-MM-dd", lineNum, AssetImportEnum.PURCHASE_DATE.getIndex());
 
             String fieldsStr = dataMap.get(AssetImportEnum.TAG.getIndex());
-            if (StrUtil.isNotEmpty(fieldsStr)) {
+            if (StrUtil.isNotEmpty(fieldsStr) && validateUtil.validateJsonArray(fieldsStr, lineNum, AssetImportEnum.TAG.getIndex())) {
                 saveEntitys.put("fields", this.getFieldsByFieldsStr(fieldsStr, params.get("seq").toString()));
             }
 
@@ -2124,24 +2125,30 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
     private List<AssetFieldValue> getFieldsByFieldsStr(String fieldsStr, String seq) {
         List<AssetFieldValue> valueList = new ArrayList<>();
-        List<String> list = Arrays.asList(fieldsStr.split("\n"));
-        for (String str : list) {
-            if (str.contains("=")) {
-                String[] split = str.split("=");
-                String metaKey = split[0];
-                AssetFieldMeta meta = assetFieldMetaService.getOne(new LambdaQueryWrapper<AssetFieldMeta>().eq(AssetFieldMeta::getMetaKey, metaKey));
-                if (meta == null) {
-                    meta = new AssetFieldMeta();
-                    meta.setMetaKey(metaKey);
-                    meta.setName(metaKey);
-                    meta.setGroupId("1");
-                    meta.setParam("{}");
-                    meta.setSeq(seq);
-                    assetFieldMetaService.save(meta);
-                }
+
+        JSONArray jsonArray = JSONUtil.parseArray(fieldsStr);
+        for (int i = 0; i < jsonArray.size(); i++) {
+            cn.hutool.json.JSONObject fieldMetaObject = jsonArray.getJSONObject(i);
+            String metaKey = fieldMetaObject.getStr("metaKey");
+            AssetFieldMeta meta = assetFieldMetaService.getOne(new LambdaQueryWrapper<AssetFieldMeta>().eq(AssetFieldMeta::getMetaKey, metaKey));
+            if (meta == null) {
+                meta = new AssetFieldMeta();
+                meta.setMetaKey(metaKey);
+                meta.setName(fieldMetaObject.getStr("name", metaKey));
+                meta.setGroupId(fieldMetaObject.getStr("groupId", "1"));
+                meta.setParam(fieldMetaObject.getStr("param", "{}"));
+                meta.setRemark(fieldMetaObject.getStr("remark", ""));
+                meta.setType(fieldMetaObject.getStr("type", null));
+                meta.setSearch(fieldMetaObject.getInt("search", 0));
+                meta.setDisplay(fieldMetaObject.getInt("display", 0));
+                meta.setSeq(seq);
+                assetFieldMetaService.save(meta);
+            }
+            JSONArray fieldValueArr = fieldMetaObject.getJSONArray("value");
+            for(Object fieldValue : fieldValueArr){
                 AssetFieldValue value = new AssetFieldValue();
                 value.setMetaId(meta.getId());
-                value.setValue(split[1]);
+                value.setValue(ToolUtil.toStr(fieldValue));
                 value.setSeq(seq);
                 valueList.add(value);
             }
@@ -2353,11 +2360,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             tempList.add(asset.getType().getName());
             tempList.add(asset.getPurchaseDate());
             if (CollectionUtils.isNotEmpty(asset.getFields())) {
-                String fieldStr = "";
-                for (AssetFieldMeta meta : asset.getFields()) {
-                    fieldStr += meta.getMetaKey() + "=" + meta.getValue().get(0) + "\n";
-                }
-                tempList.add(fieldStr);
+                tempList.add(JSONUtil.toJsonStr(asset.getFields()));
             } else {
                 tempList.add(StrUtil.EMPTY);
             }
