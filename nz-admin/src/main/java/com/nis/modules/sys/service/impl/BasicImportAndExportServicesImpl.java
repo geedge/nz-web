@@ -163,7 +163,12 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
                     CsvRow csvRow = rows.get(i);
                     Map<Integer, String> tmpMap = Tool.MapUtil.newHashMap();
                     for (int j = 0; j < headerInfos.size(); j++) {
-                        tmpMap.put(j, StrUtil.trim(csvRow.get(j)));
+                        String cellStr = StrUtil.trim(csvRow.get(j));
+                        if((StrUtil.startWith(cellStr, "[") && StrUtil.endWith(cellStr, "]")) ||
+                                (StrUtil.startWith(cellStr, "{") && StrUtil.endWith(cellStr, "}"))){ // csv文件中json格式双引号会变成两个
+                            cellStr = StrUtil.replace(cellStr, "\"\"", "\"");
+                        }
+                        tmpMap.put(j, cellStr);
                     }
                     importDataList.add(tmpMap);
                 }
