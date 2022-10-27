@@ -13,4 +13,13 @@ public interface VisualService {
     Map<String, Object> snapshotResultMap(Long start, Long end, String language);
 
     String replaceSnapshotTemplate(Map<String, Object> resultMap);
+
+    String createSnapshotTask(String format, Integer panelId, Long start, Long end, String varsJsonStr);
+
+    Map snapshotResultProcess(String taskId);
+
+    void cancelSnapshotTask(String taskId);
+
+    void downloadSnapshotFile(HttpServletResponse response, String language, String taskId);
+
 }

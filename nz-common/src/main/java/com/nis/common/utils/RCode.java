@@ -114,6 +114,7 @@ public enum RCode {
     PANEL_PARAM_SCHEDULENUMS_INVALIDE(123094,"Panel param schedule nums is invalide"),
     PANEL_PARAM_REPORTRECEIVERS_ISNULL(121095,"Panel param report receivers can not be empty"),
     PANEL_PARAM_REPORTCHARTSHARE_INVALIDE(123096,"Panel param report tooltip must be none, crosshair or tooltip"),
+    DASHBOARD_SNAPSHOT_TASK_NOT_EXIST(126097,"Dashboard snapshot task cancel error, the task does not exist or has expired."),
 
     /**
      * EXPRETMPL

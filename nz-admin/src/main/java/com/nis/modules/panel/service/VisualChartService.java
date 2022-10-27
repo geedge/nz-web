@@ -36,4 +36,12 @@ public interface VisualChartService extends IService<VisualChart> {
 	void saveRelPanelAndChart(String typeStr, Integer linkId, String seq, VisualChart chartTemplate);
 
 	List<VisualChart> queryChartWithElementByIds(List<Integer> chartIdList);
+
+	/**
+	 * 平铺 获取所有 chart 节点
+	 *
+	 * @param sourceChartList
+	 * @return
+	 */
+	List<VisualChart> getAllChartList(List<VisualChart> sourceChartList);
 }

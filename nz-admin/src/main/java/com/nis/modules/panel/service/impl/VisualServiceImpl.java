@@ -1,17 +1,27 @@
 package com.nis.modules.panel.service.impl;
 
+import cn.hutool.cache.impl.TimedCache;
 import cn.hutool.core.io.IoUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.core.util.URLUtil;
+import cn.hutool.core.thread.NamedThreadFactory;
+import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.*;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.nis.common.utils.JSONUtil;
-import com.nis.common.utils.ResponseUtil;
-import com.nis.common.utils.Tool;
+import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.*;
 import com.nis.modules.agent.service.LokiApiService;
 import com.nis.modules.agent.service.PromApiService;
+import com.nis.modules.asset.service.AssetAssetService;
+import com.nis.modules.endpoint.service.MonitorEndpointService;
+import com.nis.modules.panel.entity.VisualChart;
+import com.nis.modules.panel.entity.VisualChartElement;
+import com.nis.modules.panel.entity.VisualPanel;
+import com.nis.modules.panel.service.VisualChartService;
+import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.panel.service.VisualService;
+import com.nis.modules.stat.service.impl.StatServiceImpl;
 import com.nis.modules.sys.entity.Timezone;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.TimezoneService;
@@ -19,27 +29,46 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
+import java.util.concurrent.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Service("visualService")
 public class VisualServiceImpl implements VisualService {
 
-	private Log log = Log.get();
+    private Log log = Log.get();
+
     @Value("${connect.timeout:30000}")
     private Integer connectTimeout;
-    
+
+    /**
+     * dashboard snapshot 查询超时时间，单位：ms
+     */
+    @Value("${dashboard.snapshot.timeout:300000}")
+    private Integer timeout;
+
+    @Value("${snapshot.corePoolSize:5}")
+    private Integer snapshotCorePoolSize;
+
+    @Value("${snapshot.concurrency:10}")
+    private Integer snapshotConcurrency;
+
+    @Value("${snapshot.keepAliveTime:30}")
+    private Long snapshotKeepAliveTime;
+
+    @Value("${snapshot.capacity:10000}")
+    private Integer snapshotCapacity;
+
     @Autowired
     private SysConfigService sysConfigService;
 
@@ -52,6 +81,51 @@ public class VisualServiceImpl implements VisualService {
     @Autowired
     private TimezoneService timezoneService;
 
+    @Autowired
+    private StatServiceImpl statServiceImpl;
+
+    @Autowired
+    private VisualPanelService visualPanelService;
+
+    @Autowired
+    private VisualChartService visualChartService;
+
+    @Autowired
+    private AssetAssetService assetAssetService;
+
+    @Autowired
+    private MonitorEndpointService monitorEndpointService;
+
+    private static volatile TimedCache<String, Object> SNAPSHOT_CACHE;
+
+    private ExecutorService snapshotThreadPool;
+
+    @PostConstruct
+    public void init() {
+        log.info("Setup dashboard snapshot cache begin...");
+        // 创建缓存，默认 snapshotTimeout * 5
+        SNAPSHOT_CACHE = Tool.CacheUtil.newTimedCache(timeout * 5);
+
+        // snapshot 执行线程池，避免大量请求访问 prometheus 服务
+        snapshotThreadPool = new ThreadPoolExecutor(
+                snapshotCorePoolSize,
+                snapshotConcurrency,
+                snapshotKeepAliveTime,
+                TimeUnit.SECONDS,
+                new ArrayBlockingQueue<Runnable>(snapshotCapacity),
+                new NamedThreadFactory("SNAPSHOT-", true));
+
+                /*new ThreadPoolExecutor(
+                10,
+                Integer.MAX_VALUE,
+                0L,
+                TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<Runnable>(),
+                new ThreadFactoryBuilder().setNamePrefix("dashboard-snapshot-pool-").build());*/
+        log.info("Setup dashboard snapshot cache finished");
+    }
+
+
     @Override
     public void exploreSnapshot(HttpServletResponse response, String format, Integer type, Long start, Long end, String language, Integer unit, String limit, String[] expressions) throws IOException {
         // 计算步长
@@ -62,7 +136,7 @@ public class VisualServiceImpl implements VisualService {
             String expression = URLUtil.decode(expressions[i]);
             futureList.add(CompletableFuture.supplyAsync(() -> {
                 JSONObject queryData = null;
-                if(type == 1){
+                if (type == 1) {
                     queryData = promApiService.query_range(expression, StrUtil.toString(start), StrUtil.toString(end), step, null, null);
                 } else if (type == 2) {
                     queryData = lokiApiService.query_range(expression, StrUtil.toString(start), StrUtil.toString(end), StrUtil.emptyToDefault(limit, "100"), null, null, null, "1", null);
@@ -72,7 +146,7 @@ public class VisualServiceImpl implements VisualService {
             }));
         }
         List<JSONObject> dataList = new ArrayList();
-        try{
+        try {
             CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0])).get(connectTimeout, TimeUnit.MILLISECONDS);
             futureList.forEach(future -> {
                 JSONObject result = future.getNow(null);
@@ -99,7 +173,7 @@ public class VisualServiceImpl implements VisualService {
      * 模板基本返回参数
      */
     @Override
-    public Map<String, Object> snapshotResultMap(Long start, Long end, String language){
+    public Map<String, Object> snapshotResultMap(Long start, Long end, String language) {
         Map<String, Object> resultMap = Tool.MapUtil.newHashMap();
         resultMap.put("language", language);
         resultMap.put("start", start);
@@ -116,7 +190,7 @@ public class VisualServiceImpl implements VisualService {
      * 读取快照模板，替换数据
      */
     @Override
-    public String replaceSnapshotTemplate(Map<String, Object> resultMap){
+    public String replaceSnapshotTemplate(Map<String, Object> resultMap) {
         BufferedReader reader = null;
         StringBuffer sbf = new StringBuffer();
         try {
@@ -140,16 +214,371 @@ public class VisualServiceImpl implements VisualService {
      * 计算Dashboards step
      */
     @Override
-    public String getTimeStep(Long start, Long end){
+    public String getTimeStep(Long start, Long end) {
         Long timeDiff = (end - start) / (24 * 60 * 60);
-        if(timeDiff < 1){
+        if (timeDiff < 1) {
             return "15s";
-        }else if(timeDiff < 7){
+        } else if (timeDiff < 7) {
             return "5m";
-        }else if(timeDiff < 30){
+        } else if (timeDiff < 30) {
             return "10m";
-        }else{
+        } else {
             return "30m";
         }
     }
+
+    @Override
+    public String createSnapshotTask(String format, Integer panelId, Long start, Long end, String varsJsonStr) {
+        VisualPanel panel = visualPanelService.getById(panelId);
+        ValidateUtils.is(panel).notNull(RCode.CHART_PANEL_ISNULL);
+
+        // 查询 charts
+        Map param = Tool.MapUtil.builder()
+                .put("pageSize", "-1")
+                .put("panelId", panel.getId())
+                .put("groupId", 0)
+                .map();
+
+        PageUtils chartPageUtils = visualChartService.queryPage(param);
+        List<VisualChart> chartsList = (List<VisualChart>) chartPageUtils.getList();
+        ValidateUtils.is(chartsList).notNull(RCode.CHART_NOTEXSITS);
+
+        // 平铺 获取所有 chart 节点
+        List<VisualChart> allChartList = visualChartService.getAllChartList(chartsList);
+
+        String taskId = StrUtil.uuid();
+        Map taskStat = Tool.MapUtil.builder()
+                .put("total", allChartList.size())
+                .put("done", 0)
+                .put("process", 0)
+                // repaired for snapshot template
+                .put("start", start)
+                .put("end", end)
+                .put("panel", R.ok(panel))
+                .put("charts", R.ok(chartPageUtils))
+                .put("vars", StrUtil.isNotEmpty(varsJsonStr) ? JSONObject.parseArray(varsJsonStr, Map.class) : Tool.ListUtil.empty())
+                .map();
+
+        log.info("dashboard snapshot start. taskId: {}, panelId:{} total: {}", taskId, panelId, allChartList.size());
+        String stat = StrUtil.concat(true, "snapshot_stat_", taskId);
+        SNAPSHOT_CACHE.put(stat, taskStat);
+
+        ThreadUtil.execAsync(() -> {
+            // 计算步长
+            String step = this.getTimeStep(start, end);
+            Map<String, String> basicQueryParam = Tool.MapUtil.newHashMap();
+            basicQueryParam.put("start", StrUtil.toString(start));
+            basicQueryParam.put("end", StrUtil.toString(end));
+            basicQueryParam.put("step", StrUtil.toString(step));
+            basicQueryParam.put("vars", StrUtil.emptyToDefault(varsJsonStr, StrUtil.EMPTY));
+
+            // run Snapshot Runnable
+            ThreadGroup threadGroup = new ThreadGroup(taskId);
+            SNAPSHOT_CACHE.put(StrUtil.concat(true, "snapshot_threadGroup_", taskId), threadGroup);
+
+            ReentrantReadWriteLock readWriteLock = Tool.LockUtil.createReadWriteLock(false);
+            ReentrantReadWriteLock.WriteLock lock = readWriteLock.writeLock();
+
+            allChartList.stream().forEach(chart -> {
+                SnapshotRunnable snapshotRunnable = new SnapshotRunnable(threadGroup, lock, chart, basicQueryParam);
+
+                // add thredGroup & submit
+                ReflectUtil.invoke(threadGroup, "add", snapshotRunnable);
+                snapshotThreadPool.submit(snapshotRunnable);
+            });
+        });
+        log.info("dashboard snapshot task create finished. taskId: {}", taskId);
+        return taskId;
+    }
+
+
+    @Override
+    public Map snapshotResultProcess(String taskId) {
+        String snapshotStatKey = StrUtil.concat(true, "snapshot_stat_", taskId);
+        Object obj = SNAPSHOT_CACHE.get(snapshotStatKey);
+        if (obj == null) {
+            log.warn("dashboard snapshot result process error, the task does not exist or has expired. task id: {}", taskId);
+            throw new NZException(RCode.DASHBOARD_SNAPSHOT_TASK_NOT_EXIST);
+        }
+
+        Map<Object, Object> processMap = Tool.MapUtil.builder()
+                .put("total", ((Map) obj).get("total"))
+                .put("done", ((Map) obj).get("done"))
+                .put("process", ((Map) obj).get("process"))
+                .map();
+        return processMap;
+    }
+
+    @Override
+    public void cancelSnapshotTask(String taskId) {
+        log.info("dashboard snapshot cancel task id: {}", taskId);
+        String snapshotThreadGroupKey = StrUtil.concat(true, "snapshot_threadGroup_", taskId);
+        Object obj = SNAPSHOT_CACHE.get(snapshotThreadGroupKey);
+
+        if (obj == null) {
+            log.warn("dashboard snapshot task cancel error, the task does not exist or has expired. task id: {}", taskId);
+            throw new NZException(RCode.DASHBOARD_SNAPSHOT_TASK_NOT_EXIST);
+        } else {
+            try {
+                ThreadGroup threadGroup = (ThreadGroup) obj;
+                log.info("dashboard snapshot task cancel, task id: {}, canceled task thread num: {}", taskId, threadGroup.activeCount());
+                // thread interrupt
+                threadGroup.interrupt();
+
+                // remove cache data
+                String snapshotStatKey = StrUtil.concat(true, "snapshot_stat_", taskId);
+                String snapshotResultKey = StrUtil.concat(true, "snapshot_result_", taskId);
+
+                SNAPSHOT_CACHE.remove(snapshotThreadGroupKey);
+                SNAPSHOT_CACHE.remove(snapshotStatKey);
+                SNAPSHOT_CACHE.remove(snapshotResultKey);
+                log.info("dashboard snapshot task is canceled, the cache data is cleared,task id {}", taskId);
+            } catch (Exception e) {
+                log.error("dashboard snapshot task cancel error", e);
+            }
+        }
+    }
+
+    @Override
+    public void downloadSnapshotFile(HttpServletResponse response, String language, String taskId) {
+        String snapshotStatKey = StrUtil.concat(true, "snapshot_stat_", taskId);
+        String snapshotResultKey = StrUtil.concat(true, "snapshot_result_", taskId);
+
+        Object obj = SNAPSHOT_CACHE.get(snapshotStatKey);
+        if (obj == null) {
+            throw new NZException(RCode.DASHBOARD_SNAPSHOT_TASK_NOT_EXIST);
+        }
+
+        try {
+            Map snapshotInfoMap = (Map) obj;
+            Object start = snapshotInfoMap.get("start");
+            Object end = snapshotInfoMap.get("end");
+            Object panel = snapshotInfoMap.get("panel");
+            Object charts = snapshotInfoMap.get("charts");
+
+            List<Object> snapshotResultList = (List<Object>) SNAPSHOT_CACHE.get(snapshotResultKey);
+
+            Map<Object, Object> chartsDataMap = Tool.MapUtil.newHashMap();
+            for (Object result : snapshotResultList) {
+                if (ObjectUtil.isEmpty(result)) continue;
+
+                String chartId = Tool.MapUtil.getStr((Map) result, "chartId");
+                String eleIndex = Tool.MapUtil.getStr((Map) result, "eleIndex");
+
+                String key = StrUtil.concat(true, chartId, StrUtil.UNDERLINE, eleIndex);
+                chartsDataMap.put(key, result);
+            }
+
+            // handle snapshot file data
+            Map<String, Object> resultMap = this.snapshotResultMap(Long.valueOf(start.toString()), Long.valueOf(end.toString()), language);
+            resultMap.put("chartsData", chartsDataMap);
+            resultMap.put("panel", panel);
+            resultMap.put("charts", charts);
+            String snapshotTemplate = this.replaceSnapshotTemplate(resultMap);
+
+            // download file
+            ResponseUtil.downloadFile(response, "exploreSnapshot.html", snapshotTemplate.getBytes());
+        } catch (Exception e) {
+            log.error(e);
+        } finally {
+            String snapshotThreadGroupKey = StrUtil.concat(true, "snapshot_threadGroup_", taskId);
+
+            Object tg = SNAPSHOT_CACHE.get(snapshotThreadGroupKey);
+            ThreadGroup threadGroup = (ThreadGroup) tg;
+            log.info("dashboard snapshot task cancel, task id: {}, canceled task thread num: {}", taskId, threadGroup.activeCount());
+            // thread interrupt
+            threadGroup.interrupt();
+
+            // remove cache data
+            SNAPSHOT_CACHE.remove(snapshotThreadGroupKey);
+            SNAPSHOT_CACHE.remove(snapshotStatKey);
+            SNAPSHOT_CACHE.remove(snapshotResultKey);
+        }
+    }
+
+   private class SnapshotRunnable extends Thread {
+
+        private VisualChart chart;
+        private ThreadGroup threadGroup;
+        private Map<String, String> basicQueryParam;
+        private Lock lock;
+
+        private boolean isInterrupted = false;
+
+        public SnapshotRunnable(ThreadGroup threadGroup, Lock lock, VisualChart chart, Map<String, String> basicQueryParam) {
+            // group & name
+            super(threadGroup, String.format("Snapshot-%s-%s", threadGroup.getName(), chart.getId()));
+
+            this.threadGroup = threadGroup;
+            this.lock = lock;
+            this.chart = chart;
+            this.basicQueryParam = basicQueryParam;
+        }
+
+        @Override
+        public void run() {
+            // get chart snapshot data according to datasource (system、metrics\logs)
+            Object resultData = this.getChartSnapshotData();
+            lock.lock();
+            try {
+                // update snapshot resule & process
+                if (!this.isInterrupted())
+                    this.updateSnapshotResultAndProcess(resultData);
+            } catch (Exception e) {
+                log.error(e);
+            } finally {
+                lock.unlock();
+                ReflectUtil.invoke(threadGroup, "remove", this);
+            }
+        }
+
+        @Override
+        public void interrupt() {
+            super.interrupt();
+            isInterrupted = true;
+            log.warn("dashboard snapshot thread is interrupted. name: {}", this.getName());
+        }
+
+        @Override
+        public boolean isInterrupted() {
+            return isInterrupted;
+        }
+
+        /**
+         * get chart snapshot data according to datasource (system、metrics\logs)
+         *
+         * @return Object or List<Object></>
+         */
+        private Object getChartSnapshotData() {
+            Object resultData = null;
+            try {
+                String datasource = chart.getDatasource();
+                Map<String, Object> chartParam = (HashMap) chart.getParam();
+
+                // system
+                if (StrUtil.equals(Constant.ChartDatasourceType.SYSTEM.getValue(), datasource)) {
+                    VisualPanel visualPanel = chart.getPanel();
+                    R r = R.ok();
+                    if (StrUtil.equals(Constant.CHART_ASSETINFO_TYPE, chart.getType())) {
+                        r.put("data", assetAssetService.queryAssetInfo(visualPanel.getLink()));
+                    } else if (StrUtil.equals(Constant.CHART_ENDPOINTINFO_TYPE, chart.getType())) {
+                        r.put("data", monitorEndpointService.queryEndpointEntity(visualPanel.getLink()));
+                    } else {
+                        cn.hutool.json.JSONObject dataSource = JSONUtil.parseArray(chartParam.get("datasource")).getJSONObject(0);
+                        dataSource.set("select", JSONUtil.createArray().put(dataSource.get("select")));
+                        r.putAllData(
+                                statServiceImpl.queryAnalyse(
+                                        JSONUtil.toBean(JSONUtil.createObj().set("q", dataSource.toString()), Map.class)
+                                )
+                        );
+                    }
+                    r.put("eleIndex", "0");
+                    r.put("chartId", chart.getId());
+
+                    resultData = ObjectUtil.clone(r);
+                } else {
+                    // metrics\logs
+                    if (Tool.CollUtil.isNotEmpty(chart.getElements())) {
+                        String start = basicQueryParam.get("start");
+                        String end = basicQueryParam.get("end");
+                        String step = basicQueryParam.get("step");
+                        String limit = ToolUtil.toStr(chartParam.get("limit"), "100");
+                        String nullType = ToolUtil.toStr(chartParam.get("nullType"), "null");
+
+                        String logsDirection = "backward";
+
+                        String vars = basicQueryParam.get("vars");
+                        List<Map> varList = StrUtil.isNotEmpty(vars) ? JSONObject.parseArray(vars, Map.class) : Tool.ListUtil.empty();
+
+                        List<Object> rList = Tool.ListUtil.list(true);
+                        Integer eleIndex = 0;
+                        for (VisualChartElement element : chart.getElements()) {
+                            String indexStr = StrUtil.toString(eleIndex++);
+                            // 将表达式进行变量渲染
+                            String expr = this.replaceExprByVars(element.getExpression(), varList);
+
+                            JSONObject jsonObject = new JSONObject();
+                            if (StrUtil.equals(Constant.ChartDatasourceType.METRICS.getValue(), datasource)) {
+                                jsonObject = promApiService.query_range(expr, start, end, step, nullType, null);
+                            } else if (StrUtil.equals(Constant.ChartDatasourceType.LOGS.getValue(), datasource)) {
+                                jsonObject = lokiApiService.query_range(expr, start, end, limit, step, null, logsDirection, "1", null);
+                            }
+                            jsonObject.put("eleIndex", indexStr);
+                            jsonObject.put("chartId", chart.getId());
+                            rList.add(jsonObject);
+                        }
+
+                        resultData = ObjectUtil.clone(rList);
+                    } else {
+                        // no element chart data
+                        resultData = JSONUtil.toBean(
+                                JSONUtil.createObj()
+                                        .set("eleIndex", 0)
+                                        .set("chartId", chart.getId())
+                                , Map.class);
+                    }
+                }
+            } catch (Exception e) {
+                log.error("dashboard snapshot data get failed. taskId: {}, chartInfo: {}", e, JSONUtil.toJsonStr(chart));
+            }
+            return resultData;
+        }
+
+        /**
+         * update snapshot resule & process
+         *
+         * @param resultData
+         */
+        private void updateSnapshotResultAndProcess(Object resultData) {
+            try {
+                // task id
+                String taskId = threadGroup.getName();
+
+                // snapshot result cache
+                String snapshotResultKey = StrUtil.concat(true, "snapshot_result_", taskId);
+                List<Object> snapshotResultList = (List<Object>) SNAPSHOT_CACHE.get(snapshotResultKey);
+                snapshotResultList = Tool.CollUtil.defaultIfEmpty(snapshotResultList, Tool.ListUtil.list(true));
+
+                Tool.CollUtil.addAll(snapshotResultList, resultData);
+                SNAPSHOT_CACHE.put(snapshotResultKey, snapshotResultList);
+
+                // snapshot task process
+                String snapshotStatKey = StrUtil.concat(true, "snapshot_stat_", taskId);
+                Map snapshotStatMap = (Map) SNAPSHOT_CACHE.get(snapshotStatKey);
+                Integer total = (Integer) snapshotStatMap.get("total");
+                Integer done = (Integer) snapshotStatMap.get("done");
+                done = done + 1;
+
+                // cal process
+                String percent = NumberUtil.formatPercent((double) done / total, 2);
+                snapshotStatMap.put("process", percent.replace("%", ""));
+                snapshotStatMap.put("done", done);
+                snapshotStatMap.put("total", total);
+                SNAPSHOT_CACHE.put(snapshotStatKey, snapshotStatMap);
+
+                log.info("dashboard snapshot result updated, taskId: {}, total: {}, done: {}, process: {}", taskId, total, done, percent);
+            } catch (Exception e) {
+                log.error("dashboard snapshot result error,taskId: {}", e, threadGroup.getName());
+            }
+        }
+
+        /**
+         * replace Expr By Vars
+         *
+         * @param expr
+         * @param varList
+         * @return
+         */
+        private String replaceExprByVars(String expr, List<Map> varList) {
+            if (Tool.CollectionUtil.isEmpty(varList))
+                return expr;
+            for (Map<String, String> map : varList) {
+                String name = map.get("name");
+                String value = map.get("value");
+                expr = expr.replaceAll("\\$" + name, value);
+            }
+            return expr;
+        }
+    }
+
 }

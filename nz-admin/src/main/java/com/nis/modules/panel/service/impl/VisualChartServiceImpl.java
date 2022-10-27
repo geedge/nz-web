@@ -1046,4 +1046,31 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		List<VisualChart> visualCharts = this.baseMapper.queryChartWithElementByIds(chartIdList);
 		return CollectionUtils.isEmpty(visualCharts) ? new ArrayList<>() : visualCharts;
 	}
+
+	@Override
+	public List<VisualChart> getAllChartList(List<VisualChart> sourceChartList) {
+		sourceChartList = Tool.CollUtil.defaultIfEmpty(sourceChartList, Tool.ListUtil.empty());
+
+		// 递归展开节点信息
+		List<VisualChart> allChartList = Tool.ListUtil.list(true);
+		for (VisualChart entity : sourceChartList) {
+			this.getAllChildrenChartList(entity, allChartList);
+		}
+		return allChartList;
+	}
+
+	/**
+	 * 平铺 获取所有 chart 节点
+	 *
+	 * @param chart
+	 * @param chartList
+	 */
+	public void getAllChildrenChartList(VisualChart chart, List<VisualChart> chartList) {
+		chartList.add(chart);
+		if (CollectionUtils.isNotEmpty(chart.getChildren())) {
+			for (VisualChart pojo : chart.getChildren()) {
+				getAllChildrenChartList(pojo, chartList);
+			}
+		}
+	}
 }
