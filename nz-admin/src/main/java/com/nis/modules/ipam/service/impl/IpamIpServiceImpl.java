@@ -218,20 +218,16 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
             validateUtil.validateDuplicate("ipam_ip", "addr", addr,name , lineNum, IpamIpEum.ADDR.getIndex());
 
             String assetName = dataMap.get(IpamIpEum.ASSET.getIndex());
-            Integer state = null;
-            if(StringUtils.isEmpty(assetName)){
-                //资产不存在 当前IP为未分配状态
-                state = 1;
-            } else {
-                Boolean aBoolean = validateUtil.validateRelObjExits("asset_asset", "name", assetName, false, lineNum, IpamIpEum.ASSET.getIndex());
-                if (aBoolean){
-                    //资产存在 当前IP为已分配状态
-                    state = 3;
-                }else {
-                    //资产不存在 当前IP为未分配状态
-                    state = 1;
+            if (!StrUtil.isBlank(assetName)){
+                AssetAsset assetAsset = assetAssetDao.selectOne(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getManageIp, addr));
+                if (! StrUtil.equals(assetName,assetAsset.getName())){
+                    validateUtil.recordImportAttrErr(lineNum, RCode.IPAM_IP_ASSET_ISNULL);
                 }
             }
+            //state
+            String state = dataMap.get(IpamIpEum.STATE.getIndex());
+            validateUtil.validateEnumValArr(state, Arrays.asList("1","2","3"), lineNum, IpamIpEum.STATE.getIndex());
+
             // 遇到错误是否继续导入，可选值： 0：不继续    1：继续    默认值：1
             String ignoreError = Tool.ObjectUtil.defaultIfEmpty((String) params.get("ignoreError"), "1");
             List<Map<String, String>> errMsgForThisLine = validateUtil.getImportErrMsgForThisLine(lineNum);
@@ -259,7 +255,7 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
                 }
                 ipamIp.setRemark(remark);
                 ipamIp.setSeq(params.get("seq").toString());
-                ipamIp.setState(state);
+                ipamIp.setState(Integer.valueOf(state));
                 ipamIp.setUts(System.currentTimeMillis());
                 try {
                     this.saveOrUpdateRowData(ipamIp,params);

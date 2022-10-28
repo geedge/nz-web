@@ -325,13 +325,9 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
             // 校验ip以及掩码值之前是否有创建或者包含
 			IpamSubnet one = this.getOne(new LambdaQueryWrapper<IpamSubnet>().eq(IpamSubnet::getMask, mask).eq(IpamSubnet::getAddr, addr));
 			if (one != null){
-				if (StrUtil.equals("0" , existed)){
+				//索引列重复 & 其他属性重复
+				if (!StrUtil.equals(name, one.getName())){
 					validateUtil.recordImportAttrErr(lineNum,RCode.IMPORT_FIELDS_DUPLICATE.setParam(IpamSubnetEum.MASK.getIndex(),IpamSubnetEum.ADDR.getIndex()));
-				}else if (StrUtil.equals("1" , existed)){
-					//索引列重复 & 其他属性重复
-					if (!StrUtil.equals(name, one.getName())){
-						validateUtil.recordImportAttrErr(lineNum,RCode.IMPORT_FIELDS_DUPLICATE.setParam(IpamSubnetEum.MASK.getIndex(),IpamSubnetEum.ADDR.getIndex()));
-					}
 				}
 			}
 
