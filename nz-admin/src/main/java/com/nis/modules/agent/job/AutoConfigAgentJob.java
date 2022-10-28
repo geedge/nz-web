@@ -159,7 +159,6 @@ public class AutoConfigAgentJob extends QuartzJobBean {
                 }
             }
             if (cortexChangeFlag) {
-                CortexHistoryDataDelJob.CORTEX_EVALLOG_CHANGE_MAP.put("cortex", true);
                 this.updateCortexConf(alertYmlMap, healthyPromServers);
             }
         });
