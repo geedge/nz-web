@@ -1,6 +1,7 @@
 package com.nis.modules.alert.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
@@ -10,8 +11,11 @@ import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
 import com.nis.modules.alert.dao.AlertNotifyMethodDao;
+import com.nis.modules.alert.dao.AlertRuleDao;
 import com.nis.modules.alert.entity.AlertNotifyMethod;
+import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.service.AlertNotifyMethodService;
+import com.nis.modules.alert.service.AlertRuleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +29,10 @@ public class AlertNotifyMethodServiceImpl extends ServiceImpl<AlertNotifyMethodD
 
     @Autowired
     private AlertNotifyMethodDao alertNotifyMethodDao;
+    @Autowired
+    private AlertRuleDao alertRuleDao;
+    @Autowired
+    private AlertRuleService alertRuleService;
 
     @Override
     public boolean isExist(String ids) {
@@ -70,5 +78,16 @@ public class AlertNotifyMethodServiceImpl extends ServiceImpl<AlertNotifyMethodD
         if (!flag) {
             throw new NZException(RCode.ALERTNOTIFY_NAME_DUPLICATE);
         }
+    }
+
+    @Override
+    public void deleteByIds(List<String> idList) {
+        //删除告警规则引用的通知方式
+        alertRuleDao.delNotify(idList);
+        //若告警规则通知方式为空，则通知人一并删除
+        alertRuleService.update(new LambdaUpdateWrapper<AlertRuleEntity>().eq(AlertRuleEntity::getMethod, "").or().isNull(AlertRuleEntity::getMethod)
+                .set(AlertRuleEntity::getReceiver, "").set(AlertRuleEntity::getNotifyActive, 0).set(AlertRuleEntity::getNotifyExpired, 0));
+        //删除通知方式
+        this.removeByIds(idList);
     }
 }
