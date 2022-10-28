@@ -294,6 +294,8 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
         // 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
         String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
+        // 遇到错误是否继续导入，可选值： 0：不继续    1：继续    默认值：1
+        String ignoreError = Tool.ObjectUtil.defaultIfEmpty((String) params.get("ignoreError"), "1");
         // 创建导入校验对象
         ImportValidateUtil validateUtil = ImportValidateUtil.builder()
                 .existed(existed).headerInfos(headerInfos)
@@ -420,79 +422,71 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                     validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(AlertRuleImportEnum.SCHED_ETIME.getIndex()));
             }
 
-            List<Map<String, String>> errMsgForThisLine = validateUtil.getImportErrMsgForThisLine(lineNum);
-            if (Tool.CollUtil.isEmpty(errMsgForThisLine)) {
-                AlertSeverityConf alertSeverityConf = alertSeverityService.getOne(new LambdaQueryWrapper<AlertSeverityConf>().eq(AlertSeverityConf::getName, severity));
+            AlertSeverityConf alertSeverityConf = alertSeverityService.getOne(new LambdaQueryWrapper<AlertSeverityConf>().eq(AlertSeverityConf::getName, severity));
 
-                String description = dataMap.get(AlertRuleImportEnum.DESCRIPTION.getIndex());
-                String trbShotStr = dataMap.get(AlertRuleImportEnum.TROUBLE_SHOOTING.getIndex());
-                AlertRuleEntity ruleEntity = new AlertRuleEntity();
-                ruleEntity.setName(name);
-                ruleEntity.setExpr(expr);
-                ruleEntity.setOperator(operator);
-                ruleEntity.setThreshold(StrUtil.isNotEmpty(threshold) ? Double.valueOf(threshold) : null);
-                ruleEntity.setUnit(Constant.ALERT_RULE_UNIT_MAP.get(StrUtil.emptyToDefault(unit, "none")));
-                ruleEntity.setLast(StrUtil.isNotEmpty(last) ? Double.valueOf(last).intValue() : null);
-                ruleEntity.setSeverityId(alertSeverityConf.getId());
-                ruleEntity.setSummary(summary);
-                ruleEntity.setDescription(description);
-                ruleEntity.setReceiver(receiver);
-                ruleEntity.setMethod(method);
-                ruleEntity.setState(Integer.valueOf(state));
-                ruleEntity.setAutoExpired(Integer.valueOf(autoExpired));
-                ruleEntity.setSchedEnable(Integer.valueOf(schedEnable));
-                ruleEntity.setSchedDays(schedDays);
-                ruleEntity.setSchedStime(schedStime);
-                ruleEntity.setSchedEtime(schedEtime);
-                ruleEntity.setNotifyActive(Integer.valueOf(notifyActive));
-                ruleEntity.setNotifyExpired(Integer.valueOf(notifyExpired));
-                ruleEntity.setTrbShot(trbShotStr);
-                ruleEntity.setType(Integer.valueOf(type));
-                ruleEntity.setInr(intervalIntVal);
-                ruleEntity.setTimeout(timeoutIntVal);
-                // 仅metrics类型需要校验rule表达式  logs和snmp trap暂不支持
-                if (StrUtil.equals("1", type)) {
-                    try {
-                        boolean checkRule = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(ruleEntity));
-                        if (!checkRule) {
-                            validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(AlertRuleImportEnum.EXPR.getIndex()));
-                        }
-                    } catch (Exception e) {
-                        log.error(e, "expr validate error,rule info: {}", JSONObject.toJSONString(ruleEntity));
+            String description = dataMap.get(AlertRuleImportEnum.DESCRIPTION.getIndex());
+            String trbShotStr = dataMap.get(AlertRuleImportEnum.TROUBLE_SHOOTING.getIndex());
+            AlertRuleEntity ruleEntity = new AlertRuleEntity();
+            ruleEntity.setName(name);
+            ruleEntity.setExpr(expr);
+            ruleEntity.setOperator(operator);
+            ruleEntity.setThreshold(StrUtil.isNotEmpty(threshold) ? Double.valueOf(threshold) : null);
+            ruleEntity.setUnit(Constant.ALERT_RULE_UNIT_MAP.get(StrUtil.emptyToDefault(unit, "none")));
+            ruleEntity.setLast(StrUtil.isNotEmpty(last) ? Double.valueOf(last).intValue() : null);
+            ruleEntity.setSeverityId(ToolUtil.isEmpty(alertSeverityConf)?null:alertSeverityConf.getId());
+            ruleEntity.setSummary(summary);
+            ruleEntity.setDescription(description);
+            ruleEntity.setReceiver(receiver);
+            ruleEntity.setMethod(method);
+            ruleEntity.setState(Integer.valueOf(state));
+            ruleEntity.setAutoExpired(Integer.valueOf(autoExpired));
+            ruleEntity.setSchedEnable(Integer.valueOf(schedEnable));
+            ruleEntity.setSchedDays(schedDays);
+            ruleEntity.setSchedStime(schedStime);
+            ruleEntity.setSchedEtime(schedEtime);
+            ruleEntity.setNotifyActive(Integer.valueOf(notifyActive));
+            ruleEntity.setNotifyExpired(Integer.valueOf(notifyExpired));
+            ruleEntity.setTrbShot(trbShotStr);
+            ruleEntity.setType(Integer.valueOf(type));
+            ruleEntity.setInr(intervalIntVal);
+            ruleEntity.setTimeout(timeoutIntVal);
+            // 仅metrics类型需要校验rule表达式  logs和snmp trap暂不支持
+            if (StrUtil.equals("1", type)) {
+                try {
+                    boolean checkRule = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(ruleEntity));
+                    if (!checkRule) {
                         validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(AlertRuleImportEnum.EXPR.getIndex()));
                     }
+                } catch (Exception e) {
+                    log.error(e, "expr validate error,rule info: {}", JSONObject.toJSONString(ruleEntity));
+                    validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(AlertRuleImportEnum.EXPR.getIndex()));
                 }
+            }
 
-                // 遇到错误是否继续导入，可选值： 0：不继续    1：继续    默认值：1
-                String ignoreError = Tool.ObjectUtil.defaultIfEmpty((String) params.get("ignoreError"), "1");
-
-                errMsgForThisLine = validateUtil.getImportErrMsgForThisLine(lineNum);
-                if (BooleanUtil.and(Tool.StrUtil.equals("0", ignoreError), Tool.CollUtil.isNotEmpty(errMsgForThisLine))) {
-                    // 结束本次导入，自导入行开始 到结尾数据行，提示错误信息
-                    for (int j = i; j < importDataList.size(); j++) {
-                        validateUtil.recordImportAttrErr(j + 1, RCode.IMPORT_ERROR_STOP);
-                        failContentList.add(importDataList.get(j));
-                    }
-                    break;
+            List<Map<String, String>> errMsgForThisLine = validateUtil.getImportErrMsgForThisLine(lineNum);
+            if (BooleanUtil.and(Tool.StrUtil.equals("0", ignoreError), Tool.CollUtil.isNotEmpty(errMsgForThisLine))) {
+                // 结束本次导入，自导入行开始 到结尾数据行，提示错误信息
+                for (int j = i; j < importDataList.size(); j++) {
+                    validateUtil.recordImportAttrErr(j + 1, RCode.IMPORT_ERROR_STOP);
+                    failContentList.add(importDataList.get(j));
                 }
+                break;
+            }
 
-                if (Tool.CollUtil.isEmpty(errMsgForThisLine)) {
-                    try {
-                        this.saveOrUpdateRowData(ruleEntity, params);
-                        // save or update
-                        Object saveFlag = params.get("save");
-                        if (ObjectUtil.isNotNull(saveFlag)) {
-                            addNum++;
-                        } else {
-                            updateNum++;
-                        }
-                    } catch (Exception e) {
-                        failContentList.add(dataMap);
-                        validateUtil.recordImportAttrErr(lineNum, RCode.ERROR);
-                        log.error("Asset import roll back the transaction failure", e);
+            if (Tool.CollUtil.isEmpty(errMsgForThisLine)) {
+                try {
+                    this.saveOrUpdateRowData(ruleEntity, params);
+                    // save or update
+                    Object saveFlag = params.get("save");
+                    if (ObjectUtil.isNotNull(saveFlag)) {
+                        addNum++;
+                    } else {
+                        updateNum++;
                     }
-                } else {
+                } catch (Exception e) {
                     failContentList.add(dataMap);
+                    validateUtil.recordImportAttrErr(lineNum, RCode.ERROR);
+                    log.error("Asset import roll back the transaction failure", e);
                 }
             } else {
                 failContentList.add(dataMap);
