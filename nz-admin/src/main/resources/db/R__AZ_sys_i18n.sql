@@ -4733,5 +4733,13 @@ INSERT INTO `sys_i18n` VALUES (7491, '998', 'en', 'CONTENT_MORETHAN_MAXLENGTH', 
 INSERT INTO `sys_i18n` VALUES (7492, '998', 'zh', 'CONTENT_MORETHAN_MAXLENGTH', '字段内容长度超过最大值:{0}', '响应消息->字段长度校验', '2022-10-21 08:17:12', 416);
 INSERT INTO `sys_i18n` VALUES (7493, '401002', 'en', 'ASSET_COMMENT_HTML_ISNULL', 'Asset comment html can not be empty', '响应消息->资产评论新增/修改', '2022-10-26 08:17:12', 416);
 INSERT INTO `sys_i18n` VALUES (7494, '401002', 'zh', 'ASSET_COMMENT_HTML_ISNULL', '资产评论HTML格式不能为空', '响应消息->资产评论新增/修改', '2022-10-26 08:17:12', 416);
+INSERT INTO `sys_i18n` VALUES (7495, '126097', 'en', 'DASHBOARD_SNAPSHOT_TASK_NOT_EXIST', 'Dashboard snapshot task cancel error, the task does not exist or has expired.', '', '2022-10-27 09:54:29', 1);
+INSERT INTO `sys_i18n` VALUES (7496, '126097', 'zh', 'DASHBOARD_SNAPSHOT_TASK_NOT_EXIST', '仪表板快照任务取消错误，该任务不存在或已过期。', '', '2022-10-27 09:54:51', 1);
+INSERT INTO `sys_i18n` VALUES (7497, 'ipamsubnet.dc.dcId', 'en', 'ipamsubnet.dc.dcId', 'dcId', '', '2022-10-28 05:54:09', 414);
+INSERT INTO `sys_i18n` VALUES (7498, 'ipamsubnet.dc.dcId', 'zh', 'ipamsubnet.dc.dcId', '数据中心 ID', '', '2022-10-28 05:54:34', 414);
+INSERT INTO `sys_i18n` VALUES (7499, 'ipamsubnet.dc.dcId.comment', 'en', 'ipamsubnet.dc.dcId.comment', 'Datacenter ID(Required) Example: 1', '', '2022-10-28 05:52:57', 414);
+INSERT INTO `sys_i18n` VALUES (7500, 'ipamsubnet.dc.dcId.comment', 'zh', 'ipamsubnet.dc.dcId.comment', '数据中心 ID(必填) 示例：1', '', '2022-10-28 05:53:38', 414);
+INSERT INTO `sys_i18n` VALUES (7501, '327011', 'en', 'ASSET_MODEL_CONTAINS_CAN_NOT_REMOVE', 'Asset model have associated assets and cannot change type', '', '2022-10-28 15:53:38', 416);
+INSERT INTO `sys_i18n` VALUES (7502, '327011', 'zh', 'ASSET_MODEL_CONTAINS_CAN_NOT_REMOVE', '资产型号存在关联资产，无法更改类型', '', '2022-10-28 15:53:38', 416);
 
 SET FOREIGN_KEY_CHECKS = 1;
