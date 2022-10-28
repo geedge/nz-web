@@ -34,6 +34,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -205,8 +206,11 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
             IpamSubnet ipamSubnet = ipamSubnetService.getOne(new LambdaQueryWrapper<IpamSubnet>().eq(IpamSubnet::getName, subnetName));
             validateUtil.validateRequired(addr, lineNum, IpamIpEum.ADDR.getIndex());
             validateUtil.validateIp(addr, lineNum , IpamIpEum.ADDR.getIndex());
-            validateUtil.validateIpInScope(addr, ipamSubnet.getAddr(),ipamSubnet.getMask().toString(), lineNum, IpamIpEum.ADDR.getIndex());
-
+            if (ipamSubnet == null){
+                validateUtil.recordImportAttrErr(lineNum, RCode.IPAM_IP_SUBNET_ISNULL);
+            }else {
+                validateUtil.validateIpInScope(addr, ipamSubnet.getAddr(),ipamSubnet.getMask().toString(), lineNum, IpamIpEum.ADDR.getIndex());
+            }
             String mac = dataMap.get(IpamIpEum.MAC.getIndex());
             validateUtil.validateMac(mac, lineNum, IpamIpEum.MAC.getIndex());
 
@@ -341,10 +345,9 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
             }
             tempList.add(ipamIp.getState().toString());
             tempList.add(ipamIp.getRemark());
-            tempList.add(ipamIp.getUts().toString());
             exportDataList.add(tempList);
         }
-        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_IPAMIP_EXPORT_HEADER);
+        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_IPAMIP_IMPORT_HEADER);
         String fileName = "Ipamips";
         String formatStr = params.get("format").toString();
         basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, formatStr, fileName);
