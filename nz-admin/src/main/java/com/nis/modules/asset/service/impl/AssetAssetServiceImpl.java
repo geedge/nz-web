@@ -54,7 +54,7 @@ import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.modules.vsys.entity.VsysAssetRel;
 import com.nis.modules.vsys.service.VsysAssetRelService;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.shiro.UnavailableSecurityManagerException;
+import org.apache.shiro.ShiroException;
 import org.snmp4j.smi.TimeTicks;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -258,7 +258,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                     .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId())
             );
             asset.setStarred(count == 0 ? 0 : 1);
-        } catch (UnavailableSecurityManagerException e) {
+        } catch (ShiroException e) {
             // 快照线程无法获取ShiroSession
         }
         // 已配置的 module 名单

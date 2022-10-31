@@ -52,7 +52,7 @@ import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.*;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.shiro.UnavailableSecurityManagerException;
+import org.apache.shiro.ShiroException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -174,7 +174,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                     .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId().intValue())
             );
             endpoint.setStarred(count == 0 ? 0 : 1);
-        }catch (UnavailableSecurityManagerException e){
+        }catch (ShiroException e){
             // 快照线程无法获取ShiroSession
         }
         // 获取agent信息
