@@ -39,6 +39,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -83,7 +84,7 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
         List<VsysTask> vsysInfos = task.getVsysInfos();
 
         ValidateUtils.is(vsysInfos).notNull(RCode.VSYS_TASK_ISNULL);
-        List<Integer> typeEnumValueList = Tool.ListUtil.of(1, 2, 3);
+        List<Integer> typeEnumValueList = Arrays.asList(VsysConstant.TaskType.values()).stream().map(VsysConstant.TaskType::getValue).collect(Collectors.toList());
 
         for (VsysTask vsysInfo : vsysInfos) {
             Integer type = vsysInfo.getType();
@@ -108,7 +109,10 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
             }
 
             // 添加|修改 时校验必填项
-            if (type == 1 || type == 2) {
+            if (Tool.BooleanUtil.or(
+                    ObjectUtil.equal(type, VsysConstant.TaskType.ADD.getValue()),
+                    ObjectUtil.equal(type, VsysConstant.TaskType.UPDATE.getValue())
+            )) {
                 // osQuotas not null
                 Map osQuotas = vsysInfo.getOsQuotas();
                 ValidateUtils.is(osQuotas).notNull(RCode.VSYS_TASK_PARAM_OSQUOTAS_ISNULL);
@@ -270,24 +274,24 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
 
         List<VsysResult> resultList = Tool.ListUtil.list(true);
 
-        Integer type = task.getType();
-        switch (type) {
+        VsysConstant.TaskType taskType = VsysConstant.TaskType.getType(task.getType());
+        switch (taskType) {
             // add & delete
-            case 1:
-            case 3: {
+            case ADD:
+            case DELETE: {
                 List<VsysResult> resultLogList = this.getUnExecStateLog(task, vsysAssetIdList, task.getType());
                 resultList.addAll(resultLogList);
                 break;
             }
             // update
-            case 2: {
+            case UPDATE: {
                 // update include delete
                 List<VsysAssetRel> currentAssetRelOfVsys = vsysAssetRelService.list(new LambdaQueryWrapper<VsysAssetRel>().eq(VsysAssetRel::getVsysId, task.getVsysId()));
                 List<Integer> currentrelAssetIdsOfVsys = currentAssetRelOfVsys.stream().map(VsysAssetRel::getAssetId).distinct().collect(Collectors.toList());
 
                 // 之前下发过 VSYS，这次下发不更新了，做 删除 操作
                 currentrelAssetIdsOfVsys.removeAll(vsysAssetIdList);
-                List<VsysResult> delResultLogList = this.getUnExecStateLog(task, currentrelAssetIdsOfVsys, 3);
+                List<VsysResult> delResultLogList = this.getUnExecStateLog(task, currentrelAssetIdsOfVsys, VsysConstant.TaskType.DELETE.getValue());
                 resultList.addAll(delResultLogList);
 
                 // update or add
@@ -389,23 +393,23 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
                             //.or().eq(VsysResult::getState, VsysConstant.ResultState.FAILURE.getValue())));
 
             // vsys task detail operation type
-            Integer type = result.getType();
+            VsysConstant.TaskType taskType = VsysConstant.TaskType.getType(result.getType());
 
             Integer state = result.getState();
             if (StrUtil.equalsAny(state.toString(), VsysConstant.ResultState.SUCCESS.getValue().toString(), VsysConstant.ResultState.FAILURE.getValue().toString())) {
-                log.info("vsys task finished, ExecNum:{}, taskId:{}, type:{}, assetId:{}, ManageIp:{}", i, vsysTask.getId(), type, asset.getId(), manageIp);
+                log.info("vsys task finished, ExecNum:{}, taskId:{}, type:{}, assetId:{}, ManageIp:{}", i, vsysTask.getId(), taskType.toString(), asset.getId(), manageIp);
                 break;
             }
             // 没有产生 SUCCESS|FAILURE 结果， 就重复执行
-            log.info("vsys task no successful or failure records, ExecNum:{}, taskId:{}, type:{}, assetId:{}, ManageIp:{}", currentExecNum, vsysTask.getId(), type, asset.getId(), manageIp);
+            log.info("vsys task no successful or failure records, ExecNum:{}, taskId:{}, type:{}, assetId:{}, ManageIp:{}", currentExecNum, vsysTask.getId(), taskType.toString(), asset.getId(), manageIp);
 
             VsysResult res = new VsysResult();
             res.setTs(System.currentTimeMillis());
             res.setNum(currentExecNum);
-            switch (type) {
+            switch (taskType) {
                 // add & update
-                case 1:
-                case 2: {
+                case ADD:
+                case UPDATE: {
                     this.deleteChain(vsysTask, manageIp);
                     this.deleteRuleSet(vsysTask, manageIp);
                     this.deleteServiceFunction(vsysTask, manageIp);
@@ -446,7 +450,7 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
                     break;
                 }
                 // delete
-                case 3: {
+                case DELETE: {
                     Map<Object, Object> chainResult = this.deleteChain(vsysTask, manageIp);
                     Map<Object, Object> ruleSetResult = this.deleteRuleSet(vsysTask, manageIp);
                     Map<Object, Object> sfResult = this.deleteServiceFunction(vsysTask, manageIp);

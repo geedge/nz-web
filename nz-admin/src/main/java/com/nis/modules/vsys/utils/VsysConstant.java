@@ -42,6 +42,44 @@ public class VsysConstant {
      */
     public static final Integer REL_NOT_DEL = 0;
 
+
+    /**
+     * vsys task type
+     */
+    public enum TaskType {
+
+        /**
+         * 添加
+         */
+        ADD(1),
+
+        /**
+         * 修改
+         */
+        UPDATE(2),
+
+        /**
+         * 删除
+         */
+        DELETE(3);
+
+        private Integer value;
+
+        TaskType(Integer value) {
+            this.value = value;
+        }
+
+        public Integer getValue() {
+            return value;
+        }
+
+        public static TaskType getType(Integer value) {
+            for (TaskType v : values())
+                if (v.getValue().equals(value)) return v;
+            throw new IllegalArgumentException();
+        }
+    }
+
     /**
      * vsys result enum
      */
