@@ -502,28 +502,28 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         Integer assetId = asset.getId();
         boolean isEdit = ToolUtil.isNotEmpty(assetId);
         // name 唯一
-        int duplicateCount = this.count(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getName, asset.getName()).ne(isEdit,AssetAsset::getId, assetId));
-        if (duplicateCount > 0) {
+        AssetAsset oldAsset = this.getOne(new LambdaQueryWrapper<AssetAsset>().select(AssetAsset::getId).eq(AssetAsset::getName, asset.getName()).ne(isEdit, AssetAsset::getId, assetId).last("limit 1"));
+        if (ToolUtil.isNotEmpty(oldAsset)) {
             throw new NZException(RCode.ASSET_NAME_DUPLICATE);
         }
 
         // number 唯一 不重复，可以为空串
         if (StringUtils.isNotEmpty(asset.getNumber())) {
-            duplicateCount = this.count(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getNumber, asset.getNumber()).ne(isEdit,AssetAsset::getId, assetId));
-            if (duplicateCount > 0) {
+            oldAsset = this.getOne(new LambdaQueryWrapper<AssetAsset>().select(AssetAsset::getId).eq(AssetAsset::getNumber, asset.getNumber()).ne(isEdit, AssetAsset::getId, assetId).last("limit 1"));
+            if (ToolUtil.isNotEmpty(oldAsset)) {
                 throw new NZException(RCode.ASSET_NUMBER_DUPLICATE);
             }
         }
 
         // sn 唯一
-        duplicateCount = this.count(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getSn, asset.getSn()).ne(isEdit,AssetAsset::getId, assetId));
-        if (duplicateCount > 0) {
+        oldAsset = this.getOne(new LambdaQueryWrapper<AssetAsset>().select(AssetAsset::getId).eq(AssetAsset::getSn, asset.getSn()).ne(isEdit, AssetAsset::getId, assetId).last("limit 1"));
+        if (ToolUtil.isNotEmpty(oldAsset)) {
             throw new NZException(RCode.ASSET_SN_DUPLICATE);
         }
 
         // manageIp 唯一
-        duplicateCount = this.count(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getManageIp, asset.getManageIp()).ne(isEdit,AssetAsset::getId, assetId));
-        if (duplicateCount > 0) {
+        oldAsset = this.getOne(new LambdaQueryWrapper<AssetAsset>().select(AssetAsset::getId).eq(AssetAsset::getManageIp, asset.getManageIp()).ne(isEdit, AssetAsset::getId, assetId).last("limit 1"));
+        if (ToolUtil.isNotEmpty(oldAsset)) {
             throw new NZException(RCode.ASSET_MANAGEIP_DUPLICATE);
         }
 
