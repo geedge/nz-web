@@ -144,12 +144,10 @@ public class IssueRecordServiceImpl extends ServiceImpl<IssueRecordDao, IssueRec
             .and(issueRecord.getRid()).notNull(RCode.ISSUE_RID_ID_ISNULL)
             .and(issueRecord.getAid()).notNull(RCode.ISSUE_AID_ID_ISNULL);
 
-        List<IssueRecord> list = this.list();
         Integer issueId = issueRecord.getId();
         // name 唯一
-        Map<String, Integer> map = list.stream().collect(Collectors.toMap(IssueRecord::getName, IssueRecord::getId));
-        Integer id = map.get(issueRecord.getName());
-        if (id != null && !id.equals(issueId)) {
+        int duplicateCount = this.count(new LambdaQueryWrapper<IssueRecord>().eq(IssueRecord::getName, issueRecord.getName()).ne(ToolUtil.isNotEmpty(issueId), IssueRecord::getId, issueId));
+        if (duplicateCount > 0) {
             throw new NZException(RCode.ISSUE_NAME_DUPLICATE);
         }
         if(!Tool.CollUtil.contains(Arrays.asList(new Integer[]{1,2,3,4,5,6,7}), issueRecord.getState())){

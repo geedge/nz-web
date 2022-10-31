@@ -499,35 +499,31 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     }
 
     private void validateAssetInfo(AssetAsset asset) {
-        List<AssetAsset> list = this.list();
         Integer assetId = asset.getId();
+        boolean isEdit = ToolUtil.isNotEmpty(assetId);
         // name 唯一
-        Map<String, Integer> map = list.stream().collect(Collectors.toMap(AssetAsset::getName, AssetAsset::getId));
-        Integer id = map.get(asset.getName());
-        if (id != null && !id.equals(assetId)) {
+        int duplicateCount = this.count(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getName, asset.getName()).ne(isEdit,AssetAsset::getId, assetId));
+        if (duplicateCount > 0) {
             throw new NZException(RCode.ASSET_NAME_DUPLICATE);
         }
 
         // number 唯一 不重复，可以为空串
         if (StringUtils.isNotEmpty(asset.getNumber())) {
-            map = list.stream().filter(pojo -> StringUtils.isNotEmpty(pojo.getNumber())).collect(Collectors.toMap(AssetAsset::getNumber, AssetAsset::getId));
-            id = map.get(asset.getNumber());
-            if (id != null && !id.equals(assetId)) {
+            duplicateCount = this.count(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getNumber, asset.getNumber()).ne(isEdit,AssetAsset::getId, assetId));
+            if (duplicateCount > 0) {
                 throw new NZException(RCode.ASSET_NUMBER_DUPLICATE);
             }
         }
 
         // sn 唯一
-        map = list.stream().collect(Collectors.toMap(AssetAsset::getSn, AssetAsset::getId));
-        id = map.get(asset.getSn());
-        if (id != null && !id.equals(assetId)) {
+        duplicateCount = this.count(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getSn, asset.getSn()).ne(isEdit,AssetAsset::getId, assetId));
+        if (duplicateCount > 0) {
             throw new NZException(RCode.ASSET_SN_DUPLICATE);
         }
 
         // manageIp 唯一
-        map = list.stream().collect(Collectors.toMap(AssetAsset::getManageIp, AssetAsset::getId));
-        id = map.get(asset.getManageIp());
-        if (id != null && !id.equals(assetId)) {
+        duplicateCount = this.count(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getManageIp, asset.getManageIp()).ne(isEdit,AssetAsset::getId, assetId));
+        if (duplicateCount > 0) {
             throw new NZException(RCode.ASSET_MANAGEIP_DUPLICATE);
         }
 
