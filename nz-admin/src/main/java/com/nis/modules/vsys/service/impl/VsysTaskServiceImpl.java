@@ -270,7 +270,7 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
      * @param vsysAssetIdList
      */
     private void recordUnExecStateLog(VsysTask task, List<Integer> vsysAssetIdList) {
-        if (Tool.CollUtil.isEmpty(vsysAssetIdList)) return;
+        // if (Tool.CollUtil.isEmpty(vsysAssetIdList)) return;
 
         List<VsysResult> resultList = Tool.ListUtil.list(true);
 
@@ -299,16 +299,13 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
                 resultList.addAll(updateResultLogList);
 
                 // 更新 vsys task total&assetIds = del + update
-                if (ObjectUtil.notEqual(task.getTotal(), resultList.size())) {
-                    List<Integer> realConfAssetIdList = resultList.stream().map(VsysResult::getAssetId).distinct().collect(Collectors.toList());
-                    String assetIds = StrUtil.join(StrUtil.COMMA, realConfAssetIdList);
+                List<Integer> realConfAssetIdList = resultList.stream().map(VsysResult::getAssetId).distinct().collect(Collectors.toList());
+                String assetIds = StrUtil.join(StrUtil.COMMA, realConfAssetIdList);
 
-                    LambdaUpdateWrapper<VsysTask> updateWrapper = new LambdaUpdateWrapper<VsysTask>()
-                            .eq(VsysTask::getId, task.getId())
-                            .set(VsysTask::getTotal, resultList.size())
-                            .set(VsysTask::getAssetIds, assetIds);
-                    this.update(updateWrapper);
-                }
+                task.setTotal(resultList.size());
+                task.setAssetIds(assetIds);
+                task.setProgress(Tool.CollUtil.isEmpty(resultList) ? 100d : 0d);
+                this.updateById(task);
                 break;
             }
             default:
