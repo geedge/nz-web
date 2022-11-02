@@ -26,4 +26,6 @@ public interface AlertRuleDao extends BaseMapper<AlertRuleEntity> {
     List<MetricsDto> nzAlertMumsMetric();
 
     void delNotify(List<String> idList);
+
+    void delReceiver(List<String> idList);
 }

@@ -17,4 +17,8 @@ public interface VisualPanelDao extends BaseMapper<VisualPanel> {
     void updateWeightBatch(@Param("panels") List<VisualPanel> updatePanels);
     
     VisualPanel queryInfo(Integer id);
+
+    void delReceivers(List<String> idList);
+
+    List<VisualPanel> queryReportOfEmptyReceivers();
 }

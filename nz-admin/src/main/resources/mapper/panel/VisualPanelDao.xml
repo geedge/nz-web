@@ -103,4 +103,28 @@
             id = #{panel.id}
         </foreach>
     </update>
+
+    <update id="delReceivers">
+        <foreach item="item" collection="list" separator=";">
+            UPDATE
+            visual_panel
+            <set>
+                param = JSON_REMOVE(param, JSON_UNQUOTE(JSON_SEARCH( param, 'one', #{item} )))
+            </set>
+            WHERE
+                JSON_CONTAINS(param, #{item}, "$.report.receivers")
+        </foreach>
+    </update>
+
+    <select id="queryReportOfEmptyReceivers" resultMap="visualPanelResult">
+        SELECT
+            id,
+            name,
+            JSON_SET(param, '$.report.enable', false) param
+        FROM
+             visual_panel
+        WHERE
+            JSON_EXTRACT(param, '$.report.receivers') = '[]'
+            AND JSON_EXTRACT(param, '$.report.enable')= 'true'
+    </select>
 </mapper>

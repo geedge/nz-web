@@ -84,9 +84,9 @@ public class AlertNotifyMethodServiceImpl extends ServiceImpl<AlertNotifyMethodD
     public void deleteByIds(List<String> idList) {
         //删除告警规则引用的通知方式
         alertRuleDao.delNotify(idList);
-        //若告警规则通知方式为空，则通知人一并删除
-        alertRuleService.update(new LambdaUpdateWrapper<AlertRuleEntity>().eq(AlertRuleEntity::getMethod, "").or().isNull(AlertRuleEntity::getMethod)
-                .set(AlertRuleEntity::getReceiver, "").set(AlertRuleEntity::getNotifyActive, 0).set(AlertRuleEntity::getNotifyExpired, 0));
+        //若告警规则通知方式为空，则关闭主动通知
+        alertRuleService.update(new LambdaUpdateWrapper<AlertRuleEntity>().eq(AlertRuleEntity::getMethod, "")
+                .set(AlertRuleEntity::getNotifyActive, 0).set(AlertRuleEntity::getNotifyExpired, 0));
         //删除通知方式
         this.removeByIds(idList);
     }
