@@ -245,7 +245,7 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
         //被引用的model 不允许修改
         int assetCount = assetAssetService.count(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getModelId, model.getId()));
         if(assetCount > 0){
-            throw new NZException(RCode.ASSET_MODEL_CONTAINS_CAN_NOT_REMOVE);
+            throw new NZException(RCode.ASSET_MODEL_CONTAINS_CAN_NOT_CHANGE);
         }
 
         // 保存

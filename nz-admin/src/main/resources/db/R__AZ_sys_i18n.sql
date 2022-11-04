@@ -4739,7 +4739,7 @@ INSERT INTO `sys_i18n` VALUES (7497, 'ipamsubnet.dc.dcId', 'en', 'ipamsubnet.dc.
 INSERT INTO `sys_i18n` VALUES (7498, 'ipamsubnet.dc.dcId', 'zh', 'ipamsubnet.dc.dcId', '数据中心 ID', '', '2022-10-28 05:54:34', 414);
 INSERT INTO `sys_i18n` VALUES (7499, 'ipamsubnet.dc.dcId.comment', 'en', 'ipamsubnet.dc.dcId.comment', 'Datacenter ID(Required) Example: 1', '', '2022-10-28 05:52:57', 414);
 INSERT INTO `sys_i18n` VALUES (7500, 'ipamsubnet.dc.dcId.comment', 'zh', 'ipamsubnet.dc.dcId.comment', '数据中心 ID(必填) 示例：1', '', '2022-10-28 05:53:38', 414);
-INSERT INTO `sys_i18n` VALUES (7501, '327011', 'en', 'ASSET_MODEL_CONTAINS_CAN_NOT_REMOVE', 'Asset model have associated assets and cannot change type', '', '2022-10-28 15:53:38', 416);
-INSERT INTO `sys_i18n` VALUES (7502, '327011', 'zh', 'ASSET_MODEL_CONTAINS_CAN_NOT_REMOVE', '资产型号存在关联资产，无法更改类型', '', '2022-10-28 15:53:38', 416);
+INSERT INTO `sys_i18n` VALUES (7501, '327011', 'en', 'ASSET_MODEL_CONTAINS_CAN_NOT_CHANGE', 'Asset model have associated assets and cannot change', '响应消息->asset model 修改', '2022-10-28 15:53:38', 416);
+INSERT INTO `sys_i18n` VALUES (7502, '327011', 'zh', 'ASSET_MODEL_CONTAINS_CAN_NOT_CHANGE', '资产型号存在关联资产，无法更改', '响应消息->asset model 修改', '2022-10-28 15:53:38', 416);
 
 SET FOREIGN_KEY_CHECKS = 1;
