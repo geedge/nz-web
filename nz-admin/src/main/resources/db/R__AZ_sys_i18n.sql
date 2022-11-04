@@ -4733,5 +4733,13 @@ INSERT INTO `sys_i18n` VALUES (7491, '998', 'en', 'CONTENT_MORETHAN_MAXLENGTH', 
 INSERT INTO `sys_i18n` VALUES (7492, '998', 'zh', 'CONTENT_MORETHAN_MAXLENGTH', '字段内容长度超过最大值:{0}', '响应消息->字段长度校验', '2022-10-21 08:17:12', 416);
 INSERT INTO `sys_i18n` VALUES (7493, '401002', 'en', 'ASSET_COMMENT_HTML_ISNULL', 'Asset comment html can not be empty', '响应消息->资产评论新增/修改', '2022-10-26 08:17:12', 416);
 INSERT INTO `sys_i18n` VALUES (7494, '401002', 'zh', 'ASSET_COMMENT_HTML_ISNULL', '资产评论HTML格式不能为空', '响应消息->资产评论新增/修改', '2022-10-26 08:17:12', 416);
+INSERT INTO `sys_i18n` VALUES (7506, 'asset.ipmiIp.comment', 'en', 'asset.ipmiIp.comment', 'IPMI IP, IP format Example: 172.0.0.1', '表头->资产导入/导出/模板下载', '2022-11-04 06:18:50', 416);
+INSERT INTO `sys_i18n` VALUES (7507, 'asset.ipmiIp.comment', 'zh', 'asset.ipmiIp.comment', 'IPMI IP, IP格式 示例: 172.0.0.1', '表头->资产导入/导出/模板下载', '2022-11-04 06:18:50', 416);
+INSERT INTO `sys_i18n` VALUES (7508, 'asset.ipmiIp', 'en', 'asset.ipmiIp', 'IPMI IP', '资产/资产列表/表头IPMI ip；\n表头->资产导入/导出/模板下载', '2022-11-04 06:18:50', 416);
+INSERT INTO `sys_i18n` VALUES (7509, 'asset.ipmiIp', 'zh', 'asset.ipmiIp', 'IPMI IP', '资产/资产列表/表头IPMI ip；\n表头->资产导入/导出/模板下载', '2022-11-04 06:18:50', 416);
+INSERT INTO `sys_i18n` VALUES (7510, 'dashboard.snapshotTip1', 'en', 'dashboard.snapshotTip1', 'The generated snapshot will include all charts of this dashboard.', '', '2022-11-04 03:26:37', 407);
+INSERT INTO `sys_i18n` VALUES (7511, 'dashboard.snapshotTip1', 'zh', 'dashboard.snapshotTip1', '生成的快照将包括该仪表板的所有图表。', '', '2022-11-04 03:27:14', 407);
+INSERT INTO `sys_i18n` VALUES (7512, 'dashboard.snapshotTip2', 'en', 'dashboard.snapshotTip2', 'The snapshot will be downloaded to your computer as a file and  you can view it with your browser.', '', '2022-11-04 03:27:45', 407);
+INSERT INTO `sys_i18n` VALUES (7513, 'dashboard.snapshotTip2', 'zh', 'dashboard.snapshotTip2', '快照将以文件的形式下载到您的计算机上  您可以用浏览器查看它。', '', '2022-11-04 03:27:57', 407);
 
 SET FOREIGN_KEY_CHECKS = 1;

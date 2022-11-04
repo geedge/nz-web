@@ -12,6 +12,7 @@
         <result property="cabinetStart" column="cabinet_start"/>
         <result property="cabinetEnd" column="cabinet_end"/>
         <result property="manageIp" column="manage_ip"/>
+        <result property="ipmiIp" column="ipmi_ip"/>
         <result property="purchaseDate" column="purchase_date"/>
         <result property="createAt" column="create_at"/>
         <result property="updateAt" column="update_at"/>
@@ -142,6 +143,10 @@
 
              <if test="params.manageIp != null and params.manageIp != ''">
                  AND locate(#{params.manageIp} , asset.manage_ip)
+             </if>
+
+             <if test="params.ipmiIp != null and params.ipmiIp != ''">
+                 AND locate(#{params.ipmiIp} , asset.ipmi_ip)
              </if>
 
              <if test="params.brandIds != null and params.brandIds.size > 0">
@@ -284,6 +289,9 @@
              </if>
              <if test="params.manageIp != null and params.manageIp != ''">
                  AND locate(#{params.manageIp} , asset.manage_ip)
+             </if>
+             <if test="params.ipmiIp != null and params.ipmiIp != ''">
+                 AND locate(#{params.ipmiIp} , asset.ipmi_ip)
              </if>
              <if test="params.brandIds != null and params.brandIds.size > 0">
                  AND asset.brand_id IN

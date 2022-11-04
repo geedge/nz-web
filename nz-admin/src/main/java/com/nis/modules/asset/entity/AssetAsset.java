@@ -150,6 +150,8 @@ public class AssetAsset implements Serializable {
      */
     private String manageIp;
 
+    private String ipmiIp;
+
     /**
      * 购买日期
      */

@@ -54,7 +54,7 @@ import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.modules.vsys.entity.VsysAssetRel;
 import com.nis.modules.vsys.service.VsysAssetRelService;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.shiro.UnavailableSecurityManagerException;
+import org.apache.shiro.ShiroException;
 import org.snmp4j.smi.TimeTicks;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -258,7 +258,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                     .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId())
             );
             asset.setStarred(count == 0 ? 0 : 1);
-        } catch (UnavailableSecurityManagerException e) {
+        } catch (ShiroException e) {
             // 快照线程无法获取ShiroSession
         }
         // 已配置的 module 名单
@@ -1841,6 +1841,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             validateUtil.validateRegex(manageIp, Constant.REGEX_IP, lineNum, AssetImportEnum.MANAGE_IP.getIndex());
             validateUtil.validateDuplicate("asset_asset", "manage_ip", manageIp, assetName, lineNum, AssetImportEnum.MANAGE_IP.getIndex());
 
+            String ipmiIp = dataMap.get(AssetImportEnum.IPMI_IP.getIndex());
+            if(StrUtil.isNotEmpty(ipmiIp))
+                validateUtil.validateRegex(ipmiIp, Constant.REGEX_IP, lineNum, AssetImportEnum.IPMI_IP.getIndex());
+
             // state conf 不自动添加
             String stateName = dataMap.get(AssetImportEnum.STATE.getIndex());
             validateUtil.validateRequired(stateName, lineNum, AssetImportEnum.STATE.getIndex());
@@ -2038,6 +2042,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 asset.setCreateAt(new Date());
                 asset.setCreateBy(ShiroUtils.getUserId());
                 asset.setManageIp(manageIp);
+                asset.setIpmiIp(ipmiIp);
                 if (StrUtil.isNotEmpty(snmpCredentialName)) {
                     SnmpCredential snmpCredential = snmpCredentialService.getOne(new LambdaQueryWrapper<SnmpCredential>().eq(SnmpCredential::getName, snmpCredentialName));
                     asset.setSnmpCredentialId(snmpCredential.getId());
@@ -2352,6 +2357,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             tempList.add(asset.getSn());
             tempList.add(ToolUtil.isEmpty(asset.getParent()) ? "" : asset.getParent().getName());
             tempList.add(asset.getManageIp());
+            tempList.add(asset.getIpmiIp());
             tempList.add(asset.getBrand().getName());
             tempList.add(asset.getModel().getName());
             tempList.add(asset.getDc().getName());
