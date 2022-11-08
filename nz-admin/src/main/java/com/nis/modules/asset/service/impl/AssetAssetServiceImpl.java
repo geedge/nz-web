@@ -1814,9 +1814,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // 处理 excel 数据，将含宿主机资产排到前面
         List<Map<Integer, String>> handleImportData = this.handleImportData(importDataList);
         for (int i = 0; i < handleImportData.size(); i++) {
-            Integer lineNum = i + 1;
             Map saveEntitys = Tool.MapUtil.newHashMap();
             Map<Integer, String> dataMap = handleImportData.get(i);
+            Integer lineNum = Integer.parseInt(dataMap.get(999)) + 1;
             // name， 以 name作为索引 标识该条记录是否存在
             String assetName = dataMap.get(AssetImportEnum.NAME.getIndex());
             validateUtil.validateRequired(assetName, lineNum, AssetImportEnum.NAME.getIndex());
@@ -2014,7 +2014,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             if (BooleanUtil.and(Tool.StrUtil.equals("0", ignoreError), Tool.CollUtil.isNotEmpty(errMsgForThisLine))) {
                 // 结束本次导入，自导入行开始 到结尾数据行，提示错误信息
                 for (int j = i; j < handleImportData.size(); j++) {
-                    validateUtil.recordImportAttrErr(j + 1, RCode.IMPORT_ERROR_STOP);
+                    validateUtil.recordImportAttrErr(Integer.parseInt(handleImportData.get(j).get(999)) + 1, RCode.IMPORT_ERROR_STOP);
                     failContentList.add(handleImportData.get(j));
                 }
                 break;
@@ -2327,15 +2327,18 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     }
 
     private List<Map<Integer, String>> handleImportData(List<Map<Integer, String>> importDataList) {
-        List<Map<Integer, String>> list = importDataList.stream().filter(dataMap -> {
-            String parentName = dataMap.get(2);
-            if (StringUtils.isEmpty(parentName)) {
-                return true;
+        List<Map<Integer, String>> list = new ArrayList<>();
+        List<Map<Integer, String>> childList = new ArrayList<>();
+        for (int i = 0; i < importDataList.size(); i++) {
+            Map<Integer, String> dataMap = importDataList.get(i);
+            dataMap.put(999, i + "");// 实际数据行数
+            if (StringUtils.isEmpty(dataMap.get(2))) {
+                list.add(dataMap);
+            } else {
+                childList.add(dataMap);
             }
-            return false;
-        }).collect(Collectors.toList());
-        importDataList.removeAll(list);
-        list.addAll(importDataList);
+        }
+        list.addAll(childList);
         return list;
     }
 
