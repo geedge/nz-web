@@ -14,6 +14,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.JSONUtil;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
 import com.nis.modules.asset.entity.AssetAsset;
@@ -657,9 +658,13 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
                 .put("name", ruleSetName)
                 .build();
 
-        if (Tool.CollUtil.isNotEmpty(ruleConfigListMap)) {
-            ruleSetMap.put("rule", ruleConfigListMap);
+        if (Tool.CollUtil.isEmpty(ruleConfigListMap)) {
+            // rule set config is empty, use default system config
+            List<Map> defaultSystemRuleConfig = this.getDefaultSystemRuleConfig();
+            log.info("vsys does not configure rule, use default system config, task: {}, default config: {}", JSONUtil.toJsonStr(vsysTask), JSONUtil.toJsonStr(defaultSystemRuleConfig));
+            ruleConfigListMap.addAll(defaultSystemRuleConfig);
         }
+        ruleSetMap.put("rule", ruleConfigListMap);
 
         Map<Object, Object> ruleSetBody = Tool.MapUtil.builder()
                 .put("tsg-os-mgnt-srv:ruleset", ruleSetMap)
@@ -669,6 +674,20 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
         String path = "/restconf/data";
         Map<Object, Object> resultMp = VsysConfigUtil.requestPost(manageIp, path, ruleSetBody);
         return resultMp;
+    }
+
+    /**
+     * get Default System Rule Config
+     *
+     * @return
+     */
+    private List<Map> getDefaultSystemRuleConfig() {
+        // default config rule
+        String ruleConfJsonsStr = sysConfService.getValue(VsysConstant.SYSCONFIG_KEY_VSYS_DEFAULT_RULECONFIG);
+        List<Map> mapList = JSONObject.parseArray(ruleConfJsonsStr, Map.class);
+
+        mapList = Tool.CollUtil.defaultIfEmpty(mapList, Tool.ListUtil.empty());
+        return mapList;
     }
 
     /**

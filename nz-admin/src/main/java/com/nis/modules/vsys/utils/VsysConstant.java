@@ -18,6 +18,11 @@ public class VsysConstant {
     public static final String VSYS_DEFAULT_TEMPLATE_NAME = "tsg_traffic_engine_default";
 
     /**
+     * vsys default rule config
+     */
+    public static final String SYSCONFIG_KEY_VSYS_DEFAULT_RULECONFIG = "vsys_default_rule_config";
+
+    /**
      * 默认端口
      */
     public static final String VSYS_TSG_OS_DEFAULT_PORT = "8447";
