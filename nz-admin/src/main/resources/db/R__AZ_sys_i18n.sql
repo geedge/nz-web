@@ -4739,7 +4739,17 @@ INSERT INTO `sys_i18n` VALUES (7497, 'ipamsubnet.dc.dcId', 'en', 'ipamsubnet.dc.
 INSERT INTO `sys_i18n` VALUES (7498, 'ipamsubnet.dc.dcId', 'zh', 'ipamsubnet.dc.dcId', '数据中心 ID', '', '2022-10-28 05:54:34', 414);
 INSERT INTO `sys_i18n` VALUES (7499, 'ipamsubnet.dc.dcId.comment', 'en', 'ipamsubnet.dc.dcId.comment', 'Datacenter ID(Required) Example: 1', '', '2022-10-28 05:52:57', 414);
 INSERT INTO `sys_i18n` VALUES (7500, 'ipamsubnet.dc.dcId.comment', 'zh', 'ipamsubnet.dc.dcId.comment', '数据中心 ID(必填) 示例：1', '', '2022-10-28 05:53:38', 414);
-INSERT INTO `sys_i18n` VALUES (7501, '327011', 'en', 'ASSET_MODEL_CONTAINS_CAN_NOT_CHANGE', 'Asset model have associated assets and cannot change', '响应消息->asset model 修改', '2022-10-28 15:53:38', 416);
-INSERT INTO `sys_i18n` VALUES (7502, '327011', 'zh', 'ASSET_MODEL_CONTAINS_CAN_NOT_CHANGE', '资产型号存在关联资产，无法更改', '响应消息->asset model 修改', '2022-10-28 15:53:38', 416);
+INSERT INTO `sys_i18n` VALUES (7501, '327011', 'en', 'ASSET_MODEL_CONTAINS_CAN_NOT_CHANGE', 'Asset model have associated assets and cannot change type', '响应消息->asset model 修改', '2022-11-08 08:09:32', 414);
+INSERT INTO `sys_i18n` VALUES (7502, '327011', 'zh', 'ASSET_MODEL_CONTAINS_CAN_NOT_CHANGE', '资产型号存在关联资产，无法更改类型', '响应消息->asset model 修改', '2022-11-08 08:09:38', 414);
+INSERT INTO `sys_i18n` VALUES (7506, 'asset.ipmiIp.comment', 'en', 'asset.ipmiIp.comment', 'IPMI IP, IP format Example: 172.0.0.1', '表头->资产导入/导出/模板下载', '2022-11-04 06:18:50', 416);
+INSERT INTO `sys_i18n` VALUES (7507, 'asset.ipmiIp.comment', 'zh', 'asset.ipmiIp.comment', 'IPMI IP, IP格式 示例: 172.0.0.1', '表头->资产导入/导出/模板下载', '2022-11-04 06:18:50', 416);
+INSERT INTO `sys_i18n` VALUES (7508, 'asset.ipmiIp', 'en', 'asset.ipmiIp', 'IPMI IP', '资产/资产列表/表头IPMI ip；\n表头->资产导入/导出/模板下载', '2022-11-04 06:18:50', 416);
+INSERT INTO `sys_i18n` VALUES (7509, 'asset.ipmiIp', 'zh', 'asset.ipmiIp', 'IPMI IP', '资产/资产列表/表头IPMI ip；\n表头->资产导入/导出/模板下载', '2022-11-04 06:18:50', 416);
+INSERT INTO `sys_i18n` VALUES (7510, 'dashboard.snapshotTip1', 'en', 'dashboard.snapshotTip1', 'The generated snapshot will include all charts of this dashboard.', '', '2022-11-04 03:26:37', 407);
+INSERT INTO `sys_i18n` VALUES (7511, 'dashboard.snapshotTip1', 'zh', 'dashboard.snapshotTip1', '生成的快照将包括该仪表板的所有图表。', '', '2022-11-04 03:27:14', 407);
+INSERT INTO `sys_i18n` VALUES (7512, 'dashboard.snapshotTip2', 'en', 'dashboard.snapshotTip2', 'The snapshot will be downloaded to your computer as a file and  you can view it with your browser.', '', '2022-11-04 03:27:45', 407);
+INSERT INTO `sys_i18n` VALUES (7513, 'dashboard.snapshotTip2', 'zh', 'dashboard.snapshotTip2', '快照将以文件的形式下载到您的计算机上 ，您可以用浏览器查看它。', '', '2022-11-08 01:12:06', 407);
+INSERT INTO `sys_i18n` VALUES (7514, 'dashboard.elapsedTime', 'en', 'dashboard.elapsedTime', 'Elapsed time', '', '2022-11-04 09:20:31', 407);
+INSERT INTO `sys_i18n` VALUES (7515, 'dashboard.elapsedTime', 'zh', 'dashboard.elapsedTime', '运行时间', '', '2022-11-04 09:20:45', 407);
 
 SET FOREIGN_KEY_CHECKS = 1;

@@ -242,10 +242,12 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
         this.validateAssetModelInfo(model);
 
         AssetModel oldModel = this.getById(model.getId());
-        //被引用的model 不允许修改
-        int assetCount = assetAssetService.count(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getModelId, model.getId()));
-        if(assetCount > 0){
-            throw new NZException(RCode.ASSET_MODEL_CONTAINS_CAN_NOT_CHANGE);
+        //被引用的model 不允许修改type
+        if(!ToolUtil.equals(oldModel.getTypeId(), model.getTypeId())){
+            int assetCount = assetAssetService.count(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getModelId, oldModel.getId()));
+            if(assetCount > 0){
+                throw new NZException(RCode.ASSET_MODEL_CONTAINS_CAN_NOT_CHANGE);
+            }
         }
 
         // 保存
