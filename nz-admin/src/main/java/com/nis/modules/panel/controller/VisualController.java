@@ -26,12 +26,12 @@ public class VisualController {
 	 */
 	@GetMapping("/explore/snapshot")
 	public void exploreSnapshot(HttpServletResponse response, HttpServletRequest request, String format, Integer type, Long start,
-								Long end, Integer unit, String limit, @RequestParam(value="expressions[]")String[] expressions) throws IOException {
+								Long end, Integer unit, String limit, String direction, @RequestParam(value="expressions[]")String[] expressions) throws IOException {
 		ValidateUtils.is(type).notNull(RCode.AGENT_TYPE_ISNULL)
 				.and(start).notNull(RCode.AGENT_PARAM_START_ISNULL)
 				.and(end).notNull(RCode.AGENT_PARAM_END_ISNULL)
 				.and(expressions).notNull(RCode.AGENT_PARAM_QUERY_ISNULL);
 		String language = request.getHeader(Constant.LANGUAGE);
-		visualService.exploreSnapshot(response, format, type, start, end, language, unit, limit, expressions);
+		visualService.exploreSnapshot(response, format, type, start, end, language, unit, limit, direction, expressions);
 	}
 }

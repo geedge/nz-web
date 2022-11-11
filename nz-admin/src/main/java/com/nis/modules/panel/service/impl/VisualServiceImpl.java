@@ -53,19 +53,23 @@ public class VisualServiceImpl implements VisualService {
     private TimezoneService timezoneService;
 
     @Override
-    public void exploreSnapshot(HttpServletResponse response, String format, Integer type, Long start, Long end, String language, Integer unit, String limit, String[] expressions) throws IOException {
+    public void exploreSnapshot(HttpServletResponse response, String format, Integer type, Long start, Long end, String language, Integer unit, String limit, String direction, String[] expressions) throws IOException {
         // 计算步长
         String step = this.getTimeStep(start, end);
+        if(!StrUtil.equals(direction, "forward")){
+            direction = "backward";
+        }
 
         List<CompletableFuture<JSONObject>> futureList = new ArrayList<>();
         for (int i = 0; i < expressions.length; i++) {
             String expression = URLUtil.decode(expressions[i]);
+            String finalDirection = direction;
             futureList.add(CompletableFuture.supplyAsync(() -> {
                 JSONObject queryData = null;
                 if(type == 1){
                     queryData = promApiService.query_range(expression, StrUtil.toString(start), StrUtil.toString(end), step, null, null);
                 } else if (type == 2) {
-                    queryData = lokiApiService.query_range(expression, StrUtil.toString(start), StrUtil.toString(end), StrUtil.emptyToDefault(limit, "100"), null, null, null, "1", null);
+                    queryData = lokiApiService.query_range(expression, StrUtil.toString(start), StrUtil.toString(end), StrUtil.emptyToDefault(limit, "100"), null, null, finalDirection, "1", null);
                 }
                 queryData.put("expression", expression);
                 return queryData;
