@@ -91,6 +91,7 @@ public class VisualServiceImpl implements VisualService {
         Map<String, Object> resultMap = this.snapshotResultMap(start, end, language);
         resultMap.put("type", type);
         resultMap.put("unit", unit);
+        resultMap.put("direction", direction);
         resultMap.put("data", dataList);
 
         String snapshotTemplate = this.replaceSnapshotTemplate(resultMap);
