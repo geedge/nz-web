@@ -9,6 +9,8 @@ import com.nis.modules.sys.service.SysBackupService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -92,6 +94,16 @@ public class SysBackupController {
 
 		sysBackupService.removeBackFileByFilename(filename);
 		return R.ok();
+	}
+
+	/**
+	 * 系统备份下载接口
+	 * @param filename
+	 */
+	@GetMapping("/download")
+	public void download(HttpServletResponse response, String filename) throws IOException {
+		if (Tool.StrUtil.isEmpty(filename)) throw new NZException(RCode.SYS_BACKUP_FILENAME_ISNULL);
+		sysBackupService.downloadBackFileByFilename(response, filename);
 	}
 
 }

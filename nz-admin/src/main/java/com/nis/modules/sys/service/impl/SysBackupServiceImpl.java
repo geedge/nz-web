@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -239,6 +240,29 @@ public class SysBackupServiceImpl implements SysBackupService {
                 }
             }
         } else {
+            // 文件不存在
+            throw new NZException(RCode.SYS_BACKUP_FILENAME_NOTEXIST);
+        }
+    }
+
+    @Override
+    public void downloadBackFileByFilename(HttpServletResponse response, String filename) throws IOException {
+        SysConfigEntity config = sysConfigDao.queryByKey("backup_file_path");
+        String path = Constant.BACKUP_ROOT_PATH;
+
+        if (Optional.ofNullable(config).map(SysConfigEntity::getParamValue).isPresent()) {
+            path = config.getParamValue();
+        }
+
+        String sqlFilePath = Tool.StrUtil.concat(true, path, File.separator, filename);
+        boolean exist = FileUtil.exist(sqlFilePath);
+        if (exist) {
+            exist = FileUtil.isFile(sqlFilePath);
+            if (exist) {
+                ResponseUtil.downloadFile(response, FileUtil.file(sqlFilePath));
+            }
+        }
+        if(!exist){
             // 文件不存在
             throw new NZException(RCode.SYS_BACKUP_FILENAME_NOTEXIST);
         }
