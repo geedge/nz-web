@@ -115,6 +115,8 @@ public enum RCode {
     PANEL_PARAM_REPORTRECEIVERS_ISNULL(121095,"Panel param report receivers can not be empty"),
     PANEL_PARAM_REPORTCHARTSHARE_INVALIDE(123096,"Panel param report tooltip must be none, crosshair or tooltip"),
     DASHBOARD_SNAPSHOT_TASK_NOT_EXIST(126097,"Dashboard snapshot task cancel error, the task does not exist or has expired."),
+    PANEL_VARTYPE_ISNULL(121098,"Panel varType can not be empty when link is not empty"),
+    PANEL_VARTYPE_INVALIDE(124099,"Panel varType must be 0, 1 or 2"),
 
     /**
      * EXPRETMPL

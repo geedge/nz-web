@@ -629,7 +629,7 @@ public class Constant {
 
 	public enum PanelType {
 		DASHBOARD("dashboard"), ASSET("asset"), PROJECT("project"), MODULE("module"), ENDPOINT("endpoint"),
-		MODEL("model"), TEMPLATE("template"), OVERVIEW("overview");
+		TEMPLATE("template");
 
 		private String value;
 

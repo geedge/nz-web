@@ -338,6 +338,15 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 			if (!types.contains(type)) {
 				throw new NZException(RCode.PANEL_TYPE_INVALIDE);
 			}
+
+			if(StrUtil.equals(type, Constant.PanelType.TEMPLATE.getValue())){
+				// 校验 varType
+				Integer varType = panel.getVarType();
+				ValidateUtils.is(varType).notNull(RCode.PANEL_VARTYPE_ISNULL);
+				if(!Arrays.asList(new Integer[]{0, 1, 2}).contains(varType)){
+					throw new NZException(RCode.PANEL_VARTYPE_INVALIDE);
+				}
+			}
 		}
 
 		// pid 是否存在
@@ -1407,7 +1416,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 				return RCode.CHART_URLPARAM_ISNULL.getMsg();
 			}
 
-			if (StrUtil.equals(Constant.PanelType.MODEL.getValue(), panelType)) {
+			if (StrUtil.equals(Constant.PanelType.TEMPLATE.getValue(), panelType)) {
 				// 替换全部变量 替换为 a（任意字符） 不影响原来的数据格式 然后进行校验
 				String urlStr = url.toString();
 				urlStr = urlStr.replaceAll("\\{\\{asset\\..*?\\}\\}", "a");
@@ -1663,7 +1672,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 			}
 			String param = dataMap.get(7);
 			if (typeFlag) {
-				String msg = this.validateChartParamForImport(type, param, type);
+				String msg = this.validateChartParamForImport(type, param, panelType);
 				if (StringUtils.isNotEmpty(msg)) {
 					saveFlag = false;
 					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), msg);

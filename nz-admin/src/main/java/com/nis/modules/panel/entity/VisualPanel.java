@@ -19,7 +19,11 @@ public class VisualPanel {
 	private Integer createBy;
 	
 	private String type;
-	
+
+	private Integer varType;
+
+	private Integer tmplId;
+
 	private Integer link;
 	
 	private Integer pid;

@@ -6,6 +6,8 @@
         <result property="id" column="id"></result>
         <result property="name" column="name"></result>
         <result property="type" column="type"></result>
+        <result property="varType" column="var_type"></result>
+        <result property="tmplId" column="tmpl_id"></result>
         <result property="link" column="link"></result>
         <result property="buildIn" column="build_in"></result>
         <result property="createBy" column="create_by"></result>

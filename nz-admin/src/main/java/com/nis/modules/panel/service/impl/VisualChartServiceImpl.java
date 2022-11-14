@@ -206,7 +206,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	            String urlStr = url.toString();
 	            // 如果是model panel添加charts url类型支持{{}}替换
 	            VisualPanel panel = visualPanelService.getById(panelId);
-	            if(ObjectUtil.isNotEmpty(panel) && StrUtil.equals(Constant.PanelType.MODEL.getValue(),panel.getType())) {
+	            if(ObjectUtil.isNotEmpty(panel) && StrUtil.equals(Constant.PanelType.TEMPLATE.getValue(),panel.getType())) {
 	                // 替换全部变量 替换为 a（任意字符） 不影响原来的数据格式 然后进行校验
 	                urlStr = urlStr.replaceAll("\\{\\{asset\\..*?\\}\\}", "a");
 	
@@ -416,14 +416,14 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
         chartElementService.saveOrUpdateElements(chart.getId(), chart.getElements());
 
         // 4. 同步修改处理
-        Integer sync = chart.getSync();
+        /*Integer sync = chart.getSync();
         if (sync != null) {
             VisualPanel panel = visualPanelService.getById(chart.getPanelId());
             // 当前 chart 所属 panel 为 model 类型并且 同步标识 为 1 时 ，对根据 chart pid 查找通过此 chart 创建的 chart 更新
             if(StrUtil.equals(Constant.PanelType.MODEL.getValue(),panel.getType()) && sync.equals(1)) {
                 this.updateAssetChartsSimultaneously(chart);
             }
-        }
+        }*/
         
         return chart.getId();
 	}
