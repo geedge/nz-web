@@ -3,7 +3,7 @@ package com.nis.modules.asset.entity;
 import com.baomidou.mybatisplus.annotation.*;
 import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.terminal.config.Constants;
+import com.nis.modules.terminal.utils.TerminalConstant;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -75,6 +75,14 @@ public class AssetAsset implements Serializable {
     private Integer dcId;
 
     /**
+     * 认证协议
+     * SSH & TELNET
+     * equals AssetType.authProtocol
+     */
+    @TableField(exist = false)
+    private Integer authProtocol;
+
+    /**
      * 认证服务端口
      */
     @TableField(strategy = FieldStrategy.IGNORED)
@@ -116,12 +124,6 @@ public class AssetAsset implements Serializable {
     @TableField(strategy = FieldStrategy.IGNORED)
     private String authPinTip;
 
-    /**
-     * 协议 SSH / TELNET
-     */
-    @TableField(exist = false)
-    private String protocol;
-    
     /**
      * snmp凭证id
      */
@@ -311,7 +313,7 @@ public class AssetAsset implements Serializable {
     
     public String getPrivateKeyPath() {
         if (this.authType != null && this.authUsername != null) {
-            return Constants.NZ_USER_HOME.concat("/").concat(this.manageIp).concat("@").concat(this.authUsername).concat("_id_rsa");
+            return TerminalConstant.NZ_USER_HOME.concat("/").concat(this.manageIp).concat("@").concat(this.authUsername).concat("_id_rsa");
         }
         return null;
     }

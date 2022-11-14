@@ -1,153 +1,72 @@
 package com.nis.modules.terminal.controller;
 
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.log.Log;
-import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.*;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.Tool;
 import com.nis.common.xss.XssUtil;
-import com.nis.modules.terminal.config.TerminalOneProcessor;
+import com.nis.modules.terminal.backend.TerminalClient;
+import com.nis.modules.terminal.backend.TerminalSession;
 import com.nis.modules.terminal.entity.TerminalConfigDto;
 import com.nis.modules.terminal.service.TerminalCmdService;
 import com.nis.modules.terminal.service.TerminalRecordService;
 import com.nis.modules.terminal.service.TerminalSessionService;
-import org.apache.commons.lang3.StringUtils;
+import com.nis.modules.terminal.service.TerminalSftpLogService;
+import com.nis.modules.terminal.service.impl.TerminalSftpLogServiceImpl;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.ServletRequest;
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-import java.io.File;
-import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/terminal")
 public class TerminalHandlerController {
-	
-	private Log logger = Log.get();
-	
-	@Autowired
-    private TerminalOneProcessor terminalOneProcessor;
 
-	@Autowired
-    private TerminalSessionService terminalSessionService;
+    private static final Log log = Log.get();
 
-	@Autowired
+    @Autowired
     private TerminalCmdService terminalCmdService;
 
-	@Autowired
+    @Autowired
     private TerminalRecordService terminalRecordService;
-	
-	@Value("${nezha.uploadTempPath}")
+
+    @Autowired
+    private TerminalSftpLogService terminalSftpLogService;
+
+    @Autowired
+    private TerminalSessionService terminalSessionService;
+
+    @Value("${nezha.uploadTempPath}")
     private String configUploadPath;
-	
-	@PostMapping(value = "resize")
-    public R resize(ServletRequest req, @RequestBody TerminalConfigDto dto) throws IOException,RuntimeException {
-		HttpServletRequest request=(HttpServletRequest) req;
-		String token=request.getHeader(Constant.AUTH_TOKEN_CODE);
-		Integer cols = dto.getCols();
-		Integer height = dto.getHeight();
-		Integer rows = dto.getRows();
-		Integer width = dto.getWidth();
-		if(cols==null||height==null||rows==null||width==null) {
-			throw new NZException(RCode.TERMINAL_PARAM_ISNULL);
-		}else {
-			return terminalOneProcessor.resize(token, cols, rows, width, height);
-		}
-    }
-	
-	@PostMapping(value = "upload")
-    public R upload(HttpSession httpSession, String uuid, @RequestParam(value = "file", required = false) MultipartFile file, String path) throws RuntimeException {
-		if(StringUtils.isBlank(uuid)) {
-			throw new NZException(RCode.TERMINAL_UUID_ISNULL);
-		}
-		if(StringUtils.isBlank(path)) {
-			throw new NZException(RCode.TERMINAL_PATH_ISNULL);
-		}
-		if(CommonUtils.isEmpty(file)) {
-			throw new NZException(RCode.TERMINAL_FILE_ISNULL);
-		}
-		String rootPath=null;
-        try{
-            File temp= FileUtil.file("");
-            rootPath = temp.getAbsolutePath();
-            logger.info("项目根目录["+rootPath+"]");
-        }catch (RuntimeException e){
-        	logger.error("error info :",e);
-        }
 
-        String tmpPath=rootPath+configUploadPath;
-        File uploadDir=FileUtil.file(tmpPath);
-        if(!uploadDir.exists()){
-            boolean mkdirs = uploadDir.mkdirs();
-            if(mkdirs) {
-            	logger.debug("批量创建成功");
-            }else {
-            	logger.debug("批量创建失败");
-            }
-        }else{//存在同名文件/文件夹
-            if(!uploadDir.isDirectory()){//是一个同名文件
-                boolean delete = uploadDir.delete();
-                if(delete) {
-                	logger.debug("文件夹删除成功");
-                }else {
-                	logger.debug("文件夹删除失败");
-                }
-                boolean mkdirs = uploadDir.mkdirs();
-                if(mkdirs) {
-                	logger.debug("批量创建成功");
-                }else {
-                	logger.debug("批量创建失败");
-                }
-            }
+    @PostMapping(value = "resize")
+    public R resize(@RequestHeader(name = "Authorization") String token,
+                    @RequestBody TerminalConfigDto dto) {
+        Integer cols = dto.getCols();
+        Integer height = dto.getHeight();
+        Integer rows = dto.getRows();
+        Integer width = dto.getWidth();
+        if (Tool.ObjectUtil.hasEmpty(cols, height, rows, width)) {
+            return R.error(RCode.TERMINAL_PARAM_ISNULL);
         }
-
-        File tempFile = FileUtil.file(tmpPath, file.getOriginalFilename());
-	        logger.debug("上传临时文件["+tempFile.getAbsolutePath()+"]");
         try {
-            file.transferTo(tempFile);
-            if (CommonUtils.isEmpty(path)) {
-                path = ".";
-            } else {
-                if (path.endsWith("/")) {
-                    path = path.substring(0, path.lastIndexOf("/"));
-                }
+            List<TerminalClient> terminalClients = TerminalSession.getAllTerminalClient(token);
+            for (TerminalClient terminalClient : terminalClients) {
+                // resize
+                terminalClient.resize(cols, rows, width, height);
             }
-            logger.debug("上传目录：["+path+"]");
- //           tempFile.delete();
-            return terminalOneProcessor.upload(uuid, tempFile, path + "/" + file.getOriginalFilename(), file.getSize());
-        } catch (IOException | IllegalStateException e) {
-        	logger.error("error info :",e);
-            throw new NZException(RCode.SYS_ERROR);
+        } catch (Exception e) {
+            log.error(e);
+            return R.error();
         }
-    }
-	
-	@PostMapping(value = "download")
-    public void download(HttpSession httpSession,HttpServletResponse res, @RequestBody Map<String,String> param) throws RuntimeException {
-		String uuid = param.get("uuid");
-		String path = param.get("path");
-		if(StringUtils.isBlank(uuid)) {
-			throw new NZException(RCode.TERMINAL_UUID_ISNULL);
-		}
-		if(StringUtils.isBlank(path)) {
-			throw new NZException(RCode.TERMINAL_PATH_ISNULL);
-		}
-		try {
-			// 判断当前路径是绝对路径还是相对路径
-			if(!path.startsWith("/")) {
-				path="./"+path;
-			}
-            terminalOneProcessor.download(uuid,path,res);
-        } catch (RuntimeException e) {
-        	logger.error("error info :",e);
-            throw new NZException(RCode.SYS_ERROR);
-        }
+        return R.ok();
     }
 
     /**
@@ -191,5 +110,82 @@ public class TerminalHandlerController {
         Map map = terminalRecordService.queryTerminalRecordInfos(params);
         return R.ok(map);
     }
-	
+
+    @PostMapping("/login")
+    public Map<Object, Object> login(@RequestBody TerminalConfigDto configEntity) {
+        Map<Object, Object> map = terminalSessionService.login(configEntity);
+        return map;
+    }
+
+    @PostMapping("/sftp/ls")
+    public R ls(@RequestBody Map<String, String> param) {
+        String uuid = param.get("uuid");
+        String path = param.get("path");
+        ValidateUtils.is(uuid).notNull(RCode.TERMINAL_UUID_ISNULL);
+        return R.ok(
+                terminalSessionService.lsOfSftp(uuid, Tool.StrUtil.emptyToDefault(path, "/"))
+        );
+    }
+
+    @PostMapping("/sftp/mkdir")
+    public R mkdir(@RequestBody Map<String, String> param) {
+        String uuid = param.get("uuid");
+        String path = param.get("path");
+        ValidateUtils.is(uuid).notNull(RCode.TERMINAL_UUID_ISNULL)
+                .and(path).notNull(RCode.TERMINAL_PATH_ISNULL);
+
+        terminalSessionService.mkdirOfSftp(uuid, path);
+        return R.ok();
+    }
+
+    @PostMapping("/sftp/rm")
+    public R rm(@RequestBody Map<String, String> param) {
+        String uuid = param.get("uuid");
+        String path = param.get("path");
+        ValidateUtils.is(uuid).notNull(RCode.TERMINAL_UUID_ISNULL)
+                .and(path).notNull(RCode.TERMINAL_PATH_ISNULL);
+
+        terminalSessionService.rmOfSftp(uuid, path);
+        return R.ok();
+    }
+
+    @PutMapping("/sftp/upload")
+    public R upload(@RequestParam(value = "file") MultipartFile file,
+                    @RequestParam String uuid, @RequestParam String path) {
+
+        String tid = terminalSessionService.uploadOfSftp(uuid, path, file);
+        return R.ok().putData("tid", tid);
+    }
+
+
+    @GetMapping("/sftp/process/{tid}")
+    public R querySftpUploadProcess(@PathVariable("tid") String tid) {
+        return R.ok(
+                terminalSessionService.querySftpUploadProcess(tid)
+        );
+    }
+
+    @DeleteMapping("/sftp/cancel/{tid}")
+    public R cancelUpload(@PathVariable("tid") String tid) {
+        terminalSessionService.cancelUpload(tid);
+        return R.ok();
+    }
+
+    @PostMapping("/sftp/download")
+    public void download(@RequestBody Map<String, String> param, HttpServletResponse response) {
+        String uuid = param.get("uuid");
+        String path = param.get("path");
+        ValidateUtils.is(uuid).notNull(RCode.TERMINAL_UUID_ISNULL)
+                .and(path).notNull(RCode.TERMINAL_PATH_ISNULL);
+
+        terminalSessionService.downloadOfSftp(uuid, path, response);
+    }
+
+
+    @GetMapping("/sftp/log")
+    public R querySftpLog(@RequestParam Map<String, Object> params) {
+        PageUtils page = terminalSftpLogService.querySftpLogPage(params);
+        return R.ok(page);
+    }
+
 }

@@ -17,6 +17,7 @@ import com.nis.modules.sys.job.CleanJob;
 import com.nis.modules.sys.job.SessionTimeOutJob;
 import com.nis.modules.sys.job.SysComponentJob;
 
+import com.nis.modules.terminal.job.CleanNoRealUseTerminalConnJob;
 import org.apache.commons.lang.StringUtils;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,6 +85,9 @@ public class JobConfig {
 
     @Value("${nezha.recordtRuleManagerJobCron:0/10 * * * * ?}")
     private String recordtRuleManagerJobCron;
+
+    @Value("${nezha.cleanNoRealUseTerminalConnJobCron:0 0/5 * * * ? *}")
+    private String cleanNoRealUseTerminalConnJobCron;
     
 	@Autowired
     private Scheduler scheduler;
@@ -106,6 +110,7 @@ public class JobConfig {
     private String cortexHistoryDataDelJobName = "CORTEXHISTORYDATADEL_JOB";
     private String alertMessageHistoryPartManJobName = "ALERTMESSAGEHISTORYPARTMAN_JOB";
     private String recordtRuleManagerJobName = "RECORDTRULEMANAGER_JOB";
+    private String cleanNoRealUseTerminalConnJobName = "CLEANNOREALUSETERMINALCONN_JOB";
     
     @Bean
     public JobDetail agentCronJobDetail() {
@@ -186,6 +191,11 @@ public class JobConfig {
     public JobDetail recordtRuleManagerJobDetail() {
         return JobBuilder.newJob(RecordManagerJob.class).withIdentity(JOB_NAME + recordtRuleManagerJobName).storeDurably().build();
     }
+
+    @Bean
+    public JobDetail cleanNoRealUseTerminalConnJobDetail() {
+        return JobBuilder.newJob(CleanNoRealUseTerminalConnJob.class).withIdentity(JOB_NAME + cleanNoRealUseTerminalConnJobName).storeDurably().build();
+    }
     
     @PostConstruct
     public void init() throws SchedulerException {
@@ -237,6 +247,9 @@ public class JobConfig {
         
         // record rule 配置管理任务
         createCronScheduleJob(recordtRuleManagerJobName, recordtRuleManagerJobDetail(), StringUtils.isEmpty(recordtRuleManagerJobCron) ? "0/10 * * * * ?" : recordtRuleManagerJobCron);
+
+        // 清理没有真实使用的 terminal ssh/telnet 连接，以超过最后数据交互时间 30 分钟为准 （sys_config.session_timeout）
+        createCronScheduleJob(cleanNoRealUseTerminalConnJobName, cleanNoRealUseTerminalConnJobDetail(), StringUtils.isEmpty(cleanNoRealUseTerminalConnJobCron) ? "0 0/5 * * * ? *" : cleanNoRealUseTerminalConnJobCron);
     }
     
     /**

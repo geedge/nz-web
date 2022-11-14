@@ -1,5 +1,6 @@
-package com.nis.modules.terminal.config;
+package com.nis.modules.terminal.interceptor;
 
+import com.nis.modules.terminal.utils.TerminalConstant;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
@@ -10,8 +11,11 @@ import org.springframework.web.socket.server.support.HttpSessionHandshakeInterce
 import javax.servlet.http.HttpSession;
 import java.util.Map;
 
+/**
+ * HttpSessionHandshakeInterceptor
+ */
 @Component
-public class TerminalMonitorHandShaker extends HttpSessionHandshakeInterceptor {
+public class TerminalMonitorHandShakerInterceptor extends HttpSessionHandshakeInterceptor {
 
     @Override
     public synchronized boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
@@ -20,7 +24,7 @@ public class TerminalMonitorHandShaker extends HttpSessionHandshakeInterceptor {
             HttpSession session = servletRequest.getServletRequest().getSession();
             attributes.put("uuid", servletRequest.getServletRequest().getParameter("uuid"));
             attributes.put("terminalToken", servletRequest.getServletRequest().getParameter("token"));
-            attributes.put(Constants.PARAM_HTTP_SESSION_ID_KEY, session.getId());
+            attributes.put(TerminalConstant.PARAM_HTTP_SESSION_ID_KEY, session.getId());
         }
         return super.beforeHandshake(request, response, wsHandler, attributes);
     }

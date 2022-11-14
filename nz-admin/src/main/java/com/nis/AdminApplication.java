@@ -1,19 +1,14 @@
 
 package com.nis;
 
-import java.util.TimeZone;
-
+import cn.hutool.core.util.StrUtil;
+import com.nis.AdminApplication.SetupAutoConfiguration;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
-import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.EnvironmentAware;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ClassPathBeanDefinitionScanner;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
-import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.annotation.*;
 import org.springframework.core.env.Environment;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
@@ -21,10 +16,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
-import com.nis.AdminApplication.SetupAutoConfiguration;
-import com.nis.modules.terminal.config.TerminalHandler;
-
-import cn.hutool.core.util.StrUtil;
+import java.util.TimeZone;
 
 @EnableTransactionManagement
 @SpringBootApplication(scanBasePackages = { "com.nis.setup" })
@@ -35,8 +27,7 @@ public class AdminApplication {
 	public static void main(String[] args) {
 		// 默认为 UTC 时区
 		TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
-		ConfigurableApplicationContext run = SpringApplication.run(AdminApplication.class, args);
-		TerminalHandler.setApplicationContext(run);
+		SpringApplication.run(AdminApplication.class, args);
 	}
 
 	static class SetupAutoConfiguration implements ImportBeanDefinitionRegistrar, EnvironmentAware {

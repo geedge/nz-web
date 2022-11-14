@@ -1,11 +1,17 @@
 package com.nis.modules.sys.job;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.ToolUtil;
+import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.shiro.ShiroUtils;
+import com.nis.modules.terminal.backend.TerminalHandler;
+import com.nis.modules.terminal.backend.TerminalSession;
+import com.nis.modules.terminal.entity.TerminalSessionEntity;
+import com.nis.modules.terminal.service.TerminalSessionService;
+import com.nis.modules.terminal.utils.TerminalConstant;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -14,28 +20,16 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.web.socket.WebSocketSession;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.ToolUtil;
-import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.shiro.ShiroUtils;
-import com.nis.modules.terminal.config.Constants;
-import com.nis.modules.terminal.config.TerminalHandler;
-import com.nis.modules.terminal.config.TerminalSession;
-import com.nis.modules.terminal.entity.TerminalSessionEntity;
-import com.nis.modules.terminal.service.TerminalRecordService;
-import com.nis.modules.terminal.service.TerminalSessionService;
-
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @DisallowConcurrentExecution
 public class SessionTimeOutJob extends QuartzJobBean {
 	
 	private Log log = Log.get();
-	
-	@Autowired
-    private TerminalRecordService terminalRecordService;
 	
 	@Autowired
 	private TerminalSessionService terminalSessionService;
@@ -72,7 +66,7 @@ public class SessionTimeOutJob extends QuartzJobBean {
 			List<TerminalSessionEntity> userTerminals = userIdAndTerminal.get(userId);
 			for(TerminalSessionEntity userTerminal : userTerminals) {
 				userTerminal.setEndTime(new Date());
-				userTerminal.setStatus(Constants.SessionStatus.FORCE_QUIT.getValue());
+				userTerminal.setStatus(TerminalConstant.SessionStatus.FORCE_QUIT.getValue());
 				updateDatas.add(userTerminal);
 				WebSocketSession session = TerminalSession.findSession(userTerminal.getUuid());
 				try {
@@ -83,7 +77,7 @@ public class SessionTimeOutJob extends QuartzJobBean {
 		            log.error(String.format("terminal session kill failed,uuid = %s,错误信息 = %s", userTerminal.getUuid(), e.getMessage()), e);
 		        }
 				// kill 之后，将剩余文件写到数据库中
-		        TerminalHandler.handleRecodeAfterClientClose(userTerminal.getUuid(), terminalRecordService);
+				TerminalHandler.saveRecordContentAfterClientClosed(userTerminal.getUuid());
 			}
 		}
 		if(ToolUtil.isNotEmpty(updateDatas)) {

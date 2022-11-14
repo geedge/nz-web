@@ -19,39 +19,49 @@
  * under the License.
  */
 
-package com.nis.modules.terminal.config;
+package com.nis.modules.terminal.utils;
 
 import cn.hutool.log.Log;
 import com.jcraft.jsch.UserInfo;
 
 public class SshUserInfo implements UserInfo {
-    //private String passphrase = null;
-    private Log logger = Log.get();
+
+    private static final Log log = Log.get();
+
+    // private String passphrase = null;
+
     public SshUserInfo() {
         //this.passphrase = passphrase;
     }
 
+    @Override
     public String getPassphrase() {
-        return null;//passphrase;
+        //passphrase;
+        return null;
     }
 
+    @Override
     public String getPassword() {
         return null;
     }
 
+    @Override
     public boolean promptPassphrase(String s) {
         return true;
     }
 
+    @Override
     public boolean promptPassword(String s) {
         return true;
     }
 
+    @Override
     public boolean promptYesNo(String s) {
         return true;
     }
 
+    @Override
     public void showMessage(String s) {
-        logger.debug(s);
+        log.info(s);
     }
 }

@@ -802,6 +802,20 @@ public enum RCode {
     TERMINAL_ISNULL(611004, "Error,Terminal is null"),
     TERMINAL_TELNET_TRANSFER(610005,"Telnet does not allow upload and download"),
     TERMINAL_QUERYSIZE_INVALIDED(613006, "Terminal query size cannot be less than 1"),
+    TERMINAL_CONNECTION_HOST_ISNULL(611007, "Terminal connection host can not be null"),
+    TERMINAL_CONNECTION_PORT_ISNULL(611008, "Terminal connection port can not be null"),
+    TERMINAL_CONNECTION_AUTHPROTOCOL_INVALIDED(614009, "Terminal connection authProtocol is not in the range of enumeration"),
+    TERMINAL_CONNECTION_AUTHTYPE_INVALIDED(614010, "Terminal connection authType is not in the range of enumeration"),
+    TERMINAL_CONNECTION_AUTHUSERNAME_ISNULL(611011, "Terminal connection authUsername can not be null"),
+    TERMINAL_CONNECTION_AUTHPIN_ISNULL(611012, "Terminal connection authPin can not be null"),
+    TERMINAL_CONNECTION_AUTHPRIKEY_ISNULL(611013, "Terminal connection authPriKey can not be null"),
+    TERMINAL_ASSET_NOT_SUPPORT(618014, "The asset does not support remote terminal"),
+    TERMINAL_SESSION_NOT_FOUND(616015, "Terminal session not found, expired or does not exist, please login again."),
+    TERMINAL_CANNOT_DELETE_DIR(617016, "Do not delete directories"),
+    TERMINAL_UPLOAD_DIRECTORY_ERROR(617017, "The upload path can only be a directory"),
+    TERMINAL_DOWNLOAD_NO_SUCH_FILE(616018, "No such file"),
+    TERMINAL_DOWNLOAD_NOT_SUPPORTED_DIRECTORY(617019, "Not supported to get directory"),
+    TERMINAL_UPLOAD_PROGRESS_NOT_FOUND(616020, "Terminal upload progress information not found, expired or does not exist."),
 
     /**
      * LINK
