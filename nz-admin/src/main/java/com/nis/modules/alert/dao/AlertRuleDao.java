@@ -25,4 +25,7 @@ public interface AlertRuleDao extends BaseMapper<AlertRuleEntity> {
     // nz_alert_nums 指标 / 根据告警规则 id 统计激活状态的告警消息数量
     List<MetricsDto> nzAlertMumsMetric();
 
+    void delNotify(List<String> idList);
+
+    void delReceiver(List<String> idList);
 }

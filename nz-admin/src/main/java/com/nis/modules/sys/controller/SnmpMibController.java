@@ -13,6 +13,7 @@ import com.nis.modules.sys.service.SnmpMibService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.snmp4j.util.SimpleOIDTextFormat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -194,6 +195,12 @@ public class SnmpMibController extends AbstractController {
 
         if (!Constant.SNMPV2.equals(version) && !Constant.SNMPV3.equals(version)) {
             throw new NZException(RCode.SNMP_MIB_VERSION_INVALIDE);
+        }
+
+        try { // OID格式校验
+            SimpleOIDTextFormat.parseOID(oid);
+        } catch (Exception e) {
+            throw new NZException(RCode.ASSET_MODEL_OID_INCORRECT);
         }
 
         String value = (String) params.get("value");

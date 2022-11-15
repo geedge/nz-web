@@ -109,7 +109,7 @@ public class AssetBrandModelController {
     }
 
     @PutMapping("/asset/model")
-    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.MODEL)
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.MODEL)
     @RequiresPermissions({"asset:model:update"})
     public R editAssetModel(@RequestBody AssetModel model) {
         ValidateUtils.is(model.getId()).notNull(RCode.ASSET_MODELID_ISNULL)

@@ -18,6 +18,11 @@ public class VsysConstant {
     public static final String VSYS_DEFAULT_TEMPLATE_NAME = "tsg_traffic_engine_default";
 
     /**
+     * vsys default rule config
+     */
+    public static final String SYSCONFIG_KEY_VSYS_DEFAULT_RULECONFIG = "vsys_default_rule_config";
+
+    /**
      * 默认端口
      */
     public static final String VSYS_TSG_OS_DEFAULT_PORT = "8447";
@@ -41,6 +46,44 @@ public class VsysConstant {
      * VSYS_ASSET_REL del_flag NOT DELETE
      */
     public static final Integer REL_NOT_DEL = 0;
+
+
+    /**
+     * vsys task type
+     */
+    public enum TaskType {
+
+        /**
+         * 添加
+         */
+        ADD(1),
+
+        /**
+         * 修改
+         */
+        UPDATE(2),
+
+        /**
+         * 删除
+         */
+        DELETE(3);
+
+        private Integer value;
+
+        TaskType(Integer value) {
+            this.value = value;
+        }
+
+        public Integer getValue() {
+            return value;
+        }
+
+        public static TaskType getType(Integer value) {
+            for (TaskType v : values())
+                if (v.getValue().equals(value)) return v;
+            throw new IllegalArgumentException();
+        }
+    }
 
     /**
      * vsys result enum

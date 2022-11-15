@@ -58,6 +58,30 @@ public class VsysResultServiceImpl extends ServiceImpl<VsysResultDao, VsysResult
             long successNum = list.stream().filter(result -> VsysConstant.ResultState.SUCCESS.getValue() == result.getState()).count();
             long failedNum = list.stream().filter(result -> VsysConstant.ResultState.FAILURE.getValue() == result.getState()).count();
 
+            long successAdd = list.stream().filter(result -> Tool.BooleanUtil.and(
+                    Tool.ObjectUtil.equal(VsysConstant.ResultState.SUCCESS.getValue(), result.getState()),
+                    Tool.ObjectUtil.equal(VsysConstant.TaskType.ADD.getValue(), result.getType()))).count();
+
+            long successDelete = list.stream().filter(result -> Tool.BooleanUtil.and(
+                    Tool.ObjectUtil.equal(VsysConstant.ResultState.SUCCESS.getValue(), result.getState()),
+                    Tool.ObjectUtil.equal(VsysConstant.TaskType.DELETE.getValue(), result.getType()))).count();
+
+            long successUpdate = list.stream().filter(result -> Tool.BooleanUtil.and(
+                    Tool.ObjectUtil.equal(VsysConstant.ResultState.SUCCESS.getValue(), result.getState()),
+                    Tool.ObjectUtil.equal(VsysConstant.TaskType.UPDATE.getValue(), result.getType()))).count();
+
+            long failedAdd = list.stream().filter(result -> Tool.BooleanUtil.and(
+                    Tool.ObjectUtil.equal(VsysConstant.ResultState.FAILURE.getValue(), result.getState()),
+                    Tool.ObjectUtil.equal(VsysConstant.TaskType.ADD.getValue(), result.getType()))).count();
+
+            long failedDelete = list.stream().filter(result -> Tool.BooleanUtil.and(
+                    Tool.ObjectUtil.equal(VsysConstant.ResultState.FAILURE.getValue(), result.getState()),
+                    Tool.ObjectUtil.equal(VsysConstant.TaskType.DELETE.getValue(), result.getType()))).count();
+
+            long failedUpdate = list.stream().filter(result -> Tool.BooleanUtil.and(
+                    Tool.ObjectUtil.equal(VsysConstant.ResultState.FAILURE.getValue(), result.getState()),
+                    Tool.ObjectUtil.equal(VsysConstant.TaskType.UPDATE.getValue(), result.getType()))).count();
+
             // 进度
             String percent = NumberUtil.formatPercent((double) (successNum + failedNum) / ttotal, 2);
 
@@ -67,19 +91,18 @@ public class VsysResultServiceImpl extends ServiceImpl<VsysResultDao, VsysResult
                     .put("progress", percent.replace("%", ""))
                     .put("success", successNum)
                     .put("failed", failedNum)
+                    .put("successAdd", successAdd)
+                    .put("successDelete", successDelete)
+                    .put("successUpdate", successUpdate)
+                    .put("failedAdd", failedAdd)
+                    .put("failedDelete", failedDelete)
+                    .put("failedUpdate", failedUpdate)
                     .build();
             vsysDetail.add(m);
         }
         // total = 0
         taskList.stream().filter(task -> task.getTotal() == 0).forEach(task -> {
-            Map<Object, Object> m = Tool.MapUtil.builder()
-                    .put("vsysId", task.getVsysId())
-                    .put("type", task.getType())
-                    .put("progress", 100)
-                    .put("success", 0)
-                    .put("failed", 0)
-                    .build();
-            vsysDetail.add(m);
+            vsysDetail.add(this.buildEmptyStatTaskDetailInfo(task));
         });
 
         Map<Object, Object> proMap = Tool.MapUtil.builder()
@@ -89,6 +112,30 @@ public class VsysResultServiceImpl extends ServiceImpl<VsysResultDao, VsysResult
                 .put("vsysDetail", vsysDetail)
                 .build();
         return proMap;
+    }
+
+    /**
+     * build Empty Stat Task Detail Info
+     * task.total == 0
+     *
+     * @param task
+     * @return
+     */
+    private Map<Object, Object> buildEmptyStatTaskDetailInfo(VsysTask task) {
+        Map<Object, Object> m = Tool.MapUtil.builder()
+                .put("vsysId", task.getVsysId())
+                .put("type", task.getType())
+                .put("progress", 100)
+                .put("success", 0)
+                .put("failed", 0)
+                .put("successAdd", 0)
+                .put("successDelete", 0)
+                .put("successUpdate", 0)
+                .put("failedAdd", 0)
+                .put("failedDelete", 0)
+                .put("failedUpdate", 0)
+                .build();
+        return m;
     }
 
 }

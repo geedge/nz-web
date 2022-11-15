@@ -242,6 +242,13 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
         this.validateAssetModelInfo(model);
 
         AssetModel oldModel = this.getById(model.getId());
+        //被引用的model 不允许修改type
+        if(!ToolUtil.equals(oldModel.getTypeId(), model.getTypeId())){
+            int assetCount = assetAssetService.count(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getModelId, oldModel.getId()));
+            if(assetCount > 0){
+                throw new NZException(RCode.ASSET_MODEL_CONTAINS_CAN_NOT_CHANGE);
+            }
+        }
 
         // 保存
         this.updateById(model);
@@ -541,6 +548,14 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
             // update
             model.setId(oldModel.getId());
             this.updateById(model);
+
+            // 是否同步更新关联的 dashboard，可选值： 0：不同步  1：同步  默认值：1
+            String syncDashboard = Tool.ObjectUtil.defaultIfEmpty((String) params.get("syncDashboard"), "1");
+            if (StrUtil.equals("1", syncDashboard)) {
+                Map<String, Object> syncChartParamMap = Tool.MapUtil.newHashMap();
+                syncChartParamMap.put("models", ListUtil.of(model.getId()));
+                visualChartService.syncTmpl(syncChartParamMap);
+            }
         } else {
             params.put("save", true);
             // insert

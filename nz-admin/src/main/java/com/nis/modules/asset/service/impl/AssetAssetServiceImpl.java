@@ -499,35 +499,31 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     }
 
     private void validateAssetInfo(AssetAsset asset) {
-        List<AssetAsset> list = this.list();
         Integer assetId = asset.getId();
+        boolean isEdit = ToolUtil.isNotEmpty(assetId);
         // name 唯一
-        Map<String, Integer> map = list.stream().collect(Collectors.toMap(AssetAsset::getName, AssetAsset::getId));
-        Integer id = map.get(asset.getName());
-        if (id != null && !id.equals(assetId)) {
+        AssetAsset oldAsset = this.getOne(new LambdaQueryWrapper<AssetAsset>().select(AssetAsset::getId).eq(AssetAsset::getName, asset.getName()).ne(isEdit, AssetAsset::getId, assetId).last("limit 1"));
+        if (ToolUtil.isNotEmpty(oldAsset)) {
             throw new NZException(RCode.ASSET_NAME_DUPLICATE);
         }
 
         // number 唯一 不重复，可以为空串
         if (StringUtils.isNotEmpty(asset.getNumber())) {
-            map = list.stream().filter(pojo -> StringUtils.isNotEmpty(pojo.getNumber())).collect(Collectors.toMap(AssetAsset::getNumber, AssetAsset::getId));
-            id = map.get(asset.getNumber());
-            if (id != null && !id.equals(assetId)) {
+            oldAsset = this.getOne(new LambdaQueryWrapper<AssetAsset>().select(AssetAsset::getId).eq(AssetAsset::getNumber, asset.getNumber()).ne(isEdit, AssetAsset::getId, assetId).last("limit 1"));
+            if (ToolUtil.isNotEmpty(oldAsset)) {
                 throw new NZException(RCode.ASSET_NUMBER_DUPLICATE);
             }
         }
 
         // sn 唯一
-        map = list.stream().collect(Collectors.toMap(AssetAsset::getSn, AssetAsset::getId));
-        id = map.get(asset.getSn());
-        if (id != null && !id.equals(assetId)) {
+        oldAsset = this.getOne(new LambdaQueryWrapper<AssetAsset>().select(AssetAsset::getId).eq(AssetAsset::getSn, asset.getSn()).ne(isEdit, AssetAsset::getId, assetId).last("limit 1"));
+        if (ToolUtil.isNotEmpty(oldAsset)) {
             throw new NZException(RCode.ASSET_SN_DUPLICATE);
         }
 
         // manageIp 唯一
-        map = list.stream().collect(Collectors.toMap(AssetAsset::getManageIp, AssetAsset::getId));
-        id = map.get(asset.getManageIp());
-        if (id != null && !id.equals(assetId)) {
+        oldAsset = this.getOne(new LambdaQueryWrapper<AssetAsset>().select(AssetAsset::getId).eq(AssetAsset::getManageIp, asset.getManageIp()).ne(isEdit, AssetAsset::getId, assetId).last("limit 1"));
+        if (ToolUtil.isNotEmpty(oldAsset)) {
             throw new NZException(RCode.ASSET_MANAGEIP_DUPLICATE);
         }
 
@@ -1818,9 +1814,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // 处理 excel 数据，将含宿主机资产排到前面
         List<Map<Integer, String>> handleImportData = this.handleImportData(importDataList);
         for (int i = 0; i < handleImportData.size(); i++) {
-            Integer lineNum = i + 1;
             Map saveEntitys = Tool.MapUtil.newHashMap();
             Map<Integer, String> dataMap = handleImportData.get(i);
+            Integer lineNum = Integer.parseInt(dataMap.get(999)) + 1;
             // name， 以 name作为索引 标识该条记录是否存在
             String assetName = dataMap.get(AssetImportEnum.NAME.getIndex());
             validateUtil.validateRequired(assetName, lineNum, AssetImportEnum.NAME.getIndex());
@@ -2022,7 +2018,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             if (BooleanUtil.and(Tool.StrUtil.equals("0", ignoreError), Tool.CollUtil.isNotEmpty(errMsgForThisLine))) {
                 // 结束本次导入，自导入行开始 到结尾数据行，提示错误信息
                 for (int j = i; j < handleImportData.size(); j++) {
-                    validateUtil.recordImportAttrErr(j + 1, RCode.IMPORT_ERROR_STOP);
+                    validateUtil.recordImportAttrErr(Integer.parseInt(handleImportData.get(j).get(999)) + 1, RCode.IMPORT_ERROR_STOP);
                     failContentList.add(handleImportData.get(j));
                 }
                 break;
@@ -2336,15 +2332,18 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     }
 
     private List<Map<Integer, String>> handleImportData(List<Map<Integer, String>> importDataList) {
-        List<Map<Integer, String>> list = importDataList.stream().filter(dataMap -> {
-            String parentName = dataMap.get(2);
-            if (StringUtils.isEmpty(parentName)) {
-                return true;
+        List<Map<Integer, String>> list = new ArrayList<>();
+        List<Map<Integer, String>> childList = new ArrayList<>();
+        for (int i = 0; i < importDataList.size(); i++) {
+            Map<Integer, String> dataMap = importDataList.get(i);
+            dataMap.put(999, i + "");// 实际数据行数
+            if (StringUtils.isEmpty(dataMap.get(2))) {
+                list.add(dataMap);
+            } else {
+                childList.add(dataMap);
             }
-            return false;
-        }).collect(Collectors.toList());
-        importDataList.removeAll(list);
-        list.addAll(importDataList);
+        }
+        list.addAll(childList);
         return list;
     }
 

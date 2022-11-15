@@ -325,21 +325,19 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
             // 校验ip以及掩码值之前是否有创建或者包含
 			IpamSubnet one = this.getOne(new LambdaQueryWrapper<IpamSubnet>().eq(IpamSubnet::getMask, mask).eq(IpamSubnet::getAddr, addr));
 			if (one != null){
-				if (StrUtil.equals("0" , existed)){
+				//索引列重复 & 其他属性重复
+				if (!StrUtil.equals(name, one.getName())){
 					validateUtil.recordImportAttrErr(lineNum,RCode.IMPORT_FIELDS_DUPLICATE.setParam(IpamSubnetEum.MASK.getIndex(),IpamSubnetEum.ADDR.getIndex()));
-				}else if (StrUtil.equals("1" , existed)){
-					//索引列重复 & 其他属性重复
-					if (!StrUtil.equals(name, one.getName())){
-						validateUtil.recordImportAttrErr(lineNum,RCode.IMPORT_FIELDS_DUPLICATE.setParam(IpamSubnetEum.MASK.getIndex(),IpamSubnetEum.ADDR.getIndex()));
-					}
 				}
 			}
 
             //dc相关校验
-            String dcName = dataMap.get(IpamSubnetEum.DC.getIndex());
-			validateUtil.validateRequired(dcName, lineNum, IpamSubnetEum.DC.getIndex());
-			validateUtil.validateRelObjExits("dc", "name", dcName, false, lineNum ,IpamSubnetEum.DC.getIndex());
-
+            String dcId = dataMap.get(IpamSubnetEum.DC.getIndex());
+			validateUtil.validateRequired(dcId, lineNum, IpamSubnetEum.DC.getIndex());
+			Dc dc = dcService.getById(dcId);
+			if (ObjectUtil.isEmpty(dc)){
+				validateUtil.recordImportAttrErr(lineNum, RCode.IPAM_SUBNET_DC_ISNULL);
+			}
 			// 遇到错误是否继续导入，可选值： 0：不继续    1：继续    默认值：1
 			String ignoreError = Tool.ObjectUtil.defaultIfEmpty((String) params.get("ignoreError"), "1");
 			List<Map<String, String>> errMsgForThisLine = validateUtil.getImportErrMsgForThisLine(lineNum);
@@ -352,7 +350,6 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 				break;
 			}
 			if (Tool.CollUtil.isEmpty(errMsgForThisLine)) {
-				Dc dc = dcService.getOne(new LambdaQueryWrapper<Dc>().eq(Dc::getName, dcName));
 				String vlan = dataMap.get(IpamSubnetEum.VLAN.getIndex());
 				String remark = dataMap.get(IpamSubnetEum.REMARK.getIndex());
 
@@ -454,13 +451,11 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 			tempList.add(ipamSubnet.getAddr());
 			tempList.add(ipamSubnet.getMask().toString());
 			tempList.add(ipamSubnet.getVlan());
-			tempList.add(ipamSubnet.getDc().getName());
+			tempList.add(ipamSubnet.getDc().getId().toString());
 			tempList.add(ipamSubnet.getRemark());
-			tempList.add(ipamSubnet.getCap().toString());
-			tempList.add(ipamSubnet.getUsed().toString());
 			exportDataList.add(tempList);
 		}
-		String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_IPAMSUBNET_EXPORT_HEADER);
+		String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_IPAMSUBNET_IMPORT_HEADER);
         String fileName = "Ipamsubnets";
         String formatStr = params.get("format").toString();
         basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, formatStr, fileName);

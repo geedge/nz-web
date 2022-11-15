@@ -14,6 +14,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.JSONUtil;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
 import com.nis.modules.asset.entity.AssetAsset;
@@ -39,6 +40,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -83,7 +85,7 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
         List<VsysTask> vsysInfos = task.getVsysInfos();
 
         ValidateUtils.is(vsysInfos).notNull(RCode.VSYS_TASK_ISNULL);
-        List<Integer> typeEnumValueList = Tool.ListUtil.of(1, 2, 3);
+        List<Integer> typeEnumValueList = Arrays.asList(VsysConstant.TaskType.values()).stream().map(VsysConstant.TaskType::getValue).collect(Collectors.toList());
 
         for (VsysTask vsysInfo : vsysInfos) {
             Integer type = vsysInfo.getType();
@@ -108,7 +110,10 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
             }
 
             // 添加|修改 时校验必填项
-            if (type == 1 || type == 2) {
+            if (Tool.BooleanUtil.or(
+                    ObjectUtil.equal(type, VsysConstant.TaskType.ADD.getValue()),
+                    ObjectUtil.equal(type, VsysConstant.TaskType.UPDATE.getValue())
+            )) {
                 // osQuotas not null
                 Map osQuotas = vsysInfo.getOsQuotas();
                 ValidateUtils.is(osQuotas).notNull(RCode.VSYS_TASK_PARAM_OSQUOTAS_ISNULL);
@@ -266,28 +271,28 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
      * @param vsysAssetIdList
      */
     private void recordUnExecStateLog(VsysTask task, List<Integer> vsysAssetIdList) {
-        if (Tool.CollUtil.isEmpty(vsysAssetIdList)) return;
+        // if (Tool.CollUtil.isEmpty(vsysAssetIdList)) return;
 
         List<VsysResult> resultList = Tool.ListUtil.list(true);
 
-        Integer type = task.getType();
-        switch (type) {
+        VsysConstant.TaskType taskType = VsysConstant.TaskType.getType(task.getType());
+        switch (taskType) {
             // add & delete
-            case 1:
-            case 3: {
+            case ADD:
+            case DELETE: {
                 List<VsysResult> resultLogList = this.getUnExecStateLog(task, vsysAssetIdList, task.getType());
                 resultList.addAll(resultLogList);
                 break;
             }
             // update
-            case 2: {
+            case UPDATE: {
                 // update include delete
                 List<VsysAssetRel> currentAssetRelOfVsys = vsysAssetRelService.list(new LambdaQueryWrapper<VsysAssetRel>().eq(VsysAssetRel::getVsysId, task.getVsysId()));
                 List<Integer> currentrelAssetIdsOfVsys = currentAssetRelOfVsys.stream().map(VsysAssetRel::getAssetId).distinct().collect(Collectors.toList());
 
                 // 之前下发过 VSYS，这次下发不更新了，做 删除 操作
                 currentrelAssetIdsOfVsys.removeAll(vsysAssetIdList);
-                List<VsysResult> delResultLogList = this.getUnExecStateLog(task, currentrelAssetIdsOfVsys, 3);
+                List<VsysResult> delResultLogList = this.getUnExecStateLog(task, currentrelAssetIdsOfVsys, VsysConstant.TaskType.DELETE.getValue());
                 resultList.addAll(delResultLogList);
 
                 // update or add
@@ -295,16 +300,13 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
                 resultList.addAll(updateResultLogList);
 
                 // 更新 vsys task total&assetIds = del + update
-                if (ObjectUtil.notEqual(task.getTotal(), resultList.size())) {
-                    List<Integer> realConfAssetIdList = resultList.stream().map(VsysResult::getAssetId).distinct().collect(Collectors.toList());
-                    String assetIds = StrUtil.join(StrUtil.COMMA, realConfAssetIdList);
+                List<Integer> realConfAssetIdList = resultList.stream().map(VsysResult::getAssetId).distinct().collect(Collectors.toList());
+                String assetIds = StrUtil.join(StrUtil.COMMA, realConfAssetIdList);
 
-                    LambdaUpdateWrapper<VsysTask> updateWrapper = new LambdaUpdateWrapper<VsysTask>()
-                            .eq(VsysTask::getId, task.getId())
-                            .set(VsysTask::getTotal, resultList.size())
-                            .set(VsysTask::getAssetIds, assetIds);
-                    this.update(updateWrapper);
-                }
+                task.setTotal(resultList.size());
+                task.setAssetIds(assetIds);
+                task.setProgress(Tool.CollUtil.isEmpty(resultList) ? 100d : 0d);
+                this.updateById(task);
                 break;
             }
             default:
@@ -389,23 +391,23 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
                             //.or().eq(VsysResult::getState, VsysConstant.ResultState.FAILURE.getValue())));
 
             // vsys task detail operation type
-            Integer type = result.getType();
+            VsysConstant.TaskType taskType = VsysConstant.TaskType.getType(result.getType());
 
             Integer state = result.getState();
             if (StrUtil.equalsAny(state.toString(), VsysConstant.ResultState.SUCCESS.getValue().toString(), VsysConstant.ResultState.FAILURE.getValue().toString())) {
-                log.info("vsys task finished, ExecNum:{}, taskId:{}, type:{}, assetId:{}, ManageIp:{}", i, vsysTask.getId(), type, asset.getId(), manageIp);
+                log.info("vsys task finished, ExecNum:{}, taskId:{}, type:{}, assetId:{}, ManageIp:{}", i, vsysTask.getId(), taskType.toString(), asset.getId(), manageIp);
                 break;
             }
             // 没有产生 SUCCESS|FAILURE 结果， 就重复执行
-            log.info("vsys task no successful or failure records, ExecNum:{}, taskId:{}, type:{}, assetId:{}, ManageIp:{}", currentExecNum, vsysTask.getId(), type, asset.getId(), manageIp);
+            log.info("vsys task no successful or failure records, ExecNum:{}, taskId:{}, type:{}, assetId:{}, ManageIp:{}", currentExecNum, vsysTask.getId(), taskType.toString(), asset.getId(), manageIp);
 
             VsysResult res = new VsysResult();
             res.setTs(System.currentTimeMillis());
             res.setNum(currentExecNum);
-            switch (type) {
+            switch (taskType) {
                 // add & update
-                case 1:
-                case 2: {
+                case ADD:
+                case UPDATE: {
                     this.deleteChain(vsysTask, manageIp);
                     this.deleteRuleSet(vsysTask, manageIp);
                     this.deleteServiceFunction(vsysTask, manageIp);
@@ -446,7 +448,7 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
                     break;
                 }
                 // delete
-                case 3: {
+                case DELETE: {
                     Map<Object, Object> chainResult = this.deleteChain(vsysTask, manageIp);
                     Map<Object, Object> ruleSetResult = this.deleteRuleSet(vsysTask, manageIp);
                     Map<Object, Object> sfResult = this.deleteServiceFunction(vsysTask, manageIp);
@@ -656,9 +658,13 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
                 .put("name", ruleSetName)
                 .build();
 
-        if (Tool.CollUtil.isNotEmpty(ruleConfigListMap)) {
-            ruleSetMap.put("rule", ruleConfigListMap);
+        if (Tool.CollUtil.isEmpty(ruleConfigListMap)) {
+            // rule set config is empty, use default system config
+            List<Map> defaultSystemRuleConfig = this.getDefaultSystemRuleConfig();
+            log.info("vsys does not configure rule, use default system config, task: {}, default config: {}", JSONUtil.toJsonStr(vsysTask), JSONUtil.toJsonStr(defaultSystemRuleConfig));
+            ruleConfigListMap.addAll(defaultSystemRuleConfig);
         }
+        ruleSetMap.put("rule", ruleConfigListMap);
 
         Map<Object, Object> ruleSetBody = Tool.MapUtil.builder()
                 .put("tsg-os-mgnt-srv:ruleset", ruleSetMap)
@@ -668,6 +674,20 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
         String path = "/restconf/data";
         Map<Object, Object> resultMp = VsysConfigUtil.requestPost(manageIp, path, ruleSetBody);
         return resultMp;
+    }
+
+    /**
+     * get Default System Rule Config
+     *
+     * @return
+     */
+    private List<Map> getDefaultSystemRuleConfig() {
+        // default config rule
+        String ruleConfJsonsStr = sysConfService.getValue(VsysConstant.SYSCONFIG_KEY_VSYS_DEFAULT_RULECONFIG);
+        List<Map> mapList = JSONObject.parseArray(ruleConfJsonsStr, Map.class);
+
+        mapList = Tool.CollUtil.defaultIfEmpty(mapList, Tool.ListUtil.empty());
+        return mapList;
     }
 
     /**

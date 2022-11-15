@@ -6,7 +6,7 @@ public enum IpamSubnetEum {
     ADDR("addr", 2),
     MASK("mask", 3),
     VLAN("vlan", 4),
-    DC("dc name", 5),
+    DC("dc id", 5),
     REMARK("remark", 6);
 
     private String name;

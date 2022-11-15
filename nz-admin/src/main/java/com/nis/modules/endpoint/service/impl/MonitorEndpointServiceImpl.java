@@ -514,44 +514,42 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 logConfigMap.put("pipeline",newpipelineList);
             }
             // Metric relabel
-            if(StrUtil.isNotBlank(logConfigMap.get("relabel_config").toString())){
-                List<Map> relabelConfig = JSONObject.parseArray(logConfigMap.get("relabel_config").toString(), Map.class);
-                List<Map> newRelabelConfig = new ArrayList<>();
-                for (Map abelConfig: relabelConfig) {
-                    String action = String.valueOf(abelConfig.get("action"));
-                    if(StrUtil.isNotBlank(action)){
-                        Map oldAbelConfigMap = null;
-                        if(StrUtil.isNotBlank(String.valueOf(oldLogConfigMap.get("relabel_config")))){
-                            List<Map> relabelConfigMapList = JSONObject.parseArray(String.valueOf(oldLogConfigMap.get("relabel_config").toString()), Map.class);
-                            oldAbelConfigMap = relabelConfigMapList.stream().filter(oldAbelConfig -> {
-                                return StrUtil.equals(action, String.valueOf(oldAbelConfig.get("action")));
-                            }).findFirst().orElse(null);
-                        }
-                        if(StrUtil.equals("replace",action) || StrUtil.equals("keep",action) || StrUtil.equals("drop",action)){
-                            displaceVal(abelConfig,oldAbelConfigMap,"source_labels");
-                        }
-                        if(StrUtil.equals("replace",action)){
-                            displaceVal(abelConfig,oldAbelConfigMap,"target_label");
-                        }
-                        displaceVal(abelConfig,oldAbelConfigMap,"regex");
-                        if(StrUtil.equals("replace",action) || StrUtil.equals("labelmap",action)){
-                            displaceVal(abelConfig,oldAbelConfigMap,"replacement");
-                        }
-                        newRelabelConfig.add(abelConfig);
+            List<Map> relabelConfig = JSONObject.parseArray(ToolUtil.toStr(logConfigMap.get("relabel_config"), "[]"), Map.class);
+            List<Map> newRelabelConfig = new ArrayList<>();
+            for (Map abelConfig: relabelConfig) {
+                String action = String.valueOf(abelConfig.get("action"));
+                if(StrUtil.isNotBlank(action)){
+                    Map oldAbelConfigMap = null;
+                    if(StrUtil.isNotBlank(ToolUtil.toStr(oldLogConfigMap.get("relabel_config"), "[]"))){
+                        List<Map> relabelConfigMapList = JSONObject.parseArray(ToolUtil.toStr(oldLogConfigMap.get("relabel_config"), "[]"), Map.class);
+                        oldAbelConfigMap = relabelConfigMapList.stream().filter(oldAbelConfig -> {
+                            return StrUtil.equals(action, String.valueOf(oldAbelConfig.get("action")));
+                        }).findFirst().orElse(null);
                     }
+                    if(StrUtil.equals("replace",action) || StrUtil.equals("keep",action) || StrUtil.equals("drop",action)){
+                        displaceVal(abelConfig,oldAbelConfigMap,"source_labels");
+                    }
+                    if(StrUtil.equals("replace",action)){
+                        displaceVal(abelConfig,oldAbelConfigMap,"target_label");
+                    }
+                    displaceVal(abelConfig,oldAbelConfigMap,"regex");
+                    if(StrUtil.equals("replace",action) || StrUtil.equals("labelmap",action)){
+                        displaceVal(abelConfig,oldAbelConfigMap,"replacement");
+                    }
+                    newRelabelConfig.add(abelConfig);
                 }
-                logConfigMap.put("relabel_config",newRelabelConfig);
             }
+            logConfigMap.put("relabel_config",newRelabelConfig);
             // Authentication
-            if (StrUtil.isNotBlank(logConfigMap.get("basic_auth").toString())) {
-                Map basicAuth = JSONObject.parseObject(logConfigMap.get("basic_auth").toString(), Map.class);
-                Map oldBasicAuth = JSONObject.parseObject(oldLogConfigMap.get("basic_auth").toString(), Map.class);
+            if (StrUtil.isNotBlank(ToolUtil.toStr(logConfigMap.get("basic_auth")))) {
+                Map basicAuth = JSONObject.parseObject(ToolUtil.toStr(logConfigMap.get("basic_auth")), Map.class);
+                Map oldBasicAuth = JSONObject.parseObject(ToolUtil.toStr(oldLogConfigMap.get("basic_auth")), Map.class);
                 displaceVal(basicAuth, oldBasicAuth, "username");
                 displaceVal(basicAuth, oldBasicAuth, "password");
                 logConfigMap.put("basic_auth", basicAuth);
             }
-            if (correctVal(logConfigMap.get("bearer_token").toString())) {
-                logConfigMap.put("bearer_token", oldLogConfigMap.get("bearer_token").toString());
+            if (correctVal(ToolUtil.toStr(logConfigMap.get("bearer_token")))) {
+                logConfigMap.put("bearer_token", ToolUtil.toStr(oldLogConfigMap.get("bearer_token")));
             }
         }
         return logConfigMapList;
@@ -1176,7 +1174,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 if (Tool.CollUtil.isNotEmpty(logsConfigMap) && ToolUtil.isNotEmpty(logsConfigMap.get("config"))) {
                     List<Map> configMaps = (List<Map>) logsConfigMap.get("config");
                     for (Map configMap : configMaps) {
-                        String type = configMap.get("type").toString();
+                        String type = ToolUtil.toStr(configMap.get("type"));
                         if (StrUtil.equals("file", type)) {
                             validateUtil.validateRequired(configMap.get("fileName"), lineNum, MonitorEndpointImportEnum.CONFIGURATIONS.getIndex());
                         } else if (StrUtil.equals("journal", type)) {
@@ -1186,7 +1184,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                             validateUtil.validateRequired(configMap.get("listenAddress"), lineNum, MonitorEndpointImportEnum.CONFIGURATIONS.getIndex());
                         } else if (StrUtil.equals("kubernetes", type)) {
                             List<String> roleList = ListUtil.of("endpoints", "service", "pod", "node", "ingress");
-                            validateUtil.validateEnumValArr(configMap.get("role").toString(), roleList, lineNum, MonitorEndpointImportEnum.CONFIGURATIONS.getIndex());
+                            validateUtil.validateEnumValArr(ToolUtil.toStr(configMap.get("role")), roleList, lineNum, MonitorEndpointImportEnum.CONFIGURATIONS.getIndex());
                         } else {
                             validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_ENUM_VALUE_ERROR.setParam(MonitorEndpointImportEnum.CONFIGURATIONS.getIndex()));
                         }
@@ -1392,13 +1390,13 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             }
 
             Map metricsConfigMap = configMapList.stream().filter(map -> {
-                String configType = (String) map.get("type");
+                String configType = ToolUtil.toStr(map.get("type"));
                 return StrUtil.equals("metrics", configType);
             }).findFirst().orElse(null);
             validateEndpointMetrics(metricsConfigMap);
 
             Map logsConfigMap = configMapList.stream().filter(map -> {
-                String configType = (String) map.get("type");
+                String configType = ToolUtil.toStr(map.get("type"));
                 return StrUtil.equals(Constant.MonitorConfType.LOGS.getValue(), configType);
             }).findFirst().orElse(null);
             validateEndpointLogs(logsConfigMap);
@@ -1411,7 +1409,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 List<Map> configMaps = JSONArray.parseArray(String.valueOf(logsConfigMap.get("config")), Map.class);
                 for (Map configMap : configMaps) {
                     // Basic
-                    String type = configMap.get("type").toString();
+                    String type = ToolUtil.toStr(configMap.get("type"));
                     if (StrUtil.equals("file", type)) {
                         ValidateUtils.is(configMap.get("fileName")).notNull(RCode.MODULE_CONFIG_FILENAME_ISNULL);
                     } else if (StrUtil.equals("journal", type)) {
@@ -1421,7 +1419,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                                 .and(configMap.get("listenAddress")).notNull(RCode.MODULE_CONFIG_SYSLOG_ADDRESS_ISNULL);
                     } else if (StrUtil.equals("kubernetes", type)) {
                         List<String> roleList = ListUtil.of("endpoints", "service", "pod", "node", "ingress");
-                        if (!roleList.contains(configMap.get("role").toString())) {
+                        if (!roleList.contains(ToolUtil.toStr(configMap.get("role")))) {
                             throw new NZException(RCode.MODULE_CONFIG_KUBERNETES_ROLE_INVALID);
                         }
                     }

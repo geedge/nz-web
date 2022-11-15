@@ -4,6 +4,7 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -12,8 +13,17 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
+import com.nis.modules.alert.dao.AlertRuleDao;
+import com.nis.modules.alert.entity.AlertRuleEntity;
+import com.nis.modules.alert.service.AlertRuleService;
+import com.nis.modules.asset.entity.Dc;
+import com.nis.modules.asset.service.DcService;
+import com.nis.modules.panel.dao.VisualPanelDao;
+import com.nis.modules.panel.entity.VisualPanel;
+import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.sys.dao.SysRoleDao;
 import com.nis.modules.sys.dao.SysUserDao;
+import com.nis.modules.sys.entity.SysApiKey;
 import com.nis.modules.sys.entity.SysRoleEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.entity.SysUserRoleEntity;
@@ -69,6 +79,21 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 
 	@Autowired
 	private SysApiKeyService sysApiKeyService;
+
+	@Autowired
+	private AlertRuleDao alertRuleDao;
+
+	@Autowired
+	private VisualPanelDao visualPanelDao;
+
+	@Autowired
+	private VisualPanelService visualPanelService;
+
+	@Autowired
+	private DcService dcService;
+
+	@Autowired
+	private AlertRuleService alertRuleService;
 
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
@@ -311,11 +336,34 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 			throw new NZException(RCode.SYS_USER_CANNOTDEL);
 		}
 
+		List<String> idList = Arrays.asList(split);
 		// 删除 user
-		this.removeByIds(Arrays.asList(split));
+		this.removeByIds(idList);
 
 		// 删除 关联 role 关系
-		sysUserRoleService.remove(new LambdaQueryWrapper<SysUserRoleEntity>().in(SysUserRoleEntity::getUserId, Arrays.asList(split)));
+		sysUserRoleService.remove(new LambdaQueryWrapper<SysUserRoleEntity>().in(SysUserRoleEntity::getUserId, idList));
+		// 删除 alert_rule 引用
+		alertRuleDao.delReceiver(idList);
+		// 若告警规则通知人为空，则关闭主动通知
+		alertRuleService.update(new LambdaUpdateWrapper<AlertRuleEntity>().eq(AlertRuleEntity::getReceiver, "")
+				.set(AlertRuleEntity::getNotifyActive, 0).set(AlertRuleEntity::getNotifyExpired, 0));
+		// 删除 dc 引用
+		dcService.update(new LambdaUpdateWrapper<Dc>().in(Dc::getPrincipal, idList).set(Dc::getPrincipal, null));
+		// 删除相关 sys_api_key
+		sysApiKeyService.remove(new LambdaUpdateWrapper<SysApiKey>().in(SysApiKey::getCreateBy, idList));
+		// 删除 panel 引用
+		visualPanelDao.delReceivers(idList);
+		// 关闭 panel 接收人为空的报表
+		List<VisualPanel> visualPanelList = visualPanelDao.queryReportOfEmptyReceivers();
+		for (VisualPanel panel : visualPanelList) {
+			Map newParamMap = JSONObject.parseObject(panel.getParam().toString(), LinkedHashMap.class);
+			Map publishMap = new HashMap(4);
+			publishMap.put("panelId", panel.getId());
+			publishMap.putAll(newParamMap);
+
+			redisTemplate.convertAndSend(Constant.REPORT_TOPIC_NAME, JSONObject.toJSONString(publishMap));
+		}
+		if(Tool.CollUtil.isNotEmpty(visualPanelList)) visualPanelService.updateBatchById(visualPanelList);
 
 		// 删除 redis 中 用户token 信息
 		List<String> removeKeys = new ArrayList<>();
