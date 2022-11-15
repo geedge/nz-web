@@ -3,7 +3,6 @@ package com.nis.modules.terminal.service.impl;
 import cn.hutool.cache.impl.TimedCache;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.ssh.Sftp;
@@ -52,7 +51,6 @@ import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.text.ParseException;
 import java.util.*;
@@ -557,51 +555,55 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
     @Transactional(rollbackFor = Exception.class)
     public void downloadOfSftp(String uuid, String path, HttpServletResponse response) {
         Sftp sftp = this.getSftpChannel(uuid);
-        File tempFile = Tool.FileUtil.file(Tool.StrUtil.concat(true, Constant.TEMP_PATH, File.separator, Tool.FileUtil.getName(path)));
-        OutputStream os = null;
 
         StopWatch sw = new StopWatch();
         sw.start();
-        long length = 0;
+        long fileSize = 0;
         try {
             boolean exist = sftp.exist(path);
             if (!exist) {
+                log.info("[downloadOfSftp] [no such file] [path: {}]", path);
                 throw new NZException(RCode.TERMINAL_DOWNLOAD_NO_SUCH_FILE);
             }
             boolean isDir = sftp.cd(path);
             if (isDir) {
+                log.info("[downloadOfSftp] [not supported to get directory] [path: {}]", path);
                 throw new NZException(RCode.TERMINAL_DOWNLOAD_NOT_SUPPORTED_DIRECTORY);
             }
 
-            log.info("download file begin...  uuid: {}, path: {}", uuid, path);
-            // download
-            sftp.download(path, tempFile);
-            length = tempFile.length();
+            List<ChannelSftp.LsEntry> entryList = sftp.lsEntries(path);
+            ChannelSftp.LsEntry fileEntity = Tool.CollUtil.getFirst(entryList);
+            if (ObjectUtil.isNull(fileEntity)) {
+                log.info("[downloadOfSftp] [no such file] [path: {}]", path);
+                throw new NZException(RCode.TERMINAL_DOWNLOAD_NO_SUCH_FILE);
+            }
 
-            String fileName = Tool.FileUtil.getName(path);
+            // file size
+            fileSize = fileEntity.getAttrs().getSize();
+
+            log.info("[downloadOfSftp] [download file begin] [path: {}] [file size: {}]", path, fileSize);
+
+            String fileName = fileEntity.getFilename();
             response.setCharacterEncoding("utf-8");
             response.setContentType("multipart/form-data");
             response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
             response.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
+            response.addHeader("Content-Length", Tool.StrUtil.toString(fileSize));
 
-            // 发送给客户端的数据
-            os = response.getOutputStream();
-            byte[] readBytes = IoUtil.readBytes(FileUtil.getInputStream(tempFile));
-            os.write(readBytes);
-            os.flush();
+            // download
+            ChannelSftp channelSftp = sftp.getClient();
+            channelSftp.get(path, response.getOutputStream());
 
+            // record sftp log
             sftpLogService.saveSftpLog(uuid, path, TerminalConstant.SftpOperType.DOWNLOAD.getValue());
         } catch (Exception e) {
-            log.error(e, "download file error. uuid: {}, path: {}", uuid, path);
+            log.error(e, "[downloadOfSftp] [download file error] [path: {}] [file size: {}]", path, fileSize);
         } finally {
             sw.stop();
             // disconnect
             sftp.getClient().disconnect();
-
-            IoUtil.close(os);
-            Tool.FileUtil.del(tempFile);
         }
-        log.info("download file finshed  uuid: {}, path: {}, total length: {}, Run Time: {}", uuid, path, length, sw.toString());
+        log.info("[downloadOfSftp] [download file finshed] [uuid: {}] [path: {}] [file size: {}] [Run Time: {}]", uuid, path, fileSize, sw.toString());
     }
 
     private class SftpUploadRunnable extends Thread {
