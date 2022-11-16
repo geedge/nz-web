@@ -57,6 +57,11 @@ public class VsysResult implements Serializable {
     private String msg;
 
     /**
+     * sf ruleSet chain 三个接口请求参数记录
+     */
+    private String reqParam;
+
+    /**
      * 执行第几次	默认：1
      */
     private Integer num;

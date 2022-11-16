@@ -8,6 +8,7 @@ import cn.hutool.http.HttpStatus;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -75,6 +76,7 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
     @Autowired
     private AssetFieldValueService assetFieldValueService;
 
+    private static ThreadLocal<Map<Object, Object>> VSYS_REQ_PARAM_MAP = new ThreadLocal();
 
     /**
      * 校验 task info list
@@ -488,6 +490,13 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
                 default:
                     break;
             }
+
+            // req param
+            Map<Object, Object> reqParamMap = VSYS_REQ_PARAM_MAP.get();
+            reqParamMap = Tool.MapUtil.defaultIfEmpty(reqParamMap, Tool.MapUtil.newHashMap());
+            res.setReqParam(JSONObject.toJSONString(reqParamMap, SerializerFeature.MapSortField));
+            VSYS_REQ_PARAM_MAP.remove();
+
             // 本次执行结束 更新 result log
             vsysResultService.update(res, new LambdaUpdateWrapper<VsysResult>()
                     .eq(VsysResult::getTaskId, vsysTask.getId())
@@ -572,6 +581,15 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
 
         // request
         String path = "/restconf/data";
+
+        // record request body & path
+        this.updateVsysReqParamMap(
+                Tool.MapUtil.builder()
+                        .put("Add ServiceFunction Request Path", path)
+                        .put("Add ServiceFunction Request Body", sfBody)
+                        .map()
+        );
+
         Map<Object, Object> resultMp = VsysConfigUtil.requestPost(manageIp, path, sfBody);
         return resultMp;
     }
@@ -672,6 +690,15 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
 
         // request
         String path = "/restconf/data";
+
+        // record request body & path
+        this.updateVsysReqParamMap(
+                Tool.MapUtil.builder()
+                        .put("Add RuleSet Request Path", path)
+                        .put("Add RuleSet Request Body", ruleSetBody)
+                        .map()
+        );
+
         Map<Object, Object> resultMp = VsysConfigUtil.requestPost(manageIp, path, ruleSetBody);
         return resultMp;
     }
@@ -717,6 +744,15 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
 
         // request
         String path = String.format("%s%s", "/restconf/data", "/tsg-os-mgnt-srv:service_function_chain=Default");
+
+        // record request body & path
+        this.updateVsysReqParamMap(
+                Tool.MapUtil.builder()
+                        .put("Add Chain Request Path", path)
+                        .put("Add Chain Request Body", chainBody)
+                        .map()
+        );
+
         Map<Object, Object> resultMp = VsysConfigUtil.requestPostWithoutEncodeUrl(manageIp, path, chainBody);
         return resultMp;
     }
@@ -734,6 +770,14 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
 
         // request
         String path = String.format("%s%s=%s", "/restconf/data", "/tsg-os-mgnt-srv:service_function", sfName);
+
+        // record request path
+        this.updateVsysReqParamMap(
+                Tool.MapUtil.builder()
+                        .put("Delete ServiceFunction Request Path", path)
+                        .map()
+        );
+
         Map<Object, Object> resultMp = VsysConfigUtil.requestDeleteWithoutEncodeUrl(manageIp, path, null);
         return resultMp;
     }
@@ -751,6 +795,14 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
 
         // request
         String path = String.format("%s%s=%s", "/restconf/data", "/tsg-os-mgnt-srv:ruleset", ruleSetName);
+
+        // record request path
+        this.updateVsysReqParamMap(
+                Tool.MapUtil.builder()
+                        .put("Delete RuleSet Request Path", path)
+                        .map()
+        );
+
         Map<Object, Object> resultMp = VsysConfigUtil.requestDeleteWithoutEncodeUrl(manageIp, path, null);
         return resultMp;
     }
@@ -768,8 +820,31 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
         // request
         String indexq = "/index=" + vsysId;
         String path = String.format("%s%s%s", "/restconf/data", "/tsg-os-mgnt-srv:service_function_chain=Default", indexq);
+
+        // record request path
+        this.updateVsysReqParamMap(
+                Tool.MapUtil.builder()
+                        .put("Delete Chain Request Path", path)
+                        .map()
+        );
+
         Map<Object, Object> resultMp = VsysConfigUtil.requestDeleteWithoutEncodeUrl(manageIp, path, null);
         return resultMp;
+    }
+
+    /**
+     * update Vsys Req Param Map
+     *
+     * @param reqParamMap
+     */
+    private void updateVsysReqParamMap(Map<Object, Object> reqParamMap) {
+        // get value
+        Map<Object, Object> reqParam = VSYS_REQ_PARAM_MAP.get();
+        reqParam = Tool.MapUtil.defaultIfEmpty(reqParam, Tool.MapUtil.newHashMap());
+        reqParam.putAll(reqParamMap);
+
+        // update value
+        VSYS_REQ_PARAM_MAP.set(reqParam);
     }
 
 }
