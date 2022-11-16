@@ -68,6 +68,10 @@
             <if test="params.link != null and params.link != ''">
                 and pan.link=#{params.link}
             </if>
+
+            <if test="params.varType != null and params.varType != ''">
+                and pan.var_type=#{params.varType}
+            </if>
             <if test="params.starred != null and params.starred != ''">
                 AND
                 <if test=' params.starred eq 1 '>
