@@ -2,25 +2,26 @@ package com.nis.modules.agent.job;
 
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.*;
+import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.entity.MonitorEventLog;
+import com.nis.modules.agent.service.AgentService;
 import com.nis.modules.agent.service.MonitorEventLogService;
 import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
-import com.nis.modules.agent.entity.Agent;
-import com.nis.modules.agent.service.AgentService;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import lombok.Data;
-import org.apache.commons.lang3.time.StopWatch;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -44,7 +45,7 @@ import java.util.stream.Collectors;
 @Data
 public class AutoConfigAgentJob extends QuartzJobBean {
 
-    private static Log log = Log.get();
+    private static final Log log = Log.get();
 
     @Autowired
     private RedisTemplate redisTemplate;
@@ -71,71 +72,136 @@ public class AutoConfigAgentJob extends QuartzJobBean {
     Map<String, String> sysConfigMap = new HashMap();
 
     @SuppressWarnings("unchecked")
-	@Override
+    @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
-    	Thread.currentThread().setName("AutoConfigAgentJob");
+        Thread.currentThread().setName("AutoConfigAgentJob");
         // 检查 haMode
         String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
-        if (!StrUtil.equals(serverId, Constant.SERVER_ID)) return;
+        log.info("[AutoConfigAgentJob] [Get ha lock from redis] [server id: {}]", serverId);
+        if (!StrUtil.equals(serverId, Constant.SERVER_ID)) {
+            log.warn("[AutoConfigAgentJob] [did not get the ha lock, not run job] [redis server id: {}] [system server id: {}]", serverId, Constant.SERVER_ID);
+            return;
+        }
 
-        log.info("agent job 开始执行");
-        StopWatch sw = new StopWatch();
-        sw.start();
+        log.info("[AutoConfigAgentJob] [Begin]");
         try {
-            // 获取健康的 agent
-        	List<Agent> healthyAgents = null;
-        	List<String> agentCaches = redisTemplate.opsForHash().values(Constant.AGENT_STATE_CACHE_KEY);
-        	if(ToolUtil.isNotEmpty(agentCaches)) {
+            List<Agent> healthyAgents = Tool.ListUtil.empty();
+            List<String> agentCaches = redisTemplate.opsForHash().values(Constant.AGENT_STATE_CACHE_KEY);
+            if (ToolUtil.isNotEmpty(agentCaches)) {
                 healthyAgents = agentCaches.stream().map(agentCache -> JSON.parseObject(agentCache, Agent.class)).filter(p -> p.getStatus().equals(1)).collect(Collectors.toList());
-        	}else {
+                log.info("[AutoConfigAgentJob] [Get healthy agent list from redis] [size: {}]", healthyAgents.size());
+            } else {
                 healthyAgents = agentService.list(new LambdaQueryWrapper<Agent>().eq(Agent::getStatus, 1));
-        	}
-            log.debug("健康的 Agents: " + JSONObject.toJSONString(healthyAgents));
+                log.info("[AutoConfigAgentJob] [Get healthy agent list from db] [size: {}]", healthyAgents.size());
+            }
 
-            // 没有可用的 global 不下发配置
-            List<Agent> globalAgentList = healthyAgents.stream().filter(pojo -> Constant.AgentType.GLOBAL.getValue().equals(pojo.getType())).collect(Collectors.toList());
-            if (Tool.CollectionUtil.isEmpty(globalAgentList)) return;
+            // healthy agent info
+            Map<Integer, String> healthyAgentInfoMap = healthyAgents.stream().collect(Collectors.toMap(Agent::getId, Agent::getName));
+            log.info("[AutoConfigAgentJob] [Healthy agent] [size: {}] [detail: {}]", healthyAgentInfoMap.size(), JSONUtil.toJsonStr(healthyAgentInfoMap));
+            if (log.isDebugEnabled()) {
+                log.debug("[AutoConfigAgentJob] [Healthy agents] [detail: {}]", JSONUtil.toJsonStr(healthyAgents));
+            }
 
-            // sys_config 配置表信息
-            List<SysConfigEntity> configEntityList = sysConfigService.list();
-            sysConfigMap = configEntityList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
+            List<SysConfigEntity> sysConfigList = sysConfigService.list();
+            sysConfigMap = sysConfigList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
 
-            // 配置下发
-            this.setUpAgentConfig(healthyAgents);
-        } catch (RuntimeException e) {
-            log.error("agent 同步异常", e);
-        } finally {
-            sw.stop();
-            log.info("agent 执行结束，Run Time: {}", sw.toString());
+            // get global agent
+            List<Agent> globalAgentList = healthyAgents.stream().filter(pojo -> ObjectUtil.equal(Constant.AgentType.GLOBAL.getValue(), pojo.getType())).collect(Collectors.toList());
+            log.info("[AutoConfigAgentJob] [healthy global agent list] [size: {}]", globalAgentList.size());
+
+            if (Tool.CollectionUtil.isEmpty(globalAgentList)) {
+                // no healthy global agent
+                log.info("[AutoConfigAgentJob] [try To Set Up Agent Config]");
+                this.trySetUpAgentConfig();
+            } else {
+                // config agent
+                log.info("[AutoConfigAgentJob] [Set Up Agent Config]");
+                this.setUpAgentConfig(healthyAgents);
+            }
+        } catch (Exception e) {
+            log.error(e, "[AutoConfigAgentJob] [Error]");
+        }
+        log.info("[AutoConfigAgentJob] [Finshed]");
+    }
+
+
+    /**
+     * no healthy global agent
+     * try To Set Up Agent Config
+     */
+    private void trySetUpAgentConfig() {
+        // get Cortex Component Down Agent List
+        List<Agent> cortexComponentDownAgentList = this.getCortexComponentDownAgentList();
+        log.info("[trySetUpAgentConfig] [cortex Component Down Agent List] [size: {}]", cortexComponentDownAgentList.size());
+
+        if (Tool.CollUtil.isNotEmpty(cortexComponentDownAgentList)) {
+            ThreadUtil.execAsync(() -> {
+                boolean cortexChangeFlag = configUtil.compareDataChanges("cortex");
+                log.info("[trySetUpAgentConfig] [conf_event cortex state] [change: {}]", cortexChangeFlag);
+
+                if (cortexChangeFlag) {
+                    log.info("[trySetUpAgentConfig] [try to set up config to the down agent of cortex] [size: {}]", cortexComponentDownAgentList.size());
+                    if (log.isDebugEnabled()) {
+                        log.debug("[trySetUpAgentConfig] [try to set up config to the down agent of cortex] [size: {}] [agent info: {}]", cortexComponentDownAgentList.size(), JSONUtil.toJsonStr(cortexComponentDownAgentList));
+                    }
+
+                    // try Set Up Config To Down Agent Of Cortex
+                    this.trySetUpConfigToDownAgentOfCortex(cortexComponentDownAgentList);
+                }
+            });
+        }
+
+        // get Loki Component Down Agent List
+        List<Agent> lokiComponentDownAgentList = this.getLokiComponentDownAgentList();
+        log.info("[trySetUpAgentConfig] [loki Component Down Agent List] [size: {}]", lokiComponentDownAgentList.size());
+        if (Tool.CollUtil.isNotEmpty(lokiComponentDownAgentList)) {
+            ThreadUtil.execAsync(() -> {
+                boolean lokiChangeFlag = configUtil.compareDataChanges("loki");
+                log.info("[trySetUpAgentConfig] [conf_event loki state] [change: {}]", lokiChangeFlag);
+
+                if (lokiChangeFlag) {
+                    log.info("[trySetUpAgentConfig] [try to set up config to the down agent of loki] [size: {}]", lokiComponentDownAgentList.size());
+                    if (log.isDebugEnabled()) {
+                        log.debug("[trySetUpAgentConfig] [try to set up config to the down agent of loki] [size: {}] [agent info: {}]", lokiComponentDownAgentList.size(), JSONUtil.toJsonStr(lokiComponentDownAgentList));
+                    }
+
+                    // try Set Up Config To Down Agent Of Loki
+                    this.trySetUpConfigToDownAgentOfLoki(lokiComponentDownAgentList);
+                }
+            });
         }
     }
 
-    // 配置下发
+    /**
+     * set Up to healeht Agent Config
+     *
+     * @param healthyPromServers
+     */
     public void setUpAgentConfig(List<Agent> healthyPromServers) {
         ThreadUtil.execAsync(() -> {
         	boolean promtailChangeFlag = configUtil.compareDataChanges("promtail");
         	MonitorEventLog monitorEventLog = eventLogService.getOne(new LambdaQueryWrapper<MonitorEventLog>().eq(MonitorEventLog::getEvent, "promtail"));
-        	log.debug("conf_event promtail change : {}, value: {}",promtailChangeFlag , monitorEventLog.getCounter());
+            log.info("[setUpAgentConfig] [conf_event promtail state] [change: {}] [value: {}]", promtailChangeFlag, monitorEventLog.getCounter());
             this.udpatePromtailsConf(healthyPromServers, monitorEventLog.getCounter());
         });
 
         ThreadUtil.execAsync(() -> {
             boolean snmpChangeFlag = configUtil.compareDataChanges("snmp");
-            log.debug(String.format("conf_event snmp 数据 %s 发生变化", snmpChangeFlag ? "" : "没有"));
+            log.info("[setUpAgentConfig] [conf_event snmp state] [change: {}]", snmpChangeFlag);
             if (snmpChangeFlag)
                 this.updateSnmpExporterConf(healthyPromServers);
         });
 
         ThreadUtil.execAsync(() -> {
             boolean prometheusChangeFlag = configUtil.compareDataChanges("prometheus");
-            log.debug(String.format("conf_event prometheus 数据 %s 发生变化", prometheusChangeFlag ? "" : "没有"));
+            log.info("[setUpAgentConfig] [conf_event prometheus state] [change: {}]", prometheusChangeFlag);
             if (prometheusChangeFlag)
                 this.updatePrometheusConf(healthyPromServers);
         });
 
         ThreadUtil.execAsync(() -> {
             boolean lokiChangeFlag = configUtil.compareDataChanges("loki");
-            log.debug(String.format("conf_event loki 数据 %s 发生变化", lokiChangeFlag ? "" : "没有"));
+            log.info("[setUpAgentConfig] [conf_event loki state] [change: {}]", lokiChangeFlag);
             if (lokiChangeFlag)
                 this.updateLokiConf(healthyPromServers);
         });
@@ -143,10 +209,10 @@ public class AutoConfigAgentJob extends QuartzJobBean {
 
         ThreadUtil.execAsync(() -> {
             boolean cortexChangeFlag = configUtil.compareDataChanges("cortex");
-            log.debug(String.format("conf_event cortex 数据 %s 发生变化", cortexChangeFlag ? "" : "没有"));
+            log.info("[setUpAgentConfig] [conf_event cortex state] [change: {}]", cortexChangeFlag);
 
             boolean ruleChangeFlag = configUtil.compareDataChanges("rule");
-            log.debug(String.format("conf_event rule 数据 %s 发生变化", ruleChangeFlag ? "" : "没有"));
+            log.info("[setUpAgentConfig] [conf_event rule state] [change: {}]", ruleChangeFlag);
 
             // 是否更新 rule.yml 配置
             String alertConfUpdate = sysConfigMap.get("nz_alert_rule_eval_enable");
@@ -405,15 +471,9 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             configUtil.updateEndpointPromInRedis(endpointIdAndPromIdMap);
         }
 
-        //  object storage 标识  1: 本地文件存储，2：S3对象存储
-        String objStroageEnable = sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_TYPE);
-        boolean isLocalStorage = StrUtil.equals("1", objStroageEnable);
-
-        // global config 配置文件处理 联邦 告警 rule.yml cortex
+        // global config 配置文件处理 联邦
         for (int i = 0; i < globalPromServers.size(); i++) {
             Agent agent = globalPromServers.get(i);
-
-            Map<String, Object> globalConfigBody = new LinkedHashMap(4);
 
             List<Integer> assetIdListForThisAgent = assetIdAndPromIdMap.entrySet().stream().filter(entry -> agent.getId().equals(entry.getValue())).map(Map.Entry::getKey).collect(Collectors.toList());
             List<AssetAsset> assetListForThisAgent = blackboxAssetInfoList.stream().filter(asset -> assetIdListForThisAgent.contains(asset.getId())).collect(Collectors.toList());
@@ -421,20 +481,10 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             List<Integer> endpointIdListForThisAgent = endpointIdAndPromIdMap.entrySet().stream().filter(entry -> agent.getId().equals(entry.getValue())).map(Map.Entry::getKey).collect(Collectors.toList());
             List<MonitorEndpoint> endpointListForThisAgent = endpointList.stream().filter(endpoint -> endpointIdListForThisAgent.contains(endpoint.getId())).collect(Collectors.toList());
 
-            Boolean isAlert = false;
-            // prometheus 本地存储 && alert rule.yml 配置变更 && first global
-            /*if (isLocalStorage && agentConfigMap.get("alertYml") != null && i == 0) {
-                isAlert = true;
-                log.debug("支持告警的 agent :" + JSONObject.toJSONString(promserver));
-            }*/
+            Map gloablAgentYmlMap = configUtil.generateGlobalYml(agent, globalPromServers, perDataCenterPromServers, assetListForThisAgent, endpointListForThisAgent, false, i == 0);
 
-            Map gloablAgentYmlMap = configUtil.generateGlobalYml(agent, globalPromServers, perDataCenterPromServers, assetListForThisAgent, endpointListForThisAgent, isAlert, i == 0);
-
+            Map<String, Object> globalConfigBody = new LinkedHashMap(4);
             globalConfigBody.put("config", gloablAgentYmlMap);
-            if (isAlert) {
-                // globalConfigBody.put("rule", (Map) agentConfigMap.get("alertYml"));
-                // redisTemplate.opsForValue().set(Constant.REDIS_KEY_SUPPORT_ALERT_PROMSERVER_ID, promserver.getId().toString());
-            }
 
             Map<String, String> sysCmdLineMap = configUtil.generatePrometheusCmdLine();
             boolean cmdFlag = this.compareCmdLineChanges(agent, sysCmdLineMap);
@@ -443,15 +493,14 @@ public class AutoConfigAgentJob extends QuartzJobBean {
                 globalConfigBody.put("cmdline", sysCmdLineMap);
             }
 
-
             String result = null;
             String path = "/prometheus/config";
             try {
-            	result = AgentUtil.request(agent, HttpMethod.POST,path, null, globalConfigBody, String.class);
+                result = AgentUtil.request(agent, HttpMethod.POST, path, null, globalConfigBody, String.class);
             } catch (RuntimeException e) {
-            	log.error(e,"request error,path:{},agent:{}",path,Tool.JSONUtil.toJsonStr(agent));
+                log.error(e, "request error,path:{},agent:{}", path, Tool.JSONUtil.toJsonStr(agent));
             }
-            
+
             // 下发失败,更新 prom 状态，造成conf_event 变更，下个周期继续下发配置
             if (result == null) {
                 configUtil.updateAgentStatus(agent, 0);
@@ -567,33 +616,51 @@ public class AutoConfigAgentJob extends QuartzJobBean {
      * @param healthyPromServers
      */
     private void updateLokiConf(List<Agent> healthyPromServers) {
-    	// 无论联邦与否 最终数据都会存在  Global  所以 per-datacenter 不必下发 loki 配置
-        List<Agent> globalPromServerList = healthyPromServers.stream().filter(pojo -> Constant.AgentType.GLOBAL.getValue().equals(pojo.getType())).collect(Collectors.toList());
-        for (Agent agent : globalPromServerList) {
-        	// 生成 loki 配置模板
-            Map lokiYml = configUtil.generateLokiYml(agent,globalPromServerList);
-            Map<String, Object> lokiConfigBody = new HashMap<>(2);
-            lokiConfigBody.put("config", lokiYml);
-            
-            String result = null;
-            String path = "/loki/config";
-            try {
-            	result = AgentUtil.request(agent, HttpMethod.POST,path, null, lokiConfigBody, String.class);
-            } catch (RuntimeException e) {
-            	log.error(e,"request error,path:{},agent:{}",path,Tool.JSONUtil.toJsonStr(agent));
-            }
-            
-            // 下发失败,更新 prom 状态，造成 conf_event 变更，下个周期继续下发配置
-            if (result == null) {
-                configUtil.updateAgentStatus(agent, 0);
-            } else {
-                configUtil.afterRequestApi(path, result, agent);
-            }
-        }
+        // try Set Up Config To Down Agent Of Loki
+        ThreadUtil.execAsync(() -> {
+            // get Loki Component Down Agent List
+            List<Agent> lokiComponentDownAgentList = this.getLokiComponentDownAgentList();
+            log.info("[updateLokiConf] [loki Component Down Agent List] [size: {}]", lokiComponentDownAgentList.size());
 
-        // 配置下发后向 redis 记录配置更新  默认五分钟 单位 s
-        String cortexUpdateTimeout = Tool.ObjectUtil.defaultIfNull(sysConfigMap.get(Constant.SYSCONFIG_KEY_LOKI_UPDATE_TIMEOUT), "300");
-        redisTemplate.opsForValue().set(Constant.REDIS_KEY_LOKI_UPDATE, "1", Integer.valueOf(cortexUpdateTimeout), TimeUnit.SECONDS);
+            // try Set Up Config To Down Agent Of Loki
+            this.trySetUpConfigToDownAgentOfLoki(lokiComponentDownAgentList);
+        });
+
+        // healthy agent config loki.yml
+        ThreadUtil.execAsync(() -> {
+            // 无论联邦与否 最终数据都会存在  Global  所以 per-datacenter 不必下发 loki 配置
+            List<Agent> globalPromServerList = healthyPromServers.stream().filter(pojo -> Constant.AgentType.GLOBAL.getValue().equals(pojo.getType())).collect(Collectors.toList());
+            for (Agent agent : globalPromServerList) {
+                // generate Loki Yml
+                Map lokiYml = configUtil.generateLokiYml(agent, globalPromServerList);
+                Map<String, Object> lokiConfigBody = new HashMap<>(2);
+                lokiConfigBody.put("config", lokiYml);
+
+                String result = null;
+                String path = "/loki/config";
+                try {
+                    log.info("[updateLokiConf] [request agent /loki/config api begin] [agent id: {}]", agent.getId());
+                    if (log.isDebugEnabled()) {
+                        log.info("[updateLokiConf] [request agent /loki/config api begin] [agent id: {}] [request body: {}]", agent.getId(), JSONUtil.toJsonStr(lokiConfigBody));
+                    }
+                    result = AgentUtil.request(agent, HttpMethod.POST, path, null, lokiConfigBody, String.class);
+                    log.info("[updateLokiConf] [request agent /loki/config api finshed] [agent id: {}]", agent.getId());
+                } catch (RuntimeException e) {
+                    log.error(e, "request error,path:{},agent:{}", path, Tool.JSONUtil.toJsonStr(agent));
+                }
+
+                // 下发失败,更新 prom 状态，造成 conf_event 变更，下个周期继续下发配置
+                if (result == null) {
+                    configUtil.updateAgentStatus(agent, 0);
+                } else {
+                    configUtil.afterRequestApi(path, result, agent);
+                }
+            }
+
+            // 配置下发后向 redis 记录配置更新  默认五分钟 单位 s
+            String cortexUpdateTimeout = Tool.ObjectUtil.defaultIfNull(sysConfigMap.get(Constant.SYSCONFIG_KEY_LOKI_UPDATE_TIMEOUT), "300");
+            redisTemplate.opsForValue().set(Constant.REDIS_KEY_LOKI_UPDATE, "1", Integer.valueOf(cortexUpdateTimeout), TimeUnit.SECONDS);
+        });
     }
 
     /**
@@ -668,46 +735,207 @@ public class AutoConfigAgentJob extends QuartzJobBean {
      * @param healthyAgents
      */
     private void updateCortexConf(Map alertYmlMap, List<Agent> healthyAgents) {
-        // 1. 判断是否开启  object storage
-        //String objStroageEnable = sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_TYPE);
-        //if (StrUtil.equals("2", objStroageEnable)) {
-        // 获取当前支持 alert 的 agent id
-        Integer supportAlertPromId = configUtil.getSupportAlertPromId(healthyAgents);
-        // 调用 agent/cortex 接口 更新 cortex config and rule.yml
-        List<Agent> globalAgentList = healthyAgents.stream().filter(pojo -> Constant.AgentType.GLOBAL.getValue().equals(pojo.getType())).collect(Collectors.toList());
-        for (Agent agent : globalAgentList) {
-            Boolean isAlert = agent.getId().equals(supportAlertPromId) ? true : false;
-            // 生成 cortex 配置模板
-            Map cortexYml = configUtil.generateCortexYml(agent, globalAgentList, isAlert);
+        // try Set Up Config To Down Agent Of Cortex
+        ThreadUtil.execAsync(() -> {
+            // get Cortex Component Down Agent List
+            List<Agent> cortexComponentDownAgentList = this.getCortexComponentDownAgentList();
+            log.info("[updateCortexConf] [cortex Component Down Agent List] [size: {}]", cortexComponentDownAgentList.size());
 
-            Map<String, Object> cortexConfigBody = new HashMap<>(4);
-            cortexConfigBody.put("config", cortexYml);
-            if ((supportAlertPromId == null || agent.getId().equals(supportAlertPromId)) && MapUtil.isNotEmpty(alertYmlMap)) {
-                cortexConfigBody.put("rule", alertYmlMap);
-            }
-            String result = null;
-            String path = "/cortex/config";
-            try {
-            	result = AgentUtil.request(agent, HttpMethod.POST,path, null, cortexConfigBody, String.class);
-            } catch (RuntimeException e) {
-            	log.error(e,"request error,path:{},agent:{}",path,Tool.JSONUtil.toJsonStr(agent));
-            }
-            // 下发失败,更新 prom 状态，造成 conf_event 变更，下个周期继续下发配置
-            if (result == null) {
-                configUtil.updateAgentStatus(agent, 0);
-            } else {
-                configUtil.afterRequestApi(path, result, agent);
-            }
-        }
+            // try Set Up Config To Down Agent Of Cortex
+            this.trySetUpConfigToDownAgentOfCortex(cortexComponentDownAgentList);
+        });
 
-        // 配置下发后向 redis 记录配置更新  默认五分钟 单位 s
-        String cortexUpdateTimeout = Tool.ObjectUtil.defaultIfNull(sysConfigMap.get(Constant.SYSCONFIG_KEY_CORTEX_UPDATE_TIMEOUT), "300");
-        redisTemplate.opsForValue().set(Constant.REDIS_KEY_CORTEX_UPDATE, "1", Integer.valueOf(cortexUpdateTimeout), TimeUnit.SECONDS);
-        /*} else {
-            // 没有开启 对象存储 啥也不做
-        }*/
+        // healthy agent config cortex.yml
+        ThreadUtil.execAsync(() -> {
+            // 获取当前支持 alert 的 agent id
+            Integer supportAlertPromId = configUtil.getSupportAlertPromId(healthyAgents);
+            // 调用 agent/cortex 接口 更新 cortex config and rule.yml
+            List<Agent> globalAgentList = healthyAgents.stream().filter(pojo -> ObjectUtil.equal(Constant.AgentType.GLOBAL.getValue(), pojo.getType())).collect(Collectors.toList());
+            for (Agent agent : globalAgentList) {
+                Boolean isAlert = ObjectUtil.equal(agent.getId(), supportAlertPromId);
+                // generate Cortex Yml
+                Map cortexYml = configUtil.generateCortexYml(agent, globalAgentList, isAlert);
+
+                Map<String, Object> cortexConfigBody = new HashMap<>(4);
+                cortexConfigBody.put("config", cortexYml);
+                if ((supportAlertPromId == null || agent.getId().equals(supportAlertPromId)) && MapUtil.isNotEmpty(alertYmlMap)) {
+                    cortexConfigBody.put("rule", alertYmlMap);
+                }
+                String result = null;
+                String path = "/cortex/config";
+                try {
+                    log.info("[updateCortexConf] [request agent /cortex/config api begin] [agent id: {}]", agent.getId());
+                    if (log.isDebugEnabled()) {
+                        log.info("[updateCortexConf] [request agent /cortex/config api begin] [agent id: {}] [request body: {}]", agent.getId(), JSONUtil.toJsonStr(cortexConfigBody));
+                    }
+                    result = AgentUtil.request(agent, HttpMethod.POST, path, null, cortexConfigBody, String.class);
+                    log.info("[updateCortexConf] [request agent /cortex/config api finshed] [agent id: {}]", agent.getId());
+                } catch (RuntimeException e) {
+                    log.error(e, "request error,path:{},agent:{}", path, Tool.JSONUtil.toJsonStr(agent));
+                }
+                // 下发失败,更新 prom 状态，造成 conf_event 变更，下个周期继续下发配置
+                if (result == null) {
+                    configUtil.updateAgentStatus(agent, 0);
+                } else {
+                    configUtil.afterRequestApi(path, result, agent);
+                }
+            }
+
+            // 配置下发后向 redis 记录配置更新  默认五分钟 单位 s
+            String cortexUpdateTimeout = Tool.ObjectUtil.defaultIfNull(sysConfigMap.get(Constant.SYSCONFIG_KEY_CORTEX_UPDATE_TIMEOUT), "300");
+            redisTemplate.opsForValue().set(Constant.REDIS_KEY_CORTEX_UPDATE, "1", Integer.valueOf(cortexUpdateTimeout), TimeUnit.SECONDS);
+        });
     }
 
+    /**
+     * get Cortex Component Down Agent List
+     *
+     * @return
+     */
+    private List<Agent> getCortexComponentDownAgentList() {
+        // allAgentList
+        List<Agent> allAgentList = agentService.list();
+
+        List<Agent> cortexComponentDownAgentList = allAgentList.stream().filter(agent -> {
+            String statusInfoJsonStr = agent.getStatusInfo();
+            JSONObject jsonObject = JSONObject.parseObject(StrUtil.emptyToDefault(statusInfoJsonStr, StrUtil.EMPTY_JSON));
+
+            String confagentState = (String) jsonObject.get("confagent");
+            String cortexState = (String) jsonObject.get("cortex");
+
+            return BooleanUtil.and(
+                    StrUtil.equals("UP", confagentState),
+                    StrUtil.equals("DOWN", cortexState)
+            );
+        }).collect(Collectors.toList());
+        log.info("[getCortexComponentDownAgentList] [cortex Component Down Agent List] [size: {}]", cortexComponentDownAgentList.size());
+        return cortexComponentDownAgentList;
+    }
+
+    /**
+     * get Loki Component Down Agent List
+     *
+     * @return
+     */
+    private List<Agent> getLokiComponentDownAgentList() {
+        // allAgentList
+        List<Agent> allAgentList = agentService.list();
+
+        List<Agent> lokiComponentDownAgentList = allAgentList.stream().filter(agent -> {
+            String statusInfoJsonStr = agent.getStatusInfo();
+            JSONObject jsonObject = JSONObject.parseObject(StrUtil.emptyToDefault(statusInfoJsonStr, StrUtil.EMPTY_JSON));
+
+            String confagentState = (String) jsonObject.get("confagent");
+            String lokiState = (String) jsonObject.get("loki");
+
+            return BooleanUtil.and(
+                    StrUtil.equals("UP", confagentState),
+                    StrUtil.equals("DOWN", lokiState)
+            );
+        }).collect(Collectors.toList());
+        log.info("[getLokiComponentDownAgentList] [loki Component Down Agent List] [size: {}]", lokiComponentDownAgentList.size());
+        return lokiComponentDownAgentList;
+    }
+
+    /**
+     * try Set Up Config To Down Agent Of Cortex
+     * 尝试给因为 cortex down 导致 Agent 状态异常的 Agent 下发 init cortex.yml 配置，尝试使 cortex 正常
+     *
+     * @param cortexComponentDownAgentList
+     */
+    private void trySetUpConfigToDownAgentOfCortex(List<Agent> cortexComponentDownAgentList) {
+        for (Agent agent : cortexComponentDownAgentList) {
+            // generate Init Cortex Yml
+            Map initCortexYml = configUtil.generateInitCortexYml();
+
+            Map<Object, Object> requestBody = Tool.MapUtil.builder()
+                    .put("config", initCortexYml)
+                    .map();
+
+            String path = "/cortex/config";
+            try {
+                log.info("[trySetUpConfigToDownAgentOfCortex] [request agent /cortex/config api begin] [agent id: {}]", agent.getId());
+                if (log.isDebugEnabled()) {
+                    log.info("[trySetUpConfigToDownAgentOfCortex] [request agent /cortex/config api begin] [agent id: {}] [request body: {}]", agent.getId(), JSONUtil.toJsonStr(requestBody));
+                }
+
+                // request
+                String result = AgentUtil.request(agent, HttpMethod.POST, path, null, requestBody, String.class);
+
+                // after Request api
+                if (StrUtil.isEmpty(result)) {
+                    // increment cortex
+                    eventLogService.increment("cortex");
+
+                    log.error("[trySetUpConfigToDownAgentOfCortex] [request error] [path: {}] [result: {}] [agent: {}]", path, result, JSONUtil.toJsonStr(agent));
+                } else {
+                    R parseObject = JSONObject.parseObject(result, R.class);
+                    if (ObjectUtil.notEqual(RCode.SUCCESS.getCode(), parseObject.get("code"))) {
+                        // increment cortex
+                        eventLogService.increment("cortex");
+
+                        log.error("[trySetUpConfigToDownAgentOfCortex] [request error] [path: {}] [result: {}] [agent: {}]", path, result, JSONUtil.toJsonStr(agent));
+                    }
+                }
+                log.info("[trySetUpConfigToDownAgentOfCortex] [request agent /cortex/config api finshed] [agent id: {}]", agent.getId());
+            } catch (Exception e) {
+                // increment cortex
+                eventLogService.increment("cortex");
+
+                log.error(e, "[trySetUpConfigToDownAgentOfCortex] [request error] [path: {}] [agent: {}]", path, JSONUtil.toJsonStr(agent));
+            }
+        }
+    }
+
+    /**
+     * try Set Up Config To Down Agent Of Loki
+     * 尝试给因为 loki down 导致 Agent 状态异常的 Agent 下发 init loki.yml 配置，尝试使 loki 正常
+     *
+     * @param lokiComponentDownAgentList
+     */
+    private void trySetUpConfigToDownAgentOfLoki(List<Agent> lokiComponentDownAgentList) {
+        for (Agent agent : lokiComponentDownAgentList) {
+            // generate Init Loki Yml
+            Map initLokiYml = configUtil.generateInitLokiYml();
+
+            Map<Object, Object> requestBody = Tool.MapUtil.builder()
+                    .put("config", initLokiYml)
+                    .map();
+
+            String path = "/loki/config";
+            try {
+                log.info("[trySetUpConfigToDownAgentOfLoki] [request agent /loki/config api begin] [agent id: {}]", agent.getId());
+                if (log.isDebugEnabled()) {
+                    log.info("[trySetUpConfigToDownAgentOfLoki] [request agent /loki/config api begin] [agent id: {}] [request body: {}]", agent.getId(), JSONUtil.toJsonStr(requestBody));
+                }
+
+                // request
+                String result = AgentUtil.request(agent, HttpMethod.POST, path, null, requestBody, String.class);
+
+                // after Request api
+                if (StrUtil.isEmpty(result)) {
+                    // increment loki
+                    eventLogService.increment("loki");
+
+                    log.error("[trySetUpConfigToDownAgentOfLoki] [request error] [path: {}] [result: {}] [agent: {}]", path, result, JSONUtil.toJsonStr(agent));
+                } else {
+                    R parseObject = JSONObject.parseObject(result, R.class);
+                    if (ObjectUtil.notEqual(RCode.SUCCESS.getCode(), parseObject.get("code"))) {
+                        // increment loki
+                        eventLogService.increment("loki");
+
+                        log.error("[trySetUpConfigToDownAgentOfLoki] [request error] [path: {}] [result: {}] [agent: {}]", path, result, JSONUtil.toJsonStr(agent));
+                    }
+                }
+                log.info("[trySetUpConfigToDownAgentOfLoki] [request agent /loki/config api finshed] [agent id: {}]", agent.getId());
+            } catch (Exception e) {
+                // increment loki
+                eventLogService.increment("loki");
+
+                log.error(e, "[trySetUpConfigToDownAgentOfLoki] [request error] [path: {}] [agent: {}]", path, JSONUtil.toJsonStr(agent));
+            }
+        }
+    }
 
     /**
      * 对比 cmd 启动项

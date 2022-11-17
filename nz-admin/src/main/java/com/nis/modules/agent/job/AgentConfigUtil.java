@@ -49,7 +49,7 @@ import java.util.stream.Collectors;
 @Component
 public class AgentConfigUtil {
 
-	private static Log log = Log.get();
+	private static final Log log = Log.get();
 
 	@Value("${nezha.lokiDefaultPort:13100}")
 	private Integer lokiDefaultPort;
@@ -1459,5 +1459,72 @@ public class AgentConfigUtil {
 		// 缓存和数据库需同时更新
 		redisTemplate.opsForHash().put(Constant.AGENT_STATE_CACHE_KEY, agent.getId().toString(), JSON.toJSONString(agent));
 		agentService.updateById(agent);
+	}
+
+	/**
+	 * generate Init Cortex Yml
+	 *
+	 * @return
+	 */
+	public Map generateInitCortexYml() {
+		List<SysConfigEntity> sysConfigList = sysConfigService.list();
+		Map<String, String> sysConfiMap = sysConfigList.stream()
+				.collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
+
+		// template variables
+		Map<Object, Object> params = Tool.MapUtil.builder()
+				.put("systemConfig", sysConfiMap)
+				.build();
+
+		log.info("[generateInitCortexYml] [begin]");
+		String content = StrUtil.EMPTY;
+		try {
+			String cortexInitYmlTmpl = sysConfigService.getValue(Constant.SYSCONFIG_KEY_CORTEX_INIT_YML_TMPL);
+			// 渲染
+			Template template = TemplateUtil.stringToTemplate(cortexInitYmlTmpl, Constant.SYSCONFIG_KEY_CORTEX_INIT_YML_TMPL);
+			content = FreeMarkerTemplateUtils.processTemplateIntoString(template, params);
+
+			// JSON Str to JSON Obj
+			Map ymlMap = JSONObject.parseObject(content, LinkedHashMap.class, Feature.OrderedField);
+			log.info("[generateInitCortexYml] [finshed]");
+			return ymlMap;
+		} catch (Exception e) {
+			log.error(e, "[generateInitCortexYml] [error] [content: {}]", content);
+		}
+		return Tool.MapUtil.empty();
+	}
+
+	/**
+	 * generate Init Loki Yml
+	 *
+	 * @return
+	 */
+	public Map generateInitLokiYml() {
+		List<SysConfigEntity> sysConfigList = sysConfigService.list();
+		Map<String, String> sysConfiMap = sysConfigList.stream()
+				.collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
+
+		// template variables
+		Map<Object, Object> params = Tool.MapUtil.builder()
+				.put("systemConfig", sysConfiMap)
+				.build();
+
+		log.info("[generateInitLokiYml] [begin]");
+		String content = StrUtil.EMPTY;
+
+		try {
+			String cortexInitYmlTmpl = sysConfigService.getValue(Constant.SYSCONFIG_KEY_LOKI_INIT_YML_TMPL);
+			// 渲染
+			Template template = TemplateUtil.stringToTemplate(cortexInitYmlTmpl, Constant.SYSCONFIG_KEY_LOKI_INIT_YML_TMPL);
+			content = FreeMarkerTemplateUtils.processTemplateIntoString(template, params);
+
+			// JSON Str to JSON Obj
+			Map ymlMap = JSONObject.parseObject(content, LinkedHashMap.class, Feature.OrderedField);
+			log.info("[generateInitLokiYml] [finshed]");
+			return ymlMap;
+		} catch (Exception e) {
+			log.error(e, "[generateInitLokiYml] [error] [content: {}]", content);
+		}
+		return Tool.MapUtil.empty();
 	}
 }

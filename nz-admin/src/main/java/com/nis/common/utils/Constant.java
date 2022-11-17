@@ -792,8 +792,14 @@ public class Constant {
 	// cortex.yml 配置模板
 	public static final String SYSCONFIG_KEY_CORTEX_YML_TMPL = "cortex_yml_tmpl";
 
+	// cortex.yml 初始文件配置模板
+	public static final String SYSCONFIG_KEY_CORTEX_INIT_YML_TMPL = "cortex_init_yml_tmpl";
+
 	// loki.yml 配置模板
 	public static final String SYSCONFIG_KEY_LOKI_YML_TMPL = "loki_yml_tmpl";
+
+	// loki.yml 初始文件配置模板
+	public static final String SYSCONFIG_KEY_LOKI_INIT_YML_TMPL = "loki_init_yml_tmpl";
 
 	// promtail.yml 配置模板
 	public static final String SYSCONFIG_KEY_PROMTAIL_YML_TMPL = "promtail_yml_tmpl";

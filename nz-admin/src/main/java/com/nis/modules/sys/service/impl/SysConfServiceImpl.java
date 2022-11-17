@@ -56,7 +56,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
 
     public static final String[][]  BASIC_DEPEND={};
 
-    public static final String[] MONITOR_KEYS = {"alert_api", "prometheus_federation_enabled", "default_scrape_interval", "default_scrape_timeout", "asset_ping_interval", "asset_ping_from", "metrics_storage_retention", "metrics_storage_type", "metrics_storage_s3_endpoint", "metrics_storage_s3_bucket", "metrics_storage_s3_access_key", "metrics_storage_s3_secret_access_key", "metrics_query_max_series", "logs_storage_retention", "logs_storage_type", "logs_storage_s3_endpoint", "logs_storage_s3_bucket", "logs_storage_s3_access_key", "logs_storage_s3_secret_access_key", "logs_query_range_default_limit"};
+    public static final String[] MONITOR_KEYS = {"alert_api", "prometheus_federation_enabled", "default_scrape_interval", "default_scrape_timeout", "asset_ping_interval", "asset_ping_from", "metrics_storage_retention", "metrics_storage_type", "metrics_storage_s3_endpoint", "metrics_storage_s3_bucket", "metrics_storage_s3_access_key", "metrics_storage_s3_secret_access_key", "metrics_query_max_series", "logs_storage_retention", "logs_storage_type", "logs_storage_s3_endpoint", "logs_storage_s3_bucket", "logs_storage_s3_access_key", "logs_storage_s3_secret_access_key", "logs_query_range_default_limit", "interface_name"};
 
     public static final String[] MONITOR_REQUIRED = {"prometheus_federation_enabled", "default_scrape_interval", "default_scrape_timeout", "asset_ping_interval", "asset_ping_from", "metrics_storage_retention", "metrics_storage_type", "metrics_query_max_series", "logs_storage_retention", "logs_storage_type", "logs_query_range_default_limit"};
 
@@ -97,7 +97,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
 
     public static final String[] LDAP_REQUIRED={"ldap_address","ldap_dn","ldap_user_filter","ldap_mapping","ldap_enable","ldap_timeout"};
 
-    private static Log logger = Log.get();
+    private static final Log logger = Log.get();
 
     @Autowired
     private SysConfigRedis sysConfigRedis;
@@ -582,6 +582,11 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
         if (logsStorageTypeIntValue != 1 && logsStorageTypeIntValue != 2) {
             throw new NZException(RCode.SYS_CONFIGI_LOGSSTORAGETYPE_NCORRECT);
         }
+
+        // interface_name
+        String interfaceName = result.get("interface_name");
+        result.put("interface_name", StrUtil.emptyToDefault(interfaceName, "eth0,en0,bond0,ens2f0,enp0s31f6"));
+
         // 处理 monitor_event_log 数据变动
         this.handleMoniotEventLog(result);
         //保存
@@ -621,7 +626,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
                 updateKeys.add(key);
             }
         }
-
+        logger.info("[handleMoniotEventLog] [Updated monitor config] [key size: {}] [value: {}]", updateKeys.size(), JSONUtil.toJsonStr(updateKeys));
         // 根据 key 更新不同 event_log 值
         if (Tool.CollectionUtil.isNotEmpty(updateKeys)) {
             Set<String> incrementKeys = new HashSet<>();
@@ -660,6 +665,12 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
                 incrementKeys.add("prometheus");
                 // incrementKeys.add("rule");
                 incrementKeys.add("cortex");
+            }
+            // interface_name
+            if (updateKeys.contains("interface_name")) {
+                logger.info("[handleMoniotEventLog] [Updated interface_name]");
+                incrementKeys.add("cortex");
+                incrementKeys.add("loki");
             }
             eventLogService.increment(ArrayUtil.toArray(incrementKeys, String.class));
         }
