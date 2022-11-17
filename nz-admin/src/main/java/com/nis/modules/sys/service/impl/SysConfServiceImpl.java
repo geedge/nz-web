@@ -85,11 +85,13 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
 
     public static final String[] SWITCH_TYPES={"on","off"};
 
-    public static final String[] TERMINAL_KEYS={"terminal_timeout","terminal_telnet_user_tip","terminal_telnet_pin_tip","terminal_record_local_retention"};
+    public static final String[] TERMINAL_KEYS={"terminal_timeout","terminal_telnet_user_tip","terminal_telnet_pin_tip","terminal_record_local_retention","terminal_storage_type","terminal_storage_s3_endpoint","terminal_storage_s3_bucket","terminal_storage_s3_access_key","terminal_storage_s3_secret_access_key"};
 
-    public static final String[] TERMINAL_REQUIRED={"terminal_telnet_user_tip","terminal_telnet_pin_tip","terminal_record_local_retention"};
+    public static final String[] TERMINAL_REQUIRED={"terminal_telnet_user_tip","terminal_telnet_pin_tip","terminal_record_local_retention","terminal_storage_type"};
 
-    public static final String[] TERMINAL_INTEGER={"terminal_timeout","terminal_record_local_retention"};
+    public static final String[] TERMINAL_S3_REQUIRED={"terminal_storage_s3_endpoint","terminal_storage_s3_bucket","terminal_storage_s3_access_key","terminal_storage_s3_secret_access_key"};
+
+    public static final String[] TERMINAL_INTEGER={"terminal_timeout","terminal_record_local_retention","terminal_storage_type"};
 
     public static final String[] LDAP_KEYS={"ldap_address","ldap_dn","ldap_password","ldap_ou","ldap_user_filter","ldap_mapping","ldap_timeout","ldap_enable"};
 
@@ -149,6 +151,10 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
         this.validateRequired(result,TERMINAL_REQUIRED,null);
         //校验integer类型
         this.validateInteger(TERMINAL_INTEGER,result);
+        //校验S3存储参数
+        if(StrUtil.equals(String.valueOf(params.get("terminal_storage_type")), "2")){
+            this.validateRequired(result,TERMINAL_S3_REQUIRED,null);
+        }
         this.saveOrUpdateConfsBatch(result);
     }
 
@@ -382,7 +388,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
 
         for (String key : keyList){
             if(Tool.StrUtil.isEmpty(params.get(key))){
-                throw new NZException(String.format("%s can not be null",Tool.StrUtil.replace(key,"_"," ")),573011);
+                throw new NZException(String.format("%s can not be null",Tool.StrUtil.replace(key,"_"," ")),99999);
             }
         }
 
@@ -401,7 +407,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
                     }
                 }
                 if(isDepend&& Tool.StrUtil.isEmpty(params.get(key))){
-                    throw new NZException(String.format("%s can not be null", Tool.StrUtil.replace(key,"_"," ")),573011);
+                    throw new NZException(String.format("%s can not be null", Tool.StrUtil.replace(key,"_"," ")),99999);
                 }
             }
         }
