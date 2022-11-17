@@ -315,7 +315,7 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 			//ip校验
             String addr = dataMap.get(IpamSubnetEum.ADDR.getIndex());
 			validateUtil.validateRequired(addr, lineNum, IpamSubnetEum.ADDR.getIndex());
-			validateUtil.validateIp(addr, lineNum, IpamSubnetEum.ADDR.getIndex());
+			validateUtil.validateIp(addr, lineNum, IpamSubnetEum.ADDR.getIndex(), type);
 
 			//掩码校验
             String mask = dataMap.get(IpamSubnetEum.MASK.getIndex());

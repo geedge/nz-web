@@ -208,9 +208,15 @@ public class ImportValidateUtil {
     /**
      * 校验端口是否符合规范
      */
-    public void validateIp(String ip, int lineNum, int headerIndex) {
+    public void validateIp(String ip, int lineNum, int headerIndex, String type) {
         if (StrUtil.isNotEmpty(ip)) {
-            if (!CommonUtils.checkIp(ip)) {
+            boolean checkIp;
+            switch (type){
+                case "4": checkIp = CommonUtils.checkIpv4(ip); break;
+                case "6": checkIp = CommonUtils.checkIpv6(ip); break;
+                default: checkIp = CommonUtils.checkIp(ip); break;
+            }
+            if (!checkIp) {
                 String header = headerInfos.get(headerIndex);
                 this.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(header));
             }
