@@ -103,8 +103,12 @@ public class ExcelUtils {
                     // 在excel里,日期也是数字,在此要进行判断
                     if (HSSFDateUtil.isCellDateFormatted(cell)) {
                         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-                        Date date = cell.getDateCellValue();
-                        result = sdf.format(date);
+                        String format = sdf.format(cell.getDateCellValue());
+                        if(format.startsWith("1899-12-31")){ // 只有时分的日期格式会被默认设置为1899-12-31
+                            sdf = new SimpleDateFormat("HH:mm");
+                            format = sdf.format(cell.getDateCellValue());
+                        }
+                        result = format;
                     }
                     else {
                         // 数字也按照字符串类型获取值
