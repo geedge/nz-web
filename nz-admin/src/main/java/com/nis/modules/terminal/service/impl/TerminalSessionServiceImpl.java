@@ -285,7 +285,7 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
             asset.setAuthProtocolPort(ObjectUtil.defaultIfNull(authProtocolPort, port));
 
             // 尝试用 host 补充 assetId
-            AssetAsset queryAssetByHost = assetService.getOne(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getManageIp, configEntity));
+            AssetAsset queryAssetByHost = assetService.getOne(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getManageIp, configEntity.getHost()));
             if (ObjectUtil.isNotNull(queryAssetByHost)) {
                 asset.setId(queryAssetByHost.getId());
             }

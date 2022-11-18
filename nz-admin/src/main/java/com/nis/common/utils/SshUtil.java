@@ -1,6 +1,7 @@
 package com.nis.common.utils;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.URLUtil;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
@@ -64,7 +65,7 @@ public class SshUtil {
             case PIN: {
                 session.setConfig("StrictHostKeyChecking", "no");
                 session.setConfig("PreferredAuthentications", "publickey,keyboard-interactive,password");
-                session.setPassword(StringUtils.str(Base64.getDecoder().decode(asset.getAuthPin())));
+                session.setPassword(StringUtils.str(Base64.getDecoder().decode(URLUtil.decode(asset.getAuthPin()))));
                 break;
             }
             default:
