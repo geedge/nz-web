@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.panel.entity.VisualChart;
-
+import com.nis.modules.panel.entity.VisualPanel;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -65,6 +65,11 @@ public class AssetModel implements Serializable {
      */
     private String sysObjectId;
 
+    /**
+     * template id
+     */
+    private String panelId;
+
 
     /**
      * TSG 产品
@@ -84,7 +89,10 @@ public class AssetModel implements Serializable {
     
     @TableField(exist = false)
     private List<VisualChart> charts;
-    
+
+    @TableField(exist = false)
+    private VisualPanel panel;
+
     @TableField(exist = false)
     private Integer assetNum;
 

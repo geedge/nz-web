@@ -23,7 +23,9 @@ import com.nis.modules.asset.service.AssetTypeConfService;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.panel.entity.VisualChart;
+import com.nis.modules.panel.entity.VisualPanel;
 import com.nis.modules.panel.service.VisualChartService;
+import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
@@ -70,6 +72,9 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
     private VisualChartService visualChartService;
 
     @Autowired
+    private VisualPanelService visualPanelService;
+
+    @Autowired
     private AssetAssetDao assetDao;
 
     @Autowired
@@ -105,6 +110,11 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
                 charts.add(chartById);
             }
             model.setCharts(charts);
+    	}
+        String panelId = model.getPanelId();
+    	if(StrUtil.isNotBlank(panelId)) {
+            VisualPanel visualPanel = visualPanelService.getById(panelId);
+            model.setPanel(visualPanel);
     	}
         AssetTypeConf typeConf = typeConfService.getById(model.getTypeId());
         //获取资产数量
@@ -157,6 +167,11 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
                 }
                 model.setCharts(charts);
             }
+            String panelId = model.getPanelId();
+            if(StrUtil.isNotBlank(panelId)) {
+                VisualPanel visualPanel = visualPanelService.getById(panelId);
+                model.setPanel(visualPanel);
+            }
         }
         page.setRecords(modelList);
         return new PageUtils(page);
@@ -189,6 +204,15 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
         	if(!ToolUtil.equals(charts.size(), chartids.size())) {
         		throw new NZException(RCode.ASSET_MODEL_CHART_ERROR);
         	}
+        }
+
+        // 校验panel是否为模板且存在
+        String panelId = model.getPanelId();
+        if(StrUtil.isNotBlank(panelId)) {
+            VisualPanel visualPanel = visualPanelService.getById(panelId);
+            if(visualPanel == null || !ToolUtil.equals(visualPanel.getVarType(), 1)) {
+                throw new NZException(RCode.ASSET_MODEL_PANEL_ERROR);
+            }
         }
 
         // 4. type 是否存在

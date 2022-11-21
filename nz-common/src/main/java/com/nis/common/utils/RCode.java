@@ -284,6 +284,7 @@ public enum RCode {
     ASSET_MODEL_OID_INCORRECT(323009,"OID format is incorrect"),
     ASSET_MODEL_RELOBJ_CAN_NOT_REMOVE(327010, "Asset model have associated data and cannot be deleted"),
     ASSET_MODEL_CONTAINS_CAN_NOT_CHANGE(327011, "Asset model have associated assets and cannot change"),
+    ASSET_MODEL_PANEL_ERROR(321012,"Asset model panel template not exist"),
 
     /**
      * Account
