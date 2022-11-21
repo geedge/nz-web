@@ -4789,5 +4789,7 @@ INSERT INTO `sys_i18n` VALUES (7550, 'PANEL_VARTYPE_ISNULL', 'en', '121098', 'Pa
 INSERT INTO `sys_i18n` VALUES (7551, 'PANEL_VARTYPE_ISNULL', 'zh', '121098', '面板变量类型不能为空', '响应消息->panel新增/修改接口', '2022-11-14 14:14:59', 416);
 INSERT INTO `sys_i18n` VALUES (7552, 'PANEL_VARTYPE_INVALIDE', 'en', '124099', 'Panel varType must be 0, 1 or 2', '响应消息->panel新增/修改接口', '2022-11-14 14:14:59', 416);
 INSERT INTO `sys_i18n` VALUES (7553, 'PANEL_VARTYPE_INVALIDE', 'zh', '124099', '面板变量类型不在允许范围内', '响应消息->panel新增/修改接口', '2022-11-14 14:14:59', 416);
+INSERT INTO `sys_i18n` VALUES (7554, 'overall.dashboardTemplate', 'en', 'overall.dashboardTemplate', 'Dashboard templates', '', '2022-11-18 09:06:08', 414);
+INSERT INTO `sys_i18n` VALUES (7555, 'overall.dashboardTemplate', 'zh', 'overall.dashboardTemplate', '仪表盘模板', '', '2022-11-18 09:07:24', 414);
 
 SET FOREIGN_KEY_CHECKS = 1;
