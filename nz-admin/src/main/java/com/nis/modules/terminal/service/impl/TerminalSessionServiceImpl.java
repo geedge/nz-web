@@ -290,6 +290,10 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
                 asset.setId(queryAssetByHost.getId());
             }
 
+            // decode auth pin
+            String decodeAuthPin = Tool.URLUtil.decode(asset.getAuthPin());
+            asset.setAuthPin(decodeAuthPin);
+
             // clone
             terminalConnectionInfo = ObjectUtil.clone(asset);
         }
