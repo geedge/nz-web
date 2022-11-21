@@ -68,7 +68,7 @@ public class AssetModel implements Serializable {
     /**
      * template id
      */
-    private String panelId;
+    private Integer panelId;
 
 
     /**

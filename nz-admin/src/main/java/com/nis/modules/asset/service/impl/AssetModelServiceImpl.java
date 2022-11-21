@@ -111,8 +111,8 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
             }
             model.setCharts(charts);
     	}
-        String panelId = model.getPanelId();
-    	if(StrUtil.isNotBlank(panelId)) {
+        Integer panelId = model.getPanelId();
+    	if(ToolUtil.isNotEmpty(panelId)) {
             VisualPanel visualPanel = visualPanelService.getById(panelId);
             model.setPanel(visualPanel);
     	}
@@ -167,8 +167,8 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
                 }
                 model.setCharts(charts);
             }
-            String panelId = model.getPanelId();
-            if(StrUtil.isNotBlank(panelId)) {
+            Integer panelId = model.getPanelId();
+            if(ToolUtil.isNotEmpty(panelId)) {
                 VisualPanel visualPanel = visualPanelService.getById(panelId);
                 model.setPanel(visualPanel);
             }
@@ -207,8 +207,8 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
         }
 
         // 校验panel是否为模板且存在
-        String panelId = model.getPanelId();
-        if(StrUtil.isNotBlank(panelId)) {
+        Integer panelId = model.getPanelId();
+        if(ToolUtil.isNotEmpty(panelId)) {
             VisualPanel visualPanel = visualPanelService.getById(panelId);
             if(visualPanel == null || !ToolUtil.equals(visualPanel.getVarType(), 1)) {
                 throw new NZException(RCode.ASSET_MODEL_PANEL_ERROR);

@@ -14,12 +14,18 @@
         <result property="assetNum" column="assetNum"/>
         <result property="alertNum" column="alertNum"/>
         <result property="chartIds" column="chart_ids"/>
+        <result property="panelId" column="panel_id"/>
         <result property="starred" column="starred"/>
 
         <association property="project" columnPrefix="p_" javaType="com.nis.modules.project.entity.MonitorProject">
             <id column="id" property="id"/>
             <result column="name" property="name"/>
             <result column="remark" property="remark"/>
+        </association>
+
+        <association property="panel" columnPrefix="pan_" javaType="com.nis.modules.panel.entity.VisualPanel">
+            <id column="id" property="id"/>
+            <result column="name" property="name"/>
         </association>
     </resultMap>
 
@@ -29,6 +35,8 @@
 			p.id AS p_id,
 			p.NAME AS p_name,
 			p.remark AS p_remark,
+			pan.id AS pan_id,
+			pan.NAME AS pan_name,
 			IFNULL( me.endpointNum, 0 ) AS endpointNum,
 			IFNULL( me.assetNum, 0 ) AS assetNum,
 			IFNULL( msg.alertNum, 0 ) AS alertNum,
@@ -36,6 +44,7 @@
 		FROM
 			monitor_module m
 			LEFT JOIN monitor_project p ON m.project_id = p.id
+			LEFT JOIN visual_panel pan ON m.panel_id = pan.id
 			LEFT JOIN ( SELECT module_id, count( 1 ) AS endpointNum, count( DISTINCT asset_id ) AS assetNum FROM monitor_endpoint GROUP BY module_id ) me ON m.id = me.module_id
 			LEFT JOIN ( SELECT module_id, count( 1 ) AS alertNum FROM alert_message_active WHERE module_id IS NOT NULL GROUP BY module_id ) msg ON m.id = msg.module_id
             LEFT JOIN ( SELECT IF(COUNT(1) > 0, 1, 0) AS starred,tid FROM sys_user_starred WHERE TYPE = "module" AND uid = #{params.uid} GROUP BY tid) sta ON m.id = sta.tid

@@ -199,6 +199,7 @@ public enum RCode {
     MODULE_CONFIG_RELABEL_REPLACEMENT_ISNULL(221039,"Module config relabel replacement is null"),
     MODULE_RELOBJ_CAN_NOT_REMOVE(227040, "Module have associated data and cannot be deleted"),
     MODULE_CONFIG_KUBERNETES_ROLE_INVALID(224041, "Module kubernetes role value is not in the enum range"),
+    MODULE_PANEL_ERROR(221042, "Module panel template not exist"),
 
     /**
      * endpoint

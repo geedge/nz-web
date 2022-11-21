@@ -4791,5 +4791,9 @@ INSERT INTO `sys_i18n` VALUES (7552, 'PANEL_VARTYPE_INVALIDE', 'en', '124099', '
 INSERT INTO `sys_i18n` VALUES (7553, 'PANEL_VARTYPE_INVALIDE', 'zh', '124099', '面板变量类型不在允许范围内', '响应消息->panel新增/修改接口', '2022-11-14 14:14:59', 416);
 INSERT INTO `sys_i18n` VALUES (7554, 'overall.dashboardTemplate', 'en', 'overall.dashboardTemplate', 'Dashboard templates', '', '2022-11-18 09:06:08', 414);
 INSERT INTO `sys_i18n` VALUES (7555, 'overall.dashboardTemplate', 'zh', 'overall.dashboardTemplate', '仪表盘模板', '', '2022-11-18 09:07:24', 414);
+INSERT INTO `sys_i18n` VALUES (7556, 'ASSET_MODEL_PANEL_ERROR', 'en', '321012', 'Asset model panel template not exist', '响应消息->Asset model新增/修改接口', '2022-11-21 14:14:59', 416);
+INSERT INTO `sys_i18n` VALUES (7557, 'ASSET_MODEL_PANEL_ERROR', 'zh', '321012', '资产型号面板模板未存在', '响应消息->Asset model新增/修改接口', '2022-11-21 14:14:59', 416);
+INSERT INTO `sys_i18n` VALUES (7558, 'MODULE_PANEL_ERROR', 'en', '221042', 'Module panel template not exist', '响应消息->Module新增/修改接口', '2022-11-21 14:14:59', 416);
+INSERT INTO `sys_i18n` VALUES (7559, 'MODULE_PANEL_ERROR', 'zh', '221042', '模块面板模板未存在', '响应消息->Module新增/修改接口', '2022-11-21 14:14:59', 416);
 
 SET FOREIGN_KEY_CHECKS = 1;

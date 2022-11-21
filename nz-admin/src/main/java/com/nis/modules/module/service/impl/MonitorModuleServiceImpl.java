@@ -29,7 +29,9 @@ import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.entity.MonitorModuleImportEnum;
 import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.panel.entity.VisualChart;
+import com.nis.modules.panel.entity.VisualPanel;
 import com.nis.modules.panel.service.VisualChartService;
+import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.project.service.TopoService;
@@ -90,6 +92,9 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
     private VisualChartService visualChartService;
 
     @Autowired
+    private VisualPanelService visualPanelService;
+
+    @Autowired
     private StatService statService;
 
     @Autowired
@@ -128,6 +133,12 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
         if (StrUtil.isNotBlank(chartIds)) {
             List<VisualChart> charts = (List<VisualChart>) visualChartService.listByIds(Arrays.asList(chartIds.split(",")));
             module.setCharts(charts);
+        }
+
+        Integer panelId = module.getPanelId();
+        if(ToolUtil.isNotEmpty(panelId)) {
+            VisualPanel visualPanel = visualPanelService.getById(panelId);
+            module.setPanel(visualPanel);
         }
 
         // 当前用户收藏状态  1：收藏  0：未收藏
@@ -213,6 +224,15 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
         if (!flag) {
             throw new NZException(RCode.MODULE_NAME_DUPLICATE);
+        }
+
+        // 校验panel是否为模板且存在
+        Integer panelId = module.getPanelId();
+        if(ToolUtil.isNotEmpty(panelId)) {
+            VisualPanel visualPanel = visualPanelService.getById(panelId);
+            if(visualPanel == null || !ToolUtil.equals(visualPanel.getVarType(), 1)) {
+                throw new NZException(RCode.MODULE_PANEL_ERROR);
+            }
         }
 
         // config 格式校验
