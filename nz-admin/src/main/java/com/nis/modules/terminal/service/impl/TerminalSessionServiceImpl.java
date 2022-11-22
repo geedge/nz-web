@@ -419,14 +419,22 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
         Map<Object, Object> resultData;
         Sftp sftp = this.getSftpChannel(uuid);
         try {
+            boolean isPathDir = sftp.cd(path);
             List<ChannelSftp.LsEntry> lsEntries = sftp.lsEntries(path);
 
             List<Object> list = Tool.ListUtil.list(true);
             for (ChannelSftp.LsEntry lsEntry : lsEntries) {
                 SftpATTRS attrs = lsEntry.getAttrs();
+
+                String fullName = StrUtil.EMPTY;
+                if (isPathDir) {
+                    fullName = FileUtil.file(path, lsEntry.getFilename()).toString();
+                } else {
+                    fullName = path;
+                }
                 Map<Object, Object> map = Tool.MapUtil.builder()
                         .put("name", lsEntry.getFilename())
-                        .put("fullName", StrUtil.concat(true, path, File.separator, lsEntry.getFilename()))
+                        .put("fullName", fullName)
                         .put("permissions", attrs.getPermissions())
                         .put("permissionsString", attrs.getPermissionsString())
                         .put("size", attrs.getSize())
