@@ -40,8 +40,8 @@ public class VisualPanelController {
 	@GetMapping
 	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.VISUALPANEL)
 	public R panelList(@RequestParam Map<String, Object> params) {
-		List<VisualPanel> panels = visualPanelService.queryList(params);
-		return R.ok().putData("list",panels);
+		PageUtils pageUtils = visualPanelService.queryList(params);
+		return R.ok(pageUtils);
 	}
 
 	@RequestMapping(method = { RequestMethod.POST })

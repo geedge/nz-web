@@ -10,6 +10,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
@@ -141,7 +142,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 	}
 
 	@Override
-	public List<VisualPanel> queryList(Map<String, Object> params) {
+	public PageUtils queryList(Map<String, Object> params) {
 		String ids = (String) params.get("ids");
 		if (StrUtil.isNotBlank(ids)) {
 			List<String> listIds = Arrays.asList(ids.split(","));
@@ -156,29 +157,24 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 			type = Constant.PanelType.DASHBOARD.getValue();
 			params.put("type", type);
 		}
-		// 2. dashboard 类型 需要进行排序返回
-		List<VisualPanel> panelList = new ArrayList<>();
-		if (StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(), type)) {
-			panelList = this.baseMapper.queryList(params);
+		boolean isDashboard = StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(), type);
+		if (isDashboard) params.put("pageSize", "-1");
+
+		IPage page = new Query(VisualPanel.class).getPage(params);
+		List<VisualPanel> panelList = this.baseMapper.queryList(page, params);
+		if (isDashboard) {
+			// 2. dashboard 类型 需要树形结构
 			if (CollectionUtils.isNotEmpty(panelList) && panelList.size() != 1) {
 				panelList = this.getVisualPanelTreeList(panelList, 0);
 			}
 		} else {
-			// 3. 其他类型不进行排序
-			panelList = this.baseMapper.queryList(params);
 			for (VisualPanel visualPanel : panelList) {
 				if (ToolUtil.isNotEmpty(visualPanel.getParam()))
 					visualPanel.setParam(JSONObject.parseObject(String.valueOf(visualPanel.getParam()), Map.class));
 			}
 		}
-
-		// 查询当前panel下的chart数量并且进行赋值
-//        Map<Integer, Integer> chartNums = visualChartService.queryChartNum();
-//        for(VisualPanel visualPanel : panelList) {
-//        	Integer chartNum = ObjectUtil.isEmpty(chartNums.get(visualPanel.getId()))?0:chartNums.get(visualPanel.getId());
-//        	visualPanel.setChartNum(chartNum);
-//        }
-		return panelList;
+		page.setRecords(panelList);
+		return new PageUtils(page);
 	}
 
 	/**
@@ -992,7 +988,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
 	private int saveDashboardChartData(List<Map<Integer, String>> importDataList, List<Map> failDetails,
 			List<String> headerInfos, String seqUUID) {
-		List<VisualPanel> panelTreeList = this.queryList(new HashMap());
+		List<VisualPanel> panelTreeList = (List<VisualPanel>) this.queryList(new HashMap()).getList();
 		Map<String, Integer> nodeNamePathAndIdMap = new HashMap<>();
 		for (VisualPanel panel : panelTreeList) {
 			nodeNamePathAndIdMap.put(panel.getName(), panel.getId());
@@ -1851,7 +1847,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 	}
 
 	private List<List<String>> handleDashboardChartExportDataList(List<VisualChart> charts) {
-		List<VisualPanel> panelTreeList = this.queryList(new HashMap());
+		List<VisualPanel> panelTreeList = (List<VisualPanel>) this.queryList(new HashMap()).getList();
 		Map<Integer, String> nodeIdAndNamePathMap = new HashMap<>();
 		for (VisualPanel panel : panelTreeList) {
 			nodeIdAndNamePathMap.put(panel.getId(), panel.getName());

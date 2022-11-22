@@ -1,6 +1,7 @@
 package com.nis.modules.panel.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.nis.common.utils.PageUtils;
 import com.nis.modules.panel.entity.VisualPanel;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -17,7 +18,7 @@ public interface VisualPanelService extends IService<VisualPanel> {
 
     void modify(List<VisualPanel> visualPanelList);
 
-    List<VisualPanel> queryList(Map<String, Object> params);
+    PageUtils queryList(Map<String, Object> params);
 
     void delPanelsAndChartInfoByPanelIds(Set<Integer> visualPanelIds);
 

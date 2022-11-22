@@ -4821,5 +4821,7 @@ INSERT INTO `sys_i18n` VALUES (7582, '121100', 'en', 'PANEL_LINK_ISNULL', 'Panel
 INSERT INTO `sys_i18n` VALUES (7583, '121100', 'zh', 'PANEL_LINK_ISNULL', '面板关联项不能为空', '响应消息->Panel新增/修改', '2022-11-22 01:53:08', 416);
 INSERT INTO `sys_i18n` VALUES (7584, 'overall.dashboardTemp', 'en', 'overall.dashboardTemp', 'DashboardTemp preview', '', '2022-11-22 02:03:49', 407);
 INSERT INTO `sys_i18n` VALUES (7585, 'overall.dashboardTemp', 'zh', 'overall.dashboardTemp', '仪表盘预览', '', '2022-11-22 02:04:13', 407);
+INSERT INTO `sys_i18n` VALUES (7586, 'model.dashboardtemplate', 'en', 'model.dashboardtemplate', 'Dashboard template', '', '2022-11-22 06:02:39', 415);
+INSERT INTO `sys_i18n` VALUES (7587, 'model.dashboardtemplate', 'zh', 'model.dashboardtemplate', '仪表盘模板', '', '2022-11-22 06:03:31', 415);
 
 SET FOREIGN_KEY_CHECKS = 1;
