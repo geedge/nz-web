@@ -158,19 +158,24 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 			params.put("type", type);
 		}
 		boolean isDashboard = StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(), type);
-		if (isDashboard) params.put("pageSize", "-1");
+		if (isDashboard) params.put("pid", "0");
 
 		IPage page = new Query(VisualPanel.class).getPage(params);
 		List<VisualPanel> panelList = this.baseMapper.queryList(page, params);
-		if (isDashboard) {
-			// 2. dashboard 类型 需要树形结构
-			if (CollectionUtils.isNotEmpty(panelList) && panelList.size() != 1) {
-				panelList = this.getVisualPanelTreeList(panelList, 0);
-			}
-		} else {
-			for (VisualPanel visualPanel : panelList) {
-				if (ToolUtil.isNotEmpty(visualPanel.getParam()))
-					visualPanel.setParam(JSONObject.parseObject(String.valueOf(visualPanel.getParam()), Map.class));
+		for (VisualPanel visualPanel : panelList) {
+			if (ToolUtil.isNotEmpty(visualPanel.getParam()))
+				visualPanel.setParam(JSONObject.parseObject(String.valueOf(visualPanel.getParam()), Map.class));
+
+			if (isDashboard) {
+				// 2. dashboard 类型 需要树形结构
+				List<VisualPanel> ChildrenList = this.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getPid, visualPanel.getId()));
+				if (CollectionUtils.isNotEmpty(ChildrenList)) {
+					for (VisualPanel ChildrenPanel : ChildrenList) {
+						if (ToolUtil.isNotEmpty(ChildrenPanel.getParam()))
+							ChildrenPanel.setParam(JSONObject.parseObject(String.valueOf(ChildrenPanel.getParam()), Map.class));
+					}
+					visualPanel.setChildren(ChildrenList);
+				}
 			}
 		}
 		page.setRecords(panelList);

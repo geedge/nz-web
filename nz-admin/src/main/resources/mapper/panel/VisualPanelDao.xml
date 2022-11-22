@@ -64,6 +64,10 @@
                 and pan.type=#{params.type}
             </if>
 
+            <if test="params.pid != null and params.pid != ''">
+                and pan.pid=#{params.pid}
+            </if>
+
             <if test="params.link != null and params.link != ''">
                 and pan.link=#{params.link}
             </if>
