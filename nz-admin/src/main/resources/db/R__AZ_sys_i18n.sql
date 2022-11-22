@@ -1919,7 +1919,7 @@ INSERT INTO `sys_i18n` VALUES (3075, '121007', 'en', 'PANEL_NAME_ISNULL', 'Panel
 INSERT INTO `sys_i18n` VALUES (3076, '121010', 'en', 'PANEL_ID_ISNULL', 'Panel ID can not be empty', '响应消息->panel修改/删除/复制/快照/顺序调整接口', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3077, '122009', 'en', 'PANEL_NAME_DUPLICATE', 'Panel name is duplicate', '响应消息->panel新增/修改接口', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3078, '121002', 'en', 'PANEL_TYPE_ISNULL', 'Panel type can not be empty when link is not empty', '响应消息->panel新增/修改接口', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (3079, '124003', 'en', 'PANEL_TYPE_INVALIDE', 'Panel type must be dashboard, asset, project, module, endpoint or model', '响应消息->panel新增/修改接口', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (3079, '124003', 'en', 'PANEL_TYPE_INVALIDE', 'Panel type must be dashboard, asset, project, module, endpoint or template', '响应消息->panel新增/修改接口', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3081, '127014', 'en', 'PANEL_BUILDIN_CAN_NOT_REMOVE', 'This panel is built-in and cannot be deleted', '响应消息->panel删除接口', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3082, '121032', 'en', 'CHART_TITLE_ISNULL', 'Chart title can not be empty', '响应消息->charts新增/修改、panel导入接口', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3083, '121035', 'en', 'CHART_SPAN_ISNULL', 'Chart span can not be empty', '响应消息->charts调整大小/新增/修改、panel导入接口', '2021-11-02 00:00:00', 1);
@@ -4785,7 +4785,7 @@ INSERT INTO `sys_i18n` VALUES (7546, '617019', 'en', 'TERMINAL_DOWNLOAD_NOT_SUPP
 INSERT INTO `sys_i18n` VALUES (7547, '617019', 'zh', 'TERMINAL_DOWNLOAD_NOT_SUPPORTED_DIRECTORY', '不支持下载目录', '', '2022-11-14 08:32:36', 1);
 INSERT INTO `sys_i18n` VALUES (7548, '616020', 'en', 'TERMINAL_UPLOAD_PROGRESS_NOT_FOUND', 'Terminal upload progress information not found, expired or does not exist.', '', '2022-11-14 08:32:48', 1);
 INSERT INTO `sys_i18n` VALUES (7549, '616020', 'zh', 'TERMINAL_UPLOAD_PROGRESS_NOT_FOUND', '终端上传进度信息未找到，过期或不存在', '', '2022-11-14 08:33:02', 1);
-INSERT INTO `sys_i18n` VALUES (7550, '121098', 'en', 'PANEL_VARTYPE_ISNULL', 'Panel varType can not be empty when link is not empty', '响应消息->panel新增/修改接口', '2022-11-14 14:14:59', 416);
+INSERT INTO `sys_i18n` VALUES (7550, '121098', 'en', 'PANEL_VARTYPE_ISNULL', 'Panel varType can not be empty when type be template', '响应消息->panel新增/修改接口', '2022-11-14 14:14:59', 416);
 INSERT INTO `sys_i18n` VALUES (7551, '121098', 'zh', 'PANEL_VARTYPE_ISNULL', '面板变量类型不能为空', '响应消息->panel新增/修改接口', '2022-11-14 14:14:59', 416);
 INSERT INTO `sys_i18n` VALUES (7552, '124099', 'en', 'PANEL_VARTYPE_INVALIDE', 'Panel varType must be 0, 1 or 2', '响应消息->panel新增/修改接口', '2022-11-14 14:14:59', 416);
 INSERT INTO `sys_i18n` VALUES (7553, '124099', 'zh', 'PANEL_VARTYPE_INVALIDE', '面板变量类型不在允许范围内', '响应消息->panel新增/修改接口', '2022-11-14 14:14:59', 416);
@@ -4807,5 +4807,19 @@ INSERT INTO `sys_i18n` VALUES (7568, 'overall.newFolder', 'en', 'overall.newFold
 INSERT INTO `sys_i18n` VALUES (7569, 'overall.newFolder', 'zh', 'overall.newFolder', '新建文件夹', '', '2022-11-21 07:52:21', 415);
 INSERT INTO `sys_i18n` VALUES (7570, 'overall.deleteFiles', 'en', 'overall.deleteFiles', 'Delete files', '', '2022-11-21 07:53:36', 415);
 INSERT INTO `sys_i18n` VALUES (7571, 'overall.deleteFiles', 'zh', 'overall.deleteFiles', '删除文件', '', '2022-11-21 07:54:01', 415);
+INSERT INTO `sys_i18n` VALUES (7572, 'terminal.filetransfer', 'en', 'terminal.filetransfer', 'file transfer', 'terminal 文件传输', '2022-11-22 01:28:55', 1);
+INSERT INTO `sys_i18n` VALUES (7573, 'terminal.filetransfer', 'zh', 'terminal.filetransfer', '文件传输', 'terminal 文件传输', '2022-11-22 01:31:13', 381);
+INSERT INTO `sys_i18n` VALUES (7574, 'terminal.sftp', 'en', 'terminal.sftp', 'SFTP', 'terminal  sftp', '2022-11-22 01:34:43', 381);
+INSERT INTO `sys_i18n` VALUES (7575, 'terminal.sftp', 'zh', 'terminal.sftp', 'SFTP', 'terminal  sftp', '2022-11-22 01:34:51', 381);
+INSERT INTO `sys_i18n` VALUES (7576, 'terminal.back', 'zh', 'terminal.back', '上一级', 'terminal 返回上一级', '2022-11-22 01:35:55', 381);
+INSERT INTO `sys_i18n` VALUES (7577, 'terminal.back', 'en', 'terminal.back', 'Go up', 'terminal 返回上一级', '2022-11-22 01:37:57', 381);
+INSERT INTO `sys_i18n` VALUES (7578, 'overall.create', 'en', 'overall.create', 'Create', '', '2022-11-22 01:41:02', 381);
+INSERT INTO `sys_i18n` VALUES (7579, 'overall.create', 'zh', 'overall.create', '创建', '', '2022-11-22 01:41:16', 381);
+INSERT INTO `sys_i18n` VALUES (7580, 'overall.folderName', 'en', 'overall.folderName', 'folder name', '', '2022-11-22 01:52:40', 381);
+INSERT INTO `sys_i18n` VALUES (7581, 'overall.folderName', 'zh', 'overall.folderName', '文件夹名称', 'termail 创建文件夹', '2022-11-22 01:53:08', 381);
+INSERT INTO `sys_i18n` VALUES (7582, '121100', 'en', 'PANEL_LINK_ISNULL', 'Panel link can not be empty when type be asset, project, module or endpoint', '响应消息->Panel新增/修改', '2022-11-22 01:53:08', 416);
+INSERT INTO `sys_i18n` VALUES (7583, '121100', 'zh', 'PANEL_LINK_ISNULL', '面板关联项不能为空', '响应消息->Panel新增/修改', '2022-11-22 01:53:08', 416);
+INSERT INTO `sys_i18n` VALUES (7584, 'overall.dashboardTemp', 'en', 'overall.dashboardTemp', 'DashboardTemp preview', '', '2022-11-22 02:03:49', 407);
+INSERT INTO `sys_i18n` VALUES (7585, 'overall.dashboardTemp', 'zh', 'overall.dashboardTemp', '仪表盘预览', '', '2022-11-22 02:04:13', 407);
 
 SET FOREIGN_KEY_CHECKS = 1;

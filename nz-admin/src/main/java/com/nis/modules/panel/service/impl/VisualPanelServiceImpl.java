@@ -328,24 +328,27 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 			throw new NZException(RCode.PANEL_NAME_DUPLICATE);
 		}
 
-		// link 不为空时
-		if (ToolUtil.isNotEmpty(panel.getLink())) {
-			// 校验 type
-			String type = panel.getType();
-			ValidateUtils.is(type).notNull(RCode.PANEL_TYPE_ISNULL);
-			List<Constant.PanelType> panelTypes = Arrays.asList(Constant.PanelType.values());
-			List<String> types = panelTypes.stream().map(Constant.PanelType::getValue).collect(Collectors.toList());
-			if (!types.contains(type)) {
-				throw new NZException(RCode.PANEL_TYPE_INVALIDE);
+		// 校验 type 与 link、 varType
+		String type = panel.getType();
+		if (StrUtil.isEmpty(type)) {
+			if(ToolUtil.isNotEmpty(panel.getLink())){
+				throw new NZException(RCode.PANEL_TYPE_ISNULL);
 			}
-
-			if(StrUtil.equals(type, Constant.PanelType.TEMPLATE.getValue())){
-				// 校验 varType
-				Integer varType = panel.getVarType();
-				ValidateUtils.is(varType).notNull(RCode.PANEL_VARTYPE_ISNULL);
-				if(!Arrays.asList(new Integer[]{0, 1, 2}).contains(varType)){
-					throw new NZException(RCode.PANEL_VARTYPE_INVALIDE);
-				}
+			panel.setType(Constant.PanelType.DASHBOARD.getValue());
+		} else if(StrUtil.equals(type, Constant.PanelType.TEMPLATE.getValue())){
+			// 校验 varType
+			Integer varType = panel.getVarType();
+			ValidateUtils.is(varType).notNull(RCode.PANEL_VARTYPE_ISNULL);
+			if(!Arrays.asList(new Integer[]{0, 1, 2}).contains(varType)){
+				throw new NZException(RCode.PANEL_VARTYPE_INVALIDE);
+			}
+		} else {
+			List<Constant.PanelType> panelTypes = Arrays.asList(Constant.PanelType.values());
+			List<String> types = panelTypes.stream().map(Constant.PanelType::getValue).filter(val -> !val.equals(Constant.PanelType.DASHBOARD.getValue())).collect(Collectors.toList());
+			if(types.contains(type)){
+				ValidateUtils.is(panel.getLink()).notNull(RCode.PANEL_LINK_ISNULL);
+			} else if(!StrUtil.equals(type, Constant.PanelType.DASHBOARD.getValue())){
+				throw new NZException(RCode.PANEL_TYPE_INVALIDE);
 			}
 		}
 
@@ -432,9 +435,6 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 		Long userId = ShiroUtils.getUserId();
 		panel.setCreateBy(userId.intValue());
 
-		if (ToolUtil.isEmpty(panel.getLink())) {
-			panel.setType(Constant.PanelType.DASHBOARD.getValue());
-		}
 		panel.setUts(System.currentTimeMillis());
 		String reportEnable = null;
 		if (ToolUtil.isNotEmpty(panel.getParam())) {

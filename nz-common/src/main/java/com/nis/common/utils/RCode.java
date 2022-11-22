@@ -41,7 +41,7 @@ public enum RCode {
      */
     PANEL_WEIGHT_ISNULL(121001,"Panel weight not be empty"),
     PANEL_TYPE_ISNULL(121002,"Panel type can not be empty when link is not empty"),
-    PANEL_TYPE_INVALIDE(124003,"Panel type must be dashboard, asset, project, module, endpoint or model"),
+    PANEL_TYPE_INVALIDE(124003,"Panel type must be dashboard, asset, project, module, endpoint or template"),
     PANEL_PID_ISNULL(121004,"Panel pid can not be empty"),
     PANEL_NOT_EXIST(126005,"Panel does not exist"),
     PANEL_NAME_TOO_LONG(123006,"Panel name too long than 64"),
@@ -117,6 +117,7 @@ public enum RCode {
     DASHBOARD_SNAPSHOT_TASK_NOT_EXIST(126097,"Dashboard snapshot task cancel error, the task does not exist or has expired."),
     PANEL_VARTYPE_ISNULL(121098,"Panel varType can not be empty when link is not empty"),
     PANEL_VARTYPE_INVALIDE(124099,"Panel varType must be 0, 1 or 2"),
+    PANEL_LINK_ISNULL(121100,"Panel link can not be empty"),
 
     /**
      * EXPRETMPL
