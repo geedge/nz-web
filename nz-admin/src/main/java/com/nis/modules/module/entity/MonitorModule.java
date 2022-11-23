@@ -1,9 +1,6 @@
 package com.nis.modules.module.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.panel.entity.VisualPanel;
@@ -106,6 +103,7 @@ public class MonitorModule implements Serializable {
     /**
      * template id
      */
+    @TableField(strategy = FieldStrategy.IGNORED)
     private Integer panelId;
 
     @TableField(exist = false)

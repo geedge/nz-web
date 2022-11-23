@@ -1,9 +1,6 @@
 package com.nis.modules.asset.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.panel.entity.VisualPanel;
 import lombok.Data;
@@ -68,6 +65,7 @@ public class AssetModel implements Serializable {
     /**
      * template id
      */
+    @TableField(strategy = FieldStrategy.IGNORED)
     private Integer panelId;
 
 
