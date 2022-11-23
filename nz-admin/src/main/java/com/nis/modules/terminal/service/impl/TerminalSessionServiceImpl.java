@@ -418,7 +418,9 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
     public Map<Object, Object> lsOfSftp(String uuid, String path) {
         Map<Object, Object> resultData;
         Sftp sftp = this.getSftpChannel(uuid);
+        ChannelSftp channelSftp = null;
         try {
+        	channelSftp = sftp.getClient();
             boolean isPathDir = sftp.cd(path);
             List<ChannelSftp.LsEntry> lsEntries = sftp.lsEntries(path);
 
@@ -432,20 +434,42 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
                 } else {
                     fullName = path;
                 }
+                boolean isLink = attrs.isLink();
+                boolean isDir = attrs.isDir();
+                boolean isBlk = attrs.isBlk();
+                boolean isFifo = attrs.isFifo();
+                boolean isReg = attrs.isReg();
+                boolean isSock = attrs.isSock();
+                String linkName = null;
+                // 当文件为链接时，需要进一步判断文件类型和链接文件名称
+                if(isLink) {
+                	try {
+                		linkName = channelSftp.readlink(fullName);
+                		SftpATTRS stat = channelSftp.stat(fullName);
+                		isDir = stat.isDir();
+                		isBlk = stat.isBlk();
+                		isFifo = stat.isFifo();
+                		isReg = stat.isReg();
+                		isSock = stat.isSock();
+					} catch (Exception e) {
+						log.warn(e,"link error: {}", fullName);
+					}
+                }
                 Map<Object, Object> map = Tool.MapUtil.builder()
                         .put("name", lsEntry.getFilename())
                         .put("fullName", fullName)
                         .put("permissions", attrs.getPermissions())
                         .put("permissionsString", attrs.getPermissionsString())
                         .put("size", attrs.getSize())
-                        .put("isDir", attrs.isDir())
-                        .put("isBlk", attrs.isBlk())
-                        .put("isFifo", attrs.isFifo())
-                        .put("isLink", attrs.isLink())
-                        .put("isReg", attrs.isReg())
-                        .put("isSock", attrs.isSock())
+                        .put("isDir", isDir)
+                        .put("isBlk", isBlk)
+                        .put("isFifo", isFifo)
+                        .put("isLink", isLink)
+                        .put("isReg", isReg)
+                        .put("isSock", isSock)
                         .put("cts", attrs.getATime())
                         .put("uts", attrs.getMTime())
+                        .put("linkName", linkName)
                         .map();
 
                 list.add(map);
@@ -456,8 +480,7 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
                     .put("path", path)
                     .map();
         } finally {
-            // disconnect
-            sftp.getClient().disconnect();
+            Tool.JschUtil.close(channelSftp);
         }
         return resultData;
     }
