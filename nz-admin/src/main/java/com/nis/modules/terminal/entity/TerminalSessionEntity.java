@@ -109,6 +109,12 @@ public class TerminalSessionEntity implements Serializable {
 	 */
 	@TableField(exist = false)
 	private Integer cmdNum;
+
+	/**
+	 * 文件操作数量
+	 */
+	@TableField(exist = false)
+	private Integer sftpNum;
 	
 	@Override
 	public String toString() {

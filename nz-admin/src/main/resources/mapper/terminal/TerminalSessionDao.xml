@@ -6,11 +6,13 @@
 		SELECT
 			ts.*,
 			su.name as username,
-			cmd.cmdNum 
+			cmd.cmdNum,
+            IFNULL(sftp.sftpNum, 0) sftpNum
 		FROM
 			terminal_session ts
 			LEFT JOIN sys_user su ON ts.user_id = su.id
 			LEFT JOIN ( SELECT uuid, ( count( 1 ) - 1 ) AS cmdNum FROM terminal_cmd GROUP BY uuid ) cmd ON cmd.uuid = ts.uuid
+			LEFT JOIN ( SELECT uuid, count( 1 ) AS sftpNum FROM terminal_sftp_log GROUP BY uuid ) sftp ON sftp.uuid = ts.uuid
         <where>
             <if test="params.protocol != null and params.protocol != ''">
                 ts.protocol = #{params.protocol}
