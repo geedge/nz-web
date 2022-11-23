@@ -230,7 +230,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
         Integer panelId = module.getPanelId();
         if(ToolUtil.isNotEmpty(panelId)) {
             VisualPanel visualPanel = visualPanelService.getById(panelId);
-            if(visualPanel == null || !ToolUtil.equals(visualPanel.getVarType(), 1)) {
+            if(visualPanel == null || !ToolUtil.equals(visualPanel.getVarType(), 2)) {
                 throw new NZException(RCode.MODULE_PANEL_ERROR);
             }
         }
