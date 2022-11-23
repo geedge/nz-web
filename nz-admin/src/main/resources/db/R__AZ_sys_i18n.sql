@@ -3717,10 +3717,10 @@ INSERT INTO `sys_i18n` VALUES (5908, '513027', 'en', 'SYS_USER_PIN_NOT_CONTAIN_U
 INSERT INTO `sys_i18n` VALUES (5909, '513027', 'zh', 'SYS_USER_PIN_NOT_CONTAIN_UPPERCASE_LETTERS', '系统用户密码必须包含大写字母', '响应消息->user新增/修改/修改密码、登录接口', '2022-03-30 06:20:06', 1);
 INSERT INTO `sys_i18n` VALUES (5910, '513028', 'en', 'SYS_USER_PIN_NOT_CONTAIN_SPECIAL_LETTERS', 'System user pin must contain special letters', '响应消息->user新增/修改/修改密码、登录接口', '2022-03-30 06:20:39', 1);
 INSERT INTO `sys_i18n` VALUES (5911, '513028', 'zh', 'SYS_USER_PIN_NOT_CONTAIN_SPECIAL_LETTERS', '系统用户密码必须包含特殊字母', '响应消息->user新增/修改/修改密码、登录接口', '2022-03-30 06:20:58', 1);
-INSERT INTO `sys_i18n` VALUES (5912, '513029', 'en', 'SYS_USER_PIN_LONGTIME_NO_MODIFY', 'System user pin has not been modified for a long time more than {0}', '响应消息->user新增/修改/修改密码、登录接口', '2022-06-20 06:21:48', 1);
+INSERT INTO `sys_i18n` VALUES (5912, '513029', 'en', 'SYS_USER_PIN_LONGTIME_NO_MODIFY', 'System user pin has not been modified for a long time more than {0} days', '响应消息->user新增/修改/修改密码、登录接口', '2022-06-20 06:21:48', 1);
 INSERT INTO `sys_i18n` VALUES (5913, '513029', 'zh', 'SYS_USER_PIN_LONGTIME_NO_MODIFY', '系统用户密码超过 {0} 天未修改', '响应消息->user新增/修改/修改密码、登录接口', '2022-06-20 06:25:44', 1);
-INSERT INTO `sys_i18n` VALUES (5914, '513030', 'en', 'SYS_USER_PIN_RETRY_ERROR', 'System user pin too many errors more than {0} , please try again after {1} minutes', '响应消息->user新增/修改/修改密码、登录接口', '2022-03-30 06:26:49', 1);
-INSERT INTO `sys_i18n` VALUES (5915, '513030', 'zh', 'SYS_USER_PIN_RETRY_ERROR', '重试次数大于 {0}，请在 {1} 分钟后重试', '响应消息->user新增/修改/修改密码、登录接口', '2022-06-20 06:25:32', 1);
+INSERT INTO `sys_i18n` VALUES (5914, '513030', 'en', 'SYS_USER_PIN_RETRY_ERROR', 'System user pin too many errors more than {0} times, please try again after {1} minutes', '响应消息->user新增/修改/修改密码、登录接口', '2022-03-30 06:26:49', 1);
+INSERT INTO `sys_i18n` VALUES (5915, '513030', 'zh', 'SYS_USER_PIN_RETRY_ERROR', '重试次数大于 {0} 次，请在 {1} 分钟后重试', '响应消息->user新增/修改/修改密码、登录接口', '2022-06-20 06:25:32', 1);
 INSERT INTO `sys_i18n` VALUES (5916, '521019', 'en', 'AGENT_NAME_ISNULL', 'Agent name can not be empty', '响应消息->agent新增/修改接口', '2022-03-30 06:29:30', 1);
 INSERT INTO `sys_i18n` VALUES (5917, '521019', 'zh', 'AGENT_NAME_ISNULL', '客户端名称不能为空', '响应消息->agent新增/修改接口', '2022-03-30 06:29:19', 1);
 INSERT INTO `sys_i18n` VALUES (5918, '521020', 'en', 'AGENT_NAME_EXISTED', 'Agent name existed', '响应消息->agent新增/修改接口', '2022-03-30 06:30:07', 1);
