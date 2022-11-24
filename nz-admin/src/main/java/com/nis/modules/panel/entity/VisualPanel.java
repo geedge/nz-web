@@ -1,16 +1,17 @@
 package com.nis.modules.panel.entity;
 
-import java.util.List;
-
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.nis.modules.sys.entity.SysUserEntity;
-
 import lombok.Data;
+
+import java.io.Serializable;
+import java.util.List;
 
 @Data
 @TableName("visual_panel")
-public class VisualPanel {
+public class VisualPanel implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 	
 	private Integer id;
 	

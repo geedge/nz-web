@@ -98,62 +98,64 @@ public class ReportJob extends QuartzJobBean {
 
         Boolean isRun = ReportJobManager.checkJobIsRun(scheduleType, stime, repeatStr, nums);
         if (isRun) {
-            log.info("dashboard report notific begin ...");
-            String receiversStr = JSONPath.read(configJsonStr, "report.receivers").toString();
-            if (StrUtil.isEmpty(receiversStr)) {
-                log.error("dashboard report receiver user is empty, panelId:{}", panelId);
-                return;
-            }
-
-            List<String> receiverIds = JSONObject.parseArray(receiversStr, String.class);
-            List<SysUserEntity> userList = sysUserService.list(new LambdaQueryWrapper<SysUserEntity>().in(SysUserEntity::getId, receiverIds));
-            if (receiverIds.size() != userList.size()) {
-                log.error("dashboard report receiver user not found, panelId:{}", panelId);
-                return;
-            }
-
-            // 计算 query_range start&end
-            String timezone = sysConfService.getValue("timezone");
-            timezone = StrUtil.emptyToDefault(timezone, TimeZone.getDefault().getID());
-            Map<String, Long> queryRangeStartAndEndTime = getQueryRangeStartAndEndTime(configJsonStr, timezone.trim());
-            log.info("dashboard report range data, panelId:{}, query_range start&end {}", panelId, JSONObject.toJSONString(queryRangeStartAndEndTime));
-
-            try {
-                Template template = getEmailTemplate();
-                String content = this.genMailContent(visualPanel, template);
-
-                String format = "html";
-                String fileName = String.format("%s.%s", visualPanel.getName(), format);
-
-                Long start = queryRangeStartAndEndTime.get("start");
-                Long end = queryRangeStartAndEndTime.get("end");
-
-                // 模拟前端实现 组织快照接口 vars 参数
-                List<Map<String, String>> snapshotVars = this.getSnapshotVars(configJsonStr, start, end);
-                log.info("dashboard report snapshot vars: {}", JSONObject.toJSONString(snapshotVars));
-
-                for (SysUserEntity user : userList) {
-                    // 以用户默认语言生成 快照文件
-                    String lang = user.getLang();
-                    String snapshotStr = visualPanelService.genSnapshotByTemplate(Integer.valueOf(panelId), start, end, lang, JSONObject.toJSONString(snapshotVars));
-
-                    File file = null;
-                    try {
-                        // 写到临时目录下，通知用户之后，此文件删除
-                        file = Tool.FileUtil.newFile(Constant.TEMP_PATH + File.separator + fileName);
-                        Tool.FileUtil.writeUtf8String(snapshotStr, file);
-
-                        // 发送邮件通知
-                        mailUtil.sendHTMLAndAppendFile(Tool.ListUtil.toList(user.getEmail()), "Dashboard report", content, file.getAbsolutePath());
-                        log.info("dashboard report notific success ,user {}", user.getUsername());
-                    } finally {
-                        if (file != null && file.exists()) file.delete();
-                    }
+            Tool.ThreadUtil.execAsync(() -> {
+                log.info("dashboard report notific begin ...");
+                String receiversStr = JSONPath.read(configJsonStr, "report.receivers").toString();
+                if (StrUtil.isEmpty(receiversStr)) {
+                    log.error("dashboard report receiver user is empty, panelId:{}", panelId);
+                    return;
                 }
-            } catch (IOException | TemplateException | MessagingException e) {
-                log.error("dashboard report notific error.", e);
-            }
-            log.info("dashboard report notific finished.");
+
+                List<String> receiverIds = JSONObject.parseArray(receiversStr, String.class);
+                List<SysUserEntity> userList = sysUserService.list(new LambdaQueryWrapper<SysUserEntity>().in(SysUserEntity::getId, receiverIds));
+                if (receiverIds.size() != userList.size()) {
+                    log.error("dashboard report receiver user not found, panelId:{}", panelId);
+                    return;
+                }
+
+                // 计算 query_range start&end
+                String timezone = sysConfService.getValue("timezone");
+                timezone = StrUtil.emptyToDefault(timezone, TimeZone.getDefault().getID());
+                Map<String, Long> queryRangeStartAndEndTime = this.getQueryRangeStartAndEndTime(configJsonStr, timezone.trim());
+                log.info("dashboard report range data, panelId:{}, query_range start&end {}", panelId, JSONObject.toJSONString(queryRangeStartAndEndTime));
+
+                try {
+                    Template template = getEmailTemplate();
+                    String content = this.genMailContent(visualPanel, template);
+
+                    String format = "html";
+                    String fileName = String.format("%s.%s", visualPanel.getName(), format);
+
+                    Long start = queryRangeStartAndEndTime.get("start");
+                    Long end = queryRangeStartAndEndTime.get("end");
+
+                    // 模拟前端实现 组织快照接口 vars 参数
+                    List<Map<String, String>> snapshotVars = this.getSnapshotVars(configJsonStr, start, end);
+                    log.info("dashboard report snapshot vars: {}", JSONObject.toJSONString(snapshotVars));
+
+                    for (SysUserEntity user : userList) {
+                        // 以用户默认语言生成 快照文件
+                        String lang = user.getLang();
+                        String snapshotStr = visualPanelService.genSnapshotByTemplate(Integer.valueOf(panelId), start, end, lang, JSONObject.toJSONString(snapshotVars));
+
+                        File file = null;
+                        try {
+                            // 写到临时目录下，通知用户之后，此文件删除
+                            file = Tool.FileUtil.newFile(Constant.TEMP_PATH + File.separator + fileName);
+                            Tool.FileUtil.writeUtf8String(snapshotStr, file);
+
+                            // 发送邮件通知
+                            mailUtil.sendHTMLAndAppendFile(Tool.ListUtil.toList(user.getEmail()), "Dashboard report", content, file.getAbsolutePath());
+                            log.info("dashboard report notific success ,user {}", user.getUsername());
+                        } finally {
+                            if (file != null && file.exists()) file.delete();
+                        }
+                    }
+                } catch (IOException | TemplateException | MessagingException e) {
+                    log.error("dashboard report notific error.", e);
+                }
+                log.info("dashboard report notific finished.");
+            });
         } else {
             log.info("dashboard report is not executed, this time does't match the report schedule");
         }
@@ -439,16 +441,19 @@ public class ReportJob extends QuartzJobBean {
             m.put("name", name);
 
             // 根据 allOption 确定最终值
-            String allOptionStr = JSONPath.read(varJsonStr, "allOption").toString();
-            allOptionStr = Tool.StrUtil.emptyToDefault(allOptionStr, "false");
-
-            if (Tool.StrUtil.equals(allOptionStr, "true")) {
-                // allOption = true  时，变量值 为 .*
-                m.put("value", ".*");
-            } else {
-                // 否则 取第一个值
-                m.put("value", Tool.CollectionUtil.isEmpty(valueList) ? "" : valueList.get(0));
-            }
+//            String allOptionStr = JSONPath.read(varJsonStr, "allOption").toString();
+//            allOptionStr = Tool.StrUtil.emptyToDefault(allOptionStr, "false");
+//
+//            if (Tool.StrUtil.equals(allOptionStr, "true")) {
+//                // allOption = true  时，变量值 为 .*
+//                m.put("value", ".*");
+//            } else {
+//                // 否则 取第一个值
+//                m.put("value", Tool.CollectionUtil.isEmpty(valueList) ? "" : valueList.get(0));
+//            }
+            // 与前端保持一致
+            // allOption 默认也取第一个值
+            m.put("value", Tool.CollectionUtil.isEmpty(valueList) ? "" : valueList.get(0));
             snapshotVars.add(m);
         }
         return snapshotVars;
@@ -466,7 +471,7 @@ public class ReportJob extends QuartzJobBean {
         List<String> promiseList = new ArrayList<>();
         boolean isLabelNames = Tool.ReUtil.isMatch(SPECIAL_KEY_MAP.get("label_names"), expression);
         if (isLabelNames) {
-            JSONObject resultMap = promApiService.labels("/api/v1/labels", String.valueOf(start), String.valueOf(end), null);
+            JSONObject resultMap = promApiService.labels("/api/v1/labels", String.valueOf(start), String.valueOf(end), Tool.ListUtil.empty());
             List<String> labelList = (List<String>) resultMap.get("data");
 
             promiseList = Tool.CollectionUtil.isEmpty(labelList) ? new ArrayList<>() : labelList;

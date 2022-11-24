@@ -4,9 +4,13 @@ import com.baomidou.mybatisplus.annotation.TableName;
 
 import lombok.Data;
 
+import java.io.Serializable;
+
 @Data
 @TableName("visual_chart_element")
-public class VisualChartElement {
+public class VisualChartElement implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	private Integer id;
 	

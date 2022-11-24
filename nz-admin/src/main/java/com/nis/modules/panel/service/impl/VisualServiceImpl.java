@@ -7,6 +7,7 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.*;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.JSONPath;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
@@ -35,13 +36,11 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 
 @Service("visualService")
 public class VisualServiceImpl implements VisualService {
@@ -249,8 +248,12 @@ public class VisualServiceImpl implements VisualService {
         List<VisualChart> chartsList = (List<VisualChart>) chartPageUtils.getList();
         ValidateUtils.is(chartsList).notNull(RCode.CHART_NOTEXSITS);
 
-        // 平铺 获取所有 chart 节点
-        List<VisualChart> allChartList = visualChartService.getAllChartList(chartsList);
+        // render repeat chart
+        List<VisualChart> randeredRepeatChartList = this.renderRepeatChartVariables(chartsList, varsJsonStr);
+        chartPageUtils.setList(randeredRepeatChartList);
+
+        // render single chart
+        List<VisualChart> allChartList = this.renderSingleChartVariables(randeredRepeatChartList, varsJsonStr);
 
         String taskId = StrUtil.uuid();
         Map taskStat = Tool.MapUtil.builder()
@@ -262,7 +265,6 @@ public class VisualServiceImpl implements VisualService {
                 .put("end", end)
                 .put("panel", R.ok(panel))
                 .put("charts", R.ok(chartPageUtils))
-                .put("vars", StrUtil.isNotEmpty(varsJsonStr) ? JSONObject.parseArray(varsJsonStr, Map.class) : Tool.ListUtil.empty())
                 .map();
 
         log.info("dashboard snapshot start. taskId: {}, panelId:{} total: {}", taskId, panelId, allChartList.size());
@@ -276,7 +278,6 @@ public class VisualServiceImpl implements VisualService {
             basicQueryParam.put("start", StrUtil.toString(start));
             basicQueryParam.put("end", StrUtil.toString(end));
             basicQueryParam.put("step", StrUtil.toString(step));
-            basicQueryParam.put("vars", StrUtil.emptyToDefault(varsJsonStr, StrUtil.EMPTY));
 
             // run Snapshot Runnable
             ThreadGroup threadGroup = new ThreadGroup(taskId);
@@ -295,6 +296,149 @@ public class VisualServiceImpl implements VisualService {
         });
         log.info("dashboard snapshot task create finished. taskId: {}", taskId);
         return taskId;
+    }
+
+
+    /**
+     * render Repeat Chart Variables
+     *
+     * @param chartList
+     * @param varsJsonStr
+     * @return
+     */
+    private List<VisualChart> renderRepeatChartVariables(List<VisualChart> chartList, String varsJsonStr) {
+        log.info("[renderRepeatChartVariables] [begin] [variable config: {}]", varsJsonStr);
+        List<Map> varConfigList = StrUtil.isNotEmpty(varsJsonStr) ? JSONObject.parseArray(varsJsonStr, Map.class) : Tool.ListUtil.empty();
+        if (Tool.CollUtil.isEmpty(varConfigList)) {
+            log.warn("[renderRepeatChartVariables] [no chart variable config] [vars size: {}]", varConfigList.size());
+            List<VisualChart> allChartList = visualChartService.getAllChartList(chartList);
+            return allChartList;
+        }
+
+        // multi variable
+        Map<String, List<String>> multiVariableMap = varConfigList.stream()
+                .filter(map -> {
+                    List values = (List) map.get("values");
+                    if (Tool.CollUtil.isEmpty(values)) return false;
+                    return values.size() > 1;
+                })
+                .collect(Collectors.toMap(map -> (String) map.get("name"), map -> (List<String>) map.get("values")));
+        log.info("[renderRepeatChartVariables] [multi variable] [info: {}]", JSONUtil.toJsonStr(multiVariableMap));
+
+        List<VisualChart> repeatConfGroupChartList = chartList.stream()
+                .filter(chart -> StrUtil.equals(Constant.CHART_GROUP_TYPE, chart.getType()))
+                .filter(chart -> {
+                    String chartParamJsonStr = JSONUtil.toJsonStr(ObjectUtil.defaultIfNull(chart.getParam(), Tool.MapUtil.empty()));
+                    // repeat enable
+                    Object repeatEnable = JSONPath.read(chartParamJsonStr, "enable.repeat");
+                    String repeatEnableStr = StrUtil.toString(ObjectUtil.defaultIfNull(repeatEnable, false));
+                    // repeat var
+                    Object repeatVariable = JSONPath.read(chartParamJsonStr, "repeat.variable");
+                    return BooleanUtil.and(
+                            StrUtil.equals("true", repeatEnableStr),
+                            ObjectUtil.isNotNull(repeatVariable)
+                    );
+                })
+                .collect(Collectors.toList());
+
+        // copy group charts and render vars
+        for (VisualChart groupChart : repeatConfGroupChartList) {
+            String chartParamJsonStr = JSONUtil.toJsonStr(ObjectUtil.defaultIfNull(groupChart.getParam(), Tool.MapUtil.empty()));
+            String repeatVariable = JSONPath.read(chartParamJsonStr, "repeat.variable").toString();
+
+            List<String> varValues = multiVariableMap.get(repeatVariable);
+            if (Tool.CollUtil.isEmpty(varValues)) {
+                log.warn("[renderRepeatChartVariables] [group chart config variable not found, not repeat] [group chart variable: {}]", repeatVariable);
+                continue;
+            }
+            log.info("[renderRepeatChartVariables] [repeat group chart] [id: {}] [name: {}]", groupChart.getId(), groupChart.getName());
+            // remove old chart
+            chartList.remove(groupChart);
+            List<VisualChart> copyGroupChartList = Tool.ListUtil.list(true);
+            Integer startTempId = -1;
+            for (String varValue : varValues) {
+                // 这里重新对 group_id 进行赋值
+                Integer tempGroupId = startTempId--;
+                VisualChart tempGroupChart = new VisualChart();
+                tempGroupChart = ObjectUtil.clone(groupChart);
+                // new temp group id
+                tempGroupChart.setId(tempGroupId);
+
+                // render repeatVariable
+                List<VisualChart> children = tempGroupChart.getChildren();
+                children = Tool.CollUtil.defaultIfEmpty(children, Tool.ListUtil.list(true));
+                for (VisualChart chart : children) {
+                    Integer tempChartId = startTempId--;
+                    // temp id
+                    chart.setId(tempChartId);
+                    chart.setGroupId(tempGroupId);
+
+                    List<VisualChartElement> elements = chart.getElements();
+                    elements = Tool.CollUtil.defaultIfEmpty(elements, Tool.ListUtil.list(true));
+                    for (VisualChartElement element : elements) {
+                        // temp chart id
+                        element.setChartId(tempChartId);
+                        String expression = element.getExpression();
+                        expression = expression.replaceAll(StrUtil.concat(true, "\\$", repeatVariable), varValue);
+                        element.setExpression(expression);
+                    }
+                }
+                copyGroupChartList.add(tempGroupChart);
+            }
+            // add new chart
+            chartList.addAll(copyGroupChartList);
+        }
+        log.info("[renderRepeatChartVariables] [finshed]");
+        return chartList;
+    }
+
+    /**
+     * render Single Chart Variables
+     *
+     * @param chartList
+     * @param varsJsonStr
+     * @return
+     */
+    private List<VisualChart> renderSingleChartVariables(List<VisualChart> chartList, String varsJsonStr) {
+        log.info("[renderSingleChartVariables] [begin] [variable config: {}]", varsJsonStr);
+        List<Map> varConfigList = StrUtil.isNotEmpty(varsJsonStr) ? JSONObject.parseArray(varsJsonStr, Map.class) : Tool.ListUtil.empty();
+        if (Tool.CollUtil.isEmpty(varConfigList)) {
+            log.warn("[renderSingleChartVariables] [no chart variable config] [vars size: {}]", varConfigList.size());
+            List<VisualChart> allChartList = visualChartService.getAllChartList(chartList);
+            return allChartList;
+        }
+
+        // all Chart List & render vars
+        List<VisualChart> allChartList = visualChartService.getAllChartList(chartList);
+
+        // single Variables map
+        Map<String, String> singleVariableMap = Tool.MapUtil.newHashMap();
+        for (Map map : varConfigList) {
+            String name = StrUtil.toString(map.get("name"));
+            List values = (List) map.get("values");
+            values = Tool.CollUtil.defaultIfEmpty(values, Tool.ListUtil.list(true));
+            if (Tool.CollUtil.isEmpty(values)) {
+                continue;
+            }
+
+            singleVariableMap.put(name, Tool.CollUtil.join(values, "|"));
+        }
+        log.info("[renderSingleChartVariables] [single variable] [info: {}]", JSONUtil.toJsonStr(singleVariableMap));
+        Set<Map.Entry<String, String>> singleVariableEntrySet = singleVariableMap.entrySet();
+
+        for (VisualChart chart : allChartList) {
+            List<VisualChartElement> elements = chart.getElements();
+            elements = Tool.CollUtil.defaultIfEmpty(elements, Tool.ListUtil.list(true));
+            for (VisualChartElement element : elements) {
+                String expression = element.getExpression();
+                for (Map.Entry<String, String> entry : singleVariableEntrySet) {
+                    expression = expression.replaceAll(StrUtil.concat(true, "\\$", entry.getKey()), entry.getValue());
+                }
+                element.setExpression(expression);
+            }
+        }
+        log.info("[renderSingleChartVariables] [finshed]");
+        return allChartList;
     }
 
 
@@ -490,24 +634,17 @@ public class VisualServiceImpl implements VisualService {
                         String step = basicQueryParam.get("step");
                         String limit = ToolUtil.toStr(chartParam.get("limit"), "100");
                         String nullType = ToolUtil.toStr(chartParam.get("nullType"), "null");
-
                         String logsDirection = "backward";
-
-                        String vars = basicQueryParam.get("vars");
-                        List<Map> varList = StrUtil.isNotEmpty(vars) ? JSONObject.parseArray(vars, Map.class) : Tool.ListUtil.empty();
 
                         List<Object> rList = Tool.ListUtil.list(true);
                         Integer eleIndex = 0;
                         for (VisualChartElement element : chart.getElements()) {
                             String indexStr = StrUtil.toString(eleIndex++);
-                            // 将表达式进行变量渲染
-                            String expr = this.replaceExprByVars(element.getExpression(), varList);
-
                             JSONObject jsonObject = new JSONObject();
                             if (StrUtil.equals(Constant.ChartDatasourceType.METRICS.getValue(), datasource)) {
-                                jsonObject = promApiService.query_range(expr, start, end, step, nullType, null);
+                                jsonObject = promApiService.query_range(element.getExpression(), start, end, step, nullType, null);
                             } else if (StrUtil.equals(Constant.ChartDatasourceType.LOGS.getValue(), datasource)) {
-                                jsonObject = lokiApiService.query_range(expr, start, end, limit, step, null, logsDirection, "1", null);
+                                jsonObject = lokiApiService.query_range(element.getExpression(), start, end, limit, step, null, logsDirection, "1", null);
                             }
                             jsonObject.put("eleIndex", indexStr);
                             jsonObject.put("chartId", chart.getId());
@@ -566,24 +703,6 @@ public class VisualServiceImpl implements VisualService {
             } catch (Exception e) {
                 log.error("dashboard snapshot result error,taskId: {}", e, threadGroup.getName());
             }
-        }
-
-        /**
-         * replace Expr By Vars
-         *
-         * @param expr
-         * @param varList
-         * @return
-         */
-        private String replaceExprByVars(String expr, List<Map> varList) {
-            if (Tool.CollectionUtil.isEmpty(varList))
-                return expr;
-            for (Map<String, String> map : varList) {
-                String name = map.get("name");
-                String value = map.get("value");
-                expr = expr.replaceAll("\\$" + name, value);
-            }
-            return expr;
         }
     }
 

@@ -5,14 +5,17 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.asset.entity.AssetAsset;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 
 @Data
 @TableName("visual_chart")
-public class VisualChart {
+public class VisualChart implements Serializable {
 
-	private Integer id;
+    private static final long serialVersionUID = 1L;
+
+    private Integer id;
 	
 	private String name;
 	
