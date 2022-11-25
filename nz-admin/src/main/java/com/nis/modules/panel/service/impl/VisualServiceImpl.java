@@ -355,7 +355,7 @@ public class VisualServiceImpl implements VisualService {
             // remove old chart
             chartList.remove(groupChart);
             List<VisualChart> copyGroupChartList = Tool.ListUtil.list(true);
-            Integer startTempId = -1;
+            Integer startTempId = -10;
             for (String varValue : varValues) {
                 // 这里重新对 group_id 进行赋值
                 Integer tempGroupId = startTempId--;

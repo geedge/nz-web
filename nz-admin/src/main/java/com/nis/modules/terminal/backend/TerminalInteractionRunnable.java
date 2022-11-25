@@ -81,14 +81,15 @@ public class TerminalInteractionRunnable extends Thread {
                     if (Tool.StrUtil.isNotEmpty(trimMessage)) {
                         // 重置下标
                         StringBuffer sendBuffer = client.getSendBuffer();
-                        sendBuffer.setLength(0);
                         if (Tool.BooleanUtil.and(
-                                Tool.StrUtil.equals("exit", sendBuffer.toString()),
+                                Tool.StrUtil.equals("exit", Tool.StrUtil.trim(sendBuffer)),
                                 Tool.StrUtil.equals("logout", trimMessage))) {
                             // disconnect
                             client.disconnect();
                         }
                     }
+                    // 重置下标
+                    client.getSendBuffer().setLength(0);
                 }
             }
         } catch (IOException e) {
