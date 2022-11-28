@@ -15,7 +15,7 @@ public enum TypeEnum {
 	ASSETTYPECONF("asset type conf"), EXPRESSIONTMPL("expression tmpl"), ASSETBRAND("asset brand"),
 	SNMPCREDENTIAL("snmp credential"), LICENSE("license"), SYSTEMAPIKEY("sys api key"),I18N("i18n"),CTL("ctl"),IPAMSUBNET("ipam subnet"),
 	IPAMIP("ipam ip"),RECORD_RULE("record rule"), ISSUERECORD("issue record"), ISSUEACTIVITY("issue activity"), SYSFILE("sys file"), ASSETCOMMENT("asset comment"),
-	VSYS("vsys");
+	VSYS("vsys"), TERMINAL("terminal");
 
 	private String value;
 

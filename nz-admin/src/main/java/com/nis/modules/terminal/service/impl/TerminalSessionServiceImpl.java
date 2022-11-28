@@ -542,7 +542,8 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
                 SFTP_UPLOAD_THREAD_MAP.put(tid, sftpUploadRunnable);
 
                 // record log
-                sftpLogService.saveSftpLog(uuid, StrUtil.concat(true, path, File.separator, multipartFile.getOriginalFilename()), TerminalConstant.SftpOperType.UPLOAD.getValue());
+                String fullName = FileUtil.file(path, multipartFile.getOriginalFilename()).toString();
+                sftpLogService.saveSftpLog(uuid, fullName, TerminalConstant.SftpOperType.UPLOAD.getValue());
 
                 // run upload
                 Tool.ThreadUtil.execAsync(sftpUploadRunnable);

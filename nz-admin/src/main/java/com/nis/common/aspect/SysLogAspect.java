@@ -181,7 +181,12 @@ public class SysLogAspect {
 		String operationType = syslog.operation().getValue();
 
 		// 获取执行结果
-		R r = (R) result;
+		R r = R.ok();
+		if (result instanceof Map) {
+			Tool.BeanUtil.copyProperties(result, r, true);
+		} else {
+			r = (R) result;
+		}
 
 		// 注解上的描述
 		sysLog.setOperation(operationType);
