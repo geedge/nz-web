@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.nis.common.update.v3_5_to_3_6.dao.V3_5_AssetModelDao">
+
+    <resultMap type="com.nis.modules.asset.entity.AssetModel" id="modelView">
+        <result property="id" column="id"/>
+        <result property="brandId" column="brand_id"/>
+        <result property="name" column="name"/>
+        <result property="remark" column="remark"/>
+        <result property="seq" column="seq"/>
+        <result property="usize" column="usize"/>
+        <result property="chartIds" column="chart_ids"/>
+        <result property="typeId" column="type_id"/>
+        <result property="sysObjectId" column="sys_object_id"/>
+        <result property="tsgAppliance" column="tsg_appliance"/>
+    </resultMap>
+
+    <select id="checkTableExists" resultType="java.util.Map">
+        SHOW TABLES LIKE #{tableName};
+    </select>
+
+    <update id="dropTable">
+        DROP TABLE ${tableName};
+    </update>
+
+
+    <select id="queryList" resultMap="modelView">
+        SELECT
+            *
+        FROM
+            asset_model_V3_6;
+    </select>
+
+</mapper>

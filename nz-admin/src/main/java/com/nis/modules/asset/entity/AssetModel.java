@@ -23,7 +23,7 @@ public class AssetModel implements Serializable {
     /**
      * 主键
      */
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.INPUT)
     private Integer id;
 
     /**
