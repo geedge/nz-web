@@ -32,7 +32,7 @@ public interface VisualPanelService extends IService<VisualPanel> {
 
     void export(HttpServletResponse response, Map<String, Object> params) throws IOException;
 
-    Map importChartData(MultipartFile excelFile, String type, Integer linkId, String language) throws IOException;
+    Map importChartData(MultipartFile excelFile, Map<String, Object> params) throws IOException;
 
     void duplicate(Integer id);
 

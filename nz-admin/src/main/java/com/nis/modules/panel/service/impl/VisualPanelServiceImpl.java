@@ -1,6 +1,13 @@
 package com.nis.modules.panel.service.impl;
 
+import cn.hutool.core.codec.Base64;
+import cn.hutool.core.collection.ListUtil;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.thread.NamedThreadFactory;
+import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
@@ -8,6 +15,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -20,9 +28,7 @@ import com.nis.modules.agent.service.PromApiService;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.panel.dao.VisualPanelDao;
-import com.nis.modules.panel.entity.VisualChart;
-import com.nis.modules.panel.entity.VisualChartElement;
-import com.nis.modules.panel.entity.VisualPanel;
+import com.nis.modules.panel.entity.*;
 import com.nis.modules.panel.service.VisualChartElementService;
 import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
@@ -34,6 +40,7 @@ import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.*;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.poi.util.TempFile;
 import org.quartz.SchedulerException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,9 +50,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
@@ -182,28 +191,6 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 		return new PageUtils(page);
 	}
 
-	/**
-	 * 递归获取树结构
-	 *
-	 * @param panelList
-	 * @param parentId
-	 * @return
-	 */
-	private List<VisualPanel> getVisualPanelTreeList(List<VisualPanel> panelList, Integer parentId) {
-		List<VisualPanel> resultList = new ArrayList<>();
-		for (VisualPanel panel : panelList) {
-			if (ToolUtil.isNotEmpty(panel.getParam()) && panel.getParam() instanceof String)
-				panel.setParam(JSONObject.parseObject(String.valueOf(panel.getParam()), Map.class));
-			Integer id = panel.getId();
-			Integer pid = panel.getPid();
-			if (parentId.equals(pid)) {
-				panel.setChildren(this.getVisualPanelTreeList(panelList, id));
-				resultList.add(panel);
-			}
-		}
-		return resultList;
-	}
-
 	@Override
 	@Transactional(rollbackFor = Exception.class)
 	public void delPanelsAndChartInfoByPanelIds(Set<Integer> panelIds) {
@@ -317,7 +304,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 		pid = (pid == null) ? 0 : pid;
 		// 校验name是否重复
 		List<VisualPanel> list = this.list(new QueryWrapper<VisualPanel>().lambda().eq(VisualPanel::getPid, pid)
-				.eq(VisualPanel::getName, panel.getName()));
+				.eq(VisualPanel::getType, panel.getType()).eq(VisualPanel::getName, panel.getName()));
 		boolean flag = false;
 		// 当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
 		if ((list == null || list.size() == 0)
@@ -362,6 +349,13 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 		}
 
 		// panel param 校验
+		RCode paramRCode = validatePanelParam(panel);
+		if (paramRCode != null) {
+			throw new NZException(paramRCode);
+		}
+	}
+
+	public RCode validatePanelParam(VisualPanel panel){
 		if (ToolUtil.isNotEmpty(panel.getParam())) {
 			Map param = JSONObject.parseObject(JSONObject.toJSONString(panel.getParam()), Map.class);
 			if (ToolUtil.isNotEmpty(param.get("report"))) {
@@ -369,36 +363,60 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 				// enable 为 true 时
 				if (ToolUtil.isNotEmpty(report.get("enable"))
 						&& ToolUtil.equals("true", report.get("enable").toString())) {
-					ValidateUtils.is(report.get("range")).notNull(RCode.PANEL_PARAM_REPORTRANGE_ISNULL)
-							.and(report.get("schedule")).notNull(RCode.PANEL_PARAM_REPORTSCHEDULE_ISNULL)
-							.and(report.get("receivers")).notNull(RCode.PANEL_PARAM_REPORTRECEIVERS_ISNULL);
+					if(ToolUtil.isEmpty(report.get("range"))){
+						return RCode.PANEL_PARAM_REPORTRANGE_ISNULL;
+					}
+					if(ToolUtil.isEmpty(report.get("schedule"))){
+						return RCode.PANEL_PARAM_REPORTSCHEDULE_ISNULL;
+					}
+					if(ToolUtil.isEmpty(report.get("receivers"))){
+						return RCode.PANEL_PARAM_REPORTRECEIVERS_ISNULL;
+					}
 					Map range = JSONObject.parseObject(JSONObject.toJSONString(report.get("range")), Map.class);
-					ValidateUtils.is(range.get("type")).notNull(RCode.PANEL_PARAM_RANGETYPE_ISNULL)
-							.and(range.get("interval")).notNull(RCode.PANEL_PARAM_RANGEINTERVAL_ISNULL)
-							.and(range.get("unit")).notNull(RCode.PANEL_PARAM_RANGEUNIT_ISNULL);
+					if(ToolUtil.isEmpty(range.get("type"))){
+						return RCode.PANEL_PARAM_RANGETYPE_ISNULL;
+					}
+					if(ToolUtil.isEmpty(range.get("interval"))){
+						return RCode.PANEL_PARAM_RANGEINTERVAL_ISNULL;
+					}
+					if(ToolUtil.isEmpty(range.get("unit"))){
+						return RCode.PANEL_PARAM_RANGEUNIT_ISNULL;
+					}
 					if (!Arrays.asList(new String[] { "previous", "last" }).contains(range.get("type"))) {
-						throw new NZException(RCode.PANEL_PARAM_RANGETYPE_INVALIDE);
+						return RCode.PANEL_PARAM_RANGETYPE_INVALIDE;
 					} else if (!Arrays.asList(new String[] { "hour", "day", "week", "month" })
 							.contains(range.get("unit"))) {
-						throw new NZException(RCode.PANEL_PARAM_RANGEUNIT_INVALIDE);
+						return RCode.PANEL_PARAM_RANGEUNIT_INVALIDE;
 					}
 					Map schedule = JSONObject.parseObject(JSONObject.toJSONString(report.get("schedule")), Map.class);
-					ValidateUtils.is(schedule.get("type")).notNull(RCode.PANEL_PARAM_SCHEDULETYPE_ISNULL)
-							.and(schedule.get("stime")).notNull(RCode.PANEL_PARAM_SCHEDULESTIME_ISNULL);
+					if(ToolUtil.isEmpty(schedule.get("type"))){
+						return RCode.PANEL_PARAM_SCHEDULETYPE_ISNULL;
+					}
+					if(ToolUtil.isEmpty(schedule.get("stime"))){
+						return RCode.PANEL_PARAM_SCHEDULESTIME_ISNULL;
+					}
 					if (!Arrays.asList(new Integer[] { 1, 2, 3, 4 }).contains(schedule.get("type"))) {
-						throw new NZException(RCode.PANEL_PARAM_SCHEDULETYPE_INVALIDE);
+						return RCode.PANEL_PARAM_SCHEDULETYPE_INVALIDE;
 					}
 					if (ToolUtil.equals(schedule.get("type").toString(), "2")) {
-						ValidateUtils.is(schedule.get("repeat")).notNull(RCode.PANEL_PARAM_SCHEDULEREPEAT_ISNULL);
+						if(ToolUtil.isEmpty(schedule.get("repeat"))){
+							return RCode.PANEL_PARAM_SCHEDULEREPEAT_ISNULL;
+						}
 					} else if (ToolUtil.equals(schedule.get("type").toString(), "3")) {
-						ValidateUtils.is(schedule.get("repeat")).notNull(RCode.PANEL_PARAM_SCHEDULEREPEAT_ISNULL)
-								.and(schedule.get("nums")).notNull(RCode.PANEL_PARAM_SCHEDULENUMS_ISNULL);
+						if(ToolUtil.isEmpty(schedule.get("repeat"))){
+							return RCode.PANEL_PARAM_SCHEDULEREPEAT_ISNULL;
+						}
+						if(ToolUtil.isEmpty(schedule.get("nums"))){
+							return RCode.PANEL_PARAM_SCHEDULENUMS_ISNULL;
+						}
 						if (!Arrays.asList(new Integer[] { 1, 2, 3, 4, 5, 6, 7 }).containsAll(
 								JSONArray.parseObject(JSONObject.toJSONString(schedule.get("nums")), List.class))) {
-							throw new NZException(RCode.PANEL_PARAM_SCHEDULENUMS_INVALIDE);
+							return RCode.PANEL_PARAM_SCHEDULENUMS_INVALIDE;
 						}
 					} else if (ToolUtil.equals(schedule.get("type").toString(), "4")) {
-						ValidateUtils.is(schedule.get("nums")).notNull(RCode.PANEL_PARAM_SCHEDULENUMS_ISNULL);
+						if(ToolUtil.isEmpty(schedule.get("nums"))){
+							return RCode.PANEL_PARAM_SCHEDULENUMS_ISNULL;
+						}
 						List<Integer> monthlyList = new ArrayList<>();
 						for (int i = 1; i < 32; i++) {
 							monthlyList.add(i);
@@ -406,7 +424,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 						monthlyList.add(-1);
 						if (!monthlyList.containsAll(
 								JSONArray.parseObject(JSONObject.toJSONString(schedule.get("nums")), List.class))) {
-							throw new NZException(RCode.PANEL_PARAM_SCHEDULENUMS_INVALIDE);
+							return RCode.PANEL_PARAM_SCHEDULENUMS_INVALIDE;
 						}
 					}
 				} else {
@@ -418,13 +436,14 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 			}
 			if (ToolUtil.isNotEmpty(param.get("chartShare"))) {
 				if (!Arrays.asList(new String[] { "none", "crosshair", "tooltip" }).contains(param.get("chartShare"))) {
-					throw new NZException(RCode.PANEL_PARAM_REPORTCHARTSHARE_INVALIDE);
+					return RCode.PANEL_PARAM_REPORTCHARTSHARE_INVALIDE;
 				}
 			} else {
 				param.put("chartShare", "none");
 			}
 			panel.setParam(JSONObject.toJSONString(param));
 		}
+		return null;
 	}
 
 	@Override
@@ -543,40 +562,19 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 	}
 
 	@Override
-	public Map importChartData(MultipartFile multipartFile, String type, Integer linkId, String language)
-			throws IOException {
-		String configKey = this.getChartTemplateConfigKeyByType(type);
-		String sysHeaderJsonStr = sysConfigService.getValue(configKey);
-		Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
-		List<Map<Integer, String>> importDataList = basicImportAndExportServices
-				.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
+	public Map importChartData(MultipartFile multipartFile, Map<String, Object> params) throws IOException {
+		String str = IoUtil.read(multipartFile.getInputStream(), CharsetUtil.charset("UTF-8"));
+		List<LinkedHashMap> importDataList = JSONObject.parseArray(str, LinkedHashMap.class);
 
-		List<Map> failDetails = new ArrayList<>();
-		String seqUUID = UUID.randomUUID().toString();
-		type = StringUtils.isEmpty(type) ? Constant.PanelType.DASHBOARD.getValue() : type;
+		// 表头信息 国际化之后的
+		String panelHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_PANEL_EXPORT_HEADER);
+		List<String> panelHeaderInfos = new ArrayList<>(basicImportAndExportServices.getI18nHeaderMap(panelHeaderJsonStr).keySet());
+		String chartHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_CHART_EXPORT_HEADER);
+		List<String> chartHeaderInfos = new ArrayList<>(basicImportAndExportServices.getI18nHeaderMap(chartHeaderJsonStr).keySet());
 
-		ArrayList<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
-		int successNum = 0;
-		List<Map<Integer, String>> handleImportData = null;
-		if (StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(), type)) {
-			// 处理excel表数据 将group chart相关排在前列
-			handleImportData = this.groupChartRowHandle(importDataList, 1);
-			successNum = this.saveDashboardChartData(handleImportData, failDetails, headerInfos, seqUUID);
-		} else {
-			handleImportData = this.groupChartRowHandle(importDataList, 0);
-			successNum = this.saveAssetEndpointChartData(handleImportData, failDetails, seqUUID, type, linkId,
-					headerInfos);
-		}
-		int totalNum = ToolUtil.isNotEmpty(handleImportData) ? handleImportData.size() : 0;
-
-		Map resultMap = new HashMap(8);
-		resultMap.put("seq", seqUUID);
-		resultMap.put("totalNum", totalNum);
-		resultMap.put("successNum", successNum);
-		resultMap.put("failNum", totalNum - successNum);
-		resultMap.put("failDetail", CommonUtils.handleImportFailDetails(failDetails));
-
-		return resultMap;
+		// 返回统计信息
+		Map statMap = this.savePanelsFromImportDataList(importDataList, panelHeaderInfos, chartHeaderInfos, params);
+		return statMap;
 	}
 
 	@Override
@@ -828,6 +826,11 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
 	@Override
 	public void export(HttpServletResponse response, Map<String, Object> params) throws IOException {
+		String type = ToolUtil.toStr(params.get("type"), Constant.PanelType.DASHBOARD.getValue());
+		if (!StrUtil.equalsAnyIgnoreCase(type, Constant.PanelType.DASHBOARD.getValue(), Constant.PanelType.TEMPLATE.getValue())) {
+			throw new NZException(RCode.PANEL_IMPORT_TYPE_INCORRECT);
+		}
+
 		String maxLine = sysConfigService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
 		long exportMaxLine = Integer.parseInt(StrUtil.emptyToDefault(maxLine, "10000"));
 		// 导出最大条数限制
@@ -841,32 +844,21 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 			// 分页超过最大限制 则设置最大限制为 系统配置值，和 pageSize == -1 判断区别在于 pageNo
 			params.put(Constant.LIMIT, Long.toString(exportMaxLine));
 		}
+		// chart type 导出转换为 国际化之后的名称
+		List<SysDictEntity> chartTypeList = sysDictService
+				.list(new LambdaQueryWrapper<SysDictEntity>().eq(SysDictEntity::getType, Constant.DICT_CHART_TYPE));
+		Map<String, String> chartTypeAndI18nMap = chartTypeList.stream()
+				.collect(Collectors.toMap(SysDictEntity::getValue, SysDictEntity::getI18nCode));
 		// 导出查询与列表查询一致
-		List<VisualChart> charts = this.exportDataByParams(params);
-		String type = Constant.PanelType.DASHBOARD.getValue();
-		if (CollectionUtils.isNotEmpty(charts)) {
-			VisualChart chart = charts.stream().findFirst().get();
-			VisualPanel panel = this.getById(chart.getPanelId());
-			if (panel == null || !StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(), panel.getType())) {
-				type = Constant.PanelType.ASSET.getValue();
-			}
-		}
-		// 获取导出配置 key 名称
-		String configKey = this.getChartTemplateConfigKeyByType(type);
-		String sysHeaderJsonStr = sysConfigService.getValue(configKey);
+		List<VisualPanel> panels = (List<VisualPanel>) this.queryList(params).getList();
+		List<Map<String, Object>> exportDataList = this.handlePanelExportDataList(panels, chartTypeAndI18nMap);
 
-		charts = charts.stream().sorted(Comparator.comparing(VisualChart::getGroupId)).collect(Collectors.toList());
-		String fileName = "Charts";
-		String formatStr = params.get("format").toString();
-
-		if (StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(), type)) {
-			List<List<String>> exportDataList = this.handleDashboardChartExportDataList(charts);
-			basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, formatStr,
-					fileName);
-		} else {
-			List<List<String>> exportDataList = this.handleAssetEndpointChartExportDataList(charts);
-			basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, formatStr,
-					fileName);
+		String fileName = "Panel.json";
+		File file = FileUtil.writeUtf8String(JSONObject.toJSONString(exportDataList, SerializerFeature.PrettyFormat), Constant.TMP_ROOT_PATH + fileName);
+		try {
+			Tool.ResponseUtil.downloadFile(response, fileName, FileUtil.readBytes(file));
+		} finally {
+			if (file != null && file.exists()) file.delete();
 		}
 	}
 
@@ -895,69 +887,6 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 		return chartTemplateTyep;
 	}
 
-	private List<List<String>> handleAssetEndpointChartExportDataList(List<VisualChart> charts) {
-		Map<Integer, String> varTypeIdAndNameMap = new HashMap<>(4);
-		varTypeIdAndNameMap.put(1, "Asset");
-		varTypeIdAndNameMap.put(2, "Endpoint");
-
-		// type 导出转换为 国际化之后的名称
-		List<SysDictEntity> chartTypeList = sysDictService
-				.list(new LambdaQueryWrapper<SysDictEntity>().eq(SysDictEntity::getType, Constant.DICT_CHART_TYPE));
-		Map<String, String> chartTypeAndI18nMap = chartTypeList.stream()
-				.collect(Collectors.toMap(SysDictEntity::getValue, SysDictEntity::getI18nCode));
-
-		List<List<String>> exportDataList = new ArrayList<>();
-		for (VisualChart chart : charts) {
-			if (chart == null || Constant.CHART_ASSETINFO_TYPE.equalsIgnoreCase(chart.getType())
-					|| Constant.CHART_ENDPOINTINFO_TYPE.equalsIgnoreCase(chart.getType()))
-				continue;
-			List<String> tempList = new ArrayList<>();
-			String type = chart.getType();
-			tempList.add(chart.getGroup().getName());
-			tempList.add(chart.getName());
-			String typeI18nCode = chartTypeAndI18nMap.get(type);
-			tempList.add(sysI18nService.queryValue(typeI18nCode));
-			tempList.add(ToolUtil.isEmpty(varTypeIdAndNameMap.get(chart.getVarType())) ? ""
-					: varTypeIdAndNameMap.get(chart.getVarType()));
-			tempList.add(ObjectUtil.defaultIfNull(chart.getSpan(), "").toString());
-			tempList.add(ObjectUtil.defaultIfNull(chart.getHeight(), "").toString());
-			if (StrUtil.equals(Constant.CHART_TEXT_TYPE, type)) {
-				tempList.add("");
-			} else {
-				tempList.add(this.getUnitDescrByVal(chart.getUnit()));
-			}
-			tempList.add(this.handleChartParam(chart.getParam()));
-			tempList.add(this.handleChartElementForExport(chart.getElements()));
-			tempList.add(chart.getRemark());
-			tempList.add(chart.getDatasource());
-			tempList.add(ObjectUtil.defaultIfNull(chart.getX(), "").toString());
-			tempList.add(ObjectUtil.defaultIfNull(chart.getY(), "").toString());
-			exportDataList.add(tempList);
-		}
-		return exportDataList;
-	}
-
-	private String handleChartElementForExport(List<VisualChartElement> chartElements) {
-		if (CollectionUtils.isEmpty(chartElements)) {
-			return "";
-		}
-		List<Map> handleMaps = new ArrayList<>();
-		Map tempMap;
-		for (VisualChartElement element : chartElements) {
-			tempMap = new LinkedHashMap(4);
-			tempMap.put("expression", element.getExpression());
-			tempMap.put("state", element.getState());
-			if (ToolUtil.isNotEmpty(element.getLegend())) {
-				tempMap.put("legend", element.getLegend());
-			}
-			if (ToolUtil.isNotEmpty(element.getName())) {
-				tempMap.put("name", element.getName());
-			}
-			handleMaps.add(tempMap);
-		}
-		return JSONArray.toJSONString(handleMaps);
-	}
-
 	private String getUnitDescrByVal(Integer unitVal) {
 		String unitDescr = null;
 		for (Map.Entry<String, Integer> entry : Constant.ALERT_RULE_UNIT_MAP.entrySet()) {
@@ -969,40 +898,25 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 		return unitDescr;
 	}
 
-	private String handleChartParam(Object param) {
-		if (ToolUtil.isEmpty(param)) {
-			return "";
-		}
-		Map<String, Object> map = JSONObject.parseObject(JSONObject.toJSONString(param), Map.class);
-		map.entrySet().removeIf(entry -> ToolUtil.isEmpty(entry.getValue()));
-		return ToolUtil.isEmpty(map) ? "" : JSONObject.toJSONString(map);
-	}
+	private Map savePanelsFromImportDataList(List<LinkedHashMap> importDataList, List<String> headerInfos, List<String> chartHeaderInfos, Map<String, Object> params) {
+		String seq = StrUtil.uuid();
+		params.put("seq", seq);
+		// 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
+		String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
 
-	public void getPanelNamePathAndIdMapFromTree(VisualPanel panel, String path,
-			Map<String, Integer> nodeNamePathAndIdMap) {
-		if (CollectionUtils.isEmpty(panel.getChildren())) {
-			return;
-		}
-		for (VisualPanel cPanel : panel.getChildren()) {
-			String cPath = "";
-			cPath += path + "/" + cPanel.getName();
-			nodeNamePathAndIdMap.put(cPath, cPanel.getId());
-			this.getPanelNamePathAndIdMapFromTree(cPanel, cPath, nodeNamePathAndIdMap);
-		}
-	}
+		// 创建导入校验对象
+		ImportValidateUtil validateUtil = ImportValidateUtil.builder()
+				.existed(existed).headerInfos(headerInfos)
+				.build();
 
-	private int saveDashboardChartData(List<Map<Integer, String>> importDataList, List<Map> failDetails,
-			List<String> headerInfos, String seqUUID) {
-		List<VisualPanel> panelTreeList = (List<VisualPanel>) this.queryList(new HashMap()).getList();
-		Map<String, Integer> nodeNamePathAndIdMap = new HashMap<>();
-		for (VisualPanel panel : panelTreeList) {
-			nodeNamePathAndIdMap.put(panel.getName(), panel.getId());
-			this.getPanelNamePathAndIdMapFromTree(panel, panel.getName(), nodeNamePathAndIdMap);
-		}
+		Integer addNum = 0, updateNum = 0;
+		String type = ToolUtil.toStr(params.get("type"));
+		// 记录导入失败内容
+		List<Map<String, Object>> failContentList = ListUtil.list(true);
 
-		List<VisualPanel> dashboardTypePanelList = this.list(new LambdaQueryWrapper<VisualPanel>()
-				.eq(VisualPanel::getType, Constant.PanelType.DASHBOARD.getValue()));
 		Integer panelMaxWeight;
+		List<VisualPanel> dashboardTypePanelList = this.list(new LambdaQueryWrapper<VisualPanel>()
+				.eq(VisualPanel::getType, type));
 		if (CollectionUtils.isEmpty(dashboardTypePanelList)) {
 			panelMaxWeight = 0;
 		} else {
@@ -1019,182 +933,359 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 		// chart 导入 Type 是国际化后的，这里统一获取 chart type 可读名称 & 真实 type 值
 		Map<String, String> typeReadableNameMap = this.getChartTypeReadableNameMap();
 
-		int successNum = 0;
 		for (int i = 0; i < importDataList.size(); i++) {
-			int dataFromExcelRowNum = i + 1;
-			Map<Integer, String> dataMap = importDataList.get(i);
-
-			boolean saveFlag = true;
-			boolean typeFlag = true;
-			String panelName = dataMap.get(0);
-			if (StringUtils.isEmpty(panelName)) {
-				saveFlag = false;
-				this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0),
-						RCode.PANEL_NAME_ISNULL.getMsg());
-			}
-			Integer panelId = this.handlePanelNameForCellVal(nodeNamePathAndIdMap, panelName, seqUUID,
-					++panelMaxWeight);
-			Integer groupId = 0;
-			String groupName = dataMap.get(1);
-			if (StrUtil.isNotBlank(groupName) && saveFlag) {
-				VisualChart groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda()
-						.eq(VisualChart::getName, groupName).eq(VisualChart::getPanelId, panelId)
-						.eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()));
-				if (ToolUtil.isEmpty(groupChart)) {
-					groupChart = new VisualChart();
-					groupChart.setPanelId(panelId);
-					groupChart.setName(groupName);
-					groupChart.setGroupId(0);
-					groupChart.setSpan(12d);
-					groupChart.setHeight(-1d);
-					groupChart.setUpdateBy((ShiroUtils.getUserId()).intValue());
-					groupChart.setUpdateAt(new Date());
-					groupChart.setType(Constant.CHART_GROUP_TYPE.toString());
-					groupChart.setUnit(2);
-					groupChart.setBuildIn(0);
-					groupChart.setRemark("");
-					groupChart.setSeq(seqUUID);
-					// group 默认 datasource misc
-					groupChart.setDatasource(Constant.ChartDatasourceType.MISC.getValue());
-					visualChartService.save(groupChart);
+			Map<String, Object> dataMap = importDataList.get(i);
+			Integer lineNum = i + 1;
+			// name， 以 name作为索引 标识该条记录是否存在
+			String panelName = ToolUtil.toStr(dataMap.get(PanelImportEnum.NAME.getName()));
+			validateUtil.validateRequired(panelName, lineNum, PanelImportEnum.NAME.getIndex());
+			boolean indexDuplicate = false;
+			// 同类型下 name 不可重复
+			VisualPanel oldPanel = this.getOne(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, type).eq(VisualPanel::getName, panelName));
+			if(oldPanel != null) {
+				indexDuplicate = true;
+				if(!StrUtil.equals("1", existed)) {
+					validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_DUPLICATE.setParam(PanelImportEnum.NAME.getIndex()));
 				}
-				groupId = groupChart.getId();
 			}
-
-			String name = dataMap.get(2);
-			if (StringUtils.isEmpty(name)) {
-				saveFlag = false;
-				this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2),
-						RCode.CHART_TITLE_ISNULL.getMsg());
-			} else if (name.length() > 64) {
-				saveFlag = false;
-				this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2),
-						RCode.CHART_NAME_TOO_LONG.getMsg());
+			// 索引列重复 & 忽略标识，提示忽略本行
+			if (BooleanUtil.and(indexDuplicate, StrUtil.equals("2", existed))) {
+				validateUtil.ignoreThisRow(lineNum, PanelImportEnum.NAME.getIndex());
+				failContentList.add(dataMap);
+				continue;
 			}
-			String type = dataMap.get(3);
+			VisualPanel panel = new VisualPanel();
+			String panelType = ToolUtil.toStr(dataMap.get(PanelImportEnum.TYPE.getName()));
+			validateUtil.validateRequired(panelType, lineNum, PanelImportEnum.TYPE.getIndex());
+			validateUtil.validateEnumValArr(panelType, ListUtil.of(type), lineNum, PanelImportEnum.TYPE.getIndex());
 
-			if (StringUtils.isEmpty(type)) {
-				saveFlag = typeFlag = false;
-				this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3),
-						RCode.CHART_TYPE_ISNULL.getMsg());
+			String varType = ToolUtil.toStr(dataMap.get(PanelImportEnum.VARTYPE.getName()));
+			validateUtil.validateRequired(varType, lineNum, PanelImportEnum.VARTYPE.getIndex());
+			if(StrUtil.equalsIgnoreCase(ToolUtil.toStr(type), Constant.PanelType.DASHBOARD.getValue())){
+				validateUtil.validateEnumValArr(varType, ListUtil.of("0"), lineNum, PanelImportEnum.VARTYPE.getIndex());
 			} else {
-				// 根据可读名称，获取 chart type
-				type = typeReadableNameMap.get(type);
-				if (StringUtils.isEmpty(type)) {
-					saveFlag = typeFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3),
-							RCode.CHART_TYPE_INVALIDE.getMsg());
+				validateUtil.validateEnumValArr(varType, ListUtil.of("1", "2"), lineNum, PanelImportEnum.VARTYPE.getIndex());
+			}
+
+			Object panelParam = dataMap.get(PanelImportEnum.PARAM.getName());
+			if(ToolUtil.isNotEmpty(panelParam)){
+				panel.setParam(panelParam);
+				RCode rCode = this.validatePanelParam(panel);
+				if(rCode != null){
+					validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_SUPPORT.setParam(PanelImportEnum.PARAM.getIndex()));
+					log.error("Panel " + panelName + " import param error: " + rCode.getMsg());
 				}
 			}
 
-			VisualChart groupChart = visualChartService
-					.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, name)
-							.eq(VisualChart::getPanelId, panelId).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE));
-			if (StrUtil.equals(type, Constant.CHART_GROUP_TYPE) && ToolUtil.isNotEmpty(groupChart)) {
-				// chart group 不允许重复
-				saveFlag = false;
-				this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3),
-						RCode.CHART_GROUP_NAME_DUPLICATE.getMsg());
+			String remark = ToolUtil.toStr(dataMap.get(PanelImportEnum.REMARK.getName()));
+
+			String charts = ToolUtil.toStr(dataMap.get(PanelImportEnum.CHARTS.getName()));
+			List<VisualChart> chartList = null;
+			if(StrUtil.isNotEmpty(charts)){
+				boolean isJsonArray = validateUtil.validateJsonArray(charts, lineNum, PanelImportEnum.CHARTS.getIndex());
+				if(isJsonArray){
+					List<String> groupNames;
+					if(oldPanel == null){
+						groupNames = ListUtil.list(false);
+					} else {
+						List<VisualChart> visualCharts = visualChartService.list(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getPanelId, oldPanel.getId()).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE));
+						groupNames = visualCharts.stream().map(VisualChart::getName).collect(Collectors.toList());
+					}
+					chartList = this.validatePanelCharts(charts, panelName, panelType, groupNames, typeReadableNameMap, lineNum, chartHeaderInfos, datasources, validateUtil, existed);
+				} else {
+					validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(PanelImportEnum.CHARTS.getIndex()));
+				}
 			}
 
-			String span = dataMap.get(4);
-			if (StringUtils.isEmpty(span)) {
-				saveFlag = false;
-				this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4),
-						RCode.CHART_SPAN_ISNULL.getMsg());
-			} else {
-				Integer width = null;
+			String children = ToolUtil.toStr(dataMap.get(PanelImportEnum.CHILDREN.getName()));
+			List<VisualPanel> childrenList = null;
+			if(StrUtil.isNotEmpty(children)){
+				boolean isJsonArray = validateUtil.validateJsonArray(children, lineNum, PanelImportEnum.CHILDREN.getIndex());
+				if(isJsonArray){
+					childrenList = this.validatePanelChildren(children, panelName, type, panelMaxWeight, typeReadableNameMap, lineNum, headerInfos, chartHeaderInfos, datasources, validateUtil, existed);
+				} else {
+					validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(PanelImportEnum.CHILDREN.getIndex()));
+				}
+			}
+
+			// 遇到错误是否继续导入，可选值： 0：不继续    1：继续    默认值：1
+			String ignoreError = Tool.ObjectUtil.defaultIfEmpty((String) params.get("ignoreError"), "1");
+
+			List<Map<String, String>> errMsgForThisLine = validateUtil.getImportErrMsgForThisLine(lineNum);
+			if (BooleanUtil.and(Tool.StrUtil.equals("0", ignoreError), Tool.CollUtil.isNotEmpty(errMsgForThisLine))) {
+				// 结束本次导入，自导入行开始 到结尾数据行，提示错误信息
+				for (int j = i; j < importDataList.size(); j++) {
+					validateUtil.recordImportAttrErr(j + 1, RCode.IMPORT_ERROR_STOP);
+					failContentList.add(importDataList.get(j));
+				}
+				break;
+			}
+
+			if (Tool.CollUtil.isEmpty(errMsgForThisLine)) {
+				panel.setName(panelName);
+				panel.setType(panelType);
+				panel.setVarType(Integer.valueOf(varType));
+				panel.setRemark(remark);
+				panel.setWeight(++panelMaxWeight);
+				panel.setUts(System.currentTimeMillis());
+				panel.setCreateBy(ShiroUtils.getUserId().intValue());
+				panel.setSeq(seq);
+				panel.setPid(0);
+				panel.setChildren(childrenList);
+				panel.setCharts(chartList);
+				TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(new DefaultTransactionDefinition());
 				try {
-					width = Double.valueOf(span).intValue();
+					this.saveOrUpdateRowData(panel, params);
+					dataSourceTransactionManager.commit(transactionStatus);
+					// save or update
+					Object saveFlag = params.get("save");
+					if (ObjectUtil.isNotNull(saveFlag)) {
+						addNum++;
+					} else {
+						updateNum++;
+					}
+				} catch (Exception e) {
+					failContentList.add(dataMap);
+					dataSourceTransactionManager.rollback(transactionStatus);
+					validateUtil.recordImportAttrErr(lineNum, RCode.ERROR);
+					log.error("Panel import roll back the transaction failure", e);
+				}
+			} else {
+				failContentList.add(dataMap);
+			}
+		}
+
+		String failedContentFileBase64Str = null;
+		File tmplFile = null;
+		try {
+			tmplFile = TempFile.createTempFile("json-template", ".json");
+			FileUtil.writeUtf8String(JSONObject.toJSONString(failContentList, SerializerFeature.PrettyFormat), tmplFile);
+			failedContentFileBase64Str = Base64.encode(tmplFile);
+		} catch (IOException e) {
+			log.error(e, "Could not create temporary file: " + tmplFile);
+		} finally {
+			if(tmplFile != null && !tmplFile.delete()) {
+				log.error(new IOException("Could not delete temporary file after processing: " + tmplFile));
+			}
+		}
+
+		//  返回统计信息
+		Map<Object, Object> statMap = Tool.MapUtil.builder()
+				.put("seq", seq)
+				.put("totalNum", importDataList.size())
+				.put("successNum", addNum + updateNum)
+				.put("failNum", failContentList.size())
+				.put("addNum", addNum)
+				.put("updateNum", updateNum)
+				.put("failDetail", validateUtil.getImportErrMsg())
+				.put("failContent", failedContentFileBase64Str)
+				.build();
+		return statMap;
+	}
+
+	public List<VisualPanel> validatePanelChildren(String children, String parentName, String type, Integer panelMaxWeight, Map<String, String> typeReadableNameMap, int lineNum,
+							List<String> headerInfos, List<String> chartHeaderInfos, List<String> datasources, ImportValidateUtil validateUtil, String existed){
+		cn.hutool.json.JSONArray panelArray = JSONUtil.parseArray(children);
+		if(CollectionUtils.isEmpty(panelArray)){
+			return null;
+		}
+		List<VisualPanel> panelList = new ArrayList<>();
+		for (int i = 0; i < panelArray.size(); i++) {
+			Map dataMap = panelArray.getBean(i, Map.class);
+			// name， 以 name作为索引 标识该条记录是否存在
+			String panelName = ToolUtil.toStr(dataMap.get(PanelImportEnum.NAME.getName()));
+			String validaName = parentName + "/" + panelName + " ";
+			if(StrUtil.isEmpty(panelName)){
+				validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_REQUIRED.setParam(validaName + headerInfos.get(PanelImportEnum.NAME.getIndex())));
+			}
+			// 同类型下 name 不可重复
+			VisualPanel oldPanel = this.getOne(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, type).eq(VisualPanel::getName, panelName));
+			if (oldPanel != null && !StrUtil.equals("1", existed)) {
+				validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_DUPLICATE.setParam(validaName + headerInfos.get(PanelImportEnum.NAME.getIndex())));
+			}
+			VisualPanel panel = new VisualPanel();
+			String panelType = ToolUtil.toStr(dataMap.get(PanelImportEnum.TYPE.getName()));
+			if(StrUtil.isEmpty(panelType)){
+				validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_REQUIRED.setParam(validaName + headerInfos.get(PanelImportEnum.TYPE.getIndex())));
+			}
+			if(!StrUtil.equals(panelType, type)){
+				validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(validaName + headerInfos.get(PanelImportEnum.TYPE.getIndex())));
+			}
+
+			String varType = ToolUtil.toStr(dataMap.get(PanelImportEnum.VARTYPE.getName()));
+			if(StrUtil.isEmpty(varType)){
+				validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_REQUIRED.setParam(validaName + headerInfos.get(PanelImportEnum.VARTYPE.getIndex())));
+			}
+			if (StrUtil.equalsIgnoreCase(ToolUtil.toStr(type), Constant.PanelType.DASHBOARD.getValue())) {
+				if(!StrUtil.equals(varType, "0")){
+					validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(validaName + headerInfos.get(PanelImportEnum.VARTYPE.getIndex())));
+				}
+			} else if(!ListUtil.of("1", "2").contains(varType)){
+				validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(validaName + headerInfos.get(PanelImportEnum.VARTYPE.getIndex())));
+			}
+
+			Object panelParam = dataMap.get(PanelImportEnum.PARAM.getName());
+			if (ToolUtil.isNotEmpty(panelParam)) {
+				panel.setParam(panelParam);
+				RCode rCode = this.validatePanelParam(panel);
+				if (rCode != null) {
+					validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_SUPPORT.setParam(validaName + headerInfos.get(PanelImportEnum.PARAM.getIndex())));
+					log.error("Panel child " + validaName + " param import error: " + rCode.getMsg());
+				}
+			}
+
+			String remark = ToolUtil.toStr(dataMap.get(PanelImportEnum.REMARK.getName()));
+
+			String charts = ToolUtil.toStr(dataMap.get(PanelImportEnum.CHARTS.getName()));
+			List<VisualChart> chartList = null;
+			if (StrUtil.isNotEmpty(charts)) {
+				boolean isJsonArray = validateUtil.validateJsonArray(charts, lineNum, PanelImportEnum.CHARTS.getIndex());
+				if (isJsonArray) {
+					List<String> groupNames;
+					if (oldPanel == null) {
+						groupNames = ListUtil.list(false);
+					} else {
+						List<VisualChart> visualCharts = visualChartService.list(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getPanelId, oldPanel.getId()).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE));
+						groupNames = visualCharts.stream().map(VisualChart::getName).collect(Collectors.toList());
+					}
+					chartList = this.validatePanelCharts(charts, parentName + "/" + panelName, panelType, groupNames, typeReadableNameMap, lineNum, chartHeaderInfos, datasources, validateUtil, existed);
+				} else {
+					validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(validaName + headerInfos.get(PanelImportEnum.CHARTS.getIndex())));
+				}
+			}
+			panel.setName(panelName);
+			panel.setType(panelType);
+			panel.setVarType(Integer.valueOf(varType));
+			panel.setRemark(remark);
+			panel.setWeight(++panelMaxWeight);
+			panel.setUts(System.currentTimeMillis());
+			panel.setCreateBy(ShiroUtils.getUserId().intValue());
+			panel.setCharts(chartList);
+			panelList.add(panel);
+		}
+		return panelList;
+	}
+
+	public List<VisualChart> validatePanelCharts(String charts, String parentName, String panelType, List<String> groupNames, Map<String, String> typeReadableNameMap, int lineNum,
+												 List<String> chartHeaderInfos, List<String> datasources, ImportValidateUtil validateUtil, String existed){
+		cn.hutool.json.JSONArray chartsArray = JSONUtil.parseArray(charts);
+		List<VisualChart> chartList = new ArrayList<>();
+		for (int i = 0; i < chartsArray.size(); i++) {
+			Map chartMap = chartsArray.getBean(i, Map.class);
+			VisualChart visualChart = new VisualChart();
+			boolean typeFlag = true;
+
+			String name = ToolUtil.toStr(chartMap.get(ChartsImportEnum.NAME.getName()));
+			String validaName = parentName + "/" + name + " ";
+			if(StrUtil.isEmpty(name)){
+				validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_REQUIRED.setParam(parentName + "/ " + chartHeaderInfos.get(ChartsImportEnum.NAME.getIndex())));
+			} else if (name.length() > 64) {
+				validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(validaName + chartHeaderInfos.get(ChartsImportEnum.NAME.getIndex())));
+			}
+			String span = ToolUtil.toStr(chartMap.get(ChartsImportEnum.SPAN.getName()));
+			if(StrUtil.isEmpty(span)){
+				validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_REQUIRED.setParam(validaName + chartHeaderInfos.get(ChartsImportEnum.SPAN.getIndex())));
+			} else {
+				Double width = null;
+				try {
+					width = Double.valueOf(span);
+					visualChart.setSpan(width);
 				} catch (NumberFormatException e) {
-					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4),
-							RCode.CHART_WIDTH_FORMAT.getMsg());
+					validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(validaName + chartHeaderInfos.get(ChartsImportEnum.SPAN.getIndex())));
 				}
 				if (width != null && (width < 1 || width > 12)) {
-					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4),
-							RCode.CHART_WIDTH_INVALIDE.getMsg());
+					validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(validaName + chartHeaderInfos.get(ChartsImportEnum.SPAN.getIndex())));
 				}
 			}
-			String height = dataMap.get(5);
-			if (StringUtils.isEmpty(height)) {
-				saveFlag = false;
-				this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5),
-						RCode.CHART_HEIGHT_ISNULL.getMsg());
+			String height = ToolUtil.toStr(chartMap.get(ChartsImportEnum.HEIGHT.getName()));
+			if(StrUtil.isEmpty(height)){
+				validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_REQUIRED.setParam(validaName + chartHeaderInfos.get(ChartsImportEnum.HEIGHT.getIndex())));
 			} else {
-				Integer heightIntVal = null;
+				Double heightIntVal = null;
 				try {
-					heightIntVal = Double.valueOf(height).intValue();
+					heightIntVal = Double.valueOf(height);
+					visualChart.setHeight(heightIntVal);
 				} catch (NumberFormatException e) {
-					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5),
-							RCode.CHART_HEIGHT_FORMAT.getMsg());
+					validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(validaName + chartHeaderInfos.get(ChartsImportEnum.HEIGHT.getIndex())));
 				}
 				if (heightIntVal != null && (heightIntVal < 1 || heightIntVal > 12)) {
-					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5),
-							RCode.CHART_HEIGHT_INVALIDE.getMsg());
+					validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(validaName + chartHeaderInfos.get(ChartsImportEnum.HEIGHT.getIndex())));
 				}
 			}
-			String unit = dataMap.get(6);
+			String type = ToolUtil.toStr(chartMap.get(ChartsImportEnum.TYPE.getName()));
+			if(StrUtil.isEmpty(type)){
+				typeFlag = false;
+				validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_REQUIRED.setParam(validaName + chartHeaderInfos.get(ChartsImportEnum.TYPE.getIndex())));
+			} else {
+				type = typeReadableNameMap.get(type);
+				if(StrUtil.isEmpty(type)){
+					typeFlag = false;
+					validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(validaName + chartHeaderInfos.get(ChartsImportEnum.TYPE.getIndex())));
+				} else if(StrUtil.equals(type, Constant.CHART_GROUP_TYPE)){
+					if (groupNames.contains(name)) {
+						// chart group 不允许重复
+						if(!StrUtil.equals("1", existed)) {
+							validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_DUPLICATE.setParam(validaName + chartHeaderInfos.get(ChartsImportEnum.NAME.getIndex())));
+						}
+					} else {
+						groupNames.add(name);
+					}
+
+					String children = ToolUtil.toStr(chartMap.get(ChartsImportEnum.CHILDREN.getName()));
+					if(StrUtil.isNotEmpty(children)){
+						boolean isJsonArray = validateUtil.validateJsonArray(children, lineNum, PanelImportEnum.CHARTS.getIndex());
+						if(isJsonArray){
+							List<VisualChart> childrenList = this.validatePanelCharts(children, parentName + "/" + name, panelType, groupNames, typeReadableNameMap, lineNum, chartHeaderInfos, datasources, validateUtil, existed);
+							visualChart.setChildren(childrenList);
+						} else {
+							validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(validaName + chartHeaderInfos.get(ChartsImportEnum.CHILDREN.getIndex())));
+						}
+					}
+				}
+			}
+			String unit = ToolUtil.toStr(chartMap.get(ChartsImportEnum.UNIT.getName()));
 			if (StringUtils.isNotEmpty(unit)) {
-				if (ToolUtil.isEmpty(Constant.ALERT_RULE_UNIT_MAP.get(unit))) {
-					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6),
-							RCode.CHART_UNIT_NOTFOUND.getMsg());
+				Integer unitInt = Constant.ALERT_RULE_UNIT_MAP.get(unit);
+				if (ToolUtil.isEmpty(unitInt)) {
+					validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(validaName  + chartHeaderInfos.get(ChartsImportEnum.UNIT.getIndex())));
 				}
-			}
-			String param = dataMap.get(7);
-			if (typeFlag) {
-				String msg = this.validateChartParamForImport(type, param, "dashboard");
-				if (StringUtils.isNotEmpty(msg)) {
-					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), msg);
-				}
-			}
-
-			String datasource = dataMap.get(10);
-			if (StringUtils.isEmpty(datasource)) {
-				saveFlag = typeFlag = false;
-				this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(10),
-						RCode.CHART_DATASOURCE_ISNULL.getMsg());
+				visualChart.setUnit(unitInt);
 			} else {
-				if (!datasources.contains(datasource)) {
-					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(10),
-							RCode.CHART_DATASOURCE_INVALIDE.getMsg());
-				}
+				visualChart.setUnit(Constant.ALERT_RULE_UNIT_MAP.get("short"));
 			}
-
-			String elements = dataMap.get(8);
-			if (typeFlag) {
-				String msg = this.validateChartElementForImport(datasource, elements);
-				if (StringUtils.isNotEmpty(msg)) {
-					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), msg);
-				}
-			}
-			String description = dataMap.get(9);
-
-			String x = dataMap.get(11);
-			if (StringUtils.isEmpty(x)) {
-				saveFlag = false;
-				this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11),
-						RCode.CHART_X_ISNULL.getMsg());
+			String weight = ToolUtil.toStr(chartMap.get(ChartsImportEnum.WEIGHT.getName()));
+			if(StrUtil.isEmpty(weight)){
+				validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_REQUIRED.setParam(validaName + chartHeaderInfos.get(ChartsImportEnum.WEIGHT.getIndex())));
 			} else {
-				Integer xIntVal = null;
 				try {
-					xIntVal = Double.valueOf(x).intValue();
+					Integer weightIntVal = Integer.valueOf(weight);
+					visualChart.setWeight(weightIntVal);
 				} catch (NumberFormatException e) {
-					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11),
-							RCode.CHART_X_FORMAT.getMsg());
+					validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(validaName + chartHeaderInfos.get(ChartsImportEnum.WEIGHT.getIndex())));
+				}
+			}
+			String param = ToolUtil.toStr(chartMap.get(ChartsImportEnum.PARAM.getName()));
+			if (typeFlag) {
+				String msg = this.validateChartParamForImport(type, param, panelType);
+				if (StrUtil.isNotEmpty(msg)) {
+					validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_SUPPORT.setParam(validaName + chartHeaderInfos.get(ChartsImportEnum.PARAM.getIndex())));
+					log.error("Panel chart " + validaName + " param import error: " + msg);
+				}
+			}
+			String remark = ToolUtil.toStr(chartMap.get(ChartsImportEnum.REMARK.getName()));
+			String x = ToolUtil.toStr(chartMap.get(ChartsImportEnum.X.getName()));
+			if (StringUtils.isEmpty(x)) {
+				validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_REQUIRED.setParam(validaName + chartHeaderInfos.get(ChartsImportEnum.X.getIndex())));
+			} else {
+				Double xIntVal = null;
+				try {
+					xIntVal = Double.valueOf(x);
+					visualChart.setX(xIntVal);
+				} catch (NumberFormatException e) {
+					validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(validaName  + chartHeaderInfos.get(ChartsImportEnum.X.getIndex())));
 				}
 				if (xIntVal != null && (xIntVal < 0 || xIntVal > 12)) {
-					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11),
-							RCode.CHART_X_INVALIDE.getMsg());
+					validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(validaName  + chartHeaderInfos.get(ChartsImportEnum.X.getIndex())));
 				}
 			}
 
@@ -1203,108 +1294,52 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 				Double xVal = Double.valueOf(x);
 				Double widthVal = Double.valueOf(span);
 				if (xVal + widthVal > 12) {
-					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11),
-							RCode.CHART_X_WIDTH_INVALIDE.getMsg());
+					validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(validaName  + chartHeaderInfos.get(ChartsImportEnum.SPAN.getIndex()) + ","  + chartHeaderInfos.get(ChartsImportEnum.X.getIndex())));
 				}
 			}
 
-			String y = dataMap.get(12);
+			String y = ToolUtil.toStr(chartMap.get(ChartsImportEnum.Y.getName()));
 			if (StringUtils.isEmpty(y)) {
-				saveFlag = false;
-				this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(12),
-						RCode.CHART_Y_ISNULL.getMsg());
+				validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(validaName  + chartHeaderInfos.get(ChartsImportEnum.Y.getIndex())));
 			} else {
-				Integer yIntVal = null;
 				try {
-					yIntVal = Double.valueOf(y).intValue();
+					Double yIntVal = Double.valueOf(y);
+					visualChart.setY(yIntVal);
 				} catch (NumberFormatException e) {
-					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(12),
-							RCode.CHART_Y_FORMAT.getMsg());
+					validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(validaName  + chartHeaderInfos.get(ChartsImportEnum.Y.getIndex())));
 				}
 			}
 
-			if (saveFlag) {
-				TransactionStatus transactionStatus = dataSourceTransactionManager
-						.getTransaction(transactionDefinition);
-				try {
-					VisualChart chart = new VisualChart();
-					chart.setSeq(seqUUID);
-					chart.setPanelId(panelId);
-					chart.setName(name);
-					chart.setType(type);
-					chart.setSpan(Double.valueOf(span));
-					chart.setHeight(Double.valueOf(height));
-					// unit 为空 设置默认值为 short
-					unit = StringUtils.isEmpty(unit) ? "short" : unit;
-					chart.setUnit(Constant.ALERT_RULE_UNIT_MAP.get(unit));
-					chart.setParam(param.toString());
-					chart.setUpdateAt(new Date());
-					chart.setUpdateBy((ShiroUtils.getUserId()).intValue());
-					chart.setGroupId(groupId);
-					chart.setRemark(description);
-					chart.setDatasource(datasource);
-					chart.setX(Double.valueOf(x));
-					chart.setY(Double.valueOf(y));
-					// 查询当前 panel 下的 charts
-					List<VisualChart> chartList = visualChartService.list(
-							new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getPanelId, chart.getPanelId()));
-					if (CollectionUtils.isEmpty(chartList)) {
-						visualChartService.save(chart);
-					} else {
-						VisualChart endChart = visualChartService.getOne(
-								new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getPanelId, chart.getPanelId())
-										.orderByDesc(VisualChart::getWeight).last("limit 0,1"));
-						Integer weight = endChart.getWeight();
-						chart.setWeight(++weight);
-						visualChartService.save(chart);
-					}
-					List<VisualChartElement> chartElements = JSONArray.parseArray(elements, VisualChartElement.class);
-					if (CollectionUtils.isNotEmpty(chartElements)) {
-						chartElements.forEach(chartElement -> {
-							chartElement.setChartId(chart.getId());
-							chartElement.setSeq(seqUUID);
-							chartElement.setType(Constant.CHART_ELEMENT_EXPERT_TYPE);
-						});
-						chartElementService.saveBatch(chartElements);
-					}
-					dataSourceTransactionManager.commit(transactionStatus);
-					successNum++;
-				} catch (RuntimeException e) {
-					dataSourceTransactionManager.rollback(transactionStatus);
-					this.addFailDetail(dataFromExcelRowNum, failDetails, "System", e.getMessage() + "");
-					log.error(String.format("保存 panel chart chartelement失败,回滚事务,错误信息:%s", e));
+			String datasource = ToolUtil.toStr(chartMap.get(ChartsImportEnum.DATASOURCE.getName()));
+			if (StringUtils.isEmpty(datasource)) {
+				validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_REQUIRED.setParam(validaName + chartHeaderInfos.get(ChartsImportEnum.DATASOURCE.getIndex())));
+			} else {
+				if (!datasources.contains(datasource)) {
+					validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(validaName  + chartHeaderInfos.get(ChartsImportEnum.DATASOURCE.getIndex())));
 				}
 			}
+
+			String elements = ToolUtil.toStr(chartMap.get(ChartsImportEnum.ELEMENTS.getName()));
+			if (typeFlag) {
+				String msg = this.validateChartElementForImport(datasource, elements);
+				if (StrUtil.isNotEmpty(msg)) {
+					validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_SUPPORT.setParam(validaName + chartHeaderInfos.get(ChartsImportEnum.ELEMENTS.getIndex())));
+					log.error("Panel chart " + validaName + " elements import error: " + msg);
+				} else {
+					List<VisualChartElement> elementsList = JSONArray.parseArray(elements, VisualChartElement.class);
+					visualChart.setElements(elementsList);
+				}
+			}
+			visualChart.setName(name);
+			visualChart.setType(type);
+			visualChart.setParam(param);
+			visualChart.setRemark(remark);
+			visualChart.setDatasource(datasource);
+			visualChart.setUpdateBy((ShiroUtils.getUserId()).intValue());
+			visualChart.setUpdateAt(new Date());
+			chartList.add(visualChart);
 		}
-		return successNum;
-	}
-
-	/**
-	 * chart 导入 Type 是国际化后的，这里统一获取 chart type 可读名称 & 真实 type 值
-	 *
-	 * @return
-	 */
-	private Map<String, String> getChartTypeReadableNameMap() {
-		List<SysDictEntity> chartTypeList = sysDictService
-				.list(new LambdaQueryWrapper<SysDictEntity>().eq(SysDictEntity::getType, Constant.DICT_CHART_TYPE));
-		Map<String, String> chartTypeI18nCodeAndValueMap = chartTypeList.stream()
-				.filter(sysDict -> StrUtil.isNotEmpty(sysDict.getI18nCode()))
-				.collect(Collectors.toMap(SysDictEntity::getI18nCode, SysDictEntity::getValue));
-
-		Map<String, String> map = Tool.MapUtil.newHashMap();
-
-		for (Map.Entry<String, String> entry : chartTypeI18nCodeAndValueMap.entrySet()) {
-			// chart type i18n code
-			String i18nCode = entry.getKey();
-			// chart type real
-			String type = entry.getValue();
-
-			String chartReadableName = sysI18nService.queryValue(i18nCode);
-			map.put(chartReadableName, type);
-		}
-		return map;
+		return chartList;
 	}
 
 	private String validateChartElementForImport(String datasource, String elements) {
@@ -1337,606 +1372,277 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 		return "";
 	}
 
-	/**
-	 * @param panelName 格式： 使用 / 作为字符分隔，表示 父子节点关系
-	 * @param seqUUID   导入序列号
-	 */
-	private Integer handlePanelNameForCellVal(Map<String, Integer> nodeNamePathAndIdMap, String panelName,
-			String seqUUID, Integer panelWeight) {
-		String savePanelNames = panelName;
-		Integer panelId;
-		while (true) {
-			panelId = nodeNamePathAndIdMap.get(panelName);
-			if (panelId != null) {
-				break;
-			}
-			// 仍然包含 ‘/’ 证明还是有父子关系
-			if (panelName.lastIndexOf("/") != -1) {
-				panelName = panelName.substring(0, panelName.lastIndexOf("/"));
-			} else {
-				// 最后的 panel 也不存在，赋值 为空 ，下面会进行过滤添加
-				panelName = "";
-				break;
-			}
-		}
-		savePanelNames = savePanelNames.replace(panelName, "");
-
-		// 如果存在需要保存的 panel
-		if (StringUtils.isNotEmpty(savePanelNames)) {
-			if (savePanelNames.startsWith("/")) {
-				savePanelNames = savePanelNames.substring(savePanelNames.indexOf("/") + 1);
-			}
-
-			VisualPanel panel = new VisualPanel();
-			panel.setType(Constant.PanelType.DASHBOARD.getValue());
-			panel.setCreateBy(ShiroUtils.getUserId().intValue());
-			panel.setSeq(seqUUID);
-			panel.setWeight(panelWeight);
-			panel.setUts(System.currentTimeMillis());
-
-			List<String> saveList = Arrays.asList(savePanelNames.split("/"));
-			int size = saveList.size();
-			StringBuilder sb = new StringBuilder();
-			for (int i = 0; i < size; i++) {
-				String name = saveList.get(i);
-				panel.setName(name);
-				if (panel.getId() == null) {
-					panel.setPid(panelId);
-				} else {
-					panel.setPid(panel.getId());
-				}
-				this.save(panel);
-				sb.append(name + "/");
-				String temp = panelName + "/" + sb.substring(0, sb.lastIndexOf("/"));
-				// 因为用户输入根节点没有 ‘/’，所以不保存根节点 '/' 路径作为对比
-				if (temp.startsWith("/")) {
-					temp = temp.substring(temp.indexOf("/") + 1);
-				}
-				nodeNamePathAndIdMap.put(temp, panel.getId());
-			}
-			return panel.getId();
-		}
-		return panelId;
-	}
-
 	private String validateChartParamForImport(String type, String param, String panelType) {
 		switch (type) {
-		// url
-		case Constant.CHART_URL_TYPE: {
-			if (StringUtils.isEmpty(param)) {
-				return RCode.CHART_URLPARAM_ISNULL.getMsg();
-			}
-			Map map = null;
-			try {
-				map = JSONObject.parseObject(param, Map.class);
-			} catch (JSONException e) {
-				return RCode.CHART_PARAM_FORMAT.getMsg();
-			}
-			Object url = map.get(Constant.CHART_URL_TYPE);
-			if (ToolUtil.isEmpty(url)) {
-				return RCode.CHART_URLPARAM_ISNULL.getMsg();
-			}
-
-			if (StrUtil.equals(Constant.PanelType.TEMPLATE.getValue(), panelType)) {
-				// 替换全部变量 替换为 a（任意字符） 不影响原来的数据格式 然后进行校验
-				String urlStr = url.toString();
-				urlStr = urlStr.replaceAll("\\{\\{asset\\..*?\\}\\}", "a");
-
-				boolean b = CommonUtils.checkUrlInModel(urlStr);
-				boolean b1 = CommonUtils.checkUrl(urlStr);
-
-				if (!b && !b1) {
-					return RCode.CHART_PARAMURL_FORMAT.getMsg();
+			// url
+			case Constant.CHART_URL_TYPE: {
+				if (StringUtils.isEmpty(param)) {
+					return RCode.CHART_URLPARAM_ISNULL.getMsg();
 				}
-			} else {
-				if (!CommonUtils.checkUrl(url.toString())) {
-					return RCode.CHART_PARAMURL_FORMAT.getMsg();
-				}
-			}
-			break;
-		}
-		// singleStat
-		case Constant.CHART_SINGLESTAT_TYPE: {
-			if (StringUtils.isEmpty(param)) {
-				return RCode.CHART_SINGLESTATPARAM_ISNULL.getMsg();
-			}
-			Map map = null;
-			try {
-				map = JSONObject.parseObject(param, Map.class);
-			} catch (JSONException e) {
-				return RCode.CHART_PARAM_FORMAT.getMsg();
-			}
-			Object statistics = map.get(Constant.CHART_SINGLESTAT_PARAMkEY);
-			if (ToolUtil.isEmpty(statistics)) {
-				return RCode.CHART_PARAMSINGLESTAT_ISNULL.getMsg();
-			}
-			if (!Constant.CHART_SINGLESTAT_STATISTICS.contains(statistics.toString())) {
-				return RCode.CHART_PARAMSINGLESTAT_INVALIDE.getMsg();
-			}
-			break;
-		}
-		case Constant.CHART_TEXT_TYPE: {
-			if (StringUtils.isEmpty(param)) {
-				return RCode.CHART_TEXTPARAM_ISNULL.getMsg();
-			}
-			Map map = null;
-			try {
-				map = JSONObject.parseObject(param, Map.class);
-			} catch (JSONException e) {
-				return RCode.CHART_PARAM_FORMAT.getMsg();
-			}
-			Object text = map.get(Constant.CHART_TEXT_TYPE);
-			if (ToolUtil.isEmpty(text)) {
-				return RCode.CHART_TEXTPARAM_ISNULL.getMsg();
-			}
-			break;
-		}
-		default: {
-			if (StringUtils.isNotEmpty(param)) {
+				Map map = null;
 				try {
-					JSONObject.parseObject(param, Map.class);
+					map = JSONObject.parseObject(param, Map.class);
 				} catch (JSONException e) {
 					return RCode.CHART_PARAM_FORMAT.getMsg();
 				}
+				Object url = map.get(Constant.CHART_URL_TYPE);
+				if (ToolUtil.isEmpty(url)) {
+					return RCode.CHART_URLPARAM_ISNULL.getMsg();
+				}
+
+				if (StrUtil.equals(Constant.PanelType.TEMPLATE.getValue(), panelType)) {
+					// 替换全部变量 替换为 a（任意字符） 不影响原来的数据格式 然后进行校验
+					String urlStr = url.toString();
+					urlStr = urlStr.replaceAll("\\{\\{asset\\..*?\\}\\}", "a");
+
+					boolean b = CommonUtils.checkUrlInModel(urlStr);
+					boolean b1 = CommonUtils.checkUrl(urlStr);
+
+					if (!b && !b1) {
+						return RCode.CHART_PARAMURL_FORMAT.getMsg();
+					}
+				} else {
+					if (!CommonUtils.checkUrl(url.toString())) {
+						return RCode.CHART_PARAMURL_FORMAT.getMsg();
+					}
+				}
+				break;
 			}
-		}
+			// singleStat
+			case Constant.CHART_SINGLESTAT_TYPE: {
+				if (StringUtils.isEmpty(param)) {
+					return RCode.CHART_SINGLESTATPARAM_ISNULL.getMsg();
+				}
+				Map map = null;
+				try {
+					map = JSONObject.parseObject(param, Map.class);
+				} catch (JSONException e) {
+					return RCode.CHART_PARAM_FORMAT.getMsg();
+				}
+				Object statistics = map.get(Constant.CHART_SINGLESTAT_PARAMkEY);
+				if (ToolUtil.isEmpty(statistics)) {
+					return RCode.CHART_PARAMSINGLESTAT_ISNULL.getMsg();
+				}
+				if (!Constant.CHART_SINGLESTAT_STATISTICS.contains(statistics.toString())) {
+					return RCode.CHART_PARAMSINGLESTAT_INVALIDE.getMsg();
+				}
+				break;
+			}
+			case Constant.CHART_TEXT_TYPE: {
+				if (StringUtils.isEmpty(param)) {
+					return RCode.CHART_TEXTPARAM_ISNULL.getMsg();
+				}
+				Map map = null;
+				try {
+					map = JSONObject.parseObject(param, Map.class);
+				} catch (JSONException e) {
+					return RCode.CHART_PARAM_FORMAT.getMsg();
+				}
+				Object text = map.get(Constant.CHART_TEXT_TYPE);
+				if (ToolUtil.isEmpty(text)) {
+					return RCode.CHART_TEXTPARAM_ISNULL.getMsg();
+				}
+				break;
+			}
+			default: {
+				if (StringUtils.isNotEmpty(param)) {
+					try {
+						JSONObject.parseObject(param, Map.class);
+					} catch (JSONException e) {
+						return RCode.CHART_PARAM_FORMAT.getMsg();
+					}
+				}
+			}
 		}
 		return "";
 	}
 
-	private void addFailDetail(int i, List<Map> failDetails, String headerInfo, String msg) {
-		Map failDetail = new HashMap(4);
-		failDetail.put("lineNo", i);
-		failDetail.put("errorMsg", headerInfo + ": " + msg);
-		failDetails.add(failDetail);
+	private void saveOrUpdateRowData(VisualPanel panel, Map<String, Object> params) {
+		MapUtil.removeAny(params, "save", "update");
+		String seq = params.get("seq").toString();
+
+		// 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore   在此只需要处理更新即可
+		String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
+		VisualPanel oldPanel = this.getOne(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, panel.getType()).eq(VisualPanel::getName, panel.getName()));
+
+		if (StrUtil.equals("1", existed) && oldPanel != null) {
+			params.put("update", true);
+			// update
+			panel.setId(oldPanel.getId());
+			panel.setWeight(oldPanel.getWeight());
+			this.updateById(panel);
+		} else {
+			params.put("save", true);
+			// insert
+			this.save(panel);
+		}
+
+		this.importSaveCharts(panel.getCharts(), 0, panel.getId(), seq);
+		this.importSaveChildPane(panel.getChildren(), panel.getId(), seq, existed);
 	}
 
-	private int saveAssetEndpointChartData(List<Map<Integer, String>> importDataList, List<Map> failDetails,
-			String seqUUID, String panelType, Integer linkId, List<String> headerInfos) {
-		// 导入类型 template 标识
-		Boolean templateFlag = Constant.PanelType.TEMPLATE.getValue().equalsIgnoreCase(panelType);
-		// chart template 导入导出 varType map
-		Map<String, Integer> varTypeAndValMap = new HashMap<>(4);
-		varTypeAndValMap.put("Asset", 1);
-		varTypeAndValMap.put("Endpoint", 2);
-
-		if (linkId == null && !templateFlag)
-			throw new NZException(RCode.PANEL_CHART_IMPORT_LINKID_ISNULL);
-
-		VisualPanel panel = this.getOne(new QueryWrapper<VisualPanel>().lambda().eq(VisualPanel::getType, panelType)
-				.eq(VisualPanel::getLink, linkId));
-		if (panel == null && !templateFlag)
-			throw new NZException(RCode.PANEL_NOT_EXIST);
-
-		// 查询 chart datasource类型防止频繁查库
-		List<SysDictEntity> chartDatasources = sysDictService.list(
-				new QueryWrapper<SysDictEntity>().lambda().eq(SysDictEntity::getType, Constant.DICT_CHART_DATASOURCE));
-		List<String> datasources = chartDatasources.stream().map(SysDictEntity::getValue).collect(Collectors.toList());
-
-		// chart 导入 Type 是国际化后的，这里统一获取 chart type 可读名称 & 真实 type 值
-		Map<String, String> typeReadableNameMap = this.getChartTypeReadableNameMap();
-
-		int successNum = 0;
-		for (int i = 0; i < importDataList.size(); i++) {
-			int dataFromExcelRowNum = i + 1;
-			Map<Integer, String> dataMap = importDataList.get(i);
-			boolean saveFlag = true;
-			boolean typeFlag = true;
-
-			Integer groupId = 0;
-			String groupName = dataMap.get(0);
-			String varType = dataMap.get(3);
-			if (StrUtil.isNotBlank(groupName)) {
-				VisualChart groupChart;
-				if (templateFlag) {
-					// template 类型，panel = 0 为 template
-					groupChart = visualChartService
-							.getOne(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getName, groupName)
-									.eq(VisualChart::getPanelId, 0).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE)
-									.eq(VisualChart::getVarType, varTypeAndValMap.get(varType.trim())));
-				} else {
-					// asset endpoint 类型，通过指定 panel group name 查找 group
-					groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda()
-							.eq(VisualChart::getName, groupName).eq(VisualChart::getPanelId, panel.getId())
-							.eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()));
-				}
-				if (ToolUtil.isEmpty(groupChart)) {
-					groupChart = new VisualChart();
-					// panel 为 null,即为 template type, panel_id = 0
-					groupChart.setPanelId(ToolUtil.isEmpty(panel) ? 0 : panel.getId());
-					groupChart.setName(groupName);
-					groupChart.setGroupId(0);
-					groupChart.setSpan(12d);
-					groupChart.setHeight(-1d);
-					groupChart.setUpdateBy((ShiroUtils.getUserId()).intValue());
-					groupChart.setUpdateAt(new Date());
-					groupChart.setType(Constant.CHART_GROUP_TYPE.toString());
-					groupChart.setUnit(2);
-					groupChart.setBuildIn(0);
-					groupChart.setRemark("");
-					if (templateFlag) {
-						groupChart.setVarType(varTypeAndValMap.get(varType.trim()));
-					}
-					// group 默认 datasource misc
-					groupChart.setDatasource(Constant.ChartDatasourceType.MISC.getValue());
-					groupChart.setSeq(seqUUID);
-					visualChartService.save(groupChart);
-				}
-				groupId = groupChart.getId();
-			}
-
-			String name = dataMap.get(1);
-			if (StringUtils.isEmpty(name)) {
-				saveFlag = false;
-				this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0),
-						RCode.CHART_TITLE_ISNULL.getMsg());
-			} else if (name.length() > 64) {
-				saveFlag = false;
-				this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2),
-						RCode.CHART_NAME_TOO_LONG.getMsg());
-			}
-
-			String type = dataMap.get(2);
-			if (StringUtils.isEmpty(type)) {
-				saveFlag = typeFlag = false;
-				this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2),
-						RCode.CHART_TYPE_ISNULL.getMsg());
-			} else {
-				// 根据可读名称，获取 chart type
-				type = typeReadableNameMap.get(type);
-				if (StringUtils.isEmpty(type)) {
-					saveFlag = typeFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2),
-							RCode.CHART_TYPE_INVALIDE.getMsg());
-				}
-			}
-
-			VisualChart groupChart = null;
-			if (templateFlag) {
-				groupChart = visualChartService
-						.getOne(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getName, name)
-								.eq(VisualChart::getPanelId, 0).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE)
-								.eq(VisualChart::getVarType, varTypeAndValMap.get(varType.trim())));
-			} else {
-				groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda()
-						.eq(VisualChart::getName, name).eq(VisualChart::getPanelId, panel.getId())
-						.eq(VisualChart::getType, Constant.CHART_GROUP_TYPE));
-			}
-			if (StrUtil.equals(type, Constant.CHART_GROUP_TYPE) && ToolUtil.isNotEmpty(groupChart)) {
-				// chart group 不允许重复
-				saveFlag = false;
-				this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2),
-						RCode.CHART_GROUP_NAME_DUPLICATE.getMsg());
-			}
-
-			// varType, type = template required
-
-			if (templateFlag) {
-				if (StringUtils.isEmpty(varType)) {
-					saveFlag = typeFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3),
-							RCode.CHART_VARTYPE_ISNULL.getMsg());
-				} else if (ToolUtil.isEmpty(varTypeAndValMap.get(varType.trim()))) {
-					saveFlag = typeFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3),
-							RCode.CHART_VARTYPE_ERROR.getMsg());
-				}
-			}
-
-			String span = dataMap.get(4);
-			if (StringUtils.isEmpty(span)) {
-				saveFlag = false;
-				this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4),
-						RCode.CHART_SPAN_ISNULL.getMsg());
-			} else {
-				Integer width = null;
-				try {
-					width = Double.valueOf(span).intValue();
-				} catch (NumberFormatException e) {
-					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4),
-							RCode.CHART_WIDTH_FORMAT.getMsg());
-				}
-				if (width != null && (width < 1 || width > 12)) {
-					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4),
-							RCode.CHART_WIDTH_INVALIDE.getMsg());
-				}
-			}
-			String height = dataMap.get(5);
-			if (StringUtils.isEmpty(height)) {
-				saveFlag = false;
-				this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5),
-						RCode.CHART_HEIGHT_ISNULL.getMsg());
-			} else {
-				Integer heightIntVal = null;
-				try {
-					heightIntVal = Double.valueOf(height).intValue();
-				} catch (NumberFormatException e) {
-					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5),
-							RCode.CHART_HEIGHT_FORMAT.getMsg());
-				}
-				if (heightIntVal != null && (heightIntVal < 1 || heightIntVal > 12)) {
-					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5),
-							RCode.CHART_HEIGHT_INVALIDE.getMsg());
-				}
-			}
-			String unit = dataMap.get(6);
-			if (StringUtils.isNotEmpty(unit)) {
-				if (ToolUtil.isEmpty(Constant.ALERT_RULE_UNIT_MAP.get(unit))) {
-					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6),
-							RCode.CHART_UNIT_NOTFOUND.getMsg());
-				}
-			}
-			String param = dataMap.get(7);
-			if (typeFlag) {
-				String msg = this.validateChartParamForImport(type, param, panelType);
-				if (StringUtils.isNotEmpty(msg)) {
-					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), msg);
-				}
-			}
-
-			String datasource = dataMap.get(10);
-			if (StringUtils.isEmpty(datasource)) {
-				saveFlag = typeFlag = false;
-				this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(10),
-						RCode.CHART_DATASOURCE_ISNULL.getMsg());
-			} else {
-				if (!datasources.contains(datasource)) {
-					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(10),
-							RCode.CHART_DATASOURCE_INVALIDE.getMsg());
-				}
-			}
-
-			String elements = dataMap.get(8);
-			if (typeFlag) {
-				String msg = this.validateChartElementForImport(datasource, elements);
-				if (StringUtils.isNotEmpty(msg)) {
-					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), msg);
-				}
-			}
-			String description = dataMap.get(9);
-
-			String x = dataMap.get(11);
-			if (StringUtils.isEmpty(x)) {
-				saveFlag = false;
-				this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11),
-						RCode.CHART_X_ISNULL.getMsg());
-			} else {
-				Integer xIntVal = null;
-				try {
-					xIntVal = Double.valueOf(x).intValue();
-				} catch (NumberFormatException e) {
-					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11),
-							RCode.CHART_X_FORMAT.getMsg());
-				}
-				if (xIntVal != null && (xIntVal < 0 || xIntVal > 12)) {
-					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11),
-							RCode.CHART_X_INVALIDE.getMsg());
-				}
-			}
-
-			// x和width之和不能大于12
-			if (StringUtils.isNotEmpty(x) && StringUtils.isNotEmpty(span)) {
-				Double xVal = Double.valueOf(x);
-				Double widthVal = Double.valueOf(span);
-				if (xVal + widthVal > 12) {
-					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11),
-							RCode.CHART_X_WIDTH_INVALIDE.getMsg());
-				}
-			}
-
-			String y = dataMap.get(12);
-			if (StringUtils.isEmpty(y)) {
-				saveFlag = false;
-				this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(12),
-						RCode.CHART_Y_ISNULL.getMsg());
-			} else {
-				Integer yIntVal = null;
-				try {
-					yIntVal = Double.valueOf(y).intValue();
-				} catch (NumberFormatException e) {
-					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(12),
-							RCode.CHART_Y_FORMAT.getMsg());
-				}
-			}
-
-			if (saveFlag) {
-				TransactionStatus transactionStatus = dataSourceTransactionManager
-						.getTransaction(transactionDefinition);
-				try {
-					VisualChart chart = new VisualChart();
-					chart.setSeq(seqUUID);
-					// panel 为 null,即为 template type, panel_id = 0
-					chart.setPanelId(ToolUtil.isEmpty(panel) ? 0 : panel.getId());
-					chart.setName(name);
-					chart.setType(type);
-					chart.setSpan(Double.valueOf(span));
-					chart.setHeight(Double.valueOf(height));
-					// unit 为空 设置默认值为 short
-					unit = StringUtils.isEmpty(unit) ? "short" : unit;
-					chart.setUnit(Constant.ALERT_RULE_UNIT_MAP.get(unit));
-					chart.setParam(param.toString());
-					chart.setUpdateAt(new Date());
-					chart.setUpdateBy((ShiroUtils.getUserId()).intValue());
-					chart.setGroupId(groupId);
-					chart.setVarType(varTypeAndValMap.get(varType));
-					chart.setVarId(linkId);
-					chart.setRemark(description);
-					chart.setDatasource(datasource);
-					chart.setX(Double.valueOf(x));
-					chart.setY(Double.valueOf(y));
-					// 查询当前 panel 下的 charts
-					List<VisualChart> chartList = visualChartService.list(
-							new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getPanelId, chart.getPanelId()));
-					if (CollectionUtils.isEmpty(chartList)) {
-						visualChartService.save(chart);
-					} else {
-						VisualChart endChart = visualChartService.getOne(
-								new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getPanelId, chart.getPanelId())
-										.orderByDesc(VisualChart::getWeight).last("limit 0,1"));
-						Integer weight = endChart.getWeight();
-						chart.setWeight(++weight);
-						visualChartService.save(chart);
-					}
-					List<VisualChartElement> chartElements = JSONArray.parseArray(elements, VisualChartElement.class);
-					if (CollectionUtils.isNotEmpty(chartElements)) {
-						chartElements.forEach(chartElement -> {
-							chartElement.setChartId(chart.getId());
-							chartElement.setSeq(seqUUID);
-							chartElement.setType(Constant.CHART_ELEMENT_EXPERT_TYPE);
-						});
-						chartElementService.saveBatch(chartElements);
-					}
-					dataSourceTransactionManager.commit(transactionStatus);
-					successNum++;
-				} catch (RuntimeException e) {
-					dataSourceTransactionManager.rollback(transactionStatus);
-					this.addFailDetail(dataFromExcelRowNum, failDetails, "System", e.getMessage() + "");
-					log.error(String.format("保存 panel chart chartelement失败,回滚事务,错误信息:%s", e));
-				}
-			}
+	private void importSaveChildPane(List<VisualPanel> childPanelList, Integer panelId, String seq, String existed){
+		if(CollectionUtils.isEmpty(childPanelList) || panelId == null) {
+			return;
 		}
-		return successNum;
+		for (VisualPanel panel : childPanelList) {
+			panel.setSeq(seq);
+			panel.setPid(panelId);
+			VisualPanel oldPanel = this.getOne(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, panel.getType()).eq(VisualPanel::getName, panel.getName()));
+			if (StrUtil.equals("1", existed) && oldPanel != null) {
+				panel.setId(oldPanel.getId());
+				panel.setWeight(oldPanel.getWeight());
+				this.updateById(panel);
+			} else {
+				this.save(panel);
+			}
+			this.importSaveCharts(panel.getCharts(), 0, panel.getId(), seq);
+		}
 	}
 
-	private List<VisualChart> exportDataByParams(Map<String, Object> params) {
-		String panelId = null;
-		if (ToolUtil.isNotEmpty(params.get("panelId"))) {
-			panelId = params.get("panelId").toString();
+	private void importSaveCharts(List<VisualChart> visualChart, Integer groupId, Integer panelId, String seq){
+		if(CollectionUtils.isEmpty(visualChart) || panelId == null) {
+			return;
 		}
-		String chartId = null;
-		if (ToolUtil.isNotEmpty(params.get("chartId"))) {
-			chartId = params.get("chartId").toString();
-		}
-		String panelType = null;
-		if (ToolUtil.isNotEmpty(params.get("type"))) {
-			panelType = params.get("type").toString();
-			if (!Constant.PanelType.TEMPLATE.getValue().equals(panelType)) {
-				params.put("panelType", panelType);
-			} else {
-				panelId = "0";
+		for (VisualChart chart : visualChart) {
+			boolean isGroup = false;
+			chart.setSeq(seq);
+			chart.setPanelId(panelId);
+			chart.setUpdateAt(new Date());
+			chart.setUpdateBy((ShiroUtils.getUserId()).intValue());
+			chart.setGroupId(groupId);
+			if(StrUtil.equals(chart.getType(), Constant.CHART_GROUP_TYPE)){
+				isGroup = true;
+				VisualChart oldChart = visualChartService.getOne(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getPanelId, panelId)
+						.eq(VisualChart::getType, chart.getType()).eq(VisualChart::getName, chart.getName()));
+				if(oldChart != null){
+					chart.setId(oldChart.getId());
+					visualChartService.updateById(chart);
+				}
 			}
-			params.remove("type");
-		}
-		List<VisualChart> chartList = new ArrayList<VisualChart>();
-		if (chartId != null) {
-			// 只导出当前 chart
-			chartList.addAll(this.queryChartsByPanelId(panelId, chartId, params));
-		} else if (ToolUtil.isEmpty(panelId)) {
-			// 导出所有 dashboard panel
-			List<VisualPanel> panelList = this.list(new LambdaQueryWrapper<VisualPanel>()
-					.eq(VisualPanel::getType, Constant.PanelType.DASHBOARD.getValue())
-					.orderByAsc(VisualPanel::getWeight, VisualPanel::getId));
-			for (VisualPanel panel : panelList) {
-				Map<String, Object> param = new HashMap<String, Object>();
-				param.put("panelType", panelType);
-				param.put("pageSize", (String) params.get("pageSize"));
-				chartList.addAll(this.queryChartsByPanelId(panel.getId().toString(), null, param));
+			if(chart.getId() == null){
+				visualChartService.save(chart);
 			}
-		} else if (ToolUtil.isNotEmpty(panelId)) {
-			// 导出 panel 下所有chart
-			chartList.addAll(this.queryChartsByPanelId(panelId, null, params));
-		}
-		return chartList;
-	}
 
-	private List<List<String>> handleDashboardChartExportDataList(List<VisualChart> charts) {
-		List<VisualPanel> panelTreeList = (List<VisualPanel>) this.queryList(new HashMap()).getList();
-		Map<Integer, String> nodeIdAndNamePathMap = new HashMap<>();
-		for (VisualPanel panel : panelTreeList) {
-			nodeIdAndNamePathMap.put(panel.getId(), panel.getName());
-			this.getPanelIdAndNamePathMapFromTree(panel, panel.getName(), nodeIdAndNamePathMap);
+			List<VisualChartElement> chartElements = chart.getElements();
+			if (CollectionUtils.isNotEmpty(chartElements)) {
+				chartElements.forEach(chartElement -> {
+					chartElement.setChartId(chart.getId());
+					chartElement.setSeq(seq);
+					chartElement.setType(Constant.CHART_ELEMENT_EXPERT_TYPE);
+				});
+				chartElementService.saveBatch(chartElements);
+			}
+			if(isGroup){
+				this.importSaveCharts(chart.getChildren(), chart.getId(), panelId, seq);
+			}
 		}
-		// type 导出转换为 国际化之后的名称
+	}
+	/**
+	 * chart 导入 Type 是国际化后的，这里统一获取 chart type 可读名称 & 真实 type 值
+	 *
+	 * @return
+	 */
+	private Map<String, String> getChartTypeReadableNameMap() {
 		List<SysDictEntity> chartTypeList = sysDictService
 				.list(new LambdaQueryWrapper<SysDictEntity>().eq(SysDictEntity::getType, Constant.DICT_CHART_TYPE));
-		Map<String, String> chartTypeAndI18nMap = chartTypeList.stream()
-				.collect(Collectors.toMap(SysDictEntity::getValue, SysDictEntity::getI18nCode));
+		Map<String, String> chartTypeI18nCodeAndValueMap = chartTypeList.stream()
+				.filter(sysDict -> StrUtil.isNotEmpty(sysDict.getI18nCode()))
+				.collect(Collectors.toMap(SysDictEntity::getI18nCode, SysDictEntity::getValue));
 
-		List<List<String>> exportDataList = new ArrayList<>();
-		for (VisualChart chart : charts) {
-			if (chart == null)
-				continue;
-			List<String> tempList = new ArrayList<>();
-			String type = chart.getType();
-			tempList.add(nodeIdAndNamePathMap.get(chart.getPanelId()));
-			tempList.add(chart.getGroup().getName());
-			tempList.add(chart.getName());
-			String typeI18nCode = chartTypeAndI18nMap.get(type);
-			tempList.add(sysI18nService.queryValue(typeI18nCode));
-			tempList.add(ObjectUtil.defaultIfNull(chart.getSpan(), "").toString());
-			tempList.add(ObjectUtil.defaultIfNull(chart.getHeight(), "").toString());
-			if (StrUtil.equals(Constant.CHART_TEXT_TYPE, type)) {
-				tempList.add("");
-			} else {
-				tempList.add(this.getUnitDescrByVal(chart.getUnit()));
-			}
-			tempList.add(this.handleChartParam(chart.getParam()));
-			tempList.add(this.handleChartElementForExport(chart.getElements()));
-			tempList.add(chart.getRemark());
-			tempList.add(chart.getDatasource());
-			tempList.add(ObjectUtil.defaultIfNull(chart.getX(), "").toString());
-			tempList.add(ObjectUtil.defaultIfNull(chart.getY(), "").toString());
-			exportDataList.add(tempList);
+		Map<String, String> map = Tool.MapUtil.newHashMap();
+
+		for (Map.Entry<String, String> entry : chartTypeI18nCodeAndValueMap.entrySet()) {
+			// chart type i18n code
+			String i18nCode = entry.getKey();
+			// chart type real
+			String type = entry.getValue();
+
+			String chartReadableName = sysI18nService.queryValue(i18nCode);
+			map.put(chartReadableName, type);
+		}
+		return map;
+	}
+
+	private List<Map<String, Object>> handlePanelExportDataList(List<VisualPanel> panelList, Map<String, String> chartTypeAndI18nMap) {
+		if(CollectionUtils.isEmpty(panelList)){
+			return null;
+		}
+		List<Map<String, Object>> exportDataList = new ArrayList<>();
+		Map<String, Object> tempMap;
+		for (VisualPanel panel : panelList) {
+			if (panel == null) continue;
+			tempMap = new LinkedHashMap<>();
+			tempMap.put(PanelImportEnum.NAME.getName(), panel.getName());
+			tempMap.put(PanelImportEnum.TYPE.getName(), panel.getType());
+			tempMap.put(PanelImportEnum.VARTYPE.getName(), panel.getVarType());
+			tempMap.put(PanelImportEnum.PARAM.getName(), panel.getParam());
+			tempMap.put(PanelImportEnum.REMARK.getName(), panel.getRemark());
+			// chartParams 不可复用
+			Map<String, Object> chartParams = Tool.MapUtil.newHashMap();
+			chartParams.put("returnChildren", "1");
+			chartParams.put("groupId", 0);
+			chartParams.put("pageSize", "-1");
+			chartParams.put("panelId", panel.getId());
+			List<VisualChart> childChartList = (List<VisualChart>) visualChartService.queryPage(chartParams).getList();
+			tempMap.put(PanelImportEnum.CHARTS.getName(), this.handleChartsExportDataList(childChartList, chartTypeAndI18nMap));
+			tempMap.put(PanelImportEnum.CHILDREN.getName(), this.handlePanelExportDataList(panel.getChildren(), chartTypeAndI18nMap));
+			exportDataList.add(tempMap);
 		}
 		return exportDataList;
 	}
 
-	public void getPanelIdAndNamePathMapFromTree(VisualPanel panel, String path,
-			Map<Integer, String> nodeIdAndNamePathMap) {
-		if (CollectionUtils.isEmpty(panel.getChildren())) {
-			return;
+	private List<Map> handleChartsExportDataList(List<VisualChart> charts, Map<String, String> chartTypeAndI18nMap) {
+		if (CollectionUtils.isEmpty(charts)) {
+			return null;
 		}
-		for (VisualPanel cPanel : panel.getChildren()) {
-			String cPath = "";
-			cPath += path + "/" + cPanel.getName();
-			nodeIdAndNamePathMap.put(cPanel.getId(), cPath);
-			this.getPanelIdAndNamePathMapFromTree(cPanel, cPath, nodeIdAndNamePathMap);
-		}
-	}
-
-	public List<VisualChart> queryChartsByPanelId(String panelId, String chartId, Map<String, Object> params) {
-		params.put("panelId", panelId);
-		// 加上原有 ids
-		String ids = (String) params.get("ids");
-		if (StrUtil.isNotEmpty(ids)) {
-			chartId = StrUtil.emptyToDefault(chartId, "");
-			chartId += chartId.endsWith(",") ? ids : "," + ids;
-		}
-		params.put("ids", chartId);
-		params.put("returnChildren", "1");
-		params.put("groupId", 0);
-		PageUtils queryPage = visualChartService.queryPage(params);
-		List<VisualChart> result = (List<VisualChart>) queryPage.getList();
-
-		// 平铺 获取所有 chart 节点
-		List<VisualChart> allChartList = visualChartService.getAllChartList(result);
-		return allChartList;
-	}
-
-	public List<Map<Integer, String>> groupChartRowHandle(List<Map<Integer, String>> importDataList, Integer index) {
-		// type标识dashboard还是asset 区别去第几列查找group chart信息
-		List<Map<Integer, String>> list = importDataList.stream().filter(dataMap -> {
-			String groupName = dataMap.get(index);
-			if (StringUtils.isEmpty(groupName)) {
-				return true;
+		List<Map> chartsMap = Tool.ListUtil.list(false);
+		Map tempMap;
+		for (VisualChart pChart : charts) {
+			tempMap = new LinkedHashMap<>();
+			tempMap.put(ChartsImportEnum.NAME.getName(), pChart.getName());
+			tempMap.put(ChartsImportEnum.SPAN.getName(), ObjectUtil.defaultIfNull(pChart.getSpan(), "").toString());
+			tempMap.put(ChartsImportEnum.HEIGHT.getName(), ObjectUtil.defaultIfNull(pChart.getHeight(), "").toString());
+			String chartType = pChart.getType();
+			String typeI18nCode = chartTypeAndI18nMap.get(chartType);
+			tempMap.put(ChartsImportEnum.TYPE.getName(), sysI18nService.queryValue(typeI18nCode));
+			if (StrUtil.equals(Constant.CHART_TEXT_TYPE, chartType)) {
+				tempMap.put(ChartsImportEnum.UNIT.getName(), "");
+			} else {
+				tempMap.put(ChartsImportEnum.UNIT.getName(), this.getUnitDescrByVal(pChart.getUnit()));
 			}
-			return false;
-		}).collect(Collectors.toList());
-		importDataList.removeAll(list);
-		list.addAll(importDataList);
-		return list;
+			tempMap.put(ChartsImportEnum.WEIGHT.getName(), pChart.getWeight());
+			tempMap.put(ChartsImportEnum.PARAM.getName(), pChart.getParam());
+			tempMap.put(ChartsImportEnum.REMARK.getName(), pChart.getRemark());
+			tempMap.put(ChartsImportEnum.X.getName(), ObjectUtil.defaultIfNull(pChart.getX(), "").toString());
+			tempMap.put(ChartsImportEnum.Y.getName(), ObjectUtil.defaultIfNull(pChart.getY(), "").toString());
+			tempMap.put(ChartsImportEnum.ELEMENTS.getName(), this.handleChartElementForExport(pChart.getElements()));
+			tempMap.put(ChartsImportEnum.DATASOURCE.getName(), pChart.getDatasource());
+			tempMap.put(ChartsImportEnum.CHILDREN.getName(), this.handleChartsExportDataList(pChart.getChildren(), chartTypeAndI18nMap));
+			chartsMap.add(tempMap);
+		}
+		return chartsMap;
+	}
+
+	private List<Map> handleChartElementForExport(List<VisualChartElement> chartElements) {
+		if (CollectionUtils.isEmpty(chartElements)) {
+			return null;
+		}
+		List<Map> handleMaps = new ArrayList<>();
+		Map tempMap;
+		for (VisualChartElement element : chartElements) {
+			tempMap = new LinkedHashMap(4);
+			tempMap.put("expression", element.getExpression());
+			tempMap.put("state", element.getState());
+			if (ToolUtil.isNotEmpty(element.getLegend())) {
+				tempMap.put("legend", element.getLegend());
+			}
+			if (ToolUtil.isNotEmpty(element.getName())) {
+				tempMap.put("name", element.getName());
+			}
+			handleMaps.add(tempMap);
+		}
+		return handleMaps;
 	}
 
 	private synchronized ExecutorService getSnapshotThreadPool() {

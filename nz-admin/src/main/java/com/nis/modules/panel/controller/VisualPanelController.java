@@ -1,14 +1,12 @@
 package com.nis.modules.panel.controller;
 
+import cn.hutool.core.util.StrUtil;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
-import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.panel.entity.VisualPanel;
-//import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
-
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -18,7 +16,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -109,32 +106,19 @@ public class VisualPanelController {
 	@PostMapping("/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.CHART)
 	@RequiresPermissions({ "visual:panel:save"})
-	public R importChartData(@RequestParam(value = "file") MultipartFile excelFile, String type, Integer linkId, HttpServletRequest request) throws IOException {
-
-		String language = request.getHeader(Constant.LANGUAGE);
+	public R importChartData(@RequestParam(value = "file") MultipartFile excelFile, @RequestParam Map<String, Object> params) throws IOException {
+		Object type = params.get("type");
 		ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL)
 				.and(type).notNull(RCode.PANEL_CHART_TEMPLATE_TYPE_ISNULL);
-		// 校验 LANGUAGE
-		if (!Arrays.asList(Constant.LANGUAGE_VALUES).contains(language)) {
-			throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
+		if(!StrUtil.equalsAnyIgnoreCase(ToolUtil.toStr(type), Constant.PanelType.DASHBOARD.getValue(), Constant.PanelType.TEMPLATE.getValue())){
+			throw new NZException(RCode.PANEL_IMPORT_TYPE_INCORRECT);
 		}
-
-		Map info = visualPanelService.importChartData(excelFile, type, linkId, language);
-		return R.ok(info);
+		return R.ok(visualPanelService.importChartData(excelFile, params));
 	}
 
     @GetMapping("/export")
     @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.CHART)
     public void export(HttpServletResponse response, @RequestParam Map<String, Object> params) throws IOException {
-	    Object format = params.get("format");
-	    String formatStr = format == null ? "1" : format.toString();
-	    // 校验 FORMAT
-	    List<String> supportImportingFileTypes = Arrays.asList(Constant.ImportFileType.values()).stream().map(Constant.ImportFileType::getValue).collect(Collectors.toList());
-	    if (!supportImportingFileTypes.contains(formatStr)) {
-		    throw new NZException(RCode.EXCELFILE_TYPE_ERROR);
-	    }
-	    params.put("format", formatStr);
-
 	    visualPanelService.export(response, params);
     }
 

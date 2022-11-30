@@ -49,7 +49,7 @@ public enum RCode {
     PANEL_NAME_FORMAT_ERROR(123008,"Panel name format error, can not include /"),
     PANEL_NAME_DUPLICATE(122009,"Panel name is duplicate"),
     PANEL_ID_ISNULL(121010,"Panel id can not be empty"),
-    PANEL_CHART_TEMPLATE_TYPE_ISNULL(121011,"Panel charts template type is null"),
+    PANEL_CHART_TEMPLATE_TYPE_ISNULL(121011,"Panel import type is null"),
     PANEL_CHART_TEMPLATE_TYPE_INCORRECT(123012,"Panel charts template type must be dashboard, asset, endpoint and template"),
     PANEL_CHART_IMPORT_LINKID_ISNULL(121013,"When the type is model or asset, link Id cannot be empty"),
     PANEL_BUILDIN_CAN_NOT_REMOVE(127014,"This panel is built-in and cannot be deleted"),
@@ -118,6 +118,7 @@ public enum RCode {
     PANEL_VARTYPE_ISNULL(121098,"Panel varType can not be empty when link is not empty"),
     PANEL_VARTYPE_INVALIDE(124099,"Panel varType must be 0, 1 or 2"),
     PANEL_LINK_ISNULL(121100,"Panel link can not be empty"),
+    PANEL_IMPORT_TYPE_INCORRECT(123101,"Panel type must be dashboard or template"),
 
     /**
      * EXPRETMPL

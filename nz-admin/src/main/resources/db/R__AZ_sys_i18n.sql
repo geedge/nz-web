@@ -1948,7 +1948,7 @@ INSERT INTO `sys_i18n` VALUES (3125, '126029', 'en', 'CHART_UNIT_NOTFOUND', 'Cha
 INSERT INTO `sys_i18n` VALUES (3126, '123053', 'en', 'CHART_ELEMENTS_FORMAT', 'Chart elements must be JSON format', '响应消息->panel导入接口', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3127, '123012', 'en', 'PANEL_CHART_TEMPLATE_TYPE_INCORRECT', 'Panel charts template type must be dashboard, asset, endpoint and template', '响应消息->panel导出/导入/模板下载接口', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3128, '121013', 'en', 'PANEL_CHART_IMPORT_LINKID_ISNULL', 'When the type is model or asset, link Id cannot be empty', '响应消息->panel导入接口', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (3129, '121011', 'en', 'PANEL_CHART_TEMPLATE_TYPE_ISNULL', 'Panel charts template type is null', '响应消息->panel导入接口', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (3129, '121011', 'en', 'PANEL_CHART_TEMPLATE_TYPE_ISNULL', 'Panel import type is null', '响应消息->panel导入接口', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3130, '121033', 'en', 'CHART_TEXTPARAM_ISNULL', 'Chart param cannot be empty when type is text', '响应消息->charts新增/修改、panel导入接口', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3132, '121023', 'en', 'CHART_WEIGHT_ISNULL', 'Chart weight can not be empty', '响应消息->charts顺序调整接口', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3133, '121004', 'en', 'PANEL_PID_ISNULL', 'Panel pid can not be empty', '响应消息->panel顺序调整接口', '2021-11-02 00:00:00', 1);
@@ -2507,7 +2507,7 @@ INSERT INTO `sys_i18n` VALUES (3861, '126029', 'zh', 'CHART_UNIT_NOTFOUND', '图
 INSERT INTO `sys_i18n` VALUES (3862, '123053', 'zh', 'CHART_ELEMENTS_FORMAT', '图表查询表达式必须为json格式', '响应消息->panel导入接口', '2021-11-03 16:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (3863, '123012', 'zh', 'PANEL_CHART_TEMPLATE_TYPE_INCORRECT', '图表模板类型不在允许范围内', '响应消息->panel导出/导入/模板下载接口', '2021-11-03 16:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (3864, '121013', 'zh', 'PANEL_CHART_IMPORT_LINKID_ISNULL', '图表模板类型为资产或型号时，链接不能为空', '响应消息->panel导入接口', '2021-11-03 16:28:05', 1);
-INSERT INTO `sys_i18n` VALUES (3865, '121011', 'zh', 'PANEL_CHART_TEMPLATE_TYPE_ISNULL', '图表模板类型不能为空', '响应消息->panel导入接口', '2021-11-03 16:28:05', 1);
+INSERT INTO `sys_i18n` VALUES (3865, '121011', 'zh', 'PANEL_CHART_TEMPLATE_TYPE_ISNULL', '面板导入类型不能为空', '响应消息->panel导入接口', '2021-11-03 16:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (3866, '121033', 'zh', 'CHART_TEXTPARAM_ISNULL', '图表文本类型参数不能为空', '响应消息->charts新增/修改、panel导入接口', '2021-11-03 16:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (3868, '121023', 'zh', 'CHART_WEIGHT_ISNULL', '图表排序权重不能为空', '响应消息->charts顺序调整接口', '2021-11-03 16:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (3869, '121004', 'zh', 'PANEL_PID_ISNULL', '面板父面板ID不能为空', '响应消息->panel顺序调整接口', '2021-11-03 16:28:05', 1);
@@ -4420,7 +4420,7 @@ INSERT INTO `sys_i18n` VALUES (6877, 'record_rule', 'zh', 'record_rule', '记录
 INSERT INTO `sys_i18n` VALUES (6879, 'overall.recordRule.edit', 'en', 'overall.recordRule.edit', 'Edit record rule', '', '2022-08-04 08:27:47', 415);
 INSERT INTO `sys_i18n` VALUES (6881, 'overall.recordRule.edit', 'zh', 'overall.recordRule.edit', '修改记录规则', '', '2022-08-04 08:28:09', 415);
 INSERT INTO `sys_i18n` VALUES (6883, 'overall.importSupport', 'en', 'overall.importSupport', 'Support xlsx / xls / csv / json files', '', '2022-08-05 08:22:47', 407);
-INSERT INTO `sys_i18n` VALUES (6885, 'overall.importSupport', 'zh', 'overall.importSupport', '支持 xlsx / xls / csv / json files', '', '2022-08-05 08:23:07', 407);
+INSERT INTO `sys_i18n` VALUES (6885, 'overall.importSupport', 'zh', 'overall.importSupport', '支持 xlsx / xls / csv / json 文件', '', '2022-11-28 07:43:36', 407);
 INSERT INTO `sys_i18n` VALUES (6887, 'overall.importResult', 'en', 'overall.importResult', 'Import result', '', '2022-08-05 08:24:48', 407);
 INSERT INTO `sys_i18n` VALUES (6889, 'overall.importResult', 'zh', 'overall.importResult', '导入结果', '', '2022-08-05 08:25:01', 407);
 INSERT INTO `sys_i18n` VALUES (6891, 'overall.selectTemplate', 'en', 'overall.selectTemplate', 'Select template format', '', '2022-08-08 01:55:08', 407);
@@ -4823,5 +4823,21 @@ INSERT INTO `sys_i18n` VALUES (7584, 'overall.dashboardTemp', 'en', 'overall.das
 INSERT INTO `sys_i18n` VALUES (7585, 'overall.dashboardTemp', 'zh', 'overall.dashboardTemp', '仪表盘预览', '', '2022-11-22 02:04:13', 407);
 INSERT INTO `sys_i18n` VALUES (7586, 'model.dashboardtemplate', 'en', 'model.dashboardtemplate', 'Dashboard template', '', '2022-11-22 06:02:39', 415);
 INSERT INTO `sys_i18n` VALUES (7587, 'model.dashboardtemplate', 'zh', 'model.dashboardtemplate', '仪表盘模板', '', '2022-11-22 06:03:31', 415);
+INSERT INTO `sys_i18n` VALUES (7588, 'tip.confirmDuplicateDashboard', 'en', 'tip.confirmDuplicateDashboard', 'Are you sure to duplicate this dashboard?', '', '2022-11-23 08:51:42', 407);
+INSERT INTO `sys_i18n` VALUES (7589, 'tip.confirmDuplicateDashboard', 'zh', 'tip.confirmDuplicateDashboard', '确认复制吗？', '', '2022-11-23 08:52:06', 407);
+INSERT INTO `sys_i18n` VALUES (7590, 'dashboard.panel.chartForm.charts', 'en', 'dashboard.panel.chartForm.charts', 'Charts', 'panel 导入/导出/模板下载', '2022-11-25 06:18:50', 416);
+INSERT INTO `sys_i18n` VALUES (7591, 'dashboard.panel.chartForm.charts', 'zh', 'dashboard.panel.chartForm.charts', '图表', 'panel 导入/导出/模板下载；', '2022-11-25 06:18:50', 416);
+INSERT INTO `sys_i18n` VALUES (7592, 'overall.supportJson', 'en', 'overall.supportJson', 'Support json files', '', '2022-11-28 07:42:32', 407);
+INSERT INTO `sys_i18n` VALUES (7593, 'overall.supportJson', 'zh', 'overall.supportJson', '支持 json 文件', '', '2022-11-28 07:43:45', 407);
+INSERT INTO `sys_i18n` VALUES (7594, 'dashboard.panel.chartForm.weight', 'en', 'dashboard.panel.chartForm.weight', 'Order', 'panel 导入/导出/模板下载', '2022-11-29 06:18:50', 416);
+INSERT INTO `sys_i18n` VALUES (7595, 'dashboard.panel.chartForm.weight', 'zh', 'dashboard.panel.chartForm.weight', '图表顺序', 'panel 导入/导出/模板下载；', '2022-11-29 06:18:50', 416);
+INSERT INTO `sys_i18n` VALUES (7596, 'dashboard.panel.chartForm.children', 'en', 'dashboard.panel.chartForm.children', 'Chart children', 'panel 导入/导出/模板下载', '2022-11-29 06:18:50', 416);
+INSERT INTO `sys_i18n` VALUES (7597, 'dashboard.panel.chartForm.children', 'zh', 'dashboard.panel.chartForm.children', '组内图表', 'panel 导入/导出/模板下载；', '2022-11-29 06:18:50', 416);
+INSERT INTO `sys_i18n` VALUES (7598, 'dashboard.panel.chartForm.name', 'en', 'dashboard.panel.chartForm.name', 'Chart name', 'panel 导入/导出/模板下载', '2022-11-29 06:18:50', 416);
+INSERT INTO `sys_i18n` VALUES (7599, 'dashboard.panel.chartForm.name', 'zh', 'dashboard.panel.chartForm.name', '图表名称', 'panel 导入/导出/模板下载；', '2022-11-29 06:18:50', 416);
+INSERT INTO `sys_i18n` VALUES (7600, '123101', 'en', 'PANEL_IMPORT_TYPE_INCORRECT', 'Panel import type must be dashboard or template', 'panel 导入/导出/模板下载；', '2022-11-29 06:18:50', 416);
+INSERT INTO `sys_i18n` VALUES (7601, '123101', 'zh', 'PANEL_IMPORT_TYPE_INCORRECT', '面板导入类型不在允许范围内', 'panel 导入/导出/模板下载；', '2022-11-29 06:18:50', 416);
+INSERT INTO `sys_i18n` VALUES (7602, 'dashboard.panel.children', 'en', 'dashboard.panel.children', 'Panel children', 'panel 导入/导出/模板下载', '2022-11-29 06:18:50', 416);
+INSERT INTO `sys_i18n` VALUES (7603, 'dashboard.panel.children', 'zh', 'dashboard.panel.children', '子面板', 'panel 导入/导出/模板下载；', '2022-11-29 06:18:50', 416);
 
 SET FOREIGN_KEY_CHECKS = 1;

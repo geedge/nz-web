@@ -895,7 +895,8 @@ public class Constant {
 	// alert rule 导入表头
 	public static final String SYSCONFIG_KEY_ALERTRULE_EXPORT_HEADER = "rule_export_header";
 
-	// chart dashboard 类型导入表头
+	// panel 类型导入表头
+	public static final String SYSCONFIG_KEY_PANEL_EXPORT_HEADER = "panel_export_header";
 	public static final String SYSCONFIG_KEY_CHART_EXPORT_HEADER = "chart_export_header";
 
 	// asset 类型导入表头
