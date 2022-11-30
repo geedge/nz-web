@@ -440,6 +440,7 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
                 boolean isFifo = attrs.isFifo();
                 boolean isReg = attrs.isReg();
                 boolean isSock = attrs.isSock();
+                long size = attrs.getSize();
                 String linkName = null;
                 // 当文件为链接时，需要进一步判断文件类型和链接文件名称
                 if(isLink) {
@@ -451,6 +452,7 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
                 		isFifo = stat.isFifo();
                 		isReg = stat.isReg();
                 		isSock = stat.isSock();
+                        size = stat.getSize();
 					} catch (Exception e) {
 						log.warn(e,"link error: {}", fullName);
 					}
@@ -460,7 +462,7 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
                         .put("fullName", fullName)
                         .put("permissions", attrs.getPermissions())
                         .put("permissionsString", attrs.getPermissionsString())
-                        .put("size", attrs.getSize())
+                        .put("size", size)
                         .put("isDir", isDir)
                         .put("isBlk", isBlk)
                         .put("isFifo", isFifo)
