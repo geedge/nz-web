@@ -363,6 +363,9 @@ public class VisualServiceImpl implements VisualService {
                 tempGroupChart = ObjectUtil.clone(groupChart);
                 // new temp group id
                 tempGroupChart.setId(tempGroupId);
+                // render group name
+                String name = tempGroupChart.getName();
+                tempGroupChart.setName(name.replaceAll(StrUtil.concat(true, "\\$", repeatVariable), varValue));
 
                 // render repeatVariable
                 List<VisualChart> children = tempGroupChart.getChildren();
@@ -372,6 +375,9 @@ public class VisualServiceImpl implements VisualService {
                     // temp id
                     chart.setId(tempChartId);
                     chart.setGroupId(tempGroupId);
+                    // chart name
+                    String chartName = chart.getName();
+                    chart.setName(chartName.replaceAll(StrUtil.concat(true, "\\$", repeatVariable), varValue));
 
                     List<VisualChartElement> elements = chart.getElements();
                     elements = Tool.CollUtil.defaultIfEmpty(elements, Tool.ListUtil.list(true));
