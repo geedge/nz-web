@@ -167,7 +167,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 			params.put("type", type);
 		}
 		boolean isDashboard = StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(), type);
-		if (isDashboard) params.put("pid", "0");
+		if (isDashboard && StrUtil.isBlank(ids)) params.put("pid", "0");
 
 		IPage page = new Query(VisualPanel.class).getPage(params);
 		List<VisualPanel> panelList = this.baseMapper.queryList(page, params);
