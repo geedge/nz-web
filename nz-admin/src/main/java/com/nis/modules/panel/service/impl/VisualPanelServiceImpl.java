@@ -177,13 +177,19 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
 			if (isDashboard) {
 				// 2. dashboard 类型 需要树形结构
-				List<VisualPanel> ChildrenList = this.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getPid, visualPanel.getId()));
-				if (CollectionUtils.isNotEmpty(ChildrenList)) {
-					for (VisualPanel ChildrenPanel : ChildrenList) {
-						if (ToolUtil.isNotEmpty(ChildrenPanel.getParam()))
-							ChildrenPanel.setParam(JSONObject.parseObject(String.valueOf(ChildrenPanel.getParam()), Map.class));
+				List<VisualPanel> childrenList = this.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getPid, visualPanel.getId()));
+				if (CollectionUtils.isNotEmpty(childrenList)) {
+					for (VisualPanel childrenPanel : childrenList) {
+						if (ToolUtil.isNotEmpty(childrenPanel.getParam()))
+							childrenPanel.setParam(JSONObject.parseObject(String.valueOf(childrenPanel.getParam()), Map.class));
+
+						// 当前用户收藏状态 1：收藏 0：未收藏
+						int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
+								.eq(SysUserStarredEntity::getTid, childrenPanel.getId()).eq(SysUserStarredEntity::getType, "panel")
+								.eq(SysUserStarredEntity::getUid, currentLoginUserID.intValue()));
+						childrenPanel.setStarred(count == 0 ? 0 : 1);
 					}
-					visualPanel.setChildren(ChildrenList);
+					visualPanel.setChildren(childrenList);
 				}
 			}
 		}
