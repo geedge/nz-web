@@ -743,6 +743,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 		List<CompletableFuture<Map>> futureList = new ArrayList<>();
 
 		for (VisualChart chart : chartsList) {
+			String chartName = this.replaceExprByVars(chart.getName(), varList);
+			chart.setName(chartName);
 			String datasource = chart.getDatasource();
 			if (StrUtil.equals("misc", datasource)) {
 				if (Tool.CollUtil.isNotEmpty(chart.getChildren())) {
