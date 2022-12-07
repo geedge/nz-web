@@ -34,4 +34,6 @@ public interface VisualChartDao extends BaseMapper<VisualChart> {
     List<VisualChart> selectInstanceChart(@Param("type")Integer type,@Param("id")Integer id);
 
     void insertBatchChart(@Param("list") List<VisualChart> oldChartListByPanelId);
+
+    List<VisualChart> queryChartsIncludeElementInfo(@Param("panelId") Integer panelId);
 }

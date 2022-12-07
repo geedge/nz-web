@@ -1,6 +1,7 @@
 package com.nis.modules.panel.service.impl;
 
 import cn.hutool.cache.impl.TimedCache;
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.thread.NamedThreadFactory;
 import cn.hutool.core.thread.ThreadUtil;
@@ -19,16 +20,21 @@ import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.panel.entity.VisualChartElement;
 import com.nis.modules.panel.entity.VisualPanel;
+import com.nis.modules.panel.service.VisualChartElementService;
 import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.panel.service.VisualService;
+import com.nis.modules.panel.utils.DashboardConstant;
 import com.nis.modules.stat.service.impl.StatServiceImpl;
 import com.nis.modules.sys.entity.Timezone;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.TimezoneService;
+import com.nis.modules.sys.shiro.ShiroUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletResponse;
@@ -45,7 +51,7 @@ import java.util.stream.Collectors;
 @Service("visualService")
 public class VisualServiceImpl implements VisualService {
 
-    private Log log = Log.get();
+    private final static Log log = Log.get();
 
     @Value("${connect.timeout:30000}")
     private Integer connectTimeout;
@@ -88,6 +94,9 @@ public class VisualServiceImpl implements VisualService {
 
     @Autowired
     private VisualChartService visualChartService;
+
+    @Autowired
+    private VisualChartElementService visualChartElementService;
 
     @Autowired
     private AssetAssetService assetAssetService;
@@ -552,7 +561,129 @@ public class VisualServiceImpl implements VisualService {
         }
     }
 
-   private class SnapshotRunnable extends Thread {
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void syncTemplateDashboard(Integer id, Integer tmplId, Integer modelId, Integer moduleId) {
+        // need Sync Dashboard lsit
+        List<VisualPanel> needSyncDashboardList = visualPanelService.getTemplateSyncDashboard(id, tmplId, modelId, moduleId);
+        log.info("[syncTemplateDashboard] [sync Dashboard List] [size: {}]", needSyncDashboardList.size());
+
+        if (Tool.CollUtil.isEmpty(needSyncDashboardList)) {
+            log.warn("[syncTemplateDashboard] [sync Dashboard not found]");
+            return;
+        }
+
+        log.info("[syncTemplateDashboard] [sync Dashboard begin]");
+        StopWatch sw = new StopWatch();
+        sw.start();
+        // sync
+        Map<Integer, List<VisualPanel>> needSyncDashboardMap = needSyncDashboardList.stream().collect(Collectors.groupingBy(VisualPanel::getTmplId));
+        for (Map.Entry<Integer, List<VisualPanel>> entry : needSyncDashboardMap.entrySet()) {
+            Integer templateId = entry.getKey();
+            VisualPanel templateDashboard = visualPanelService.queryPanelIncludeChartInfo(templateId);
+
+            List<VisualPanel> syncDashboardList = entry.getValue();
+            log.info("[syncTemplateDashboard] [sync Dashboard] [template: {}] [dashboard size: {}]", templateDashboard.getId(), syncDashboardList.size());
+
+            if (ObjectUtil.hasEmpty(templateDashboard, syncDashboardList)) {
+                log.warn("[syncTemplateDashboard] [do not perform template dashboard sync. sync object is empty]");
+                continue;
+            }
+
+            // perform synchronization
+            this.performSync(templateDashboard, syncDashboardList);
+        }
+        sw.stop();
+        log.info("[syncTemplateDashboard] [sync Dashboard finshed] [Run time: {}]", sw.toString());
+    }
+
+    /**
+     * perform Sync dashboard
+     *
+     * @param templateDashboard
+     * @param syncDashboardList
+     */
+    private void performSync(VisualPanel templateDashboard, List<VisualPanel> syncDashboardList) {
+        Object templateDashboardParam = templateDashboard.getParam();
+        List<VisualChart> templateDashboardCharts = templateDashboard.getCharts();
+        templateDashboardCharts = templateDashboardCharts.stream().sorted(Comparator.comparing(VisualChart::getGroupId)).collect(Collectors.toList());
+
+        for (VisualPanel syncPanel : syncDashboardList) {
+            // get link object
+            Integer varType = syncPanel.getVarType();
+            Integer link = syncPanel.getLink();
+            Object linkObject = null;
+            Integer chartVarType = DashboardConstant.VariableType.NONE.getValue();
+            if (ObjectUtil.equal(DashboardConstant.VariableType.ASSET.getValue(), varType)) {
+                linkObject = assetAssetService.queryAssetInfo(link);
+                chartVarType = DashboardConstant.VariableType.ASSET.getValue();
+            } else if (ObjectUtil.equal(DashboardConstant.VariableType.ENDPOINT.getValue(), varType)) {
+                linkObject = monitorEndpointService.queryEndpointEntity(link);
+                chartVarType = DashboardConstant.VariableType.ENDPOINT.getValue();
+            }
+
+            log.info("[syncTemplateDashboard] [performSync] [link Object exist: {}]", ObjectUtil.isNotNull(linkObject));
+            if (ObjectUtil.isNull(linkObject)) {
+                log.warn("[syncTemplateDashboard] [performSync] [link Object not exist] [link id: {}]", link);
+                continue;
+            }
+
+            Integer syncPanelId = syncPanel.getId();
+
+            // remove chart & chart element
+            List<Integer> removePanelIds = Tool.ListUtil.of(syncPanelId);
+            visualChartService.delVisualChartsByPanelId(removePanelIds.stream().toArray(n -> new Integer[n]));
+
+            // update dashboard param
+            LambdaUpdateWrapper<VisualPanel> updateWrapper = new LambdaUpdateWrapper<>();
+            updateWrapper.set(VisualPanel::getParam, Tool.NzExpressionUtil.renderExpression(templateDashboardParam.toString(), linkObject));
+            updateWrapper.eq(VisualPanel::getId, syncPanelId);
+            visualPanelService.update(updateWrapper);
+
+            // insert chart & chart element
+            List<VisualChartElement> saveChartElementList = Tool.ListUtil.list(true);
+            Map<Integer, Integer> groupIdMapping = new HashMap<>();
+            for (VisualChart tempChart : templateDashboardCharts) {
+                VisualChart saveChart = new VisualChart();
+                BeanUtil.copyProperties(tempChart, saveChart);
+
+                saveChart.setId(null);
+                saveChart.setPanelId(syncPanelId);
+                saveChart.setPid(tempChart.getId());
+                saveChart.setVarId(link);
+                saveChart.setVarType(chartVarType);
+                saveChart.setUpdateAt(new Date());
+                saveChart.setUpdateBy(ShiroUtils.getUserId().intValue());
+
+                saveChart.setGroupId(ObjectUtil.defaultIfNull(groupIdMapping.get(saveChart.getGroupId()), 0));
+
+                saveChart.setName(Tool.NzExpressionUtil.renderExpression(saveChart.getName(), linkObject));
+                saveChart.setParam(ToolUtil.isNotEmpty(saveChart.getParam()) ? Tool.NzExpressionUtil.renderExpression(saveChart.getParam().toString(), linkObject) : null);
+
+                // save
+                visualChartService.save(saveChart);
+                if (Tool.CollUtil.isNotEmpty(saveChart.getElements())) {
+                    for (VisualChartElement element : saveChart.getElements()) {
+                        element.setId(null);
+                        element.setExpression(Tool.NzExpressionUtil.renderExpression(element.getExpression(), linkObject));
+                        element.setChartId(saveChart.getId());
+                    }
+                    saveChartElementList.addAll(saveChart.getElements());
+                }
+
+                // record group id mapping
+                if (StrUtil.equalsIgnoreCase(Constant.CHART_GROUP_TYPE, saveChart.getType())) {
+                    groupIdMapping.put(tempChart.getId(), saveChart.getId());
+                }
+            }
+
+            // save element
+            if (Tool.CollUtil.isNotEmpty(saveChartElementList))
+                visualChartElementService.saveBatch(saveChartElementList);
+        }
+    }
+
+    private class SnapshotRunnable extends Thread {
 
         private VisualChart chart;
         private ThreadGroup threadGroup;

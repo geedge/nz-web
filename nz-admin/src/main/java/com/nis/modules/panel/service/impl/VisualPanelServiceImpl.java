@@ -1,6 +1,7 @@
 package com.nis.modules.panel.service.impl;
 
 import cn.hutool.core.codec.Base64;
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
@@ -18,6 +19,7 @@ import com.alibaba.fastjson.JSONPath;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
@@ -25,8 +27,12 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.agent.service.LokiApiService;
 import com.nis.modules.agent.service.PromApiService;
+import com.nis.modules.asset.entity.AssetModel;
 import com.nis.modules.asset.service.AssetAssetService;
+import com.nis.modules.asset.service.AssetModelService;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
+import com.nis.modules.module.entity.MonitorModule;
+import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.panel.dao.VisualPanelDao;
 import com.nis.modules.panel.entity.*;
 import com.nis.modules.panel.service.VisualChartElementService;
@@ -34,7 +40,7 @@ import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.panel.service.VisualService;
 import com.nis.modules.report.job.ReportJobManager;
-import com.nis.modules.stat.service.impl.StatServiceImpl;
+import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.*;
@@ -47,7 +53,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
@@ -70,11 +75,26 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 	@Value("${dashboard.snapshot.timeout:300000}")
 	private Integer timeout;
 
-	@Autowired
-	private VisualChartService visualChartService;
+	@Value("${snapshot.concurrency:10}")
+	private Integer snapshotConcurrency;
+
+	@Value("${snapshot.corePoolSize:5}")
+	private Integer snapshotCorePoolSize;
+
+	@Value("${snapshot.keepAliveTime:30}")
+	private Long snapshotKeepAliveTime;
+
+	@Value("${snapshot.capacity:10000}")
+	private Integer snapshotCapacity;
+
+	// snapshot 执行线程池，避免大量请求访问 prometheus 服务
+	private ExecutorService snapshotThreadPool;
 
 	@Autowired
-	private SysConfigService sysConfigService;
+	private VisualService visualService;
+
+	@Autowired
+	private VisualChartService visualChartService;
 
 	@Autowired
 	private VisualChartElementService chartElementService;
@@ -83,16 +103,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 	private DataSourceTransactionManager dataSourceTransactionManager;
 
 	@Autowired
-	private TransactionDefinition transactionDefinition;
-
-	@Autowired
-	private SysDictService sysDictService;
-
-	@Autowired
 	private BasicImportAndExportServices basicImportAndExportServices;
-
-	@Autowired
-	private StatServiceImpl statServiceImpl;
 
 	@Autowired
 	private PromApiService promApiService;
@@ -101,10 +112,13 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 	private LokiApiService lokiApiService;
 
 	@Autowired
-	private SysUserStarredService starredService;
+	private AssetModelService assetModelService;
 
 	@Autowired
 	private AssetAssetService assetAssetService;
+
+	@Autowired
+	private MonitorModuleService monitorModuleService;
 
 	@Autowired
 	private MonitorEndpointService monitorEndpointService;
@@ -119,21 +133,16 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 	private SysI18nService sysI18nService;
 
 	@Autowired
-	private VisualService visualService;
+	private SysDictService sysDictService;
 
-	@Value("${snapshot.concurrency:10}")
-	private Integer snapshotConcurrency;
+	@Autowired
+	private SysConfigService sysConfigService;
 
-	@Value("${snapshot.corePoolSize:5}")
-	private Integer snapshotCorePoolSize;
+	@Autowired
+	private SysUserStarredService starredService;
 
-	@Value("${snapshot.keepAliveTime:30}")
-	private Long snapshotKeepAliveTime;
-
-	@Value("${snapshot.capacity:10000}")
-	private Integer snapshotCapacity;
-	// snapshot 执行线程池，避免大量请求访问 prometheus 服务
-	private ExecutorService snapshotThreadPool;
+	@Autowired
+	private StatService statService;
 
 	@Override
 	public VisualPanel queryInfo(Integer id) {
@@ -241,6 +250,12 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 		// 3. 删除关联的 chart chartElement
 		Integer[] removePanelIds = allPanelIds.stream().toArray(n -> new Integer[n]);
 		visualChartService.delVisualChartsByPanelId(removePanelIds);
+
+		// 4. template dashboard
+		LambdaUpdateWrapper<VisualPanel> updateWrapper = new LambdaUpdateWrapper<>();
+		updateWrapper.set(VisualPanel::getTmplId, -1);
+		updateWrapper.in(VisualPanel::getTmplId, allPanelIds);
+		this.update(updateWrapper);
 
 		try {
 			// 删除 Report job
@@ -717,6 +732,47 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 		return visualService.replaceSnapshotTemplate(resultMap);
 	}
 
+	@Override
+	public List<VisualPanel> getTemplateSyncDashboard(Integer panelId, Integer tmplId, Integer modelId, Integer moduleId) {
+		if (ObjectUtil.isNotEmpty(panelId)) {
+			VisualPanel panel = this.getOne(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getId, panelId).ne(VisualPanel::getTmplId, -1));
+			return ObjectUtil.isNotEmpty(panel) ? ListUtil.of(panel) : ListUtil.empty();
+		}
+
+		if (ObjectUtil.isNotEmpty(tmplId)) {
+			List<VisualPanel> panelList = this.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getTmplId, tmplId));
+			return CollUtil.defaultIfEmpty(panelList, ListUtil.empty());
+		}
+
+		if (ObjectUtil.isNotEmpty(modelId)) {
+			AssetModel model = assetModelService.getOne(new LambdaQueryWrapper<AssetModel>().eq(AssetModel::getId, modelId).isNotNull(AssetModel::getPanelId));
+			if (ObjectUtil.isEmpty(model)) return ListUtil.empty();
+
+			List<VisualPanel> panelList = this.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getTmplId, model.getPanelId()));
+			return CollUtil.defaultIfEmpty(panelList, ListUtil.empty());
+		}
+
+		if (ObjectUtil.isNotEmpty(moduleId)) {
+			MonitorModule module = monitorModuleService.getOne(new LambdaQueryWrapper<MonitorModule>().eq(MonitorModule::getId, moduleId).isNotNull(MonitorModule::getPanelId));
+			if (ObjectUtil.isEmpty(module)) return ListUtil.empty();
+
+			List<VisualPanel> panelList = this.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getTmplId, module.getPanelId()));
+			return CollUtil.defaultIfEmpty(panelList, ListUtil.empty());
+		}
+		return ListUtil.empty();
+	}
+
+	@Override
+	public VisualPanel queryPanelIncludeChartInfo(Integer panelId) {
+		VisualPanel panel = this.getById(panelId);
+		ValidateUtils.is(panel).notNull(RCode.PANEL_NOT_EXIST);
+
+		// charts & chart element
+		List<VisualChart> chartList = visualChartService.queryChartsIncludeElementInfo(panelId);
+		panel.setCharts(chartList);
+		return panel;
+	}
+
 	/**
 	 * 根据 vars 渲染 element 表达式
 	 *
@@ -768,7 +824,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 						cn.hutool.json.JSONObject dataSource = JSONUtil.parseArray(chartParam.get("datasource"))
 								.getJSONObject(0);
 						dataSource.set("select", JSONUtil.createArray().put(dataSource.get("select")));
-						ok.putAllData(statServiceImpl.queryAnalyse(
+						ok.putAllData(statService.queryAnalyse(
 								JSONUtil.toBean(JSONUtil.createObj().set("q", dataSource.toString()), Map.class)));
 					}
 					ok.put("eleIndex", "0");

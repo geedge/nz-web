@@ -22,4 +22,6 @@ public interface VisualService {
 
     void downloadSnapshotFile(HttpServletResponse response, String language, String taskId);
 
+    void syncTemplateDashboard(Integer id, Integer tmplId, Integer modelId, Integer moduleId);
+
 }

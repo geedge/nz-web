@@ -30,6 +30,7 @@ import com.nis.modules.panel.entity.VisualPanel;
 import com.nis.modules.panel.service.VisualChartElementService;
 import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
+import com.nis.modules.panel.utils.DashboardConstant;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
@@ -1021,7 +1022,12 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		panel.setLink(linkId);
 		panel.setWeight(0);
 		panel.setCreateBy(ShiroUtils.getUserId().intValue());
-		panel.setUts(new Date().getTime());
+		panel.setUts(System.currentTimeMillis());
+		if (StrUtil.equals(Constant.PanelType.ASSET.getValue(), typeStr)) {
+			panel.setVarType(DashboardConstant.VariableType.ASSET.getValue());
+		} else if (StrUtil.equals(Constant.PanelType.ENDPOINT.getValue(), typeStr)) {
+			panel.setVarType(DashboardConstant.VariableType.ENDPOINT.getValue());
+		}
 		if(StringUtils.isNotEmpty(seq)){
 			panel.setSeq(seq);
 		}
@@ -1057,6 +1063,12 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 			this.getAllChildrenChartList(entity, allChartList);
 		}
 		return allChartList;
+	}
+
+	@Override
+	public List<VisualChart> queryChartsIncludeElementInfo(Integer panelId) {
+		List<VisualChart> visualChartList = this.getBaseMapper().queryChartsIncludeElementInfo(panelId);
+		return Tool.CollUtil.defaultIfEmpty(visualChartList, Tool.ListUtil.empty());
 	}
 
 	/**

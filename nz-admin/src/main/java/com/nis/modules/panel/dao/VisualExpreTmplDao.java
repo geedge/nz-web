@@ -2,7 +2,6 @@ package com.nis.modules.panel.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.nis.modules.panel.entity.VisualExpressionTmpl;
-
 import org.apache.ibatis.annotations.Mapper;
 import org.springframework.stereotype.Repository;
 

@@ -44,4 +44,6 @@ public interface VisualChartService extends IService<VisualChart> {
 	 * @return
 	 */
 	List<VisualChart> getAllChartList(List<VisualChart> sourceChartList);
+
+	List<VisualChart> queryChartsIncludeElementInfo(Integer panelId);
 }

@@ -1,11 +1,10 @@
 package com.nis.modules.panel.controller;
 
+import cn.hutool.log.Log;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
+import com.nis.common.utils.*;
 import com.nis.modules.panel.service.VisualService;
+import com.nis.modules.panel.utils.DashboardConstant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,8 +17,13 @@ import java.util.Map;
 @RequestMapping("/visual")
 public class VisualController {
 
+	private final static Log log = Log.get();
+
 	@Autowired
 	private VisualService visualService;
+
+	@Autowired
+	private RedisLock redisLock;
 
 	/**
 	 * explore 快照
@@ -102,4 +106,43 @@ public class VisualController {
 	                                 @PathVariable(required = true) String tid) {
 		visualService.downloadSnapshotFile(response, language, tid);
 	}
+
+
+	/**
+	 * dashboard sync Tmpl
+	 *
+	 * @param requestBody
+	 * @return
+	 */
+	@PostMapping("/panel/syncTmpl")
+	public R syncTemplateDashboard(@RequestBody(required = false) Map<String, Integer> requestBody) {
+		// validate param
+		requestBody = Tool.MapUtil.defaultIfEmpty(requestBody, Tool.MapUtil.empty());
+
+		Integer id = requestBody.get("id");
+		Integer tmplId = requestBody.get("tmplId");
+		Integer modelId = requestBody.get("model");
+		Integer moduleId = requestBody.get("module");
+
+		if (Tool.ObjectUtil.isAllEmpty(id, tmplId, modelId, moduleId))
+			return R.error(RCode.PANEL_TEMPLATE_SYNC_PARAM_ISNULL);
+
+		// get lock
+		String uuid = Tool.StrUtil.uuid();
+		try {
+			if (redisLock.lock(DashboardConstant.TEMPLATE_SYNC_LOCK_KEY, uuid, 5L)) {
+				log.info("[syncTemplateDashboard] [Get lock and start synchronization template]");
+
+				// sync Template On Panel
+				visualService.syncTemplateDashboard(id, tmplId, modelId, moduleId);
+				return R.ok();
+			} else {
+				log.warn("[syncTemplateDashboard] [Failed to get lock and do not perform template synchronization]");
+				return R.error(RCode.PANEL_TEMPLATE_SYNC_FAILED_GET_LOCK);
+			}
+		} finally {
+			redisLock.unlock(DashboardConstant.TEMPLATE_SYNC_LOCK_KEY, uuid);
+		}
+	}
+
 }

@@ -119,6 +119,8 @@ public enum RCode {
     PANEL_VARTYPE_INVALIDE(124099,"Panel varType must be 0, 1 or 2"),
     PANEL_LINK_ISNULL(121100,"Panel link can not be empty"),
     PANEL_IMPORT_TYPE_INCORRECT(123101,"Panel type must be dashboard or template"),
+    PANEL_TEMPLATE_SYNC_PARAM_ISNULL(121102, "Dashboard template synchronization parameter is null"),
+    PANEL_TEMPLATE_SYNC_FAILED_GET_LOCK(127103,"Dashboard template synchronization is in progress please try again later"),
 
     /**
      * EXPRETMPL

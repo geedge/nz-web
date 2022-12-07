@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
  * redis 分布式锁
  */
 @Component
-public class LockUtils {
+public class RedisLock {
 
     @Autowired
     private StringRedisTemplate stringRedisTemplate;

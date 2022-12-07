@@ -6,7 +6,6 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.panel.entity.VisualExpressionTmpl;
 import com.nis.modules.panel.service.VisualExpreTmplService;
-
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;

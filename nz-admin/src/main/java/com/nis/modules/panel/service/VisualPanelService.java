@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Set;
 
 public interface VisualPanelService extends IService<VisualPanel> {
+
 	VisualPanel queryInfo(Integer id);
 	
     void delPanels(Integer... ids);
@@ -39,4 +40,8 @@ public interface VisualPanelService extends IService<VisualPanel> {
     void snapshot(HttpServletResponse response, String format, Integer panelId, Long start, Long end, String language, String vars) throws IOException;
 
     String genSnapshotByTemplate(Integer panelId, Long start, Long end, String lang, String vars);
+
+    List<VisualPanel> getTemplateSyncDashboard(Integer panelId, Integer tmplId, Integer modelId, Integer moduleId);
+
+    VisualPanel queryPanelIncludeChartInfo(Integer panelId);
 }

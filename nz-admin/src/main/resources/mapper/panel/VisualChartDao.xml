@@ -292,4 +292,20 @@
             )
         </foreach>
     </insert>
+
+    <select id="queryChartsIncludeElementInfo" resultMap="visualChartResult">
+        SELECT
+            chart.*,
+            vce.id AS vce_id,
+            vce.expression AS vce_expression,
+            vce.type AS vce_type,
+            vce.legend AS vce_legend,
+            vce.name AS vce_name,
+            vce.state AS vce_state
+        FROM
+            visual_chart chart
+            LEFT JOIN visual_chart_element vce ON chart.id = vce.chart_id
+        WHERE
+            chart.panel_id = #{panelId}
+    </select>
 </mapper>
