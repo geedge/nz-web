@@ -15,7 +15,7 @@ UPDATE asset_field_value SET meta_id = meta_id + 100000;
 INSERT INTO `alert_rule`
 (`id`, `name`, `expr`, `last`, `summary`, `description`, `receiver`, `build_in`, `operator`, `threshold`, `unit`, `seq`, `severity_id`, `method`, `state`, `type`, `inr`, `timeout`, `auto_expired`, `sched_enable`, `sched_days`, `sched_stime`, `sched_etime`, `notify_active`, `notify_expired`, `trb_shot`)
 SELECT
-1, 'Default snmptrap', '1.3.6.1', 3600, '{{$message}}', '{{$variables}}', '', '1', '', NULL, 0, NULL, 3, '', 1, 3, 0, 300, 1, 0, '1,2,3,4,5,6,7', '00:00', '23:59', 1, 1, ''
+1, 'Default snmptrap', '1.3.6.1', 3600, '{{$message}}', '{{$variables}}', '', '1', '', NULL, 0, NULL, 3, '', 1, 3, 0, 300, 1, 0, '1,2,3,4,5,6,7', '00:00', '23:59', 1, 1, '' FROM dual
 WHERE NOT EXISTS (SELECT name FROM `alert_rule` WHERE name = "Default snmptrap" or id = 1);
 
 UPDATE alert_rule SET build_in = 1 WHERE id = 1;
@@ -46,7 +46,7 @@ UPDATE record_rule SET id = id + 100000 WHERE build_in != 1 ORDER BY id DESC;
 INSERT INTO `visual_panel`
 (`id`, `name`, `create_by`, `type`, `link`, `pid`, `weight`, `build_in`, `seq`, `param`, `remark`, `uts`)
 SELECT
-1, 'Overview', 1, 'dashboard', 0, 0, 0, '1', 'v3.2-buildin', '{}', '', 0
+1, 'Overview', 1, 'dashboard', 0, 0, 0, '1', 'v3.2-buildin', '{}', '', 0 FROM dual
 WHERE NOT EXISTS (SELECT name FROM `visual_panel` WHERE ( name = "Overview" or id = 1) and seq = "v3.2-buildin");
 
 UPDATE visual_panel SET build_in = 1 WHERE id = 1;
@@ -132,12 +132,12 @@ UPDATE asset_brand SET id = id + 100000 WHERE name not in ("Generic","GDNT") ORD
 
 INSERT INTO `asset_brand` (`id`, `name`, `remark`, `seq`)
 SELECT
-1, 'Generic', '', 'build-in'
+1, 'Generic', '', 'build-in' FROM dual
 WHERE NOT EXISTS (SELECT name FROM `asset_brand` WHERE name = "Generic");
 
 INSERT INTO `asset_brand` (`id`, `name`, `remark`, `seq`)
 SELECT
-2, 'GDNT', '', 'build-in'
+2, 'GDNT', '', 'build-in' FROM dual
 WHERE NOT EXISTS (SELECT name FROM `asset_brand` WHERE name = "GDNT");
 
 
@@ -156,55 +156,55 @@ UPDATE asset_model SET id = id + 100000 WHERE name NOT IN ( 'Generic Linux', 'Ge
 
 INSERT INTO `asset_model` (`id`, `brand_id`, `name`, `remark`, `seq`, `usize`, `chart_ids`, `type_id`, `sys_object_id`, `tsg_appliance`)
 SELECT
-1, @GenericBrandId, 'Generic Linux',    '', 'builld-in', 1, '', 6, '', 0
+1, @GenericBrandId, 'Generic Linux',    '', 'builld-in', 1, '', 6, '', 0 FROM dual
 WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "Generic Linux")
 AND EXISTS ( SELECT NAME FROM `asset_type_conf` WHERE id = 6 );
 
 INSERT INTO `asset_model` (`id`, `brand_id`, `name`, `remark`, `seq`, `usize`, `chart_ids`, `type_id`, `sys_object_id`, `tsg_appliance`)
 SELECT
-2, @GenericBrandId, 'Generic switch',   '', 'builld-in', 1, '', 4, '', 0
+2, @GenericBrandId, 'Generic switch',   '', 'builld-in', 1, '', 4, '', 0 FROM dual
 WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "Generic switch")
 AND EXISTS ( SELECT NAME FROM `asset_type_conf` WHERE id = 4 );
 
 INSERT INTO `asset_model` (`id`, `brand_id`, `name`, `remark`, `seq`, `usize`, `chart_ids`, `type_id`, `sys_object_id`, `tsg_appliance`)
 SELECT
-3, @GenericBrandId, 'Generic router',   '', 'builld-in', 1, '', 2, '', 0
+3, @GenericBrandId, 'Generic router',   '', 'builld-in', 1, '', 2, '', 0 FROM dual
 WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "Generic router")
 AND EXISTS ( SELECT NAME FROM `asset_type_conf` WHERE id = 2 );
 
 INSERT INTO `asset_model` (`id`, `brand_id`, `name`, `remark`, `seq`, `usize`, `chart_ids`, `type_id`, `sys_object_id`, `tsg_appliance`)
 SELECT
-4, @GenericBrandId, 'Generic firewall', '', 'builld-in', 1, '', 3, '', 0
+4, @GenericBrandId, 'Generic firewall', '', 'builld-in', 1, '', 3, '', 0 FROM dual
 WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "Generic firewall")
 AND EXISTS ( SELECT NAME FROM `asset_type_conf` WHERE id = 3 );
 
 INSERT INTO `asset_model` (`id`, `brand_id`, `name`, `remark`, `seq`, `usize`, `chart_ids`, `type_id`, `sys_object_id`, `tsg_appliance`)
 SELECT
-5, @GenericBrandId, 'Generic VM',       '', 'builld-in', 1, '', 7, '', 0
+5, @GenericBrandId, 'Generic VM',       '', 'builld-in', 1, '', 7, '', 0 FROM dual
 WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "Generic VM")
 AND EXISTS ( SELECT NAME FROM `asset_type_conf` WHERE id = 7 );
 
 INSERT INTO `asset_model` (`id`, `brand_id`, `name`, `remark`, `seq`, `usize`, `chart_ids`, `type_id`, `sys_object_id`, `tsg_appliance`)
 SELECT
-6, @GenericBrandId, 'Generic computer', '', 'builld-in', 1, '', 5, '', 0
+6, @GenericBrandId, 'Generic computer', '', 'builld-in', 1, '', 5, '', 0 FROM dual
 WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "Generic computer")
 AND EXISTS ( SELECT NAME FROM `asset_type_conf` WHERE id = 5 );
 
 INSERT INTO `asset_model` (`id`, `brand_id`, `name`, `remark`, `seq`, `usize`, `chart_ids`, `type_id`, `sys_object_id`, `tsg_appliance`)
 SELECT
-7, @GDNTBrandId, 'TSG-X',            '', 'builld-in', 1, '', 3, '', 1
+7, @GDNTBrandId, 'TSG-X',            '', 'builld-in', 1, '', 3, '', 1 FROM dual
 WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "TSG-X")
 AND EXISTS ( SELECT NAME FROM `asset_type_conf` WHERE id = 3 );
 
 INSERT INTO `asset_model` (`id`, `brand_id`, `name`, `remark`, `seq`, `usize`, `chart_ids`, `type_id`, `sys_object_id`, `tsg_appliance`)
 SELECT
-8, @GDNTBrandId, 'TSG-7400',         '', 'builld-in', 1, '', 8, '', 0
+8, @GDNTBrandId, 'TSG-7400',         '', 'builld-in', 1, '', 8, '', 0 FROM dual
 WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "TSG-7400")
 AND EXISTS ( SELECT NAME FROM `asset_type_conf` WHERE id = 8 );
 
 INSERT INTO `asset_model` (`id`, `brand_id`, `name`, `remark`, `seq`, `usize`, `chart_ids`, `type_id`, `sys_object_id`, `tsg_appliance`)
 SELECT
-9, @GDNTBrandId, 'TSG-9140',         '', 'builld-in', 1, '', 3, '', 0
+9, @GDNTBrandId, 'TSG-9140',         '', 'builld-in', 1, '', 3, '', 0 FROM dual
 WHERE NOT EXISTS (SELECT name FROM `asset_model` WHERE name = "TSG-9140")
 AND EXISTS ( SELECT NAME FROM `asset_type_conf` WHERE id = 3 );
 
