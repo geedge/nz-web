@@ -27,9 +27,11 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.agent.service.LokiApiService;
 import com.nis.modules.agent.service.PromApiService;
+import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetModel;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetModelService;
+import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
@@ -756,7 +758,14 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 			AssetModel model = assetModelService.getOne(new LambdaQueryWrapper<AssetModel>().eq(AssetModel::getId, modelId).isNotNull(AssetModel::getPanelId));
 			if (ObjectUtil.isEmpty(model)) return ListUtil.empty();
 
-			List<VisualPanel> panelList = this.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getTmplId, model.getPanelId()));
+			List<AssetAsset> assetList = assetAssetService.list(new LambdaUpdateWrapper<AssetAsset>().eq(AssetAsset::getModelId, model.getId()));
+			if (CollUtil.isEmpty(assetList)) return ListUtil.empty();
+
+			List<Integer> assetIdList = assetList.stream().map(AssetAsset::getId).collect(Collectors.toList());
+			List<VisualPanel> panelList = this.list(new LambdaQueryWrapper<VisualPanel>()
+					.eq(VisualPanel::getType, DashboardConstant.Type.ASSET.getValue())
+					.in(VisualPanel::getLink, assetIdList));
+			panelList.forEach(panel -> panel.setTmplId(model.getPanelId()));
 			return CollUtil.defaultIfEmpty(panelList, ListUtil.empty());
 		}
 
@@ -764,7 +773,14 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 			MonitorModule module = monitorModuleService.getOne(new LambdaQueryWrapper<MonitorModule>().eq(MonitorModule::getId, moduleId).isNotNull(MonitorModule::getPanelId));
 			if (ObjectUtil.isEmpty(module)) return ListUtil.empty();
 
-			List<VisualPanel> panelList = this.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getTmplId, module.getPanelId()));
+			List<MonitorEndpoint> endpointList = monitorEndpointService.list(new LambdaUpdateWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getModuleId, module.getId()));
+			if (CollUtil.isEmpty(endpointList)) return ListUtil.empty();
+
+			List<Integer> endpointIdList = endpointList.stream().map(MonitorEndpoint::getId).collect(Collectors.toList());
+			List<VisualPanel> panelList = this.list(new LambdaQueryWrapper<VisualPanel>()
+					.eq(VisualPanel::getType, DashboardConstant.Type.ENDPOINT.getValue())
+					.in(VisualPanel::getLink, endpointIdList));
+			panelList.forEach(panel -> panel.setTmplId(module.getPanelId()));
 			return CollUtil.defaultIfEmpty(panelList, ListUtil.empty());
 		}
 		return ListUtil.empty();

@@ -340,7 +340,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		        this.saveAssetChartsSimultaneously(panel, chart);
 		    }
 		}*/
-        
+
         return chart.getId();
 	}
     

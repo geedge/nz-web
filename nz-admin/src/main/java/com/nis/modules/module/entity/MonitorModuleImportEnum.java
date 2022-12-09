@@ -10,7 +10,7 @@ public enum MonitorModuleImportEnum {
     PROJECT("project name", 1),
     ENDPOINT_NAME_TEMPLATE("endpoint name template", 2),
     CONFIGURATIONS("endpoint config json array", 3),
-    CHART_TEMPLATES("chart templates", 4),
+    DASHBOARD_TEMPLATE("dashboard template", 4),
     REMARK("remark", 5);
 
     private String name;

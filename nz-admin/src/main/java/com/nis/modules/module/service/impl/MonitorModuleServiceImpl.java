@@ -21,6 +21,7 @@ import com.nis.common.utils.*;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.asset.entity.AssetModelImportEnum;
 import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
@@ -28,10 +29,10 @@ import com.nis.modules.module.dao.MonitorModuleDao;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.entity.MonitorModuleImportEnum;
 import com.nis.modules.module.service.MonitorModuleService;
-import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.panel.entity.VisualPanel;
-import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
+import com.nis.modules.panel.service.VisualService;
+import com.nis.modules.panel.utils.DashboardConstant;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.project.service.TopoService;
@@ -89,10 +90,10 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
     private SnmpCredentialService snmpCredentialService;
 
     @Autowired
-    private VisualChartService visualChartService;
+    private VisualPanelService visualPanelService;
 
     @Autowired
-    private VisualPanelService visualPanelService;
+    private VisualService visualService;
 
     @Autowired
     private StatService statService;
@@ -128,12 +129,6 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
         Map<Integer, Long> ruleIdAndAlertCountMap = alertMessageList.parallelStream().collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
         List<Map<String, Object>> alert = statService.getSeverityStatByRuleMsgCount(Tool.MapUtil.empty(), ruleIdAndAlertCountMap);
         module.setAlert(alert);
-
-        String chartIds = module.getChartIds();
-        if (StrUtil.isNotBlank(chartIds)) {
-            List<VisualChart> charts = (List<VisualChart>) visualChartService.listByIds(Arrays.asList(chartIds.split(",")));
-            module.setCharts(charts);
-        }
 
         Integer panelId = module.getPanelId();
         if(ToolUtil.isNotEmpty(panelId)) {
@@ -226,13 +221,14 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
             throw new NZException(RCode.MODULE_NAME_DUPLICATE);
         }
 
-        // 校验panel是否为模板且存在
+        // module dashboard template, type = template & varType = endpoint
         Integer panelId = module.getPanelId();
-        if(ToolUtil.isNotEmpty(panelId)) {
-            VisualPanel visualPanel = visualPanelService.getById(panelId);
-            if(visualPanel == null || !ToolUtil.equals(visualPanel.getVarType(), 2)) {
-                throw new NZException(RCode.MODULE_PANEL_ERROR);
-            }
+        if (ToolUtil.isNotEmpty(panelId)) {
+            VisualPanel panel = visualPanelService.getOne(new LambdaQueryWrapper<VisualPanel>()
+                    .eq(VisualPanel::getId, panelId)
+                    .eq(VisualPanel::getType, DashboardConstant.Type.TEMPLATE.getValue())
+                    .eq(VisualPanel::getVarType, DashboardConstant.VariableType.ENDPOINT.getValue()));
+            ValidateUtils.is(panel).notNull(RCode.MODULE_PANEL_ERROR);
         }
 
         // config 格式校验
@@ -825,26 +821,19 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
                 }
             }
 
-            String chartNames = dataMap.get(MonitorModuleImportEnum.CHART_TEMPLATES.getIndex());
-            StringBuilder relChartTemplateIds = new StringBuilder();
-            if (StringUtils.isNotEmpty(chartNames)) {
-                // module 只能选择 endpoint 类型且 groupId = 0 的图表
-                List<VisualChart> endpointChartTemplateList = visualChartService.list(new LambdaQueryWrapper<VisualChart>()
-                        .eq(VisualChart::getPanelId, 0).eq(VisualChart::getGroupId, 0)
-                        .eq(VisualChart::getVarType, Constant.ChartVariableType.ENDPOINT.getValue()));
-
-                StrUtil.split(chartNames, StrUtil.C_COMMA).stream().forEach(chartName -> {
-                    List<Integer> chartIdList = endpointChartTemplateList.stream()
-                            .filter(visualChart -> StrUtil.equals(visualChart.getName(), chartName))
-                            .map(VisualChart::getId).collect(Collectors.toList());
-                    if (Tool.CollUtil.isEmpty(chartIdList)) {
-                        validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_RELATED_OBJ_NOT_EXIST.setParam(MonitorModuleImportEnum.CHART_TEMPLATES.getIndex()));
-                    } else if (chartIdList.size() > 1) {
-                        validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_DUPLICATE.setParam(MonitorModuleImportEnum.CHART_TEMPLATES.getIndex()));
-                    } else if (chartIdList.size() == 1) {
-                        relChartTemplateIds.append(StrUtil.concat(true, chartIdList.get(0).toString(), ","));
-                    }
-                });
+            String dashboardTemplateName = dataMap.get(MonitorModuleImportEnum.DASHBOARD_TEMPLATE.getIndex());
+            Integer dashboardTemplateId = null;
+            if (StrUtil.isNotEmpty(dashboardTemplateName)) {
+                // dashboard template, type = template  varType = endpoint
+                VisualPanel dashboardTemplate = visualPanelService.getOne(new LambdaQueryWrapper<VisualPanel>()
+                        .eq(VisualPanel::getName, dashboardTemplateName)
+                        .eq(VisualPanel::getType, DashboardConstant.Type.TEMPLATE.getValue())
+                        .eq(VisualPanel::getVarType, DashboardConstant.VariableType.ENDPOINT.getValue()));
+                if (ObjectUtil.isNull(dashboardTemplate)) {
+                    validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_RELATED_OBJ_NOT_EXIST.setParam(AssetModelImportEnum.DASHBOARD_TEMPLATE.getIndex()));
+                } else {
+                    dashboardTemplateId = dashboardTemplate.getId();
+                }
             }
 
             List<Map<String, String>> errMsgForThisLine = validateUtil.getImportErrMsgForThisLine(lineNum);
@@ -871,7 +860,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
                 module.setName(moduleName);
                 module.setEndpointNameTmpl(endpointNameTmpl);
                 module.setRemark(remark);
-                module.setChartIds(StrUtil.isNotEmpty(relChartTemplateIds) ? relChartTemplateIds.substring(0, relChartTemplateIds.length() - 1) : "");
+                module.setPanelId(dashboardTemplateId);
                 module.setConfigs(configStr);
                 List<Map> configMapList = JSONObject.parseArray(configStr, Map.class);
                 Map metricsConfigMap = configMapList.stream().filter(map -> {
@@ -977,6 +966,12 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
                     monitorEndpointService.syncTmpl(ListUtil.of(module.getId()), Collections.emptyList(), Collections.emptyList());
                 }
             }
+
+            // 是否同步更新关联的 dashboard，可选值： 0：不同步  1：同步  默认值：1
+            String syncDashboard = Tool.ObjectUtil.defaultIfEmpty((String) params.get("syncDashboard"), "1");
+            if (StrUtil.equals("1", syncDashboard) && ObjectUtil.isNotNull(module.getPanelId())) {
+                visualService.syncTemplateDashboard(null, null, null, module.getId());
+            }
         } else {
             params.put("save", true);
             // insert
@@ -1034,16 +1029,8 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
             tempList.add(module.getProject().getName());
             tempList.add(ObjectUtil.defaultIfNull(module.getEndpointNameTmpl(), ""));
             tempList.add(ObjectUtil.defaultIfNull(module.getConfigs(), ""));
-            String chartIds = module.getChartIds();
-            String chartNames = "";
-            if (StrUtil.isNotEmpty(chartIds)) {
-                List<VisualChart> chartList = visualChartService.list(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getPanelId, 0).in(VisualChart::getId, Arrays.asList(chartIds.split(","))));
-                for (VisualChart chart : chartList) {
-                    chartNames += chart.getName() + ",";
-                }
-                chartNames = StrUtil.isNotEmpty(chartNames) ? chartNames.substring(0, chartNames.length() - 1) : chartNames;
-            }
-            tempList.add(ObjectUtil.defaultIfNull(chartNames, "").toString());
+            VisualPanel panel = module.getPanel();
+            tempList.add(ObjectUtil.isNotNull(panel) ? panel.getName() : StrUtil.EMPTY);
             tempList.add(ObjectUtil.defaultIfNull(module.getRemark(), "").toString());
             exportDataList.add(tempList);
         }

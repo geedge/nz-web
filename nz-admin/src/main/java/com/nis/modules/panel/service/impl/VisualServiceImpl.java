@@ -605,6 +605,7 @@ public class VisualServiceImpl implements VisualService {
      * @param syncDashboardList
      */
     private void performSync(VisualPanel templateDashboard, List<VisualPanel> syncDashboardList) {
+        Integer templateDashboardId = templateDashboard.getId();
         Object templateDashboardParam = templateDashboard.getParam();
         List<VisualChart> templateDashboardCharts = templateDashboard.getCharts();
         templateDashboardCharts = templateDashboardCharts.stream().sorted(Comparator.comparing(VisualChart::getGroupId)).collect(Collectors.toList());
@@ -647,6 +648,7 @@ public class VisualServiceImpl implements VisualService {
             // update dashboard param
             LambdaUpdateWrapper<VisualPanel> updateWrapper = new LambdaUpdateWrapper<>();
             updateWrapper.set(VisualPanel::getParam, Tool.NzExpressionUtil.renderExpression(templateDashboardParam.toString(), linkObject));
+            updateWrapper.set(VisualPanel::getTmplId, templateDashboardId);
             updateWrapper.eq(VisualPanel::getId, syncPanelId);
             visualPanelService.update(updateWrapper);
 
