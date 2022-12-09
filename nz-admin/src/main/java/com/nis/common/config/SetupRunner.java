@@ -12,6 +12,7 @@ import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.panel.entity.VisualPanel;
 import com.nis.modules.panel.service.VisualPanelService;
+import com.nis.modules.panel.utils.DashboardConstant;
 import com.nis.modules.report.job.ReportJobManager;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.job.SysBackJobManager;
@@ -87,7 +88,7 @@ public class SetupRunner implements CommandLineRunner{
 
 		// 加载已有 panel report job type = DASHBOARD
 		log.info("Setup dashboard report job begin...");
-		List<VisualPanel> panelList = visualPanelService.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, Constant.PanelType.DASHBOARD.getValue()));
+		List<VisualPanel> panelList = visualPanelService.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, DashboardConstant.Type.DASHBOARD.getValue()));
 		for (VisualPanel panel : panelList) {
 			Map paramMap = JSONObject.parseObject(panel.getParam().toString(), Map.class);
 			if (Tool.MapUtil.isNotEmpty(paramMap)) {
