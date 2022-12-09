@@ -7,6 +7,7 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.panel.entity.VisualPanel;
 import com.nis.modules.panel.service.VisualPanelService;
+import com.nis.modules.panel.utils.DashboardConstant;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -110,7 +111,7 @@ public class VisualPanelController {
 		Object type = params.get("type");
 		ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL)
 				.and(type).notNull(RCode.PANEL_CHART_TEMPLATE_TYPE_ISNULL);
-		if(!StrUtil.equalsAnyIgnoreCase(ToolUtil.toStr(type), Constant.PanelType.DASHBOARD.getValue(), Constant.PanelType.TEMPLATE.getValue())){
+		if(!StrUtil.equalsAnyIgnoreCase(ToolUtil.toStr(type), DashboardConstant.Type.DASHBOARD.getValue(), DashboardConstant.Type.TEMPLATE.getValue())){
 			throw new NZException(RCode.PANEL_IMPORT_TYPE_INCORRECT);
 		}
 		return R.ok(visualPanelService.importChartData(excelFile, params));

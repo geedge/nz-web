@@ -627,25 +627,6 @@ public class Constant {
 		}
 	}
 
-	public enum PanelType {
-		DASHBOARD("dashboard"), ASSET("asset"), PROJECT("project"), MODULE("module"), ENDPOINT("endpoint"),
-		TEMPLATE("template");
-
-		private String value;
-
-		PanelType(String value) {
-			this.value = value;
-		}
-
-		public String getValue() {
-			return value;
-		}
-
-		public void setValue(String value) {
-			this.value = value;
-		}
-	}
-
 	/**
 	 * chart Variable type enum
 	 */

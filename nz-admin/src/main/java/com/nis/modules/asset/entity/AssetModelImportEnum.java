@@ -8,7 +8,7 @@ public enum AssetModelImportEnum {
 
     NAME("model name", 0),
     BRAND("brand name", 1),
-    CHART_TEMPLATES("chart templates", 2),
+    DASHBOARD_TEMPLATE("dashboard template", 2),
     DESCRIPTION("description", 3),
     ASSET_TYPE_NAME("asset type name", 4),
     OID("oid", 5);

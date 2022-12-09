@@ -9,6 +9,7 @@ import cn.hutool.core.util.*;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
@@ -569,7 +570,7 @@ public class VisualServiceImpl implements VisualService {
         log.info("[syncTemplateDashboard] [sync Dashboard List] [size: {}]", needSyncDashboardList.size());
 
         if (Tool.CollUtil.isEmpty(needSyncDashboardList)) {
-            log.warn("[syncTemplateDashboard] [sync Dashboard not found]");
+            log.warn("[syncTemplateDashboard] [sync Dashboard not found] [panelId: {}] [tmplId: {}] [modelId: {}] [moduleId: {}]", id, tmplId, modelId, moduleId);
             return;
         }
 
@@ -622,7 +623,7 @@ public class VisualServiceImpl implements VisualService {
                 chartVarType = DashboardConstant.VariableType.ENDPOINT.getValue();
             }
 
-            log.info("[syncTemplateDashboard] [performSync] [link Object exist: {}]", ObjectUtil.isNotNull(linkObject));
+            log.info("[syncTemplateDashboard] [performSync] [link id: {}] [link Object exist: {}]", link, ObjectUtil.isNotNull(linkObject));
             if (ObjectUtil.isNull(linkObject)) {
                 log.warn("[syncTemplateDashboard] [performSync] [link Object not exist] [link id: {}]", link);
                 continue;
@@ -630,9 +631,18 @@ public class VisualServiceImpl implements VisualService {
 
             Integer syncPanelId = syncPanel.getId();
 
-            // remove chart & chart element
-            List<Integer> removePanelIds = Tool.ListUtil.of(syncPanelId);
-            visualChartService.delVisualChartsByPanelId(removePanelIds.stream().toArray(n -> new Integer[n]));
+            // remove chart. no remove buildin assetInfo endpointInfo chart
+            List<VisualChart> removeChartList = visualChartService.list(new LambdaUpdateWrapper<VisualChart>()
+                    .eq(VisualChart::getPanelId, syncPanelId)
+                    .eq(VisualChart::getBuildIn, 0)
+                    .ne(VisualChart::getType, Constant.CHART_ASSETINFO_TYPE)
+                    .ne(VisualChart::getType, Constant.CHART_ENDPOINTINFO_TYPE));
+
+            List<Integer> removeChartIdList = removeChartList.stream().map(VisualChart::getId).collect(Collectors.toList());
+            if (Tool.CollUtil.isNotEmpty(removeChartIdList)) {
+                visualChartService.removeByIds(removeChartIdList);
+                visualChartElementService.remove(new LambdaQueryWrapper<VisualChartElement>().in(VisualChartElement::getChartId, removeChartIdList));
+            }
 
             // update dashboard param
             LambdaUpdateWrapper<VisualPanel> updateWrapper = new LambdaUpdateWrapper<>();

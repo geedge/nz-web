@@ -35,8 +35,6 @@ public interface AssetAssetDao extends BaseMapper<AssetAsset> {
 
     List<VisualChart> getAssetsByChartIds(List<Integer> chartIds);
 
-    void updateBrandIdByModelId(@Param("modelId") Integer modelId, @Param("brandId") Integer brandId);
-
     /**
      * 根据 之前的 modelId & typeId update model_id
      *

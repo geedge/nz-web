@@ -44,6 +44,7 @@ import com.nis.modules.panel.entity.VisualPanel;
 import com.nis.modules.panel.service.VisualChartElementService;
 import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
+import com.nis.modules.panel.utils.DashboardConstant;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.stat.service.StatService;
@@ -830,7 +831,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             List<VisualChart> chartList = visualChartService.queryChartWithElementByIds(chartIdList);
 
             MonitorEndpoint endpointInfo = this.queryEndpointEntity(endpoint.getId());
-            VisualPanel endpointPanel = visualPanelService.getOne(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, Constant.PanelType.ENDPOINT.getValue()).eq(VisualPanel::getLink, endpoint.getId()));
+            VisualPanel endpointPanel = visualPanelService.getOne(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, DashboardConstant.Type.ENDPOINT.getValue()).eq(VisualPanel::getLink, endpoint.getId()));
 
             // model chart 组 和 asset 新增 chart 组关联关系，用来做 asset 新增 chart 组关系映射
             Map<Integer, Integer> groupIdMapping = new HashMap<>();
@@ -899,7 +900,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         alertMessageService.removeByEndpointIds(ids);
 
         // 删除关联的 panel chart  chartElement信息
-        List<VisualPanel> panels = visualPanelService.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, Constant.PanelType.ENDPOINT.getValue()).in(VisualPanel::getLink, ids));
+        List<VisualPanel> panels = visualPanelService.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, DashboardConstant.Type.ENDPOINT.getValue()).in(VisualPanel::getLink, ids));
         if (CollectionUtils.isNotEmpty(panels)) {
             Set<Integer> panelIds = panels.stream().map(VisualPanel::getId).collect(Collectors.toSet());
             visualPanelService.delPanelsAndChartInfoByPanelIds(panelIds);
@@ -929,7 +930,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             this.remove(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getSeq, seq));
 
             // 删除关联的 panel chart  chartElement信息
-            List<VisualPanel> panels = visualPanelService.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, Constant.PanelType.ENDPOINT.getValue()).in(VisualPanel::getLink, endpointIds));
+            List<VisualPanel> panels = visualPanelService.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, DashboardConstant.Type.ENDPOINT.getValue()).in(VisualPanel::getLink, endpointIds));
             if (CollectionUtils.isNotEmpty(panels)) {
                 Set<Integer> panelIds = panels.stream().map(VisualPanel::getId).collect(Collectors.toSet());
                 visualPanelService.delPanelsAndChartInfoByPanelIds(panelIds);
@@ -1346,8 +1347,13 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         // endpoint config
         String sysEndpointChartTplStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_ENDPOINT_CHART_TPL);
         VisualChart chartTemplate = JSONObject.parseObject(sysEndpointChartTplStr, VisualChart.class);
+
+        // get module template id
+        MonitorModule module = monitorModuleService.getById(endpoint.getModuleId());
+        Integer templateId = module.getPanelId();
+
         // insert panel chart
-        visualChartService.saveRelPanelAndChart(Constant.PanelType.ENDPOINT.getValue(), endpoint.getId(), endpoint.getSeq(), chartTemplate);
+        visualChartService.saveRelPanelAndChart(DashboardConstant.Type.ENDPOINT.getValue(), endpoint.getId(), templateId, endpoint.getSeq(), chartTemplate);
     }
 
     @Override

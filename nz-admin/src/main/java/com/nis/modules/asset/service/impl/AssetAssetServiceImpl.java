@@ -13,6 +13,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -33,11 +34,11 @@ import com.nis.modules.endpoint.service.MonitorEndpointStateService;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.panel.entity.VisualChart;
-import com.nis.modules.panel.entity.VisualChartElement;
 import com.nis.modules.panel.entity.VisualPanel;
-import com.nis.modules.panel.service.VisualChartElementService;
 import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
+import com.nis.modules.panel.service.VisualService;
+import com.nis.modules.panel.utils.DashboardConstant;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.stat.service.StatService;
@@ -80,7 +81,7 @@ import java.util.stream.Collectors;
 @Service
 public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset> implements AssetAssetService {
 
-    private static Log logger = Log.get();
+    private static final Log log = Log.get();
 
     @Autowired
     private RedisTemplate redisTemplate;
@@ -140,9 +141,6 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     private VisualChartService chartService;
 
     @Autowired
-    private VisualChartElementService chartElementService;
-
-    @Autowired
     private MonitorProjectService projectService;
 
     @Autowired
@@ -166,9 +164,11 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     @Autowired
     private DataSourceTransactionManager dataSourceTransactionManager;
 
-
     @Autowired
     private AssetCommentService assetCommentService;
+
+    @Autowired
+    private VisualService visualService;
 
     @SuppressWarnings("unchecked")
     @Override
@@ -840,8 +840,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // asset panel & info chart
         this.saveAssetInfoPanel(asset);
 
-        // 通过 model chart tepmlate 新增 asset charts
-        this.saveAssetChartsViaModelChartTmpl(asset);
+        // sync Asset Dashboard Via Model
+        this.syncAssetDashboardViaModel(asset.getId(), asset.getModelId());
 
         // 保存 默认 VSYS 和 Asset 关联关系
         this.saveOrUpdateDefaultVsysAssetRel(asset.getId(), asset.getModelId());
@@ -895,73 +895,36 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         SysConfigEntity assetChartConfig = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_CHART_TPL));
         // asset config
         VisualChart chartTemplate = JSONObject.parseObject(assetChartConfig.getParamValue(), VisualChart.class);
+
+        // get model template id
+        AssetModel model = modelService.getById(asset.getModelId());
+        Integer templateId = model.getPanelId();
+
         // 新增时需要新增 panel chart
-        chartService.saveRelPanelAndChart(Constant.PanelType.ASSET.getValue(), asset.getId(), null, chartTemplate);
+        chartService.saveRelPanelAndChart(DashboardConstant.Type.ASSET.getValue(), asset.getId(), templateId, null, chartTemplate);
     }
 
     /**
-     * 通过 model chart tepmlate 新增 asset charts
+     * sync Asset Dashboard Via Model
      *
-     * @param asset
+     * @param assetId
+     * @param modelId
      */
-    private void saveAssetChartsViaModelChartTmpl(AssetAsset asset) {
-        // 通过关联 model charts 添加 asset charts
-        AssetModel model = modelService.getById(asset.getModelId());
-        if (StringUtils.isNotEmpty(model.getChartIds())) {
-            List<String> list = Arrays.asList(model.getChartIds().split(","));
-            List<Integer> chartIdList = list.stream().map(Integer::parseInt).collect(Collectors.toList());
-            // 补充 group 下的 chart id
-            List<VisualChart> childCharts = chartService.list(new LambdaQueryWrapper<VisualChart>().in(VisualChart::getGroupId, chartIdList));
-            List<Integer> childChartIdList = childCharts.stream().map(VisualChart::getId).distinct().collect(Collectors.toList());
-            chartIdList.addAll(childChartIdList);
-            chartIdList = chartIdList.stream().distinct().collect(Collectors.toList());
-            List<VisualChart> chartList = chartService.queryChartWithElementByIds(chartIdList);
-
-            AssetAsset assetInfo = this.queryAssetInfo(asset.getId());
-
-            VisualPanel assetPanel = panelService.getOne(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, Constant.PanelType.ASSET.getValue()).eq(VisualPanel::getLink, asset.getId()));
-
-            // model chart 组 和 asset 新增 chart 组关联关系，用来做 asset 新增 chart 组关系映射
-            Map<Integer, Integer> groupIdMapping = new HashMap<>();
-
-            // 按照 group 升序，先添加组
-            chartList = chartList.stream().sorted(Comparator.comparing(VisualChart::getGroupId)).collect(Collectors.toList());
-
-            // 渲染新增
-            for (VisualChart chart : chartList) {
-                VisualChart saveChart = new VisualChart();
-                Tool.BeanUtil.copyProperties(chart, saveChart);
-                saveChart.setId(null);
-                saveChart.setPanelId(assetPanel.getId());
-                saveChart.setUpdateAt(new Date());
-                saveChart.setUpdateBy(ShiroUtils.getUserId().intValue());
-                saveChart.setPid(chart.getId());
-
-                saveChart.setVarType(Constant.ChartVariableType.ASSET.getValue());
-                saveChart.setVarId(asset.getId());
-
-                Integer newGroupId = groupIdMapping.get(saveChart.getGroupId());
-                saveChart.setGroupId(newGroupId == null ? 0 : newGroupId);
-
-                saveChart.setName(Tool.NzExpressionUtil.renderExpression(chart.getName(), assetInfo));
-                saveChart.setParam(ToolUtil.isNotEmpty(chart.getParam()) ? Tool.NzExpressionUtil.renderExpression(chart.getParam().toString(), asset) : null);
-
-                chartService.save(saveChart);
-
-                if (Constant.CHART_GROUP_TYPE.equalsIgnoreCase(chart.getType())) {
-                    groupIdMapping.put(chart.getId(), saveChart.getId());
-                }
-
-                if (CollectionUtils.isNotEmpty(saveChart.getElements())) {
-                    for (VisualChartElement chartElement : saveChart.getElements()) {
-                        chartElement.setId(null);
-                        chartElement.setChartId(saveChart.getId());
-                        chartElement.setExpression(ToolUtil.isNotEmpty(chartElement.getExpression()) ? Tool.NzExpressionUtil.renderExpression(chartElement.getExpression(), asset) : null);
-                    }
-                    chartElementService.saveBatch(saveChart.getElements());
-                }
-            }
+    private void syncAssetDashboardViaModel(Integer assetId, Integer modelId) {
+        AssetModel model = modelService.getById(modelId);
+        Integer modelDashboardTmplId = model.getPanelId();
+        if (ObjectUtil.isNull(modelDashboardTmplId)) {
+            log.warn("[syncAssetDashboardViaModel] [asset model not config dashboard template. no sync asset dashboard] [assetId: {}] [modelId: {}]", assetId, modelId);
+            return;
         }
+
+        log.info("[syncAssetDashboardViaModel] [sync asset dashboard begin.] [assetId: {}] [modelId: {}]", assetId, modelId);
+        // sync dashboard
+        VisualPanel assetPanel = panelService.getOne(new LambdaQueryWrapper<VisualPanel>()
+                .eq(VisualPanel::getType, DashboardConstant.Type.ASSET.getValue())
+                .eq(VisualPanel::getLink, assetId));
+        visualService.syncTemplateDashboard(assetPanel.getId(), null, null, null);
+        log.info("[syncAssetDashboardViaModel] [sync asset dashboard finshed.] [assetId: {}] [modelId: {}]", assetId, modelId);
     }
 
     @Override
@@ -1012,9 +975,18 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // 保存
         this.updateById(asset);
 
-        // 如果修改了Model, 处理关联 charts 变化
-        if (!oldAsset.getModelId().equals(asset.getModelId())) {
-            this.updateModelCharts(asset);
+        // if update asset model,use current model config dashboard template sync asset dashboard
+        if (ObjectUtil.notEqual(oldAsset.getModelId(), asset.getModelId())) {
+            // update asset dashboard tmpl_id
+            AssetModel model = modelService.getById(asset.getModelId());
+            Integer modelDashboardTmplId = model.getPanelId();
+            panelService.update(new LambdaUpdateWrapper<VisualPanel>()
+                    .set(VisualPanel::getTmplId, ObjectUtil.defaultIfNull(modelDashboardTmplId, -1))
+                    .eq(VisualPanel::getLink, asset.getId())
+                    .eq(VisualPanel::getType, DashboardConstant.Type.ASSET.getValue())
+            );
+            // sync dashboard
+            this.syncAssetDashboardViaModel(asset.getId(), asset.getModelId());
         }
 
         // 如果没有指定 meta, 则视为删除 asset之前关联的 meta 信息
@@ -1043,29 +1015,6 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         assetTalonStatusService.removeById(assetId);
         redisTemplate.opsForHash().delete(Constant.ASSET_TALON_STATUS_CACHE_KEY, assetId.toString());
-    }
-
-    /**
-     * asset 更改了 model , 对应更新 asset charts,自己的 charts 保留
-     * @param asset
-     */
-    @Transactional(rollbackFor = Exception.class)
-    public void updateModelCharts(AssetAsset asset) {
-        VisualPanel assetPanel = panelService.getOne(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, Constant.PanelType.ASSET).eq(VisualPanel::getLink, asset.getId()));
-        List<VisualChart> chartList = chartService.list(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getPanelId, assetPanel.getId()));
-        List<Integer> delIds = chartList.stream().filter(chart -> chart.getPid() != null ? true : false).map(VisualChart::getId).collect(Collectors.toList());
-
-        // 删除之前 model 关联的图表
-        Integer[] ids = new Integer[delIds.size()];
-        delIds.toArray(ids);
-
-        if (ToolUtil.isNotEmpty(ids)) {
-            // 删除旧 model 关联的 charts
-            chartService.delCharts(ids, null);
-        }
-
-        // 通过 model chart tepmlate 新增 asset charts
-        this.saveAssetChartsViaModelChartTmpl(asset);
     }
 
     private void saveAssetRelData(AssetAsset asset) {
@@ -1143,7 +1092,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         // panel chart chartElement
         List<VisualPanel> panelList = panelService.list(new LambdaQueryWrapper<VisualPanel>()
-                .eq(VisualPanel::getType, Constant.PanelType.ASSET.getValue())
+                .eq(VisualPanel::getType, DashboardConstant.Type.ASSET.getValue())
                 .in(VisualPanel::getLink, removeAssetIdList));
         if (Tool.CollUtil.isNotEmpty(panelList)) {
             Set<Integer> panelIds = panelList.stream().map(VisualPanel::getId).collect(Collectors.toSet());
@@ -1362,7 +1311,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             // 进行ssh采集
             String sshCollectScript = assetType.getSshCollectScript();
             if (StrUtil.isBlank(sshCollectScript)) {
-                logger.debug("asset sshCollectScript is empty asset info : %s", JSON.toJSON(asset));
+                log.debug("asset sshCollectScript is empty asset info : %s", JSON.toJSON(asset));
                 return;
             }
 
@@ -1374,8 +1323,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 this.getSshInfo(assetFeatureMap, results, sshCommondResult, asset);
 
             } catch (JSchException | IOException e) {
-                logger.error(e);
-                logger.error("asset feature get data error,assetId : {} info : {}", assetId, e);
+                log.error(e);
+                log.error("asset feature get data error,assetId : {} info : {}", assetId, e);
                 throw new NZException(e.getMessage());
             } finally {
                 SshUtil.close(session);
@@ -1387,13 +1336,13 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             try {
                 SnmpCredential snmpCredential = snmpCredentialService.getById(asset.getSnmpCredentialId());
                 if (ToolUtil.isEmpty(snmpCredential)) {
-                    logger.debug("asset snmpCredential is empty asset info : %s", JSON.toJSON(asset));
+                    log.debug("asset snmpCredential is empty asset info : %s", JSON.toJSON(asset));
                     return;
                 }
                 this.getSystemInfoBySnmp(assetFeatureMap, results, asset, snmpCredential);
             } catch (IOException e) {
-                logger.error("asset snmp collect error asset info : %s", JSON.toJSON(asset));
-                logger.error(e);
+                log.error("asset snmp collect error asset info : %s", JSON.toJSON(asset));
+                log.error(e);
             }
         }
         // 存入db 无则新增 有则修改
@@ -1737,7 +1686,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             modelService.remove(new LambdaQueryWrapper<AssetModel>().eq(AssetModel::getSeq, seq));
 
             // 删除关联的 panel chart  chartElement信息
-            List<VisualPanel> panels = panelService.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, Constant.PanelType.ASSET.getValue()).in(VisualPanel::getLink, assetIds));
+            List<VisualPanel> panels = panelService.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, DashboardConstant.Type.ASSET.getValue()).in(VisualPanel::getLink, assetIds));
             if (CollectionUtils.isNotEmpty(panels)) {
                 Set<Integer> panelIds = panels.stream().map(VisualPanel::getId).collect(Collectors.toSet());
                 panelService.delPanelsAndChartInfoByPanelIds(panelIds);
@@ -2104,7 +2053,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                     failContentList.add(dataMap);
                     dataSourceTransactionManager.rollback(transactionStatus);
                     validateUtil.recordImportAttrErr(lineNum, RCode.ERROR);
-                    logger.error("Asset import roll back the transaction failure", e);
+                    log.error("Asset import roll back the transaction failure", e);
                 }
             } else {
                 failContentList.add(dataMap);
@@ -2282,9 +2231,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             asset.setUpdateBy(ShiroUtils.getUserId());
             this.updateById(asset);
 
-            // 如果修改了Model, 处理关联 charts 变化
-            if (!oldAsset.getModelId().equals(asset.getModelId())) {
-                this.updateModelCharts(asset);
+            // if update asset model,use current model config dashboard template sync asset dashboard
+            if (ObjectUtil.notEqual(oldAsset.getModelId(), asset.getModelId())) {
+                this.syncAssetDashboardViaModel(asset.getId(), asset.getModelId());
             }
 
             // 修改后处理 ping & Talon 数据
@@ -2315,8 +2264,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             this.save(asset);
             // asset panel & info chart
             this.saveAssetInfoPanel(asset);
-            // 通过 model chart tepmlate 新增 asset charts
-            this.saveAssetChartsViaModelChartTmpl(asset);
+            // sync Asset Dashboard Via Model
+            this.syncAssetDashboardViaModel(asset.getId(), asset.getModelId());
         }
 
         // 保存 默认 VSYS 和 Asset 关联关系

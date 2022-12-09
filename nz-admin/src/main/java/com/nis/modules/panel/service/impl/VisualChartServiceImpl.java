@@ -207,7 +207,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	            String urlStr = url.toString();
 	            // 如果是model panel添加charts url类型支持{{}}替换
 	            VisualPanel panel = visualPanelService.getById(panelId);
-	            if(ObjectUtil.isNotEmpty(panel) && StrUtil.equals(Constant.PanelType.TEMPLATE.getValue(),panel.getType())) {
+	            if(ObjectUtil.isNotEmpty(panel) && StrUtil.equals(DashboardConstant.Type.TEMPLATE.getValue(),panel.getType())) {
 	                // 替换全部变量 替换为 a（任意字符） 不影响原来的数据格式 然后进行校验
 	                urlStr = urlStr.replaceAll("\\{\\{asset\\..*?\\}\\}", "a");
 	
@@ -359,7 +359,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 
         // 2. 通过 assets 找到关联的所有 asset panel
         List<Integer> assetsIds = assets.stream().map(AssetAsset::getId).collect(Collectors.toList());
-        List<VisualPanel> panels = visualPanelService.list(new QueryWrapper<VisualPanel>().lambda().eq(VisualPanel::getType, Constant.PanelType.ASSET.getValue()).in(VisualPanel::getLink, assetsIds));
+        List<VisualPanel> panels = visualPanelService.list(new QueryWrapper<VisualPanel>().lambda().eq(VisualPanel::getType, DashboardConstant.Type.ASSET.getValue()).in(VisualPanel::getLink, assetsIds));
 
         Map<Integer, AssetAsset> assetIdAndEntityMap = new HashMap<>(16);
         for (AssetAsset asset : assets) {
@@ -704,7 +704,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 				if (ObjectUtil.isNotEmpty(panelId)) {
 					visualChart.setPanelId(panelId);
 				} else {
-					String type = chart.getVarType().equals(Constant.ChartVariableType.ASSET.getValue()) ? Constant.PanelType.ASSET.getValue() : Constant.PanelType.ENDPOINT.getValue();
+					String type = chart.getVarType().equals(Constant.ChartVariableType.ASSET.getValue()) ? DashboardConstant.Type.ASSET.getValue() : DashboardConstant.Type.ENDPOINT.getValue();
 					VisualPanel linkPanel = panelList.stream().filter(panel -> type.equalsIgnoreCase(panel.getType()) && entityId.equals(panel.getLink())).findAny().orElse(null);
 					visualChart.setPanelId(linkPanel.getId());
 				}
@@ -904,11 +904,11 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 					if(data instanceof MonitorEndpoint) {
 						data = (MonitorEndpoint) data;
 						varId = ((MonitorEndpoint) data).getId();
-						type = Constant.PanelType.ENDPOINT.getValue();
+						type = DashboardConstant.Type.ENDPOINT.getValue();
 					}else if(data instanceof AssetAsset){
 						data = (AssetAsset) data;
 						varId = ((AssetAsset) data).getId();
-						type = Constant.PanelType.ASSET.getValue();
+						type = DashboardConstant.Type.ASSET.getValue();
 					}
 					VisualChart syncChart =new VisualChart();
 					BeanUtils.copyProperties(tmpChart, syncChart);
@@ -1014,18 +1014,22 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	}
 	
 	@Override
-	public void saveRelPanelAndChart(String typeStr, Integer linkId, String seq, VisualChart chartTemplate) {
+	public void saveRelPanelAndChart(String typeStr, Integer linkId, Integer tempId, String seq, VisualChart chartTemplate) {
 		VisualPanel panel = new VisualPanel();
 		panel.setName(typeStr + "_panel_" + linkId);
 		panel.setType(typeStr);
 		panel.setPid(0);
 		panel.setLink(linkId);
+		// temp_id
+		// assetInfo dashboard from model.panel_id
+		// endpointInfo dashboard from module.panel_id
+		panel.setTmplId(ObjectUtil.defaultIfNull(tempId, -1));
 		panel.setWeight(0);
 		panel.setCreateBy(ShiroUtils.getUserId().intValue());
 		panel.setUts(System.currentTimeMillis());
-		if (StrUtil.equals(Constant.PanelType.ASSET.getValue(), typeStr)) {
+		if (StrUtil.equals(DashboardConstant.Type.ASSET.getValue(), typeStr)) {
 			panel.setVarType(DashboardConstant.VariableType.ASSET.getValue());
-		} else if (StrUtil.equals(Constant.PanelType.ENDPOINT.getValue(), typeStr)) {
+		} else if (StrUtil.equals(DashboardConstant.Type.ENDPOINT.getValue(), typeStr)) {
 			panel.setVarType(DashboardConstant.VariableType.ENDPOINT.getValue());
 		}
 		if(StringUtils.isNotEmpty(seq)){

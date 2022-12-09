@@ -39,6 +39,7 @@ import com.nis.modules.panel.service.VisualChartElementService;
 import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.panel.service.VisualService;
+import com.nis.modules.panel.utils.DashboardConstant;
 import com.nis.modules.report.job.ReportJobManager;
 import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.entity.SysDictEntity;
@@ -172,10 +173,10 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 		// 1. 查询时 type 为空则默认 dashboard 类型
 		String type = (String) params.get("type");
 		if (StringUtils.isEmpty(type)) {
-			type = Constant.PanelType.DASHBOARD.getValue();
+			type = DashboardConstant.Type.DASHBOARD.getValue();
 			params.put("type", type);
 		}
-		boolean isDashboard = StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(), type);
+		boolean isDashboard = StrUtil.equals(DashboardConstant.Type.DASHBOARD.getValue(), type);
 		if (isDashboard && StrUtil.isBlank(ids)) params.put("pid", "0");
 
 		IPage page = new Query(VisualPanel.class).getPage(params);
@@ -252,11 +253,18 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 		visualChartService.delVisualChartsByPanelId(removePanelIds);
 
 		// 4. template dashboard
-		LambdaUpdateWrapper<VisualPanel> updateWrapper = new LambdaUpdateWrapper<>();
-		updateWrapper.set(VisualPanel::getTmplId, -1);
-		updateWrapper.in(VisualPanel::getTmplId, allPanelIds);
-		this.update(updateWrapper);
+		// panel & asset model & monitor module
+		this.update(new LambdaUpdateWrapper<VisualPanel>()
+				.set(VisualPanel::getTmplId, -1)
+				.in(VisualPanel::getTmplId, allPanelIds));
 
+		assetModelService.update(new LambdaUpdateWrapper<AssetModel>()
+				.set(AssetModel::getPanelId, null)
+				.in(AssetModel::getPanelId, allPanelIds));
+
+		monitorModuleService.update(new LambdaUpdateWrapper<MonitorModule>()
+				.set(MonitorModule::getPanelId, null)
+				.in(MonitorModule::getPanelId, allPanelIds));
 		try {
 			// 删除 Report job
 			for (Integer panelId : allPanelIds) {
@@ -343,8 +351,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 			if(ToolUtil.isNotEmpty(panel.getLink())){
 				throw new NZException(RCode.PANEL_TYPE_ISNULL);
 			}
-			panel.setType(Constant.PanelType.DASHBOARD.getValue());
-		} else if(StrUtil.equals(type, Constant.PanelType.TEMPLATE.getValue())){
+			panel.setType(DashboardConstant.Type.DASHBOARD.getValue());
+		} else if(StrUtil.equals(type, DashboardConstant.Type.TEMPLATE.getValue())){
 			// 校验 varType
 			Integer varType = panel.getVarType();
 			ValidateUtils.is(varType).notNull(RCode.PANEL_VARTYPE_ISNULL);
@@ -352,11 +360,11 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 				throw new NZException(RCode.PANEL_VARTYPE_INVALIDE);
 			}
 		} else {
-			List<Constant.PanelType> panelTypes = Arrays.asList(Constant.PanelType.values());
-			List<String> types = panelTypes.stream().map(Constant.PanelType::getValue).filter(val -> !val.equals(Constant.PanelType.DASHBOARD.getValue())).collect(Collectors.toList());
+			List<DashboardConstant.Type> panelTypes = Arrays.asList(DashboardConstant.Type.values());
+			List<String> types = panelTypes.stream().map(DashboardConstant.Type::getValue).filter(val -> !val.equals(DashboardConstant.Type.DASHBOARD.getValue())).collect(Collectors.toList());
 			if(types.contains(type)){
 				ValidateUtils.is(panel.getLink()).notNull(RCode.PANEL_LINK_ISNULL);
-			} else if(!StrUtil.equals(type, Constant.PanelType.DASHBOARD.getValue())){
+			} else if(!StrUtil.equals(type, DashboardConstant.Type.DASHBOARD.getValue())){
 				throw new NZException(RCode.PANEL_TYPE_INVALIDE);
 			}
 		}
@@ -871,7 +879,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 	@Transactional(rollbackFor = Exception.class)
 	public void cancelImport(String seq) {
 		List<VisualPanel> panelList = this.list(new QueryWrapper<VisualPanel>().lambda().eq(VisualPanel::getType,
-				Constant.PanelType.DASHBOARD.getValue()));
+				DashboardConstant.Type.DASHBOARD.getValue()));
 		List<Integer> delPanelIds = panelList.stream().filter(panel -> seq.equals(panel.getSeq()))
 				.map(VisualPanel::getId).collect(Collectors.toList());
 		if (CollectionUtils.isNotEmpty(delPanelIds)) {
@@ -890,8 +898,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
 	@Override
 	public void export(HttpServletResponse response, Map<String, Object> params) throws IOException {
-		String type = ToolUtil.toStr(params.get("type"), Constant.PanelType.DASHBOARD.getValue());
-		if (!StrUtil.equalsAnyIgnoreCase(type, Constant.PanelType.DASHBOARD.getValue(), Constant.PanelType.TEMPLATE.getValue())) {
+		String type = ToolUtil.toStr(params.get("type"), DashboardConstant.Type.DASHBOARD.getValue());
+		if (!StrUtil.equalsAnyIgnoreCase(type, DashboardConstant.Type.DASHBOARD.getValue(), DashboardConstant.Type.TEMPLATE.getValue())) {
 			throw new NZException(RCode.PANEL_IMPORT_TYPE_INCORRECT);
 		}
 
@@ -928,7 +936,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
 	private String getChartTemplateConfigKeyByType(String type) {
 		// 默认 dashboard 类型
-		type = StringUtils.isEmpty(type) ? Constant.PanelType.DASHBOARD.getValue() : type;
+		type = StringUtils.isEmpty(type) ? DashboardConstant.Type.DASHBOARD.getValue() : type;
 		String chartTemplateTyep;
 		switch (type) {
 		case "dashboard": {
@@ -1025,7 +1033,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
 			String varType = ToolUtil.toStr(dataMap.get(PanelImportEnum.VARTYPE.getName()));
 			validateUtil.validateRequired(varType, lineNum, PanelImportEnum.VARTYPE.getIndex());
-			if(StrUtil.equalsIgnoreCase(ToolUtil.toStr(type), Constant.PanelType.DASHBOARD.getValue())){
+			if(StrUtil.equalsIgnoreCase(ToolUtil.toStr(type), DashboardConstant.Type.DASHBOARD.getValue())){
 				validateUtil.validateEnumValArr(varType, ListUtil.of("0"), lineNum, PanelImportEnum.VARTYPE.getIndex());
 			} else {
 				validateUtil.validateEnumValArr(varType, ListUtil.of("1", "2"), lineNum, PanelImportEnum.VARTYPE.getIndex());
@@ -1180,7 +1188,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 			if(StrUtil.isEmpty(varType)){
 				validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_REQUIRED.setParam(validaName + headerInfos.get(PanelImportEnum.VARTYPE.getIndex())));
 			}
-			if (StrUtil.equalsIgnoreCase(ToolUtil.toStr(type), Constant.PanelType.DASHBOARD.getValue())) {
+			if (StrUtil.equalsIgnoreCase(ToolUtil.toStr(type), DashboardConstant.Type.DASHBOARD.getValue())) {
 				if(!StrUtil.equals(varType, "0")){
 					validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(validaName + headerInfos.get(PanelImportEnum.VARTYPE.getIndex())));
 				}
@@ -1454,7 +1462,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 					return RCode.CHART_URLPARAM_ISNULL.getMsg();
 				}
 
-				if (StrUtil.equals(Constant.PanelType.TEMPLATE.getValue(), panelType)) {
+				if (StrUtil.equals(DashboardConstant.Type.TEMPLATE.getValue(), panelType)) {
 					// 替换全部变量 替换为 a（任意字符） 不影响原来的数据格式 然后进行校验
 					String urlStr = url.toString();
 					urlStr = urlStr.replaceAll("\\{\\{asset\\..*?\\}\\}", "a");

@@ -9,6 +9,32 @@ public class DashboardConstant {
 
 
     /**
+     * dashboard type
+     */
+    public enum Type {
+        DASHBOARD("dashboard"),
+        ASSET("asset"),
+        PROJECT("project"),
+        MODULE("module"),
+        ENDPOINT("endpoint"),
+        TEMPLATE("template");
+
+        private String value;
+
+        Type(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
+        }
+    }
+
+    /**
      * dashboard Variable type enum
      */
     public enum VariableType {

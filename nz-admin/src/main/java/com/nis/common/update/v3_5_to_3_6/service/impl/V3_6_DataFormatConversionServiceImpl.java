@@ -19,6 +19,7 @@ import com.nis.modules.panel.entity.VisualPanel;
 import com.nis.modules.panel.service.VisualChartElementService;
 import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
+import com.nis.modules.panel.utils.DashboardConstant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -204,7 +205,7 @@ public class V3_6_DataFormatConversionServiceImpl implements V3_6_DataFormatConv
 
         VisualPanel panel = new VisualPanel();
         panel.setName(panelName);
-        panel.setType(Constant.PanelType.TEMPLATE.getValue());
+        panel.setType(DashboardConstant.Type.TEMPLATE.getValue());
         panel.setPid(0);
         panel.setWeight(0);
         panel.setBuildIn(0);
@@ -238,7 +239,7 @@ public class V3_6_DataFormatConversionServiceImpl implements V3_6_DataFormatConv
 
         List<Integer> assetIdList = assetList.stream().map(AssetAsset::getId).collect(Collectors.toList());
         List<VisualPanel> panelList = panelService.list(new LambdaQueryWrapper<VisualPanel>()
-                .eq(VisualPanel::getType, Constant.PanelType.ASSET.getValue())
+                .eq(VisualPanel::getType, DashboardConstant.Type.ASSET.getValue())
                 .in(VisualPanel::getLink, assetIdList));
 
         List<Integer> panelIdList = panelList.stream().map(VisualPanel::getId).collect(Collectors.toList());

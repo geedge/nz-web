@@ -8,12 +8,12 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
-import com.nis.modules.asset.dao.AssetAssetDao;
 import com.nis.modules.asset.dao.AssetModelDao;
 import com.nis.modules.asset.entity.*;
 import com.nis.modules.asset.service.AssetAssetService;
@@ -22,10 +22,10 @@ import com.nis.modules.asset.service.AssetModelService;
 import com.nis.modules.asset.service.AssetTypeConfService;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
-import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.panel.entity.VisualPanel;
-import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
+import com.nis.modules.panel.service.VisualService;
+import com.nis.modules.panel.utils.DashboardConstant;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
@@ -66,18 +66,6 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
     private AssetBrandService brandService;
 
     @Autowired
-    private AssetModelDao assetModelDao;
-    
-    @Autowired
-    private VisualChartService visualChartService;
-
-    @Autowired
-    private VisualPanelService visualPanelService;
-
-    @Autowired
-    private AssetAssetDao assetDao;
-
-    @Autowired
     private AssetTypeConfService typeConfService;
 
     @Autowired
@@ -95,6 +83,12 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
     @Autowired
     private MonitorEndpointService monitorEndpointService;
 
+    @Autowired
+    private VisualService visualService;
+
+    @Autowired
+    private VisualPanelService visualPanelService;
+
     @Override
     public AssetModel queryModelInfo(Integer id) {
         AssetModel model = this.getById(id);
@@ -102,15 +96,6 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
             throw new NZException(RCode.ASSET_MODEL_NOTFOUND);
         }
         AssetBrand brand = brandService.getById(model.getBrandId());
-        String chartIds = model.getChartIds();
-    	if(!StrUtil.isBlank(chartIds)) {
-            List<VisualChart> charts = new ArrayList<>();
-            for (String chartId : Arrays.asList(chartIds.split(","))) {
-                VisualChart chartById = visualChartService.getById(chartId);
-                charts.add(chartById);
-            }
-            model.setCharts(charts);
-    	}
         Integer panelId = model.getPanelId();
     	if(ToolUtil.isNotEmpty(panelId)) {
             VisualPanel visualPanel = visualPanelService.getById(panelId);
@@ -156,17 +141,8 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
         // 当前登录用户
         params.put("userId", ShiroUtils.getUserId().intValue());
 
-        List<AssetModel> modelList = assetModelDao.queryList(page, params);
+        List<AssetModel> modelList = this.getBaseMapper().queryList(page, params);
         for(AssetModel model : modelList) {
-        	String chartIds = model.getChartIds();
-            if (!StrUtil.isBlank(chartIds)) {
-                List<VisualChart> charts = new ArrayList<>();
-                for (String id : Arrays.asList(chartIds.split(","))) {
-                    VisualChart chartById = visualChartService.getById(id);
-                    charts.add(chartById);
-                }
-                model.setCharts(charts);
-            }
             Integer panelId = model.getPanelId();
             if(ToolUtil.isNotEmpty(panelId)) {
                 VisualPanel visualPanel = visualPanelService.getById(panelId);
@@ -195,24 +171,15 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
         if (!flag) {
             throw new NZException(RCode.ASSET_MODELNAME_DUPLICATE);
         }
-        
-        // 3. 校验chart是否为模板且存在
-        String chartIds = model.getChartIds();
-        if(StrUtil.isNotBlank(chartIds)) {
-        	List<String> chartids = Arrays.asList(chartIds.split(","));
-        	List<VisualChart> charts = visualChartService.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getPanelId, 0).in(VisualChart::getId, chartids));
-        	if(!ToolUtil.equals(charts.size(), chartids.size())) {
-        		throw new NZException(RCode.ASSET_MODEL_CHART_ERROR);
-        	}
-        }
 
-        // 校验panel是否为模板且存在
+        // asset model panel, type = template & varType = asset
         Integer panelId = model.getPanelId();
-        if(ToolUtil.isNotEmpty(panelId)) {
-            VisualPanel visualPanel = visualPanelService.getById(panelId);
-            if(visualPanel == null || !ToolUtil.equals(visualPanel.getVarType(), 1)) {
-                throw new NZException(RCode.ASSET_MODEL_PANEL_ERROR);
-            }
+        if (ToolUtil.isNotEmpty(panelId)) {
+            VisualPanel panel = visualPanelService.getOne(new LambdaQueryWrapper<VisualPanel>()
+                    .eq(VisualPanel::getId, panelId)
+                    .eq(VisualPanel::getType, DashboardConstant.Type.TEMPLATE.getValue())
+                    .eq(VisualPanel::getVarType, DashboardConstant.VariableType.ASSET.getValue()));
+            ValidateUtils.is(panel).notNull(RCode.ASSET_MODEL_PANEL_ERROR);
         }
 
         // 4. type 是否存在
@@ -277,9 +244,11 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
         // 保存
         this.updateById(model);
 
-        // 如果修改了Model, 处理关联 charts 变化
-        if (!oldModel.getBrandId().equals(model.getBrandId())) {
-            assetDao.updateBrandIdByModelId(model.getId(), model.getBrandId());
+        // change asset link brand
+        if (ObjectUtil.notEqual(oldModel.getBrandId(), model.getBrandId())) {
+            assetAssetService.update(new LambdaUpdateWrapper<AssetAsset>()
+                    .set(AssetAsset::getBrandId, model.getBrandId())
+                    .eq(AssetAsset::getModelId, model.getId()));
         }
         return model.getId();
     }
@@ -448,26 +417,19 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
                 }
             }
 
-            String chartNames = dataMap.get(AssetModelImportEnum.CHART_TEMPLATES.getIndex());
-            StringBuilder relChartTemplateIds = new StringBuilder();
-            if (StrUtil.isNotEmpty(chartNames)) {
-                // model 只能选择 asset 类型且 groupId = 0 的图表
-                List<VisualChart> assetChartTemplateList = visualChartService.list(new LambdaQueryWrapper<VisualChart>()
-                        .eq(VisualChart::getPanelId, 0).eq(VisualChart::getGroupId, 0)
-                        .eq(VisualChart::getVarType, Constant.ChartVariableType.ASSET.getValue()));
-
-                StrUtil.split(chartNames, StrUtil.C_COMMA).stream().forEach(chartName -> {
-                    List<Integer> chartIdList = assetChartTemplateList.stream()
-                            .filter(visualChart -> StrUtil.equals(visualChart.getName(), chartName))
-                            .map(VisualChart::getId).collect(Collectors.toList());
-                    if (Tool.CollUtil.isEmpty(chartIdList)) {
-                        validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_RELATED_OBJ_NOT_EXIST.setParam(AssetModelImportEnum.CHART_TEMPLATES.getIndex()));
-                    } else if (chartIdList.size() > 1) {
-                        validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FIELD_DUPLICATE.setParam(AssetModelImportEnum.CHART_TEMPLATES.getIndex()));
-                    } else if (chartIdList.size() == 1) {
-                        relChartTemplateIds.append(StrUtil.concat(true, chartIdList.get(0).toString(), ","));
-                    }
-                });
+            String dashboardTemplateName = dataMap.get(AssetModelImportEnum.DASHBOARD_TEMPLATE.getIndex());
+            Integer dashboardTemplateId = null;
+            if (StrUtil.isNotEmpty(dashboardTemplateName)) {
+                // dashboard template, type = template  varType = asset
+                VisualPanel dashboardTemplate = visualPanelService.getOne(new LambdaQueryWrapper<VisualPanel>()
+                        .eq(VisualPanel::getName, dashboardTemplateName)
+                        .eq(VisualPanel::getType, DashboardConstant.Type.TEMPLATE.getValue())
+                        .eq(VisualPanel::getVarType, DashboardConstant.VariableType.ASSET.getValue()));
+                if (ObjectUtil.isNull(dashboardTemplate)) {
+                    validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_RELATED_OBJ_NOT_EXIST.setParam(AssetModelImportEnum.DASHBOARD_TEMPLATE.getIndex()));
+                } else {
+                    dashboardTemplateId = dashboardTemplate.getId();
+                }
             }
 
             String typeName = dataMap.get(AssetModelImportEnum.ASSET_TYPE_NAME.getIndex());
@@ -501,7 +463,7 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
                 model.setName(modelName);
                 model.setSysObjectId(oid);
                 model.setTypeId(typeConf.getId());
-                model.setChartIds(StrUtil.isNotEmpty(relChartTemplateIds) ? relChartTemplateIds.substring(0, relChartTemplateIds.length() - 1) : "");
+                model.setPanelId(dashboardTemplateId);
                 if (saveEntitys.get("brand") == null) {
                     AssetBrand brand = brandService.getOne(new LambdaQueryWrapper<AssetBrand>().eq(AssetBrand::getName, brandName));
                     model.setBrandId(brand.getId());
@@ -575,10 +537,8 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
 
             // 是否同步更新关联的 dashboard，可选值： 0：不同步  1：同步  默认值：1
             String syncDashboard = Tool.ObjectUtil.defaultIfEmpty((String) params.get("syncDashboard"), "1");
-            if (StrUtil.equals("1", syncDashboard)) {
-                Map<String, Object> syncChartParamMap = Tool.MapUtil.newHashMap();
-                syncChartParamMap.put("models", ListUtil.of(model.getId()));
-                visualChartService.syncTmpl(syncChartParamMap);
+            if (StrUtil.equals("1", syncDashboard) && ObjectUtil.isNotNull(model.getPanelId())) {
+                visualService.syncTemplateDashboard(null, null, model.getId(), null);
             }
         } else {
             params.put("save", true);
@@ -620,19 +580,8 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
             List<String> tempList = new ArrayList<>();
             tempList.add(model.getName());
             tempList.add(model.getBrand().getName());
-            String chartIds = model.getChartIds();
-            String chartNames = "";
-            if (StrUtil.isNotEmpty(chartIds)) {
-                List<String> chartIdList = Arrays.asList(chartIds.split(","));
-                for (String chartIdStr : chartIdList) {
-                    VisualChart chartServiceById = visualChartService.getById(chartIdStr);
-                    if (chartServiceById != null) {
-                        chartNames += chartServiceById.getName() + ",";
-                    }
-                }
-                chartNames = StrUtil.isNotEmpty(chartNames) ? chartNames.substring(0, chartNames.length() - 1) : chartNames;
-            }
-            tempList.add(chartNames);
+            VisualPanel panel = model.getPanel();
+            tempList.add(ObjectUtil.isNotNull(panel) ? panel.getName() : StrUtil.EMPTY);
             tempList.add(ObjectUtil.defaultIfNull(model.getRemark(), ""));
             AssetTypeConf typeConf = typeConfService.getById(model.getTypeId());
             tempList.add(typeConf.getName());
