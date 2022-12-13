@@ -2242,14 +2242,11 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             // 是否同步更新关联的dashboard，可选值： 0：不同步  1：同步  默认值：1
             String syncDashboard = Tool.ObjectUtil.defaultIfEmpty((String) params.get("syncDashboard"), "1");
             if (StrUtil.equals("1", syncDashboard)) {
-                // asset info charts && dashboard charts
-                List<VisualChart> assetChartList = chartService.list(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getVarType, Constant.ChartVariableType.ASSET.getValue()).eq(VisualChart::getVarId, asset.getId()));
-                if (Tool.CollUtil.isNotEmpty(assetChartList)) {
-                    List<Integer> assetChartIdList = assetChartList.stream().map(VisualChart::getId).collect(Collectors.toList());
-                    Map<String, Object> map = Tool.MapUtil.newHashMap(2);
-                    map.put("ids", assetChartIdList);
-                    chartService.syncTmpl(map);
-                }
+                // sync dashboard
+                VisualPanel assetPanel = panelService.getOne(new LambdaQueryWrapper<VisualPanel>()
+                        .eq(VisualPanel::getType, DashboardConstant.Type.ASSET.getValue())
+                        .eq(VisualPanel::getLink, asset.getId()));
+                visualService.syncTemplateDashboard(assetPanel.getId(), null, null, null);
             }
             // 是否同步更新关联的endpoint，可选值：  0：不同步  1：同步  默认值：1
             String syncEndpoint = Tool.ObjectUtil.defaultIfEmpty((String) params.get("syncEndpoint"), "1");
