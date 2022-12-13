@@ -39,11 +39,10 @@ import com.nis.modules.endpoint.service.MonitorEndpointStateService;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.panel.entity.VisualChart;
-import com.nis.modules.panel.entity.VisualChartElement;
 import com.nis.modules.panel.entity.VisualPanel;
-import com.nis.modules.panel.service.VisualChartElementService;
 import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
+import com.nis.modules.panel.service.VisualService;
 import com.nis.modules.panel.utils.DashboardConstant;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
@@ -79,13 +78,13 @@ import java.util.stream.Collectors;
 @Service
 public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, MonitorEndpoint> implements MonitorEndpointService {
 
-    private static Log log = Log.get();
+    private static final Log log = Log.get();
 
     @Autowired
     private AssetAssetService assetService;
 
     @Autowired
-    private MonitorEndpointDao monitorEndpointDao;
+    private AssetTalonStatusService assetTalonService;
 
     @Autowired
     private MonitorModuleService monitorModuleService;
@@ -97,16 +96,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     private MonitorEndpointStateService endpointStateService;
 
     @Autowired
-    private VisualPanelService visualPanelService;
-
-    @Autowired
-    private VisualChartService visualChartService;
-
-    @Autowired
     private AlertMessageService alertMessageService;
-
-    @Autowired
-    private VisualChartElementService visualChartElementService;
 
     @Autowired
     private MonitorEndpointConfigService endpointConfigService;
@@ -133,9 +123,6 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     private AgentService agentService;
 
     @Autowired
-    private AssetTalonStatusService assetTalonService;
-
-    @Autowired
     private SysI18nService i18nService;
 
     @Autowired
@@ -143,6 +130,15 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     @Autowired
     private SysConfService sysConfService;
+
+    @Autowired
+    private VisualService visualService;
+
+    @Autowired
+    private VisualPanelService visualPanelService;
+
+    @Autowired
+    private VisualChartService visualChartService;
     
     @Override
     public MonitorEndpoint queryEndpointEntity(Integer id) {
@@ -235,7 +231,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         params.put("uid",ShiroUtils.getUserId().intValue());
 
         IPage page = new Query(MonitorEndpoint.class).getPage(params);
-        List<MonitorEndpoint> datas = monitorEndpointDao.queryPage(page, params);
+        List<MonitorEndpoint> datas = this.getBaseMapper().queryPage(page, params);
 
         // 查询结果不为空时处理返回结果
         if (CollectionUtils.isNotEmpty(datas)) {
@@ -814,70 +810,6 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         return projectList;
     }
 
-    /**
-     * 通过 module chart tepmlate 新增 endpoint charts
-     * @param endpoint
-     */
-    public void saveEndpointChartsViaModuleChartTmpl(MonitorEndpoint endpoint) {
-        MonitorModule module = monitorModuleService.getById(endpoint.getModuleId());
-        if (ToolUtil.isNotEmpty(module) && StrUtil.isNotBlank(module.getChartIds())) {
-            List<String> list = Arrays.asList(module.getChartIds().split(","));
-            List<Integer> chartIdList = list.stream().map(Integer::parseInt).collect(Collectors.toList());
-            // 补充 group 下的 chart id
-            List<VisualChart> childCharts = visualChartService.list(new LambdaQueryWrapper<VisualChart>().in(VisualChart::getGroupId, chartIdList));
-            List<Integer> childChartIdList = childCharts.stream().map(VisualChart::getId).distinct().collect(Collectors.toList());
-            chartIdList.addAll(childChartIdList);
-            chartIdList = chartIdList.stream().distinct().collect(Collectors.toList());
-            List<VisualChart> chartList = visualChartService.queryChartWithElementByIds(chartIdList);
-
-            MonitorEndpoint endpointInfo = this.queryEndpointEntity(endpoint.getId());
-            VisualPanel endpointPanel = visualPanelService.getOne(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, DashboardConstant.Type.ENDPOINT.getValue()).eq(VisualPanel::getLink, endpoint.getId()));
-
-            // model chart 组 和 asset 新增 chart 组关联关系，用来做 asset 新增 chart 组关系映射
-            Map<Integer, Integer> groupIdMapping = new HashMap<>();
-
-            // 按照 group 升序，先添加组
-            chartList = chartList.stream().sorted(Comparator.comparing(VisualChart::getGroupId)).collect(Collectors.toList());
-
-            // 渲染新增
-            for (VisualChart chart : chartList) {
-                VisualChart saveChart = new VisualChart();
-                Tool.BeanUtil.copyProperties(chart, saveChart);
-                saveChart.setId(null);
-                saveChart.setPanelId(endpointPanel.getId());
-                saveChart.setUpdateAt(new Date());
-                saveChart.setUpdateBy(ShiroUtils.getUserId().intValue());
-                saveChart.setPid(chart.getId());
-
-                saveChart.setVarType(Constant.ChartVariableType.ENDPOINT.getValue());
-                saveChart.setVarId(endpoint.getId());
-
-                Integer newGroupId = groupIdMapping.get(saveChart.getGroupId());
-                saveChart.setGroupId(newGroupId == null ? 0 : newGroupId);
-
-                saveChart.setName(Tool.NzExpressionUtil.renderExpression(chart.getName(), endpointInfo));
-                saveChart.setParam(ToolUtil.isNotEmpty(chart.getParam()) ? Tool.NzExpressionUtil.renderExpression(chart.getParam().toString(), endpoint) : null);
-
-                saveChart.setSeq(endpoint.getSeq());
-                visualChartService.save(saveChart);
-
-                if (Constant.CHART_GROUP_TYPE.equalsIgnoreCase(chart.getType())) {
-                    groupIdMapping.put(chart.getId(), saveChart.getId());
-                }
-
-                if (CollectionUtils.isNotEmpty(saveChart.getElements())) {
-                    for (VisualChartElement chartElement : saveChart.getElements()) {
-                        chartElement.setId(null);
-                        chartElement.setChartId(saveChart.getId());
-                        chartElement.setExpression(ToolUtil.isNotEmpty(chartElement.getExpression()) ? Tool.NzExpressionUtil.renderExpression(chartElement.getExpression(), endpoint) : null);
-                        chartElement.setSeq(endpoint.getSeq());
-                    }
-                    visualChartElementService.saveBatch(saveChart.getElements());
-                }
-            }
-        }
-    }
-
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteEndpointByIds(List<Integer> ids) {
@@ -1029,12 +961,12 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     @Override
     public List<Integer> getSuspendedEndpointIdList(Integer assetId) {
-        return monitorEndpointDao.getSuspendedEndpointIdList(assetId);
+        return this.getBaseMapper().getSuspendedEndpointIdList(assetId);
     }
 
     @Override
     public List<MonitorEndpoint> getEnableMetricsEndpointInfoListForAgent() {
-        List<MonitorEndpoint> enableEndpointInfoList = monitorEndpointDao.getEnableMetricsEndpointInfoListForAgent();
+        List<MonitorEndpoint> enableEndpointInfoList = this.getBaseMapper().getEnableMetricsEndpointInfoListForAgent();
         // 如 asset 存在 parent , 则 set parent
         List<AssetAsset> assetList = assetService.list();
         Map<Integer, AssetAsset> assetIdAndEntityMap = assetList.stream().collect(Collectors.toMap(AssetAsset::getId, Function.identity()));
@@ -1047,7 +979,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     @Override
     public List<MonitorEndpoint> getEnableLogsEndpointInfoListForAgent(Integer version) {
-        List<MonitorEndpoint> enableEndpointInfoList = monitorEndpointDao.getEnableLogsEndpointInfoListForAgent(version);
+        List<MonitorEndpoint> enableEndpointInfoList = this.getBaseMapper().getEnableLogsEndpointInfoListForAgent(version);
         // 如 asset 存在 parent , 则 set parent
         List<AssetAsset> assetList = assetService.list();
         Map<Integer, AssetAsset> assetIdAndEntityMap = assetList.stream().collect(Collectors.toMap(AssetAsset::getId, Function.identity()));
@@ -1300,14 +1232,11 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             // 是否同步更新关联的dashboard，可选值： 0：不同步  1：同步  默认值：1
             String syncDashboard = Tool.ObjectUtil.defaultIfEmpty((String) params.get("syncDashboard"), "1");
             if (StrUtil.equals("1", syncDashboard)) {
-                // endpoint info charts && dashboard charts
-                List<VisualChart> endpointChartList = visualChartService.list(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getVarType, Constant.ChartVariableType.ENDPOINT.getValue()).eq(VisualChart::getVarId, endpoint.getId()));
-                if (Tool.CollUtil.isNotEmpty(endpointChartList)) {
-                    List<Integer> endpointChartIdList = endpointChartList.stream().map(VisualChart::getId).collect(Collectors.toList());
-                    Map<String, Object> map = Tool.MapUtil.newHashMap(2);
-                    map.put("ids", endpointChartIdList);
-                    visualChartService.syncTmpl(map);
-                }
+                // sync dashboard
+                VisualPanel endpointPanel = visualPanelService.getOne(new LambdaQueryWrapper<VisualPanel>()
+                        .eq(VisualPanel::getType, DashboardConstant.Type.ENDPOINT.getValue())
+                        .eq(VisualPanel::getLink, endpoint.getId()));
+                visualService.syncTemplateDashboard(endpointPanel.getId(), null, null, null);
             }
         } else {
             params.put("save", true);
@@ -1315,8 +1244,8 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             this.save(endpoint);
             // endpoint panel & info chart
             this.saveEndpointInfoPanel(endpoint);
-            // 通过 module chart tepmlate 新增 endpoint charts
-            this.saveEndpointChartsViaModuleChartTmpl(endpoint);
+            // sync Endpoint Dashboard Via Module
+            this.syncEndpointDashboardViaModule(endpoint.getId(), endpoint.getModuleId());
         }
 
         // endpoint config
@@ -1358,7 +1287,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     @Override
     public List<MonitorEndpoint> endpointDetailList() {
-        return monitorEndpointDao.endpointDetailList();
+        return this.getBaseMapper().endpointDetailList();
     }
 
     private void validateEndpointInfo(MonitorEndpoint endpoint) {
@@ -1556,9 +1485,32 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         // endpoint panel & info chart
         this.saveEndpointInfoPanel(endpoint);
 
-        // 通过 module chart tepmlate 新增 endpoint charts
-        this.saveEndpointChartsViaModuleChartTmpl(endpoint);
+        // sync Endpoint Dashboard Via Module
+        this.syncEndpointDashboardViaModule(endpoint.getId(), endpoint.getModuleId());
         return endpoint.getId();
+    }
+
+    /**
+     * sync Endpoint Dashboard Via Module
+     *
+     * @param endpointId
+     * @param moduleId
+     */
+    private void syncEndpointDashboardViaModule(Integer endpointId, Integer moduleId) {
+        MonitorModule module = monitorModuleService.getById(moduleId);
+        Integer moduleDashboardTmplId = module.getPanelId();
+        if (ObjectUtil.isNull(moduleDashboardTmplId)) {
+            log.warn("[syncEndpointDashboardViaModule] [module not config dashboard template. no sync endpoint dashboard] [endpointId: {}] [moduleId: {}]", endpointId, moduleId);
+            return;
+        }
+
+        log.info("[syncEndpointDashboardViaModule] [sync endpoint dashboard begin.] [endpointId: {}] [moduleId: {}]", endpointId, moduleId);
+        // sync dashboard
+        VisualPanel endpointPanel = visualPanelService.getOne(new LambdaQueryWrapper<VisualPanel>()
+                .eq(VisualPanel::getType, DashboardConstant.Type.ENDPOINT.getValue())
+                .eq(VisualPanel::getLink, endpointId));
+        visualService.syncTemplateDashboard(endpointPanel.getId(), null, null, null);
+        log.info("[syncEndpointDashboardViaModule] [sync endpoint dashboard finshed.] [endpointId: {}] [moduleId: {}]", endpointId, moduleId);
     }
 
     private void saveOrUpdateEndpointConfigs(MonitorEndpoint endpoint, MonitorModule module) {
