@@ -16,7 +16,9 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.agent.service.LokiApiService;
 import com.nis.modules.agent.service.PromApiService;
+import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.service.AssetAssetService;
+import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.panel.entity.VisualChartElement;
@@ -596,6 +598,50 @@ public class VisualServiceImpl implements VisualService {
         }
         sw.stop();
         log.info("[syncTemplateDashboard] [sync Dashboard finshed] [Run time: {}]", sw.toString());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Integer createDashboardUsingTemplate(String name, String type, String description, Integer tmplId, Integer link) {
+        log.info("[createDashboardUsingTemplate] [name: {}] [tmplId: {}] [link: {}]", name, tmplId, link);
+
+        VisualPanel tPanel = visualPanelService.getOne(new LambdaQueryWrapper<VisualPanel>()
+                .eq(VisualPanel::getName, name)
+                .eq(VisualPanel::getType, type));
+        if (ObjectUtil.isNotNull(tPanel)) {
+            throw new NZException(RCode.PANEL_NAME_DUPLICATE);
+        }
+
+        // normal dashboard
+        VisualPanel panel = new VisualPanel();
+        panel.setName(name);
+        panel.setCreateBy(ShiroUtils.getUserId().intValue());
+        panel.setType(type);
+        panel.setRemark(description);
+        panel.setUts(System.currentTimeMillis());
+        visualPanelService.save(panel);
+
+        if (ObjectUtil.isAllNotEmpty(tmplId, link)) {
+            // template Dashboard
+            VisualPanel templateDashboard = visualPanelService.queryPanelIncludeChartInfo(tmplId);
+
+            Integer varType = templateDashboard.getVarType();
+            if (ObjectUtil.equal(DashboardConstant.VariableType.ASSET.getValue(), varType)) {
+                AssetAsset asset = assetAssetService.getById(link);
+                ValidateUtils.is(asset).notNull(RCode.ASSET_NOT_EXIST);
+            } else if (ObjectUtil.equal(DashboardConstant.VariableType.ENDPOINT.getValue(), varType)) {
+                MonitorEndpoint endpoint = monitorEndpointService.getById(link);
+                ValidateUtils.is(endpoint).notNull(RCode.ENDPOINT_NOTFOUND);
+            }
+
+            panel.setVarType(varType);
+            panel.setTmplId(tmplId);
+            panel.setLink(link);
+
+            // sync by template
+            this.performSync(templateDashboard, Tool.ListUtil.of(panel));
+        }
+        return panel.getId();
     }
 
     /**

@@ -1,6 +1,11 @@
 package com.nis.modules.panel.controller;
 
+import cn.hutool.core.util.CharsetUtil;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.nis.common.annotation.SysLog;
+import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.panel.service.VisualService;
@@ -48,6 +53,7 @@ public class VisualController {
 	 * @return
 	 */
 	@PostMapping("/panel/snapshot/task")
+	@SysLog(operation = OperationEnum.ADD, type = TypeEnum.VISUALPANEL)
 	public R snapshotTask(@RequestHeader(required = false, defaultValue = "en") String language,
 	                      @RequestBody Map<String, Object> requestody) {
 		String format = (String) requestody.get("format");
@@ -77,6 +83,7 @@ public class VisualController {
 	 * @return
 	 */
 	@GetMapping("/panel/snapshot/result/{tid}")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.VISUALPANEL)
 	public R snapshotResultProcess(@PathVariable(required = true) String tid) {
 		return R.ok().putData("taskId", visualService.snapshotResultProcess(tid));
 	}
@@ -88,6 +95,7 @@ public class VisualController {
 	 * @return
 	 */
 	@GetMapping("/panel/snapshot/cancel/{tid}")
+	@SysLog(operation = OperationEnum.DELETE, type = TypeEnum.VISUALPANEL)
 	public R cancelSnapshotTask(@PathVariable(required = true) String tid) {
 		visualService.cancelSnapshotTask(tid);
 		return R.ok();
@@ -115,6 +123,7 @@ public class VisualController {
 	 * @return
 	 */
 	@PostMapping("/panel/syncTmpl")
+	@SysLog(operation = OperationEnum.ADD, type = TypeEnum.VISUALPANEL)
 	public R syncTemplateDashboard(@RequestBody(required = false) Map<String, Integer> requestBody) {
 		// validate param
 		requestBody = Tool.MapUtil.defaultIfEmpty(requestBody, Tool.MapUtil.empty());
@@ -143,6 +152,38 @@ public class VisualController {
 		} finally {
 			redisLock.unlock(DashboardConstant.TEMPLATE_SYNC_LOCK_KEY, uuid);
 		}
+	}
+
+	/**
+	 * create Dashboard Using Template
+	 *
+	 * @param requestBody
+	 * @return
+	 */
+	@PostMapping("/panel/fromTmpl")
+	@SysLog(operation = OperationEnum.ADD, type = TypeEnum.VISUALPANEL)
+	public R createDashboardUsingTemplate(@RequestBody(required = false) Map<String, Object> requestBody) {
+		// validate param
+		requestBody = Tool.MapUtil.defaultIfEmpty(requestBody, Tool.MapUtil.empty());
+
+		String name = StrUtil.str(requestBody.get("name"), CharsetUtil.CHARSET_UTF_8);
+		ValidateUtils.is(name).notNull(RCode.PANEL_NAME_ISNULL);
+
+		String type = StrUtil.str(requestBody.get("type"), CharsetUtil.CHARSET_UTF_8);
+		if (!StrUtil.equals(DashboardConstant.Type.DASHBOARD.getValue(), type)) {
+			throw new NZException(RCode.PANEL_TYPE_INVALIDE);
+		}
+
+		String description = StrUtil.str(requestBody.get("description"), CharsetUtil.CHARSET_UTF_8);
+		String tmplId = StrUtil.str(requestBody.get("tmplId"), CharsetUtil.CHARSET_UTF_8);
+		String link = StrUtil.str(requestBody.get("link"), CharsetUtil.CHARSET_UTF_8);
+
+		Integer tmplIdIntVal = ObjectUtil.isNull(tmplId) ? null : Integer.valueOf(tmplId);
+		Integer linkIntVal = ObjectUtil.isNull(link) ? null : Integer.valueOf(link);
+
+		// create Dashboard Using Template
+		Integer id = visualService.createDashboardUsingTemplate(StrUtil.trim(name), type, description, tmplIdIntVal, linkIntVal);
+		return R.ok().putData("id", id);
 	}
 
 }

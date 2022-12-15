@@ -121,6 +121,7 @@ public enum RCode {
     PANEL_IMPORT_TYPE_INCORRECT(123101,"Panel type must be dashboard or template"),
     PANEL_TEMPLATE_SYNC_PARAM_ISNULL(121102, "Dashboard template synchronization parameter is null"),
     PANEL_TEMPLATE_SYNC_FAILED_GET_LOCK(127103,"Dashboard template synchronization is in progress please try again later"),
+    PANEL_TEMPLATE_TYPE_NOT_EXIST(126104, "Template type dashboard not found"),
 
     /**
      * EXPRETMPL
