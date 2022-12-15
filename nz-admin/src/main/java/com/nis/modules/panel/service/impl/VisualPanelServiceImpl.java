@@ -487,9 +487,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 		panel.setCreateBy(userId.intValue());
 
 		panel.setUts(System.currentTimeMillis());
-		String reportEnable = null;
 		if (ToolUtil.isNotEmpty(panel.getParam())) {
-			reportEnable = JSONPath.read(panel.getParam().toString(), "report.enable").toString();
 			panel.setParam(String.valueOf(panel.getParam()));
 		}
 
@@ -509,6 +507,29 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 			this.save(panel);
 		}
 
+		// add Report Config In Redis
+		this.addReportConfigInRedis(panel);
+	}
+
+	/**
+	 * add Report Config In Redis
+	 *
+	 * @param panel
+	 */
+	@Override
+	public void addReportConfigInRedis(VisualPanel panel) {
+		String type = panel.getType();
+		if (StrUtil.equals(DashboardConstant.Type.TEMPLATE.getValue(), type)) {
+			log.warn("[addReportConfigInRedis] [template dashboard does not support report config] [panelId: {}] [type: {}]", panel.getId(), type);
+			return;
+		}
+
+		String reportEnable = null;
+		if (ToolUtil.isNotEmpty(panel.getParam())) {
+			reportEnable = JSONPath.read(panel.getParam().toString(), "report.enable").toString();
+		}
+
+		log.info("[addReportConfigInRedis] [publish config to redis] [enable: {}]", reportEnable);
 		// publish report config when reportEnable is true
 		if (Tool.StrUtil.equalsIgnoreCase("true", StrUtil.nullToDefault(reportEnable, "false"))) {
 			Map publishMap = new HashMap(4);
@@ -550,16 +571,38 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 		// 修改
 		this.updateById(panel);
 
+		// update Report Config In Redis
+		this.updateReportConfigInRedis(oldPanel, panel);
+	}
+
+	/**
+	 * update Report Config In Redis
+	 *
+	 * @param oldPanel
+	 * @param newPanel
+	 */
+	@Override
+	public void updateReportConfigInRedis(VisualPanel oldPanel, VisualPanel newPanel) {
+		String type = newPanel.getType();
+		if (StrUtil.equals(DashboardConstant.Type.TEMPLATE.getValue(), type)) {
+			log.warn("[updateReportConfigInRedis] [template dashboard does not support report config] [panelId: {}] [type: {}]", newPanel.getId(), type);
+			return;
+		}
+
 		// report
 		String oldParamStr = ToolUtil.isEmpty(oldPanel.getParam()) ? JSONObject.toJSONString(Tool.MapUtil.empty())
 				: oldPanel.getParam().toString();
 		Map oldParamMap = JSONObject.parseObject(oldParamStr, LinkedHashMap.class);
-		String newParamStr = ToolUtil.isEmpty(panel.getParam()) ? JSONObject.toJSONString(Tool.MapUtil.empty())
-				: panel.getParam().toString();
+		String newParamStr = ToolUtil.isEmpty(newPanel.getParam()) ? JSONObject.toJSONString(Tool.MapUtil.empty())
+				: newPanel.getParam().toString();
 		Map newParamMap = JSONObject.parseObject(newParamStr, LinkedHashMap.class);
-		if (!oldParamMap.equals(newParamMap)) {
+
+		boolean isUpdate = !oldParamMap.equals(newParamMap);
+
+		log.info("[updateReportConfigInRedis] [publish config to redis] [isUpdate: {}]", isUpdate);
+		if (isUpdate) {
 			Map publishMap = new HashMap(4);
-			publishMap.put("panelId", panel.getId());
+			publishMap.put("panelId", newPanel.getId());
 			publishMap.putAll(newParamMap);
 
 			redisTemplate.convertAndSend(Constant.REPORT_TOPIC_NAME, JSONObject.toJSONString(publishMap));
@@ -1559,10 +1602,16 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 			panel.setId(oldPanel.getId());
 			panel.setWeight(oldPanel.getWeight());
 			this.updateById(panel);
+
+			// update Report Config In Redis
+			this.updateReportConfigInRedis(oldPanel, panel);
 		} else {
 			params.put("save", true);
 			// insert
 			this.save(panel);
+
+			// add Report Config In Redis
+			this.addReportConfigInRedis(panel);
 		}
 
 		this.importSaveCharts(panel.getCharts(), 0, panel.getId(), seq);

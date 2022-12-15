@@ -645,12 +645,17 @@ public class VisualServiceImpl implements VisualService {
                 visualChartElementService.remove(new LambdaQueryWrapper<VisualChartElement>().in(VisualChartElement::getChartId, removeChartIdList));
             }
 
-            // update dashboard param
-            LambdaUpdateWrapper<VisualPanel> updateWrapper = new LambdaUpdateWrapper<>();
-            updateWrapper.set(VisualPanel::getParam, Tool.NzExpressionUtil.renderExpression(templateDashboardParam.toString(), linkObject));
-            updateWrapper.set(VisualPanel::getTmplId, templateDashboardId);
-            updateWrapper.eq(VisualPanel::getId, syncPanelId);
-            visualPanelService.update(updateWrapper);
+            // update dashboard param & tmplid
+            VisualPanel updatePanelObject = new VisualPanel();
+            BeanUtil.copyProperties(syncPanel, updatePanelObject);
+
+            updatePanelObject.setParam(Tool.NzExpressionUtil.renderExpression(templateDashboardParam.toString(), linkObject));
+            updatePanelObject.setTmplId(templateDashboardId);
+            updatePanelObject.setUts(System.currentTimeMillis());
+            visualPanelService.updateById(updatePanelObject);
+
+            // update Report Config In Redis
+            visualPanelService.updateReportConfigInRedis(syncPanel, updatePanelObject);
 
             // insert chart & chart element
             List<VisualChartElement> saveChartElementList = Tool.ListUtil.list(true);

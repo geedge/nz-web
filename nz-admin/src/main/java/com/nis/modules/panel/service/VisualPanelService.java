@@ -13,8 +13,8 @@ import java.util.Set;
 
 public interface VisualPanelService extends IService<VisualPanel> {
 
-	VisualPanel queryInfo(Integer id);
-	
+    VisualPanel queryInfo(Integer id);
+
     void delPanels(Integer... ids);
 
     void modify(List<VisualPanel> visualPanelList);
@@ -26,7 +26,7 @@ public interface VisualPanelService extends IService<VisualPanel> {
     void saveVisualPanel(VisualPanel visualPanel);
 
     void updateVisualPanel(VisualPanel visualPanel);
-    
+
     void getTemplateByLanguage(HttpServletResponse response, String format, String type) throws IOException;
 
     void cancelImport(String seq);
@@ -44,4 +44,8 @@ public interface VisualPanelService extends IService<VisualPanel> {
     List<VisualPanel> getTemplateSyncDashboard(Integer panelId, Integer tmplId, Integer modelId, Integer moduleId);
 
     VisualPanel queryPanelIncludeChartInfo(Integer panelId);
+
+    void addReportConfigInRedis(VisualPanel panel);
+
+    void updateReportConfigInRedis(VisualPanel oldPanel, VisualPanel newPanel);
 }
