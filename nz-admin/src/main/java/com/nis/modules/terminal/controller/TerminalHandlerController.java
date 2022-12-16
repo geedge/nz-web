@@ -191,6 +191,21 @@ public class TerminalHandlerController {
         terminalSessionService.downloadOfSftp(uuid, path, response);
     }
 
+    @PutMapping("/sftp/rename")
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.TERMINAL)
+    public R rename(@RequestBody Map<String, String> param) {
+        String uuid = param.get("uuid");
+        String oldPath = param.get("oldPath");
+        String newPath = param.get("newPath");
+
+        ValidateUtils.is(uuid).notNull(RCode.TERMINAL_UUID_ISNULL)
+                .and(oldPath).notNull(RCode.TERMINAL_PATH_ISNULL)
+                .and(newPath).notNull(RCode.TERMINAL_NEW_PATH_ISNULL);
+
+        terminalSessionService.renameFileOfSftp(uuid, oldPath, newPath);
+        return R.ok();
+    }
+
 
     @GetMapping("/sftp/log")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.TERMINAL)

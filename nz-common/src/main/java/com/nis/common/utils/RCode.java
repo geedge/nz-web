@@ -826,6 +826,7 @@ public enum RCode {
     TERMINAL_DOWNLOAD_NO_SUCH_FILE(616018, "No such file"),
     TERMINAL_DOWNLOAD_NOT_SUPPORTED_DIRECTORY(617019, "Not supported to get directory"),
     TERMINAL_UPLOAD_PROGRESS_NOT_FOUND(616020, "Terminal upload progress information not found, expired or does not exist."),
+    TERMINAL_NEW_PATH_ISNULL(611021, "File new path cannot be empty"),
 
     /**
      * LINK

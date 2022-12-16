@@ -6,6 +6,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.ssh.Sftp;
+import cn.hutool.http.HttpStatus;
 import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -13,6 +14,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpATTRS;
+import com.jcraft.jsch.SftpException;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
@@ -589,6 +591,27 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
         if (ObjectUtil.isNotNull(uploadRunnable)) {
             // interrupt
             uploadRunnable.interrupt();
+        }
+    }
+
+    @Override
+    public void renameFileOfSftp(String uuid, String oldPath, String newPath) {
+        Sftp sftp = this.getSftpChannel(uuid);
+        ChannelSftp channelSftp = null;
+        try {
+            channelSftp = sftp.getClient();
+
+            // rename
+            channelSftp.rename(oldPath, newPath);
+
+            // record sftp log
+            // sftpLogService.saveSftpLog(uuid);
+        } catch (SftpException e) {
+            log.error(e, "[renameFileOfSftp] [rename file error] [uuid: {}] [oldPath: {}] [newPath: {}]", uuid, oldPath, newPath);
+            throw new NZException(e.getMessage(), HttpStatus.HTTP_INTERNAL_ERROR);
+        } finally {
+            // disconnect
+            Tool.JschUtil.close(channelSftp);
         }
     }
 

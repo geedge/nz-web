@@ -38,4 +38,6 @@ public interface TerminalSessionService extends IService<TerminalSessionEntity> 
 
     void cancelUpload(String tid);
 
+    void renameFileOfSftp(String uuid, String oldPath, String newPath);
+
 }
