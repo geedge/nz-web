@@ -205,7 +205,7 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
             String addr = dataMap.get(IpamIpEum.ADDR.getIndex());
             IpamSubnet ipamSubnet = ipamSubnetService.getOne(new LambdaQueryWrapper<IpamSubnet>().eq(IpamSubnet::getName, subnetName));
             validateUtil.validateRequired(addr, lineNum, IpamIpEum.ADDR.getIndex());
-            validateUtil.validateIp(addr, lineNum , IpamIpEum.ADDR.getIndex());
+            validateUtil.validateIp(addr, lineNum , IpamIpEum.ADDR.getIndex(), "");
             if (ipamSubnet == null){
                 validateUtil.recordImportAttrErr(lineNum, RCode.IPAM_IP_SUBNET_ISNULL);
             }else {

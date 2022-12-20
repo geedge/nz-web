@@ -1063,7 +1063,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
                     Object host = configMap.get("host");
                     if (ToolUtil.isNotEmpty(host))
-                        validateUtil.validateIp(host.toString(), lineNum, MonitorEndpointImportEnum.CONFIGURATIONS.getIndex());
+                        validateUtil.validateIp(host.toString(), lineNum, MonitorEndpointImportEnum.CONFIGURATIONS.getIndex(), "");
 
                     Object port = configMap.get("port");
                     if (ToolUtil.isNotEmpty(port))

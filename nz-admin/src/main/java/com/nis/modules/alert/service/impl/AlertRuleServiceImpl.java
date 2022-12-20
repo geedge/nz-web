@@ -407,6 +407,8 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             schedDays = StrUtil.emptyToDefault(schedDays, "1,2,3,4,5,6,7");
             schedStime = StrUtil.emptyToDefault(schedStime, "00:00");
             schedEtime = StrUtil.emptyToDefault(schedEtime, "23:59");
+            if(schedStime.length() < 5) schedStime = "0" + schedStime;
+            if(schedEtime.length() < 5) schedEtime = "0" + schedEtime;
 
             Arrays.stream(StrUtil.split(schedDays, ",")).distinct().forEach(s -> {
                 validateUtil.validateRegex(s, "^[1-7]$", lineNum, AlertRuleImportEnum.SCHED_DAYS.getIndex());
