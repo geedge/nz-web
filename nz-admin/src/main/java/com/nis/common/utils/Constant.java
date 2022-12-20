@@ -1248,4 +1248,20 @@ public class Constant {
 			return value;
 		}
 	}
+
+	/**
+	 * prometheus 代理 path
+	 */
+	public static final String PROMETHEUS_READY_PATH = "/prometheus/proxy/-/ready";
+
+	public static final String PROMETHEUS_CONFIG_PATH = "/prometheus/proxy/api/v1/status/config";
+
+	public static final String PROMETHEUS_FLAGS_PATH = "/prometheus/proxy/api/v1/status/flags";
+
+	public static final String PROMETHEUS_BUILD_INFO_PATH = "/prometheus/proxy/api/v1/status/buildinfo";
+
+	public static final String PROMETHEUS_RUN_TIME_INFO_PATH = "/prometheus/proxy/api/v1/status/runtimeinfo";
+
+	public static final String PROMETHEUS_TSDB_PATH = "/prometheus/proxy/api/v1/status/tsdb";
+
 }
