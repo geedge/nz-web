@@ -48,4 +48,7 @@ public interface VisualPanelService extends IService<VisualPanel> {
     void addReportConfigInRedis(VisualPanel panel);
 
     void updateReportConfigInRedis(VisualPanel oldPanel, VisualPanel newPanel);
+
+    // template dashboard , add assetInfo or endpointInfo chart
+    void addLinkObjectInfoChart(VisualPanel panel);
 }

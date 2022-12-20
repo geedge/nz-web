@@ -221,6 +221,9 @@ public class V3_6_DataFormatConversionServiceImpl implements V3_6_DataFormatConv
 
         // save
         panelService.save(panel);
+
+        // add Link Object Info Chart
+        panelService.addLinkObjectInfoChart(panel);
         return panel;
     }
 

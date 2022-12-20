@@ -25,6 +25,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
+import com.nis.common.utils.Constant.ChartDatasourceType;
 import com.nis.modules.agent.service.LokiApiService;
 import com.nis.modules.agent.service.PromApiService;
 import com.nis.modules.asset.entity.AssetAsset;
@@ -507,8 +508,45 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 			this.save(panel);
 		}
 
+		// add assetInfo or endpointInfo chart
+		this.addLinkObjectInfoChart(panel);
+
 		// add Report Config In Redis
 		this.addReportConfigInRedis(panel);
+	}
+
+	/**
+	 * add Link Object Info Chart
+	 *
+	 * @param panel
+	 */
+	@Override
+	public void addLinkObjectInfoChart(VisualPanel panel) {
+		String type = panel.getType();
+		if (StrUtil.equals(DashboardConstant.Type.TEMPLATE.getValue(), type)) {
+			Integer varType = panel.getVarType();
+			log.info("[addLinkObjectInfoChart] [add chart] [varType: {}]", varType);
+
+			VisualChart chartTemplate = null;
+			if (ObjectUtil.equal(DashboardConstant.VariableType.ASSET.getValue(), varType)) {
+				String configValue = sysConfigService.getValue(Constant.SYSCONFIG_KEY_ASSET_CHART_TPL);
+				chartTemplate = JSONObject.parseObject(configValue, VisualChart.class);
+			}
+
+			if (ObjectUtil.equal(DashboardConstant.VariableType.ENDPOINT.getValue(), varType)) {
+				String configValue = sysConfigService.getValue(Constant.SYSCONFIG_KEY_ENDPOINT_CHART_TPL);
+				chartTemplate = JSONObject.parseObject(configValue, VisualChart.class);
+			}
+
+			if (ObjectUtil.isNotNull(chartTemplate)) {
+				chartTemplate.setPanelId(panel.getId());
+				chartTemplate.setGroupId(0);
+				chartTemplate.setDatasource(ChartDatasourceType.SYSTEM.getValue());
+				chartTemplate.setUpdateBy(panel.getCreateBy());
+				chartTemplate.setUpdateAt(new Date());
+				visualChartService.save(chartTemplate);
+			}
+		}
 	}
 
 	/**
@@ -1612,6 +1650,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
 			// add Report Config In Redis
 			this.addReportConfigInRedis(panel);
+
+			// add assetInfo or endpointInfo chart
+			this.addLinkObjectInfoChart(panel);
 		}
 
 		this.importSaveCharts(panel.getCharts(), 0, panel.getId(), seq);

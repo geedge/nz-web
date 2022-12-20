@@ -681,9 +681,9 @@ public class VisualServiceImpl implements VisualService {
             // remove chart. no remove buildin assetInfo endpointInfo chart
             List<VisualChart> removeChartList = visualChartService.list(new LambdaUpdateWrapper<VisualChart>()
                     .eq(VisualChart::getPanelId, syncPanelId)
-                    .eq(VisualChart::getBuildIn, 0)
-                    .ne(VisualChart::getType, Constant.CHART_ASSETINFO_TYPE)
-                    .ne(VisualChart::getType, Constant.CHART_ENDPOINTINFO_TYPE));
+                    .eq(VisualChart::getBuildIn, 0));
+                    //.ne(VisualChart::getType, Constant.CHART_ASSETINFO_TYPE)
+                    //.ne(VisualChart::getType, Constant.CHART_ENDPOINTINFO_TYPE));
 
             List<Integer> removeChartIdList = removeChartList.stream().map(VisualChart::getId).collect(Collectors.toList());
             if (Tool.CollUtil.isNotEmpty(removeChartIdList)) {
