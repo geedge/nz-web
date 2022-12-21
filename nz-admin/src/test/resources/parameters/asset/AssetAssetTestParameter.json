@@ -17,7 +17,8 @@
   "------------------ POST  /asset/comment data---------------------": "note",
   "addAssetComment_success": {
     "assetId": 2,
-    "content": "Add comment"
+    "content": "Add comment",
+    "html": "<div class=\"editor-core ql-container ql-snow\"><div class=\"ql-editor\"><p>1</p></div></div>"
   },
   "addAssetComment_assetIdIsnull": {
     "content": "Add comment error"
@@ -29,7 +30,8 @@
   "editAssetComment_success": {
     "id": 1,
     "assetId": 2,
-    "content": "Edit comment"
+    "content": "Edit comment",
+    "html": "<div class=\"editor-core ql-container ql-snow\"><div class=\"ql-editor\"><p>1</p></div></div>"
   },
   "editAssetComment_commentIdIsnull": {
     "assetId": 1,

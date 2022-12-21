@@ -25,7 +25,7 @@
     "name": "silence name",
     "matchers": "[{\"name\":\"asset\",\"value\":\"192\",\"regex\":1}]",
     "startAt": "2021-01-11 11:11:11",
-    "endAt": "2022-10-31 11:11:11",
+    "endAt": "2025-10-31 11:11:11",
     "remark": "机房维护"
   },
   "updateAlertSilence_nameisnull": {
@@ -41,7 +41,7 @@
     "name": "silence name",
     "matchers": null,
     "startAt": "2021-01-11 11:11:11",
-    "endAt": "2022-10-31 11:11:11",
+    "endAt": "2025-10-31 11:11:11",
     "remark": "机房维护"
   },
   "updateAlertSilence_startAtisnull": {

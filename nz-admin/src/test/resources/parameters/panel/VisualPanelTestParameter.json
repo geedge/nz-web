@@ -38,6 +38,7 @@
   "addVisualPanel_nameDuplicate": {
     "name": "panel_4",
     "remark": "测试新增",
+    "type": "dashboard",
     "pid": 10
   },
   "addVisualPanel_typeIsnull": {
@@ -64,7 +65,7 @@
   "updateVisualPanel_success": {
     "id": 3,
     "name": "panel_3_update",
-    "type": "overview",
+    "type": "dashboard",
     "link": 1,
     "pid": 1,
     "remark": "测试修改",

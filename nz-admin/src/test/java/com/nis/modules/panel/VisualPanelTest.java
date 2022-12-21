@@ -128,7 +128,7 @@ public class VisualPanelTest extends BaseTest<VisualPanel> {
     public void addVisualPanel_error(){
         VisualPanel visualPanel = jsonToInParameter(testName.getMethodName(), VisualPanel.class);
         MvcResult result = UTUtil.performPost("/visual/panel", visualPanel);
-        UTUtil.assertEqualsRCode(result,RCode.ERROR);
+        UTUtil.assertEqualsRCode(result,RCode.CONTENT_MORETHAN_MAXLENGTH);
     }
 
     /**
@@ -158,7 +158,7 @@ public class VisualPanelTest extends BaseTest<VisualPanel> {
     public void updateVisualPanel_error(){
         VisualPanel visualPanel = jsonToInParameter(testName.getMethodName(), VisualPanel.class);
         MvcResult result = UTUtil.performPut("/visual/panel", visualPanel);
-        UTUtil.assertEqualsRCode(result,RCode.ERROR);
+        UTUtil.assertEqualsRCode(result,RCode.CONTENT_MORETHAN_MAXLENGTH);
     }
 
     /**

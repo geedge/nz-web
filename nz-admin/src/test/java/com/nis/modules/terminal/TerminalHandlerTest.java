@@ -45,56 +45,6 @@ public class TerminalHandlerTest extends BaseTest<AssetTypeConf> {
     }
 
     /**
-     * POST  /terminal/upload TERMINAL_UUID_ISNULL
-     */
-    @Test()
-    public void upload_terminalUuidIsnull() {
-        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
-        MvcResult result = UTUtil.performMultipart("/terminal/upload","/file/CESHI-MIB.txt","file",map,null);
-        UTUtil.assertEqualsRCode(result, RCode.TERMINAL_UUID_ISNULL);
-    }
-
-    /**
-     * POST  /terminal/upload TERMINAL_PATH_ISNULL
-     */
-    @Test()
-    public void upload_terminalPathIsnull() {
-        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
-        MvcResult result = UTUtil.performMultipart("/terminal/upload","/file/CESHI-MIB.txt","file",map,null);
-        UTUtil.assertEqualsRCode(result, RCode.TERMINAL_PATH_ISNULL);
-    }
-
-    /**
-     * POST  /terminal/upload TERMINAL_ISNULL
-     */
-    @Test()
-    public void upload_terminalIsnull() {
-        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
-        MvcResult result = UTUtil.performMultipart("/terminal/upload","/file/CESHI-MIB.txt","file",map,null);
-        UTUtil.assertEqualsRCode(result, RCode.TERMINAL_ISNULL);
-    }
-
-    /**
-     * POST  /terminal/download TERMINAL_UUID_ISNULL
-     */
-    @Test()
-    public void download_terminalUuidIsnull() {
-        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
-        MvcResult result = UTUtil.performPost("/terminal/download",map);
-        UTUtil.assertEqualsRCode(result, RCode.TERMINAL_UUID_ISNULL);
-    }
-
-    /**
-     * POST  /terminal/download TERMINAL_PATH_ISNULL
-     */
-    @Test()
-    public void download_terminalPathIsnull() {
-        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
-        MvcResult result = UTUtil.performPost("/terminal/download",map);
-        UTUtil.assertEqualsRCode(result, RCode.TERMINAL_PATH_ISNULL);
-    }
-
-    /**
      * Get  /terminal/session success
      */
     @Test()
