@@ -6,6 +6,7 @@ import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.sys.service.SysBackupService;
+import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,6 +27,9 @@ public class SysBackupController {
 
     @Autowired
     private SysBackupService sysBackupService;
+
+	@Autowired
+	private RedisLock redisLock;
 
     /**
 	 * 查询列表
@@ -51,16 +55,33 @@ public class SysBackupController {
 		List<Object> result = sysBackupService.queryBackupList();
 		return R.ok(result);
 	}
-	
+
 	@PostMapping
 	public R backupData() {
+		// get lock
+		String uuid = Tool.StrUtil.uuid();
 		try {
-			sysBackupService.backupData();
+			if (redisLock.lock(Constant.SYS_BACKUP_LOCK, uuid, 5L)) {
+				log.info("[backupData] [Get lock and start system data backup]");
+
+				StopWatch sw = new StopWatch();
+				sw.start();
+
+				sysBackupService.backupData();
+				sw.stop();
+				log.info("[backupData] [System data backup finished] [Run time: {}]", sw.toString());
+
+				return R.ok();
+			} else {
+				log.warn("[backupData] [System data backup is in progress please try again later]");
+				return R.error(RCode.SYS_BACKUP_IN_PROGRESS);
+			}
 		} catch (Exception e) {
-			log.error("data backup error", e);
+			log.error(e, "[backupData] [backup error]");
 			throw new NZException(RCode.SYS_BACKUP_ERROR);
+		} finally {
+			redisLock.unlock(Constant.SYS_BACKUP_LOCK, uuid);
 		}
-		return R.ok();
 	}
 
 

@@ -800,6 +800,7 @@ public enum RCode {
     SYS_BACKUP_FILENAME_ISNULL(601000, "System backup file name cannot be empty"),
     SYS_BACKUP_FILENAME_NOTEXIST(601001, "System backup file does not exist"),
     SYS_BACKUP_ERROR(609002, "System data backup is abnormal"),
+    SYS_BACKUP_IN_PROGRESS(607003, "System data backup is in progress please try again later"),
 
 
     /**
