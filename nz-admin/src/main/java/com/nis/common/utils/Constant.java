@@ -1082,6 +1082,9 @@ public class Constant {
 	public static final String SERVER_ID = Tool.IdUtil.fastUUID();
 	public static final String SYS_HA_LOCK = "sys_ha_lock";
 
+	// sys_backup redis lock
+	public static final String SYS_BACKUP_LOCK = "lock_sys_backup";
+
 	public static final String NEZHA_ROOT_PATH = StrUtil.subBefore(System.getProperty("user.dir"), StrUtil.C_SLASH,
 			true);
 	public static final String NZWEB_ROOT_PATH = NEZHA_ROOT_PATH + "/nz-web";
