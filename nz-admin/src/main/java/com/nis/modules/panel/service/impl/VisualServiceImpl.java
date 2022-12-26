@@ -621,7 +621,7 @@ public class VisualServiceImpl implements VisualService {
         panel.setUts(System.currentTimeMillis());
         visualPanelService.save(panel);
 
-        if (ObjectUtil.isAllNotEmpty(tmplId, link)) {
+        if (ObjectUtil.isNotEmpty(tmplId)) {
             // template Dashboard
             VisualPanel templateDashboard = visualPanelService.queryPanelIncludeChartInfo(tmplId);
 
@@ -632,6 +632,9 @@ public class VisualServiceImpl implements VisualService {
             } else if (ObjectUtil.equal(DashboardConstant.VariableType.ENDPOINT.getValue(), varType)) {
                 MonitorEndpoint endpoint = monitorEndpointService.getById(link);
                 ValidateUtils.is(endpoint).notNull(RCode.ENDPOINT_NOTFOUND);
+            } else if (ObjectUtil.equal(DashboardConstant.VariableType.NONE.getValue(), varType)) {
+                // no validate link value, not using link
+                link = null;
             }
 
             panel.setVarType(varType);
@@ -670,8 +673,10 @@ public class VisualServiceImpl implements VisualService {
                 chartVarType = DashboardConstant.VariableType.ENDPOINT.getValue();
             }
 
-            log.info("[syncTemplateDashboard] [performSync] [link id: {}] [link Object exist: {}]", link, ObjectUtil.isNotNull(linkObject));
-            if (ObjectUtil.isNull(linkObject)) {
+            log.info("[syncTemplateDashboard] [performSync] [dashboard type: {}] [link id: {}] [link Object exist: {}]", DashboardConstant.VariableType.getVariableType(varType), link, ObjectUtil.isNotNull(linkObject));
+            if (BooleanUtil.and(
+                    ObjectUtil.notEqual(DashboardConstant.VariableType.NONE.getValue(), varType),
+                    ObjectUtil.isNull(linkObject))) {
                 log.warn("[syncTemplateDashboard] [performSync] [link Object not exist] [link id: {}]", link);
                 continue;
             }

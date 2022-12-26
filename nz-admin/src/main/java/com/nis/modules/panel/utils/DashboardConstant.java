@@ -1,5 +1,7 @@
 package com.nis.modules.panel.utils;
 
+import com.nis.common.utils.Tool;
+
 public class DashboardConstant {
 
     /**
@@ -54,6 +56,12 @@ public class DashboardConstant {
 
         public void setValue(Integer value) {
             this.value = value;
+        }
+
+        public static VariableType getVariableType(Integer value) {
+            for (VariableType v : values())
+                if (Tool.ObjectUtil.equal(v.getValue(), value)) return v;
+            throw new IllegalArgumentException();
         }
     }
 
