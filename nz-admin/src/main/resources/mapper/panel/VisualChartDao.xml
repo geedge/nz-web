@@ -191,11 +191,6 @@
         </foreach>
     </update>
     
-    <select id="selectChartNum" resultMap="visualChartResult">
-    	select panel_id id,count(*) chartNums
-		from visual_chart group by panel_id
-    </select>
-
 
 	<select id="selectTmplCharts" resultMap="visualChartResult">
 		select vch.*

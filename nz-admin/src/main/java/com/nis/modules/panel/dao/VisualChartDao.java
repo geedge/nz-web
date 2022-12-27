@@ -20,8 +20,6 @@ public interface VisualChartDao extends BaseMapper<VisualChart> {
     
     void updateWeightBatch(@Param("panelId")Integer panelId , @Param("charts") List<VisualChart> charts);
     
-    List<VisualChart> selectChartNum();
-    
     List<VisualChart> selectTmplCharts(@Param("params") Map<String,Object> params);
     
 	List<VisualChart> queryPage(IPage page,@Param("params") Map<String, Object> params);

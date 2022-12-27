@@ -4,7 +4,6 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -46,29 +45,29 @@ import java.util.stream.Collectors;
 
 @Service("visualChartService")
 public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualChart> implements VisualChartService {
-	
-	private Log log = Log.get();
-	
-	@Autowired
-	private VisualPanelService visualPanelService;
-	
+
+	private static final Log log = Log.get();
+
 	@Autowired
 	private SysDictService sysDictService;
-	
+
+	@Autowired
+	private VisualPanelService visualPanelService;
+
 	@Autowired
 	private VisualChartElementService chartElementService;
-	
+
 	@Autowired
 	private AssetAssetService assetAssetService;
-	
-	@Autowired
-	private MonitorEndpointService monitorEndpointService;
-	
+
 	@Autowired
 	private AssetModelService assetModelService;
-	
+
 	@Autowired
 	private MonitorModuleService monitorModuleService;
+
+	@Autowired
+	private MonitorEndpointService monitorEndpointService;
 
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
@@ -309,12 +308,15 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
     @Transactional(rollbackFor = Exception.class)
 	public Integer saveChart(VisualChart chart) {
     	// 1. 新增 chart 自动追加至末尾
-        chart.setUpdateAt(new Date());
 		chart.setName(StrUtil.trim(chart.getName()));
         Object param = chart.getParam();
         if (param != null && param instanceof HashMap) {
             chart.setParam(JSONObject.toJSONString(param));
         }
+
+	    // update info
+	    chart.setUpdateAt(Tool.DateUtil.date());
+	    chart.setUpdateBy(ShiroUtils.getUserId().intValue());
 
         // 2. 判断当前 panel 下是否已存在 charts
         List<VisualChart> list = this.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getPanelId, chart.getPanelId()));
@@ -330,74 +332,8 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 
         // 3. 保存 chart elements信息
         chartElementService.saveOrUpdateElements(chart.getId(), chart.getElements());
-
-		/*// 4. 同步新增处理
-		Integer sync = chart.getSync();
-		if (sync != null) {
-		    VisualPanel panel = visualPanelService.getById(chart.getPanelId());
-		    // 当前 chart 所属 panel 为 model 类型并且 同步标识 为 1 时 ，对已通过对应 model panel 创建的 asset panel 追加新增的 chart
-		    if(StrUtil.equals(Constant.PanelType.MODEL.getValue(),panel.getType()) && sync.equals(1)) {
-		        this.saveAssetChartsSimultaneously(panel, chart);
-		    }
-		}*/
-
         return chart.getId();
 	}
-    
-    /**
-     * 新增 model 时对已通过对应 model panel 创建的 asset panel 追加新增的 chart
-     *
-     * @param modelPanel
-     * @param chart
-     */
-    private void saveAssetChartsSimultaneously(VisualPanel modelPanel, VisualChart chart) {
-        // 1. 通过 panel  linke 的 modelId 查找该 model 下是否关联 asset
-        List<AssetAsset> assets = assetAssetService.list(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getModelId, modelPanel.getLink()));
-        if (CollectionUtils.isEmpty(assets)) {
-            return;
-        }
-
-        // 2. 通过 assets 找到关联的所有 asset panel
-        List<Integer> assetsIds = assets.stream().map(AssetAsset::getId).collect(Collectors.toList());
-        List<VisualPanel> panels = visualPanelService.list(new QueryWrapper<VisualPanel>().lambda().eq(VisualPanel::getType, DashboardConstant.Type.ASSET.getValue()).in(VisualPanel::getLink, assetsIds));
-
-        Map<Integer, AssetAsset> assetIdAndEntityMap = new HashMap<>(16);
-        for (AssetAsset asset : assets) {
-            assetIdAndEntityMap.put(asset.getId(), asset);
-        }
-
-        // 3. 得到 panelId 和 关联的 asset 实体 ，准备做 变量替换所需
-        Map<Integer, AssetAsset> panelIdAndAsset = new HashMap<>();
-        for (VisualPanel entity : panels) {
-            panelIdAndAsset.put(entity.getId(), assetIdAndEntityMap.get(entity.getLink()));
-        }
-
-        // 4. 处理属性
-        VisualChart targetChart = new VisualChart();
-        AssetAsset asset;
-        for (Map.Entry<Integer, AssetAsset> entry : panelIdAndAsset.entrySet()) {
-            asset = entry.getValue();
-            targetChart = JSONObject.parseObject(JSON.toJSONString(chart), VisualChart.class);
-            targetChart.setSync(null);
-            targetChart.setId(null);
-            targetChart.setPid(chart.getId());
-
-            // chart ： title param   chart element : expression   属性需要做 asset 变量替换
-            targetChart.setName(Tool.NzExpressionUtil.renderExpression(targetChart.getName(),asset));
-            targetChart.setParam(ToolUtil.isNotEmpty(targetChart.getParam()) ? Tool.NzExpressionUtil.renderExpression(targetChart.getParam().toString(), asset) : null);
-
-            if (CollectionUtils.isNotEmpty(targetChart.getElements())) {
-                for (VisualChartElement element : targetChart.getElements()) {
-                    element.setId(null);
-                    element.setExpression(ToolUtil.isNotEmpty(element.getExpression()) ? Tool.NzExpressionUtil.renderExpression(element.getExpression(), asset) : null);
-                }
-            }
-
-            // 5. 调用保存方法进行 新增
-            this.saveChart(targetChart);
-        }
-    }
-
     
 	@Override
 	@Transactional(rollbackFor = Exception.class)
@@ -411,74 +347,17 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
             chart.setParam(JSONObject.toJSONString(param));
         }
 
+		// update info
+		chart.setUpdateAt(Tool.DateUtil.date());
+		chart.setUpdateBy(ShiroUtils.getUserId().intValue());
+
         this.updateById(chart);
 
         // 3. 修改 chart elements
         chartElementService.saveOrUpdateElements(chart.getId(), chart.getElements());
-
-        // 4. 同步修改处理
-        /*Integer sync = chart.getSync();
-        if (sync != null) {
-            VisualPanel panel = visualPanelService.getById(chart.getPanelId());
-            // 当前 chart 所属 panel 为 model 类型并且 同步标识 为 1 时 ，对根据 chart pid 查找通过此 chart 创建的 chart 更新
-            if(StrUtil.equals(Constant.PanelType.MODEL.getValue(),panel.getType()) && sync.equals(1)) {
-                this.updateAssetChartsSimultaneously(chart);
-            }
-        }*/
-        
         return chart.getId();
 	}
 	
-	/**
-     * 对根据 chart pid 查找通过此 chart 创建的 chart 进行更新
-     *
-     * @param chart
-     */
-    private void updateAssetChartsSimultaneously(VisualChart chart) {
-        // 1. 查找引用的 charts
-        List<VisualChart> charts = this.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getPid, chart.getId()));
-        if (CollectionUtils.isEmpty(charts)) {
-            return;
-        }
-
-        List<Integer> idList = charts.stream().map(VisualChart::getId).collect(Collectors.toList());
-
-        // 2. 先删除之前的 elements  使用当前 chart element 进行更新
-        chartElementService.delElementByChartIds(idList);
-
-        // 3. 返回引用 chartId 和 对应的 asset 信息 ，准备做 变量替换所需
-        List<VisualChart> chartIdWithAssetEntity = assetAssetService.getAssetsWithTagByChartIds(idList);
-        Map<Integer, AssetAsset> chartIdAndAssetEntityMap = chartIdWithAssetEntity.stream().collect(Collectors.toMap(VisualChart::getId, VisualChart::getAsset));
-
-        // 4. 处理更新
-        List<VisualChartElement> elements = chart.getElements();
-        List<VisualChartElement> saveElements = new ArrayList<>();
-        VisualChartElement tempElement;
-        AssetAsset asset;
-        for (VisualChart entity : charts) {
-            asset = chartIdAndAssetEntityMap.get(entity.getId());
-            entity.setName(Tool.NzExpressionUtil.renderExpression(chart.getName(), asset));
-            entity.setSpan(chart.getSpan());
-            entity.setHeight(chart.getHeight());
-            entity.setType(chart.getType());
-            entity.setUnit(chart.getUnit());
-            entity.setParam(ToolUtil.isNotEmpty(chart.getParam()) ? Tool.NzExpressionUtil.renderExpression(chart.getParam().toString(), asset) : null);
-            if (CollectionUtils.isNotEmpty(elements)) {
-                for (VisualChartElement chartElement : elements) {
-                    tempElement = new VisualChartElement();
-                    BeanUtils.copyProperties(chartElement, tempElement);
-                    tempElement.setChartId(entity.getId());
-                    tempElement.setId(null);
-                    tempElement.setExpression(ToolUtil.isNotEmpty(chartElement.getExpression()) ? Tool.NzExpressionUtil.renderExpression(chartElement.getExpression(), asset) : null);
-                    saveElements.add(tempElement);
-                }
-            }
-        }
-
-        this.saveOrUpdateBatch(charts);
-        chartElementService.saveBatch(saveElements);
-    }
-
 	@Override
 	@Transactional(rollbackFor = Exception.class)
 	public void delCharts(Integer[] ids, Integer sync) {
@@ -623,16 +502,6 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 
         this.baseMapper.updateWeightBatch(panelId,chartList);
     }
-
-	@Override
-	public Map<Integer,Integer> queryChartNum() {
-		Map<Integer, Integer> collect = new HashMap<Integer, Integer>();
-		List<VisualChart> result = this.baseMapper.selectChartNum();
-		if(!ObjectUtils.isEmpty(result)) {
-			collect = result.stream().collect(Collectors.toMap(VisualChart::getId, VisualChart::getChartNums));
-		}
-		return collect;
-	}
 
 	@Override
 	@Transactional(rollbackFor = Exception.class)
@@ -1042,9 +911,9 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		target.setParam(ToolUtil.isNotEmpty(target.getParam()) ? JSONObject.toJSONString(target.getParam()) : null);
 		target.setPanelId(panel.getId());
 		target.setGroupId(0);
-		target.setUpdateBy(ShiroUtils.getUserId().intValue());
 		target.setDatasource(ChartDatasourceType.SYSTEM.getValue());
 		target.setUpdateAt(new Date());
+		target.setUpdateBy(ShiroUtils.getUserId().intValue());
 		if(StringUtils.isNotEmpty(seq)){
 			target.setSeq(seq);
 		}

@@ -27,8 +27,6 @@ public interface VisualChartService extends IService<VisualChart> {
     
     void delVisualChartsByPanelId(Integer... panelId);
     
-    Map<Integer,Integer> queryChartNum();
-    
     Integer fromTmpl(Map<String,Object> params);
     
     Integer syncTmpl(Map<String,Object> params);
