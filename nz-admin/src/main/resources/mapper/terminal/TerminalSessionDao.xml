@@ -72,10 +72,11 @@
         WHERE
             ts.start_time &lt;= #{startCleanTerminalTime};
 
-        DELETE tr.*,ts.*
+        DELETE tr.*,ts.*,tsl.*
         FROM
             terminal_session ts
         LEFT JOIN terminal_record tr ON ts.uuid = tr.uuid
+        LEFT JOIN terminal_sftp_log tsl on ts.uuid = tsl.uuid
         WHERE
             ts.start_time &lt;= #{startCleanTerminalTime};
     </delete>

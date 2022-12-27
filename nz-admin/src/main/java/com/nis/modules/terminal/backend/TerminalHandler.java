@@ -363,7 +363,7 @@ public class TerminalHandler extends TextWebSocketHandler {
             long terminalSessionStartTime = (long) TerminalSession.getTerminalAttributeInfo(uuid).get("terminalSessionStartTime");
             terminalRecord.setEndTime((int) (System.currentTimeMillis() - terminalSessionStartTime));
             terminalRecord.setContent(Files.readAllBytes(tempFile.toPath()));
-            terminalRecordService.save(terminalRecord);
+            terminalRecordService.saveTerminalRecordContent(terminalRecord);
         } catch (Exception e) {
             log.error(e, "Save terminal record content error. clientid: {}, file length: {}, File info: {}", uuid, tempFile.length(), tempFile.toString());
         } finally {

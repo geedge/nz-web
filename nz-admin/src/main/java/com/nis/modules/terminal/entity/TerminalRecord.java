@@ -35,6 +35,16 @@ public class TerminalRecord {
     private Integer endTime;
 
     /**
+     * 存储模式，1: 本地存储，2：S3对象存储
+     */
+    private Integer storageType;
+
+    /**
+     * S3 path
+     */
+    private String path;
+
+    /**
      * 文件内容
      * 记录的是 session开始后的时间偏移量
      * 超过定义临时文件大小后，再新增一条记录

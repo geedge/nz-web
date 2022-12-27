@@ -123,7 +123,7 @@ public class TerminalInteractionRunnable extends Thread {
             }
             long terminalSessionStartTime = (long) TerminalSession.getTerminalAttributeInfo(clientId).get("terminalSessionStartTime");
             terminalRecord.setEndTime((int) (System.currentTimeMillis() - terminalSessionStartTime));
-            terminalRecordService.save(terminalRecord);
+            terminalRecordService.saveTerminalRecordContent(terminalRecord);
         } catch (Exception e) {
             log.error(e, "Terminal connection has been closed, Terminal Record file content record failed. clientid: {}, File info: {}", clientId, tempFile.toString());
         } finally {

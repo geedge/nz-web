@@ -201,7 +201,7 @@ public class TerminalClient {
                 long terminalSessionStartTime = (long) TerminalSession.getTerminalAttributeInfo(clientId).get("terminalSessionStartTime");
                 terminalRecord.setEndTime((int) (System.currentTimeMillis() - terminalSessionStartTime));
                 terminalRecord.setContent(Files.readAllBytes(tempFile.toPath()));
-                terminalRecordService.save(terminalRecord);
+                terminalRecordService.saveTerminalRecordContent(terminalRecord);
             } catch (Exception e) {
                 log.error(e, "Save terminal record content error. clientid: {}, file length: {}, File info: {}", clientId, tempFile.length(), tempFile.toString());
             } finally {

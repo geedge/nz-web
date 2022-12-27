@@ -15,6 +15,18 @@ public class TerminalConstant {
      */
     public static final Integer RECORD_TEMPFILE_MAX_LENGTH = 10485760;
 
+
+    // 存储模式，1: 本地存储，2：S3对象存储
+    public static final String TERMINAL_STORAGE_TYPE = "terminal_storage_type";
+
+    public static final String TERMINAL_STORAGE_S3_ENDPOINT = "terminal_storage_s3_endpoint";
+    public static final String TERMINAL_STORAGE_S3_BUCKET = "terminal_storage_s3_bucket";
+    public static final String TERMINAL_STORAGE_S3_ACCESS_KEY = "terminal_storage_s3_access_key";
+    public static final String TERMINAL_STORAGE_S3_SECRET_ACCESS_KEY = "terminal_storage_s3_secret_access_key";
+
+    // 存储天数
+    public static final String TERMINAL_RECORD_LOCAL_RETENTION = "terminal_record_local_retention";
+
     /**
      * 不可见字符
      */

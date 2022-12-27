@@ -12,11 +12,9 @@ import com.nis.modules.alert.dao.AlertMessageHistoryPartitionManagementDao;
 import com.nis.modules.alert.entity.AlertRuleEvalLog;
 import com.nis.modules.alert.entity.AlertRuleSchedLog;
 import com.nis.modules.alert.job.AlertMessageHistoryPartitionManagementJob;
-import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertRuleEvalLogService;
 import com.nis.modules.alert.service.AlertRuleSchedLogService;
 import com.nis.modules.sys.service.SysConfigService;
-import com.nis.modules.terminal.service.TerminalSessionService;
 import org.apache.commons.lang3.time.StopWatch;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
@@ -29,8 +27,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 系统清理任务 1. terminal log，默认保留 365天. 2. alert_rule_eval_log，默认保留 30天 3.
- * alert_rule_sched_log，默认保留 30天 4. alert_message_history ，默认不清理
+ * 系统清理任务
+ * 1. alert_rule_eval_log，默认保留 30天
+ * 2. alert_rule_sched_log，默认保留 30天
+ * 3. alert_message_history ，默认不清理
  */
 @DisallowConcurrentExecution
 public class CleanJob extends QuartzJobBean {
@@ -38,16 +38,10 @@ public class CleanJob extends QuartzJobBean {
 	private Log log = Log.get();
 
 	@Autowired
-	private TerminalSessionService terminalSessionService;
-
-	@Autowired
 	private AlertRuleEvalLogService alertRuleEvalLogService;
 
 	@Autowired
 	private AlertRuleSchedLogService alertRuleSchedLogService;
-
-	@Autowired
-	private AlertMessageService alertMessageService;
 
 	@Autowired
 	private SysConfigService sysConfigService;
@@ -71,19 +65,19 @@ public class CleanJob extends QuartzJobBean {
 		StopWatch sw = new StopWatch();
 
 		// terminal_*
-		String terminalRecordLocalRetention = sysConfigService.getValue("terminal_record_local_retention");
-		terminalRecordLocalRetention = Tool.StrUtil.emptyToDefault(terminalRecordLocalRetention, "365");
-		DateTime startCleanTerminalTime = Tool.DateUtil.offsetDay(now, -Integer.valueOf(terminalRecordLocalRetention));
-		sw.start();
-		try {
-			log.info("start clean terminal data");
-			terminalSessionService.cleanExpiredDataByTime(startCleanTerminalTime);
-		} catch (Exception e) {
-			log.error("clean terminal data error", e);
-		} finally {
-			sw.stop();
-		}
-		log.info("clean terminal data Run Time: {}", sw.toString());
+//		String terminalRecordLocalRetention = sysConfigService.getValue("terminal_record_local_retention");
+//		terminalRecordLocalRetention = Tool.StrUtil.emptyToDefault(terminalRecordLocalRetention, "365");
+//		DateTime startCleanTerminalTime = Tool.DateUtil.offsetDay(now, -Integer.valueOf(terminalRecordLocalRetention));
+//		sw.start();
+//		try {
+//			log.info("start clean terminal data");
+//			terminalSessionService.cleanExpiredDataByTime(startCleanTerminalTime);
+//		} catch (Exception e) {
+//			log.error("clean terminal data error", e);
+//		} finally {
+//			sw.stop();
+//		}
+//		log.info("clean terminal data Run Time: {}", sw.toString());
 
 		// alert_rule_eval_log
 		String ruleEvalLogLocalRetention = sysConfigService.getValue("alert_rule_eval_log_local_retention");
