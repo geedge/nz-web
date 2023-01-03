@@ -1133,7 +1133,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 			if(StrUtil.equalsIgnoreCase(ToolUtil.toStr(type), DashboardConstant.Type.DASHBOARD.getValue())){
 				validateUtil.validateEnumValArr(varType, ListUtil.of("0"), lineNum, PanelImportEnum.VARTYPE.getIndex());
 			} else {
-				validateUtil.validateEnumValArr(varType, ListUtil.of("1", "2"), lineNum, PanelImportEnum.VARTYPE.getIndex());
+				List<DashboardConstant.VariableType> variableTypes = Arrays.asList(DashboardConstant.VariableType.values());
+				List<String> variableTypeValues = variableTypes.stream().map(variableType -> StrUtil.toString(variableType.getValue())).collect(Collectors.toList());
+				validateUtil.validateEnumValArr(varType, variableTypeValues, lineNum, PanelImportEnum.VARTYPE.getIndex());
 			}
 
 			Object panelParam = dataMap.get(PanelImportEnum.PARAM.getName());
@@ -1777,6 +1779,10 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 		List<Map> chartsMap = Tool.ListUtil.list(false);
 		Map tempMap;
 		for (VisualChart pChart : charts) {
+			// do not export type assetInfo & endpointInfo chart
+			if (StrUtil.equalsAny(pChart.getType(), Constant.CHART_ASSETINFO_TYPE, Constant.CHART_ENDPOINTINFO_TYPE)) {
+				continue;
+			}
 			tempMap = new LinkedHashMap<>();
 			tempMap.put(ChartsImportEnum.NAME.getName(), pChart.getName());
 			tempMap.put(ChartsImportEnum.SPAN.getName(), ObjectUtil.defaultIfNull(pChart.getSpan(), "").toString());
