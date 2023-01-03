@@ -619,6 +619,12 @@ public class VisualServiceImpl implements VisualService {
         panel.setType(type);
         panel.setRemark(description);
         panel.setUts(System.currentTimeMillis());
+
+        // add new panel to the end
+        List<VisualPanel> leafNodePanelList = visualPanelService.list(new LambdaUpdateWrapper<VisualPanel>().eq(VisualPanel::getType, type).eq(VisualPanel::getPid, 0));
+        Integer maxWeight = leafNodePanelList.stream().sorted(Comparator.comparing(VisualPanel::getWeight).reversed()).map(VisualPanel::getWeight).findFirst().orElse(0);
+        panel.setWeight(maxWeight);
+
         visualPanelService.save(panel);
 
         if (ObjectUtil.isNotEmpty(tmplId)) {
