@@ -1267,4 +1267,19 @@ public class Constant {
 
 	public static final String PROMETHEUS_TSDB_PATH = "/prometheus/proxy/api/v1/status/tsdb";
 
+	/**
+	 * cortex 代理 path
+	 */
+	public static final String CORTEX_READY_PATH = "/cortex/proxy/ready";
+
+	public static final String CORTEX_CONFIG_PATH = "/cortex/proxy/config";
+
+	public static final String CORTEX_SERVICES_PATH = "/cortex/proxy/services";
+
+	public static final String CORTEX_USER_STATS_PATH = "/cortex/proxy/api/v1/user_stats";
+
+	public static final String CORTEX_INGESTER_RING_PATH = "/cortex/proxy/ingester/ring";
+
+	public static final String CORTEX_STORE_GATEWAY_RING_PATH = "/cortex/proxy/store-gateway/ring";
+
 }

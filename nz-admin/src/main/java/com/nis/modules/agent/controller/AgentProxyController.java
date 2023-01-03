@@ -2,6 +2,7 @@ package com.nis.modules.agent.controller;
 
 import cn.hutool.core.net.url.UrlBuilder;
 import cn.hutool.core.net.url.UrlPath;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
 import com.nis.common.utils.Constant;
@@ -12,17 +13,18 @@ import com.nis.modules.agent.service.AgentService;
 import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.sys.service.SysConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.FileNotFoundException;
 import java.nio.charset.Charset;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/agent")
 public class AgentProxyController {
+
+    private Log log = Log.get();
 
 
     @Autowired
@@ -46,7 +48,7 @@ public class AgentProxyController {
         if (Tool.StrUtil.isNotEmpty(result)) {
             return R.ok().putData("status", result);
         } else {
-            return R.error(500, "proxy request ready error");
+            return R.error(500, "prometheus proxy request ready error");
         }
     }
 
@@ -65,11 +67,9 @@ public class AgentProxyController {
         if (Tool.StrUtil.isNotEmpty(result)) {
             R resultObj = JSONObject.parseObject(result, R.class);
             String config = JSONPath.read(resultObj.get("data").toString(),"yaml").toString();
-//            Yaml yaml = new Yaml();
-//            Map<String, Object> configMap  = (Map<String, Object>)yaml.load(config);
             return R.ok().putData("conent",config);
         } else {
-            return R.error(500, "proxy request config error");
+            return R.error(500, "prometheus proxy request config error");
         }
 
     }
@@ -88,7 +88,7 @@ public class AgentProxyController {
         if (Tool.StrUtil.isNotEmpty(result)) {
             return Tool.JSONUtil.toBean(result, R.class);
         } else {
-            return R.error(500, "proxy request flags error");
+            return R.error(500, "prometheus proxy request flags error");
         }
     }
 
@@ -106,7 +106,7 @@ public class AgentProxyController {
         if (Tool.StrUtil.isNotEmpty(result)) {
             return Tool.JSONUtil.toBean(result, R.class);
         } else {
-            return R.error(500, "proxy request buildinfo error");
+            return R.error(500, "prometheus proxy request buildinfo error");
         }
     }
 
@@ -124,7 +124,7 @@ public class AgentProxyController {
         if (Tool.StrUtil.isNotEmpty(result)) {
             return Tool.JSONUtil.toBean(result, R.class);
         } else {
-            return R.error(500, "proxy request runtimeinfo error");
+            return R.error(500, "prometheus proxy request runtimeinfo error");
         }
     }
 
@@ -142,9 +142,130 @@ public class AgentProxyController {
         if (Tool.StrUtil.isNotEmpty(result)) {
             return Tool.JSONUtil.toBean(result, R.class);
         } else {
-            return R.error(500, "proxy request tsdb error");
+            return R.error(500, "prometheus proxy request tsdb error");
         }
     }
+
+
+
+    /**
+     * cortex ready 接口
+     * @param id
+     * @return
+     */
+    @GetMapping("/{id}/cortex/ready")
+    public R cortexReady(@PathVariable("id") Integer id) {
+
+        Agent agent = agentService.queryAgentDetails(id);
+        String url = this.buildUrl(agent, Constant.CORTEX_READY_PATH);
+        String result = AgentUtil.requestGet(url, agent.getToken(), String.class);
+        // 响应结果
+        if (Tool.StrUtil.isNotEmpty(result)) {
+            return R.ok().putData("status", result);
+        } else {
+            return R.error(500, "cortex proxy request ready error");
+        }
+    }
+
+    /**
+     * cortex config 接口
+     * @param id
+     * @return
+     */
+    @GetMapping("/{id}/cortex/config")
+    public R cortexConfig(@PathVariable("id") Integer id, @RequestParam(required = false, defaultValue = "") String mode) {
+        Agent agent = agentService.queryAgentDetails(id);
+        String queryString = String.format("mode=%s" ,mode);
+        String result = AgentUtil.requestGet(agent, Constant.CORTEX_CONFIG_PATH, queryString, String.class);
+        // 响应结果
+        if (Tool.ObjectUtil.isNotEmpty(result)) {
+            return R.ok().putData("conent", result);
+        } else {
+            return R.error(500, "proxy request config error");
+        }
+    }
+
+    /**
+     * cortex service 接口
+     * @param id
+     * @return
+     */
+    @GetMapping("/{id}/cortex/services")
+    public R cortexServices(@PathVariable("id") Integer id) {
+
+        Agent agent = agentService.queryAgentDetails(id);
+        String url = this.buildUrl(agent, Constant.CORTEX_SERVICES_PATH);
+        String result = AgentUtil.requestGet(url, agent.getToken(), String.class);
+        // 响应结果
+        if (Tool.StrUtil.isNotEmpty(result)) {
+            List<Map> services = (List<Map>) JSONPath.read(result, "services");
+            return R.ok().putData("list", services);
+        } else {
+            return R.error(500, "proxy request services error");
+        }
+    }
+
+    /**
+     * cortex user_stats 接口
+     * @param id
+     * @return
+     */
+    @GetMapping("/{id}/cortex/api/v1/user_stats")
+    public R cortexUserStats(@PathVariable("id") Integer id, @RequestParam(required = false, defaultValue = "") String mode) {
+
+        Agent agent = agentService.queryAgentDetails(id);
+        String queryString = String.format("mode=%s" ,mode);
+        String result = AgentUtil.requestGet(agent, Constant.CORTEX_USER_STATS_PATH, queryString, String.class);
+        // 响应结果
+        if (Tool.StrUtil.isNotEmpty(result)) {
+            Map map = JSONObject.parseObject(result, Map.class);
+            return R.ok(map);
+        } else {
+            return R.error(500, "proxy request user stats error");
+        }
+    }
+
+
+    /**
+     * cortex ingester ring 接口
+     * @param id
+     * @return
+     */
+    @GetMapping("/{id}/cortex/ingester/ring")
+    public R cortexIngesterRing(@PathVariable("id") Integer id) {
+
+        Agent agent = agentService.queryAgentDetails(id);
+        String url = this.buildUrl(agent, Constant.CORTEX_INGESTER_RING_PATH);
+        String result = AgentUtil.requestGet(url, agent.getToken(), String.class);
+        // 响应结果
+        if (Tool.StrUtil.isNotEmpty(result)) {
+            List<Map> map = (List<Map>) JSONPath.read(result, "shards");
+            return R.ok().putData("list", map);
+        } else {
+            return R.error(500, "proxy request ingester ring error");
+        }
+    }
+
+    /**
+     * cortex store-gateway ring 接口
+     * @param id
+     * @return
+     */
+    @GetMapping("/{id}/cortex/store-gateway/ring")
+    public R cortexStoreGatewayRing(@PathVariable("id") Integer id) {
+
+        Agent agent = agentService.queryAgentDetails(id);
+        String url = this.buildUrl(agent, Constant.CORTEX_STORE_GATEWAY_RING_PATH);
+        String result = AgentUtil.requestGet(url, agent.getToken(), String.class);
+        // 响应结果
+        if (Tool.StrUtil.isNotEmpty(result)) {
+            List<Map> map = (List<Map>) JSONPath.read(result, "shards");
+            return R.ok().putData("list", map);
+        } else {
+            return R.error(500, "proxy request store-gateway ring error");
+        }
+    }
+
 
     /**
      * 构造请求路径
