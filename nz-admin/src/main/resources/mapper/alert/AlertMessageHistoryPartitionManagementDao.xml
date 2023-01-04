@@ -10,7 +10,7 @@
 		FROM
 			INFORMATION_SCHEMA.PARTITIONS
 		WHERE
-			TABLE_NAME = #{tableName} AND PARTITION_NAME != ""
+			TABLE_NAME = #{tableName} AND PARTITION_NAME != "" AND TABLE_SCHEMA = database()
 			<if test="partitionNames != null and partitionNames.length > 0">
 				AND PARTITION_NAME IN
 				<foreach item="item" collection="partitionNames" separator="," open="(" close=")" index="">
