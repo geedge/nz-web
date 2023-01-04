@@ -420,25 +420,6 @@
 	    </foreach>
     </update>
 
-    <select id="getAssetsByChartIds" resultMap="chartIdWithAssetEntity">
-        SELECT
-        cha.id as chartId,
-        ass.id,
-        ass.name,
-        ass.sn,
-        ass.manage_ip,
-        ass.number
-        FROM
-        visual_chart cha
-        LEFT JOIN visual_panel pan ON cha.panel_id = pan.id
-        LEFT JOIN asset_asset ass ON pan.link = ass.id
-        WHERE
-        cha.id IN
-        <foreach collection="ids" item="id" index="no" open="(" separator="," close=")">
-            #{id}
-        </foreach>
-    </select>
-
     <select id="getTsgAssetListbyModel" resultType="com.nis.modules.asset.entity.AssetAsset">
         SELECT
             ass.*

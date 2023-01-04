@@ -1700,22 +1700,17 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
     @Override
     public List<AssetAsset> getBlackboxAssetInfoList() {
-        List<AssetAsset> assetList = this.list();
-
-        // 支持 ping 的 state_conf
-        List<AssetStateConf> stateConfList = stateConfService.list(new LambdaQueryWrapper<AssetStateConf>().eq(AssetStateConf::getPing, 1));
-        List<Integer> enablePingStateConfIdList = stateConfList.stream().map(AssetStateConf::getId).collect(Collectors.toList());
-
-        // 支持 ping 的 asset
-        assetList = assetList.stream().filter(asset -> enablePingStateConfIdList.contains(asset.getStateId())).collect(Collectors.toList());
+        // get assets with asset_state_conf ping is enabled
+        List<AssetAsset> assetList = this.getOpenPingAssets();
 
         List<Dc> dcList = dcService.list();
         Map<Integer, Dc> dcIdAndNameMap = dcList.stream().collect(Collectors.toMap(Dc::getId, Function.identity()));
 
-        SysConfigEntity assetPingIntervalConfig = sysConfigService.getOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_PING_INTERVAL));
+        // asset_ping_interval，default = 300
+        String assetPingIntervalInConfig = sysConfigService.getValueOrDefault(Constant.SYSCONFIG_KEY_ASSET_PING_INTERVAL, "300");
         for (AssetAsset entity : assetList) {
             entity.setDc(dcIdAndNameMap.get(entity.getDcId()));
-            entity.setAssetPingInterval(assetPingIntervalConfig.getParamValue());
+            entity.setAssetPingInterval(assetPingIntervalInConfig);
         }
         return assetList;
     }
@@ -1732,15 +1727,6 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         assetList = assetList.stream().filter(asset -> enablePingStateConfIdList.contains(asset.getStateId())).collect(Collectors.toList());
 
         return assetList;
-    }
-
-    @Override
-    public List<VisualChart> getAssetsWithTagByChartIds(List<Integer> chartIds) {
-        List<VisualChart> chartIdWithAssetEntity = this.baseMapper.getAssetsByChartIds(chartIds);
-        if (CollectionUtils.isEmpty(chartIdWithAssetEntity)) {
-            return Collections.emptyList();
-        }
-        return chartIdWithAssetEntity;
     }
 
     private Map saveAssetsFromImportDataList(List<Map<Integer, String>> importDataList, List<String> headerInfos, Map<String, Object> params) {

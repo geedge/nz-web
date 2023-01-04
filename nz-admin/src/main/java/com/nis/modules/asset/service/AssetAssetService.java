@@ -7,7 +7,6 @@ import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetFieldMeta;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.module.entity.MonitorModule;
-import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.project.entity.MonitorProject;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -73,8 +72,6 @@ public interface AssetAssetService extends IService<AssetAsset> {
      * @return
      */
     List<AssetAsset> getOpenPingAssets();
-
-    List<VisualChart> getAssetsWithTagByChartIds(List<Integer> idList);
 
     /**
      * 根据ip获取 asset

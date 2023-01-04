@@ -1,26 +1,13 @@
-/**
-
- *
-
- *
-
- */
-
 package com.nis.common.utils;
-
-import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.poi.util.TempFile;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import org.apache.poi.util.TempFile;
+
+import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * 常量
@@ -695,6 +682,25 @@ public class Constant {
 		private String value;
 
 		MonitorConfType(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return value;
+		}
+
+		public void setValue(String value) {
+			this.value = value;
+		}
+	}
+
+	public enum AssetPingFrom {
+		GLOBAL("1"),
+		PER_DATACENTER("2");
+
+		private String value;
+
+		AssetPingFrom(String value) {
 			this.value = value;
 		}
 

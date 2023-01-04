@@ -3,7 +3,6 @@ package com.nis.modules.asset.dao;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nis.modules.asset.entity.AssetAsset;
-import com.nis.modules.panel.entity.VisualChart;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Update;
@@ -32,8 +31,6 @@ public interface AssetAssetDao extends BaseMapper<AssetAsset> {
     List<Map<String,Object>> queryAssetGroupBy(@Param("column") String column,@Param("params") Map<String, Object> params);
 
     void updateAssetStateBatch(@Param("ids") List<Integer> ids,@Param("params")Map<String,Object> params);
-
-    List<VisualChart> getAssetsByChartIds(List<Integer> chartIds);
 
     /**
      * 根据 之前的 modelId & typeId update model_id
