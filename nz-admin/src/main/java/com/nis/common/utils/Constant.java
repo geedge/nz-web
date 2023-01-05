@@ -1288,4 +1288,15 @@ public class Constant {
 
 	public static final String CORTEX_STORE_GATEWAY_RING_PATH = "/cortex/proxy/store-gateway/ring";
 
+	/**
+	 * loki 代理 path
+	 */
+	public static final String LOKI_READY_PATH = "/loki/proxy/ready";
+
+	public static final String LOKI_CONFIG_PATH = "/loki/proxy/config";
+
+	public static final String LOKI_SERVICES_PATH = "/loki/proxy/services";
+
+	public static final String LOKI_BUILD_INFO_PATH = "/loki/proxy/loki/api/v1/status/buildinfo";
+
 }
