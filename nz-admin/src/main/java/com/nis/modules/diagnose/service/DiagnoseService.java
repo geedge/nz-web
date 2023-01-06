@@ -21,5 +21,13 @@ public interface DiagnoseService {
      */
     List<Map<Object, Object>> assetErrorDiagnosis(Integer assetId, String language);
 
+    /**
+     * agent Diagnosis
+     *
+     * @param agentId
+     * @param language
+     * @return
+     */
+    List<Map<Object, Object>> agentErrorDiagnosis(Integer agentId, String language);
 }
 

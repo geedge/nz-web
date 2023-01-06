@@ -3,9 +3,14 @@ package com.nis.modules.diagnose.service.impl;
 import cn.hutool.log.Log;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.RCode;
+import com.nis.modules.agent.entity.Agent;
+import com.nis.modules.agent.service.AgentService;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.diagnose.chain.DiagnoseClient;
+import com.nis.modules.diagnose.chain.agent.AgentComponentsCheckInterceptor;
+import com.nis.modules.diagnose.chain.agent.AgentConnectableCheckInterceptor;
+import com.nis.modules.diagnose.chain.agent.AgentNetworkCheckInterceptor;
 import com.nis.modules.diagnose.chain.asset.AgentStateCheckOfPingInterceptor;
 import com.nis.modules.diagnose.chain.asset.AssetNetworkCheckInterceptor;
 import com.nis.modules.diagnose.chain.asset.AssetStateConfCheckInterceptor;
@@ -30,6 +35,9 @@ public class DiagnoseServiceImpl implements DiagnoseService {
     private static final Log log = Log.get();
 
     @Autowired
+    private AgentService agentService;
+
+    @Autowired
     private AssetAssetService assetService;
 
     @Autowired
@@ -51,6 +59,30 @@ public class DiagnoseServiceImpl implements DiagnoseService {
 
             // diagnose
             diagnoseClient.diagnose(asset);
+
+            // Diagnose Msg List
+            List<Map<Object, Object>> diagnoseMsgList = this.queryDiagnoseMsgByLanguage(language);
+            return diagnoseMsgList;
+        } finally {
+            DiagnoseClient.cleanDiagnoseMsg();
+        }
+    }
+
+    @Override
+    public List<Map<Object, Object>> agentErrorDiagnosis(Integer agentId, String language) {
+        try {
+            Agent agent = agentService.getById(agentId);
+            ValidateUtils.is(agent).notNull(RCode.AGENT_NOTEXSITS);
+
+            // diagnose client. set diagnose chain
+            DiagnoseClient diagnoseClient = new DiagnoseClient.Builder()
+                    .addInterceptor(new AgentNetworkCheckInterceptor())
+                    .addInterceptor(new AgentConnectableCheckInterceptor())
+                    .addInterceptor(new AgentComponentsCheckInterceptor())
+                    .build();
+
+            // diagnose
+            diagnoseClient.diagnose(agent);
 
             // Diagnose Msg List
             List<Map<Object, Object>> diagnoseMsgList = this.queryDiagnoseMsgByLanguage(language);

@@ -74,12 +74,25 @@ public class DiagnoseClient {
     /**
      * add Diagnose Msg
      *
-     * @param map
+     * @param diagnoseMsg
      */
-    public static void addDiagnoseMsg(Map<Object, Object> map) {
+    public static void addDiagnoseMsg(Map<Object, Object> diagnoseMsg) {
         // query Diagnose Msg
         List<Map<Object, Object>> mapList = DiagnoseClient.queryDiagnoseMsg();
-        mapList.add(map);
+        mapList.add(diagnoseMsg);
+
+        THREAD_LOCAL.set(mapList);
+    }
+
+    /**
+     * add Diagnose Msg List
+     *
+     * @param diagnoseMsgList
+     */
+    public static void addDiagnoseMsg(List<Map<Object, Object>> diagnoseMsgList) {
+        // query Diagnose Msg
+        List<Map<Object, Object>> mapList = DiagnoseClient.queryDiagnoseMsg();
+        mapList.addAll(diagnoseMsgList);
 
         THREAD_LOCAL.set(mapList);
     }

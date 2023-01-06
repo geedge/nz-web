@@ -34,4 +34,13 @@ public class DiagnoseController {
         return R.ok().putData("list", diagnoseMsgList);
     }
 
+    @GetMapping("/agent/diagnose/{id}")
+    public R agentDiagnose(@PathVariable(value = "id", required = false) Integer agentId,
+                           @RequestHeader(required = false, defaultValue = "en") String language) {
+        ValidateUtils.is(agentId).notNull(RCode.AGENT_ID_ISNULL);
+
+        List<Map<Object, Object>> diagnoseMsgList = diagnoseService.agentErrorDiagnosis(agentId, language);
+        return R.ok().putData("list", diagnoseMsgList);
+    }
+
 }
