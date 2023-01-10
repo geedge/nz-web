@@ -3,6 +3,7 @@ package com.nis.modules.agent.controller;
 import cn.hutool.core.net.url.UrlBuilder;
 import cn.hutool.core.net.url.UrlPath;
 import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -15,6 +16,10 @@ import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.service.AgentService;
 import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.sys.service.SysConfigService;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -275,10 +280,30 @@ public class AgentProxyController {
         ValidateUtils.is(agent).notNull(RCode.AGENT_UNAVAILABLE);
 
         String url = this.buildUrl(agent, Constant.CORTEX_INGESTER_RING_PATH);
-        String result = AgentUtil.requestGet(url, agent.getToken(), String.class);
+        String result = AgentUtil.requestAgentProxy(url, agent.getToken(), String.class);
         // 响应结果
         if (Tool.StrUtil.isNotEmpty(result)) {
-            List<Map> map = (List<Map>) JSONPath.read(result, "shards");
+            List<Map> map = Tool.ListUtil.list(false);
+            //解析 html
+            Document parse = Jsoup.parse(result);
+            Elements tbody = parse.getElementsByTag("tbody");
+            for (Element element : tbody) {
+                Elements trs = element.getElementsByTag("tr");
+                for (Element tr : trs) {
+                    Elements childrens = tr.children();
+                    Map<Object, Object> results = Tool.MapUtil.builder()
+                            .put("instanceId", childrens.get(0).getElementsByTag("td").text())
+                            .put("zone", childrens.get(1).getElementsByTag("td").text())
+                            .put("state", childrens.get(2).getElementsByTag("td").text())
+                            .put("address", childrens.get(3).getElementsByTag("td").text())
+                            .put("registeredAt", childrens.get(4).getElementsByTag("td").text())
+                            .put("heartbeat", childrens.get(5).getElementsByTag("td").text())
+                            .put("tokens", childrens.get(6).getElementsByTag("td").text())
+                            .put("ownership", childrens.get(7).getElementsByTag("td").text())
+                            .build();
+                    map.add(results);
+                }
+            }
             return R.ok().putData("list", map);
         } else {
             return R.error(500, "cortex proxy request ingester ring error");
@@ -298,10 +323,31 @@ public class AgentProxyController {
         ValidateUtils.is(agent).notNull(RCode.AGENT_UNAVAILABLE);
 
         String url = this.buildUrl(agent, Constant.CORTEX_STORE_GATEWAY_RING_PATH);
-        String result = AgentUtil.requestGet(url, agent.getToken(), String.class);
+        String result = AgentUtil.requestAgentProxy(url, agent.getToken(), String.class);
         // 响应结果
         if (Tool.StrUtil.isNotEmpty(result)) {
-            List<Map> map = (List<Map>) JSONPath.read(result, "shards");
+            List<Map> map = Tool.ListUtil.list(false);
+            //解析 html
+            Document parse = Jsoup.parse(result);
+            Elements tbody = parse.getElementsByTag("tbody");
+            for (Element element : tbody) {
+                Elements trs = element.getElementsByTag("tr");
+                for (Element tr : trs) {
+                    //获取 td 标签集合
+                    Elements childrens = tr.children();
+                    Map<Object, Object> results = Tool.MapUtil.builder()
+                            .put("instanceId", childrens.get(0).getElementsByTag("td").text())
+                            .put("zone", childrens.get(1).getElementsByTag("td").text())
+                            .put("state", childrens.get(2).getElementsByTag("td").text())
+                            .put("address", childrens.get(3).getElementsByTag("td").text())
+                            .put("registeredAt", childrens.get(4).getElementsByTag("td").text())
+                            .put("heartbeat", childrens.get(5).getElementsByTag("td").text())
+                            .put("tokens", childrens.get(6).getElementsByTag("td").text())
+                            .put("ownership", childrens.get(7).getElementsByTag("td").text())
+                            .build();
+                    map.add(results);
+                }
+            }
             return R.ok().putData("list", map);
         } else {
             return R.error(500, "cortex proxy request store-gateway ring error");

@@ -6,14 +6,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -29,6 +22,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
@@ -122,6 +117,34 @@ public class AgentUtil {
 		HttpHeaders headers = new HttpHeaders();
 		headers.add(HttpHeaders.AUTHORIZATION, token);
 		HttpEntity httpEntity = new HttpEntity(headers);
+		// 发送 请求
+		ResponseEntity<T> exchange = restTemplate.exchange(url, HttpMethod.GET, httpEntity, responseType);
+		return exchange.getBody();
+	}
+
+	/**
+	 * 返回 html
+	 * @param url
+	 * @param token
+	 * @param responseType: String.class
+	 * @param <T>
+	 * @return
+	 */
+	public static <T> T requestAgentProxy(String url, String token, Class<T> responseType) {
+		RestTemplate restTemplate = new RestTemplate();
+		HttpHeaders headers = new HttpHeaders();
+		headers.add(HttpHeaders.AUTHORIZATION, token);
+		HttpEntity httpEntity = new HttpEntity(headers);
+		List<HttpMessageConverter<?>> converters = restTemplate.getMessageConverters();
+		for(HttpMessageConverter<?> converter : converters){
+			if(converter instanceof MappingJackson2HttpMessageConverter){
+				try{
+					((MappingJackson2HttpMessageConverter) converter).setSupportedMediaTypes(Arrays.asList(MediaType.TEXT_HTML));
+				}catch(Exception e){
+					log.error(e);
+				}
+			}
+		}
 		// 发送 请求
 		ResponseEntity<T> exchange = restTemplate.exchange(url, HttpMethod.GET, httpEntity, responseType);
 		return exchange.getBody();
