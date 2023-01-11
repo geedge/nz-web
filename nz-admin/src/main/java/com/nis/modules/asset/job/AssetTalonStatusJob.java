@@ -259,7 +259,7 @@ public class AssetTalonStatusJob extends QuartzJobBean {
             } else if (dcState && clientEnable.equals(1) && enabled.equals(0)) {
                 state = 12;
             }
-            logStateList.add(new MonitorEndpointState(conf.getEndpointId(), conf.getId(), conf.getType(), state, talonStatus.getVersion(), new Date()));
+            logStateList.add(new MonitorEndpointState(conf.getEndpointId(), conf.getId(), conf.getType(), state, talonStatus.getVersion(), StrUtil.EMPTY, new Date()));
         }
         //判断查询数据与缓存中变化的信息
         Map endpointStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);

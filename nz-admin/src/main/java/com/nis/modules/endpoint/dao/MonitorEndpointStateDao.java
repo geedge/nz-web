@@ -11,7 +11,5 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface MonitorEndpointStateDao extends BaseMapper<MonitorEndpointState> {
 
-    void deleteConfStateByType(@Param("type") String type);
-
     void updateBatchEndpointState(@Param("datas")List<MonitorEndpointState> datas,@Param("type")String type);
 }

@@ -13,7 +13,7 @@ import com.nis.modules.alert.job.AlertMessageHistoryPartitionManagementJob;
 import com.nis.modules.asset.job.AssetFeatureJob;
 import com.nis.modules.asset.job.AssetPingStatusJob;
 import com.nis.modules.asset.job.AssetTalonStatusJob;
-import com.nis.modules.endpoint.job.EndpointStateJob;
+import com.nis.modules.endpoint.job.MetricTypeEndpointStatusJob;
 import com.nis.modules.sys.job.CleanJob;
 import com.nis.modules.sys.job.SessionTimeOutJob;
 import com.nis.modules.sys.job.SysComponentJob;
@@ -149,7 +149,7 @@ public class JobConfig {
 
     @Bean
     public JobDetail endpointStateJobDetail() {
-        return JobBuilder.newJob(EndpointStateJob.class).withIdentity(JOB_NAME + endpointStateJobName).storeDurably().build();
+        return JobBuilder.newJob(MetricTypeEndpointStatusJob.class).withIdentity(JOB_NAME + endpointStateJobName).storeDurably().build();
     }
     
     @Bean

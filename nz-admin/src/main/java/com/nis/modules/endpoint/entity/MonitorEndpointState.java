@@ -33,7 +33,11 @@ public class MonitorEndpointState implements Serializable {
 
     private Integer ver;
 
+    /**
+     * 错误信息
+     */
+    private String msg;
+
     @TableField(exist = false)
     private Date time;
-
 }

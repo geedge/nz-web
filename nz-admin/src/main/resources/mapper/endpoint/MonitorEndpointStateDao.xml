@@ -3,10 +3,6 @@
 
 <mapper namespace="com.nis.modules.endpoint.dao.MonitorEndpointStateDao">
 
-    <delete id="deleteConfStateByType">
-        DELETE FROM monitor_endpoint_state WHERE type = #{type};
-    </delete>
-
 	<update id="updateBatchEndpointState">
 		<foreach collection="datas" separator=";" item="data">
             update monitor_endpoint_state set state=#{data.state},
