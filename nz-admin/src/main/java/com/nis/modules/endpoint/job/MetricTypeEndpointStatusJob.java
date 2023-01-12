@@ -224,7 +224,6 @@ public class MetricTypeEndpointStatusJob extends QuartzJobBean {
         // up
         List<MonitorEndpointState> upMetricsEndpointStateList = Tool.ListUtil.list(true);
         activeTargetList.stream()
-                .filter(jsonObject -> ObjectUtil.isNotNull(JSONPath.read(jsonObject.toJSONString(), "labels.endpoint_id")))
                 .filter(jsonObject -> StrUtil.equalsIgnoreCase("up", JSONPath.read(jsonObject.toJSONString(), "health").toString()))
                 .map(jsonObject -> JSONPath.read(jsonObject.toJSONString(), "labels.endpoint_id").toString())
                 .forEach(endpointIdStr -> {
@@ -240,18 +239,16 @@ public class MetricTypeEndpointStatusJob extends QuartzJobBean {
                     // remove up endpoint
                     downMetricsEndpointIdAndConfigMapping.remove(endpointId);
                 });
-        log.info("[getCurrentMetricsEndpointStatusList] [metrics endpoint] [up size: {}] [down size: {}]", upMetricsEndpointStateList.size(), downMetricsEndpointIdAndConfigMapping.size());
 
-        // down
+        // down & suspended
         Map<Integer, String> downMetricsEndpointErrorMsgMapping = activeTargetList.stream()
-                .filter(jsonObject -> ObjectUtil.isNotNull(JSONPath.read(jsonObject.toJSONString(), "labels.endpoint_id")))
                 .filter(jsonObject -> StrUtil.equalsIgnoreCase("down", JSONPath.read(jsonObject.toJSONString(), "health").toString()))
                 .collect(Collectors.toMap(
                         jsonObject -> Integer.valueOf(JSONPath.read(jsonObject.toJSONString(), "labels.endpoint_id").toString()),
                         jsonObject -> JSONPath.read(jsonObject.toJSONString(), "lastError").toString()
                 ));
-
         List<MonitorEndpointState> downMetricsEndpointStateList = Tool.ListUtil.list(true);
+        List<MonitorEndpointState> suspendedMetricsEndpointStateList = Tool.ListUtil.list(true);
         for (MonitorEndpointConfig conf : downMetricsEndpointIdAndConfigMapping.values()) {
             Integer state = 0;
             // 0：关闭 1：开启
@@ -277,12 +274,19 @@ public class MetricTypeEndpointStatusJob extends QuartzJobBean {
 
             // lastError msg in prometheus target api return data
             String lastError = downMetricsEndpointErrorMsgMapping.get(conf.getEndpointId());
-            downMetricsEndpointStateList.add(new MonitorEndpointState(conf.getEndpointId(), conf.getId(), conf.getType(), state, conf.getVersion(), StrUtil.emptyToDefault(lastError, StrUtil.EMPTY), DateTime.now()));
+            MonitorEndpointState endpointState = new MonitorEndpointState(conf.getEndpointId(), conf.getId(), conf.getType(), state, conf.getVersion(), StrUtil.emptyToDefault(lastError, StrUtil.EMPTY), DateTime.now());
+            if (ObjectUtil.equal(0, state)) {
+                downMetricsEndpointStateList.add(endpointState);
+            } else {
+                suspendedMetricsEndpointStateList.add(endpointState);
+            }
         }
 
         List<MonitorEndpointState> updateEndpointStateList = Tool.ListUtil.list(true);
         updateEndpointStateList.addAll(upMetricsEndpointStateList);
         updateEndpointStateList.addAll(downMetricsEndpointStateList);
+        updateEndpointStateList.addAll(suspendedMetricsEndpointStateList);
+        log.info("[getCurrentMetricsEndpointStatusList] [metrics endpoint state size] [total: {}] [up: {}] [down: {}] [suspended: {}]", updateEndpointStateList.size(), upMetricsEndpointStateList.size(), downMetricsEndpointStateList.size(), suspendedMetricsEndpointStateList.size());
         return updateEndpointStateList;
     }
 
@@ -332,7 +336,10 @@ public class MetricTypeEndpointStatusJob extends QuartzJobBean {
             sw.stop();
         }
 
-        allActiveTargetList = allActiveTargetList.stream().filter(Objects::nonNull).collect(Collectors.toList());
+        allActiveTargetList = allActiveTargetList.stream()
+                .filter(Objects::nonNull)
+                .filter(jsonObject -> ObjectUtil.isNotNull(JSONPath.read(jsonObject.toJSONString(), "labels.endpoint_id")))
+                .collect(Collectors.toList());
         log.info("[queryTargetsApiToGetEndpointStatus] [finshed] [Active Target List: {}] [RunTime: {}]", allActiveTargetList.size(), sw.toString());
         return allActiveTargetList;
     }
