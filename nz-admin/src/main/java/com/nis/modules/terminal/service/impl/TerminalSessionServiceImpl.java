@@ -11,10 +11,7 @@ import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.Session;
-import com.jcraft.jsch.SftpATTRS;
-import com.jcraft.jsch.SftpException;
+import com.jcraft.jsch.*;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
@@ -200,11 +197,13 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
                 throw new NZException(RCode.TERMINAL_ASSET_NOT_SUPPORT);
             }
 
-            // 以 asset 为主时，只需校验是否存在 username，其他属性添加 asset 时有校验
+            // 以 asset 为主时，只需校验是否存在 username & authType，其他属性添加 asset 时有校验
             // SSHT & ELNET
-            // username required
+            // username & authType required
             String authUsername = asset.getAuthUsername();
-            ValidateUtils.is(authUsername).notNull(RCode.TERMINAL_CONNECTION_AUTHUSERNAME_ISNULL);
+            Integer authType = asset.getAuthType();
+            ValidateUtils.is(authUsername).notNull(RCode.TERMINAL_CONNECTION_AUTHUSERNAME_ISNULL)
+                    .and(authType).notNull(RCode.ASSET_TERMINAL_ACCOUNT_INFO_NOTFOUND);
         } else {
             // host
             String host = configEntity.getHost();
@@ -334,7 +333,11 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
                 log.info("Open SSH terminal success. uuid: {}", uuid);
             } catch (Exception e) {
                 log.error(e, "Open SSH terminal error. uuid: {}", uuid);
-                resultMap.putAll(R.error(400, e.getMessage()));
+                if (e instanceof JSchException) {
+                    resultMap.putAll(R.error(400, e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+                } else {
+                    resultMap.putAll(R.error(RCode.ERROR.getCode(), RCode.ERROR.getMsg()));
+                }
             }
         }
 
