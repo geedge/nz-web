@@ -1,8 +1,12 @@
 package com.nis.modules.diagnose.service.impl;
 
 import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSONPath;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.Constant.MonitorConfType;
 import com.nis.common.utils.RCode;
+import com.nis.common.utils.Tool;
 import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.service.AgentService;
 import com.nis.modules.asset.entity.AssetAsset;
@@ -15,7 +19,16 @@ import com.nis.modules.diagnose.chain.asset.AgentStateCheckOfPingInterceptor;
 import com.nis.modules.diagnose.chain.asset.AssetNetworkCheckInterceptor;
 import com.nis.modules.diagnose.chain.asset.AssetStateConfCheckInterceptor;
 import com.nis.modules.diagnose.chain.asset.BlackboxConfigCheckInterceptor;
+import com.nis.modules.diagnose.chain.endpoint.logs.AgentStateCheckOfLogsEndpointInterceptor;
+import com.nis.modules.diagnose.chain.endpoint.logs.EndpointLogClientStatusCheckInterceptor;
+import com.nis.modules.diagnose.chain.endpoint.logs.TalonNetworkCheckInterceptor;
+import com.nis.modules.diagnose.chain.endpoint.logs.TalonStatusCheckInterceptor;
+import com.nis.modules.diagnose.chain.endpoint.metrics.*;
 import com.nis.modules.diagnose.service.DiagnoseService;
+import com.nis.modules.endpoint.entity.MonitorEndpoint;
+import com.nis.modules.endpoint.entity.MonitorEndpointConfig;
+import com.nis.modules.endpoint.service.MonitorEndpointConfigService;
+import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.sys.service.SysI18nService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -42,6 +55,12 @@ public class DiagnoseServiceImpl implements DiagnoseService {
 
     @Autowired
     private SysI18nService sysI18nService;
+
+    @Autowired
+    private MonitorEndpointService monitorEndpointService;
+
+    @Autowired
+    private MonitorEndpointConfigService monitorEndpointConfigService;
 
     @Override
     public List<Map<Object, Object>> assetErrorDiagnosis(Integer assetId, String language) {
@@ -83,6 +102,66 @@ public class DiagnoseServiceImpl implements DiagnoseService {
 
             // diagnose
             diagnoseClient.diagnose(agent);
+
+            // Diagnose Msg List
+            List<Map<Object, Object>> diagnoseMsgList = this.queryDiagnoseMsgByLanguage(language);
+            return diagnoseMsgList;
+        } finally {
+            DiagnoseClient.cleanDiagnoseMsg();
+        }
+    }
+
+    @Override
+    public List<Map<Object, Object>> endpointErrorDiagnosis(Integer endpointId, String language) {
+        try {
+            MonitorEndpoint endpoint = monitorEndpointService.getById(endpointId);
+            ValidateUtils.is(endpoint).notNull(RCode.ENDPOINT_NOTFOUND);
+
+            List<MonitorEndpointConfig> configList = monitorEndpointConfigService.list(new LambdaQueryWrapper<MonitorEndpointConfig>().eq(MonitorEndpointConfig::getEndpointId, endpoint.getId()));
+
+            // metrics
+            MonitorEndpointConfig metricsEndpointConfig = configList.stream().filter(endpointConfig -> Tool.StrUtil.equals(endpointConfig.getType(), MonitorConfType.METRICS.getValue())).findFirst().get();
+            endpoint.setEndpointConfig(metricsEndpointConfig);
+
+            String protocol = JSONPath.read(metricsEndpointConfig.getConfig(), "protocol").toString();
+            // diagnose
+            if (Tool.StrUtil.equalsAny(protocol, "http", "https")) {
+                DiagnoseClient metricsEndpointDiagnoseClient = new DiagnoseClient.Builder()
+                        .addInterceptor(new AgentStateCheckOfMetricsEndpointInterceptor())
+                        .addInterceptor(new EndpointMonitorStatusCheckInterceptor())
+                        .addInterceptor(new EndpointScrapeJobConfExistCheckInterceptor())
+                        .addInterceptor(new EndpointNetworkCheckInterceptor())
+                        .addInterceptor(new EndpointConnectableCheckInterceptor())
+                        .addInterceptor(new EndpointTimeOutOfScrapeCheckInterceptor())
+                        .addInterceptor(new EndpointScrapeErrorMsgCheckInterceptor())
+                        .build();
+                metricsEndpointDiagnoseClient.diagnose(endpoint);
+            } else if (Tool.StrUtil.equalsAny(protocol, "snmp")) {
+                DiagnoseClient metricsEndpointDiagnoseClient = new DiagnoseClient.Builder()
+                        .addInterceptor(new AgentStateCheckOfMetricsEndpointInterceptor())
+                        .addInterceptor(new EndpointMonitorStatusCheckInterceptor())
+                        .addInterceptor(new EndpointScrapeJobConfExistCheckInterceptor())
+                        .addInterceptor(new EndpointNetworkCheckInterceptor())
+                        .addInterceptor(new EndpointConnectableCheckInterceptor())
+                        // snmp agent
+                        .addInterceptor(new EndpointSNMPAgentCheckInterceptor())
+                        .addInterceptor(new EndpointTimeOutOfScrapeCheckInterceptor())
+                        .addInterceptor(new EndpointScrapeErrorMsgCheckInterceptor())
+                        .build();
+                metricsEndpointDiagnoseClient.diagnose(endpoint);
+            }
+
+            // logs
+            MonitorEndpointConfig logsEndpointConfig = configList.stream().filter(endpointConfig -> Tool.StrUtil.equals(endpointConfig.getType(), MonitorConfType.LOGS.getValue())).findFirst().get();
+            endpoint.setEndpointConfig(logsEndpointConfig);
+
+            DiagnoseClient logsEndpointDiagnoseClient = new DiagnoseClient.Builder()
+                    .addInterceptor(new AgentStateCheckOfLogsEndpointInterceptor())
+                    .addInterceptor(new EndpointLogClientStatusCheckInterceptor())
+                    .addInterceptor(new TalonNetworkCheckInterceptor())
+                    .addInterceptor(new TalonStatusCheckInterceptor())
+                    .build();
+            logsEndpointDiagnoseClient.diagnose(endpoint);
 
             // Diagnose Msg List
             List<Map<Object, Object>> diagnoseMsgList = this.queryDiagnoseMsgByLanguage(language);

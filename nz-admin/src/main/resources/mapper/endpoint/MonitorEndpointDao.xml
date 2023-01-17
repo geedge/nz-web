@@ -490,29 +490,4 @@
 			AND ( mes.ver != #{version} || mes.state = 0 )
     </select>
 
-
-    <select id="endpointDetailList" resultMap="endpointDetail">
-        SELECT
-            e.*,
-
-            ass.id AS ass_id,
-            ass.sn AS ass_sn,
-            ass.NAME AS ass_name,
-            ass.manage_ip AS ass_manage_ip,
-            ass.dc_id AS ass_dc_id,
-
-            state.id as ass_state_id,
-            state.name as ass_state_name,
-            state.monitor as ass_state_monitor,
-
-            dc.id AS dc_id,
-            dc.NAME AS dc_name,
-            dc.state as dc_state
-        FROM
-            monitor_endpoint e
-            LEFT JOIN asset_asset ass ON e.asset_id = ass.id
-            LEFT JOIN asset_state_conf state ON ass.state_id = state.id
-            LEFT JOIN dc dc ON ass.dc_id = dc.id
-    </select>
-
 </mapper>

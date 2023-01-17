@@ -31,9 +31,6 @@ public interface MonitorEndpointService extends IService<MonitorEndpoint> {
 
     List<Integer> getSuspendedEndpointIdList(Integer assetId);
 
-    // endpoint 列表，包含 asset dc 数据
-    List<MonitorEndpoint> endpointDetailList();
-
     Integer saveEndpoint(MonitorEndpoint endpoint);
 
     Integer updateEndpoint(MonitorEndpoint endpoint);

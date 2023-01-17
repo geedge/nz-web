@@ -43,4 +43,13 @@ public class DiagnoseController {
         return R.ok().putData("list", diagnoseMsgList);
     }
 
+    @GetMapping("/monitor/endpoint/diagnose/{id}")
+    public R endpointDiagnose(@PathVariable(value = "id", required = false) Integer endpointId,
+                              @RequestHeader(required = false, defaultValue = "en") String language) {
+        ValidateUtils.is(endpointId).notNull(RCode.ENDPOINT_ID_ISNULL);
+
+        List<Map<Object, Object>> diagnoseMsgList = diagnoseService.endpointErrorDiagnosis(endpointId, language);
+        return R.ok().putData("list", diagnoseMsgList);
+    }
+
 }

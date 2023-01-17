@@ -29,5 +29,14 @@ public interface DiagnoseService {
      * @return
      */
     List<Map<Object, Object>> agentErrorDiagnosis(Integer agentId, String language);
+
+    /**
+     * endpoint Diagnosis
+     *
+     * @param endpointId
+     * @param language
+     * @return
+     */
+    List<Map<Object, Object>> endpointErrorDiagnosis(Integer endpointId, String language);
 }
 

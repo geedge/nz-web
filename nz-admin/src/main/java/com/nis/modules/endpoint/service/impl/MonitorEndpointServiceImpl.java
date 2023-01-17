@@ -1285,11 +1285,6 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         visualChartService.saveRelPanelAndChart(DashboardConstant.Type.ENDPOINT.getValue(), endpoint.getId(), templateId, endpoint.getSeq(), chartTemplate);
     }
 
-    @Override
-    public List<MonitorEndpoint> endpointDetailList() {
-        return this.getBaseMapper().endpointDetailList();
-    }
-
     private void validateEndpointInfo(MonitorEndpoint endpoint) {
         AssetAsset assetById = assetService.getById(endpoint.getAssetId());
         ValidateUtils.is(assetById).notNull(RCode.ASSET_NOT_EXIST);

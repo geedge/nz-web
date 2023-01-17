@@ -23,8 +23,6 @@ public interface MonitorEndpointDao extends BaseMapper<MonitorEndpoint> {
      */
     List<MonitorEndpoint> getEnableMetricsEndpointInfoListForAgent();
 
-    List<MonitorEndpoint> endpointDetailList();
-
     /**
      * agent logs 组织配置文件所需要的 endpoint 信息,包含 asset module project dc 等
      * 目前获取的是启用状态的 endpoint
