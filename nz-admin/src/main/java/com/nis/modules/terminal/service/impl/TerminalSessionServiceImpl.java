@@ -619,6 +619,41 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
     }
 
     @Override
+    public Map<Object, Object> duplicateSession(String uuid, Integer width, Integer height, Integer cols, Integer rows) {
+        log.info("[duplicateSession] [begin] [uuid: {}]", uuid);
+        Map<Object, Object> connObjMap = TerminalSession.TERMINAL_CONNECTED_CACHE.get(uuid);
+        log.info("[duplicateSession] [source sesion] [uuid: {}] [exist: {}]", uuid, Tool.MapUtil.isNotEmpty(connObjMap));
+
+        if (Tool.MapUtil.isEmpty(connObjMap)) {
+            log.warn("[duplicateSession] [source sesion does not exist] [uuid: {}]", uuid);
+            throw new NZException(RCode.TERMINAL_SESSION_NOT_FOUND);
+        }
+
+        String duplicateSessionUUID = StrUtil.uuid();
+        log.info("[duplicateSession] [source session exists. duplicate session info] [source uuid: {}] [duplicate uuid: {}]", uuid, duplicateSessionUUID);
+
+        // duplicate session
+        TerminalSession.TERMINAL_CONNECTED_CACHE.put(duplicateSessionUUID, connObjMap);
+
+        // connected last active time
+        TerminalSession.TERMINAL_CONNECTED_LAST_ACTIVE_MAP.put(uuid, Tool.DateUtil.currentSeconds());
+
+        // terminal Connection Info
+        AssetAsset terminalConnInfo = (AssetAsset) connObjMap.get(TerminalSession.CONNECTION_ASSET_KEY);
+
+        // return duplicate session map
+        Map<Object, Object> duplicateSessionMap = Tool.MapUtil.builder()
+                .put("uuid", duplicateSessionUUID)
+                .put("host", terminalConnInfo.getManageIp())
+                .put("port", terminalConnInfo.getAuthProtocolPort())
+                .put("authProtocol", terminalConnInfo.getAuthProtocol())
+                .put("authUsername", terminalConnInfo.getAuthUsername())
+                .map();
+        log.info("[duplicateSession] [duplicate session finshed] [source uuid: {}] [duplicate uuid: {}]", uuid, duplicateSessionUUID);
+        return duplicateSessionMap;
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public void downloadOfSftp(String uuid, String path, HttpServletResponse response) {
         Sftp sftp = this.getSftpChannel(uuid);

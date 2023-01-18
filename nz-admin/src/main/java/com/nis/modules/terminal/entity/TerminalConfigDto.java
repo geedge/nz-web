@@ -6,6 +6,11 @@ import lombok.Data;
 public class TerminalConfigDto {
 
     /**
+     * session id
+     */
+    private String uuid;
+
+    /**
      * 窗口宽度
      */
     private Integer height;

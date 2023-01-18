@@ -40,4 +40,5 @@ public interface TerminalSessionService extends IService<TerminalSessionEntity> 
 
     void renameFileOfSftp(String uuid, String oldPath, String newPath);
 
+    Map<Object, Object> duplicateSession(String uuid, Integer width, Integer height, Integer cols, Integer rows);
 }

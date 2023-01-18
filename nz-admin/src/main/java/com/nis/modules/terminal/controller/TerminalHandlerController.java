@@ -120,6 +120,22 @@ public class TerminalHandlerController {
         return map;
     }
 
+    @PostMapping("/login/duplicate")
+    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.TERMINAL)
+    public R loginDuplicate(@RequestBody TerminalConfigDto terminalConfigDto) {
+        ValidateUtils.is(terminalConfigDto.getUuid()).notNull(RCode.TERMINAL_UUID_ISNULL);
+
+        String uuid = terminalConfigDto.getUuid();
+        Integer width = terminalConfigDto.getWidth();
+        Integer height = terminalConfigDto.getHeight();
+        Integer cols = terminalConfigDto.getCols();
+        Integer rows = terminalConfigDto.getRows();
+
+        return R.ok(
+                terminalSessionService.duplicateSession(uuid, width, height, cols, rows)
+        );
+    }
+
     @PostMapping("/sftp/ls")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.TERMINAL)
     public R ls(@RequestBody Map<String, String> param) {
