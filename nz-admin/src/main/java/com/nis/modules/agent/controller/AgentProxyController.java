@@ -83,7 +83,7 @@ public class AgentProxyController {
         if (Tool.StrUtil.isNotEmpty(result)) {
             R resultObj = JSONObject.parseObject(result, R.class);
             String config = JSONPath.read(resultObj.get("data").toString(),"yaml").toString();
-            return R.ok().putData("conent",config);
+            return R.ok().putData("content",config);
         } else {
             return R.error(500, "prometheus proxy request config error");
         }
@@ -214,7 +214,7 @@ public class AgentProxyController {
         String result = AgentUtil.requestGet(agent, Constant.CORTEX_CONFIG_PATH, queryString, String.class);
         // 响应结果
         if (Tool.ObjectUtil.isNotEmpty(result)) {
-            return R.ok().putData("conent", result);
+            return R.ok().putData("content", result);
         } else {
             return R.error(500, "cortex proxy request config error");
         }
@@ -394,7 +394,7 @@ public class AgentProxyController {
         String result = AgentUtil.requestGet(agent, Constant.LOKI_CONFIG_PATH, String.format("mode=%s" ,mode), String.class);
         // 响应结果
         if (Tool.ObjectUtil.isNotEmpty(result)) {
-            return R.ok().putData("conent", result);
+            return R.ok().putData("content", result);
         } else {
             return R.error(500, "loki proxy request config error");
         }
