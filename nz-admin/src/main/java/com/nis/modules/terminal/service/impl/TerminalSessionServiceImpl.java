@@ -435,7 +435,7 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
 
                 String fullName = StrUtil.EMPTY;
                 if (isPathDir) {
-                    fullName = FileUtil.file(path, lsEntry.getFilename()).toString();
+                    fullName = new File(path, lsEntry.getFilename()).toString();
                 } else {
                     fullName = path;
                 }
