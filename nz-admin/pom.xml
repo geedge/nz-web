@@ -146,6 +146,7 @@
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
+			<version>${commons-lang3.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
@@ -343,6 +344,21 @@
 			<artifactId>jsoup</artifactId>
 			<version>1.14.1</version>
 		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-pool2 -->
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-pool2</artifactId>
+			<version>2.11.1</version>
+		</dependency>
+
+		<!--mysql-binlog-connector-java-->
+		<dependency>
+			<groupId>com.zendesk</groupId>
+			<artifactId>mysql-binlog-connector-java</artifactId>
+			<version>0.25.0</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>

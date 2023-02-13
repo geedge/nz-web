@@ -14,6 +14,7 @@ import com.nis.modules.panel.entity.VisualPanel;
 import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.panel.utils.DashboardConstant;
 import com.nis.modules.report.job.ReportJobManager;
+import com.nis.modules.sys.backend.DbSyncRedisThread;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.job.SysBackJobManager;
 import com.nis.modules.sys.service.LicenseService;
@@ -73,6 +74,9 @@ public class SetupRunner implements CommandLineRunner{
 
 	@Autowired
 	private VsysTaskConfigThread vsysTaskConfigThread;
+
+	@Autowired
+	private DbSyncRedisThread dbSyncRedisThread;
 	
     
     
@@ -114,6 +118,10 @@ public class SetupRunner implements CommandLineRunner{
 		// 启动VSYS 配置下发线程
 		Tool.ThreadUtil.execute(vsysTaskConfigThread);
 		log.info("启动 {} 成功", "VsysTaskConfigThread");
+
+		// 启动 Resis & Mysql 数据同步线程
+		Tool.ThreadUtil.execute(dbSyncRedisThread);
+		log.info("启动 {} 成功", "DbSyncRedisThread");
 
 		if (inited == 2) {
 			log.info(" inited = {}	,skip init setup", inited);

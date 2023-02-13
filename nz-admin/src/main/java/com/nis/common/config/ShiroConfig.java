@@ -8,6 +8,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
 
+import com.nis.modules.sys.shiro.MyRedisManager;
 import org.apache.catalina.connector.Connector;
 import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.session.mgt.SessionManager;
@@ -218,8 +219,8 @@ public class ShiroConfig {
 	 *
 	 * @return
 	 */
-	public RedisManager redisManager() {
-		RedisManager redisManager = new RedisManager();
+	public MyRedisManager redisManager() {
+		MyRedisManager redisManager = new MyRedisManager();
 		redisManager.setHost(config.getRedisHost() + ":" + config.getRedisPort());
 		redisManager.setTimeout(Tool.NumberUtil.parseInt(Tool.StrUtil.toString(config.getRedisTimeout())));
 		redisManager.setDatabase(config.getRedisDatabase());

@@ -1,9 +1,8 @@
 package com.nis.common.config;
 
-import java.net.UnknownHostException;
-import java.time.Duration;
-
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
+import cn.hutool.log.Log;
+import com.nis.common.utils.Tool;
+import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,12 +15,11 @@ import org.springframework.data.redis.connection.lettuce.LettucePoolingClientCon
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
-
-import com.nis.common.utils.Tool;
-
-import cn.hutool.log.Log;
-import lombok.Data;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import redis.clients.jedis.JedisPoolConfig;
+
+import java.net.UnknownHostException;
+import java.time.Duration;
 
 /**
  * redis 初始化配置
@@ -72,19 +70,21 @@ public class RedisConfig {
 		if(Tool.StrUtil.isNotBlank(this.getRedisPin())) {
 			configuration.setPassword(this.getRedisPin());
 		}
-        GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig();
-        poolConfig.setMinIdle(this.getMinIdle());
-        poolConfig.setMaxIdle(this.getMaxIdle());
-        poolConfig.setMaxTotal(this.getMaxActive());
-        poolConfig.setMaxWaitMillis(this.getMaxWait());
+		JedisPoolConfig poolConfig = new JedisPoolConfig();
+		poolConfig.setMinIdle(this.getMinIdle());
+		poolConfig.setMaxIdle(this.getMaxIdle());
+		poolConfig.setMaxTotal(this.getMaxActive());
+		poolConfig.setMaxWait(Duration.ofMillis(this.getMaxWait()));
 
-	    LettucePoolingClientConfiguration lettucePoolingClientConfiguration = LettucePoolingClientConfiguration.builder()
-	            .commandTimeout(Duration.ofMillis(this.getRedisTimeout()))
-	            .shutdownTimeout(Duration.ZERO)
-	            .poolConfig(poolConfig)
-	            .build();
-		 
-        RedisConnectionFactory factory = new LettuceConnectionFactory(configuration, lettucePoolingClientConfiguration);
+		LettucePoolingClientConfiguration lettucePoolingClientConfiguration = LettucePoolingClientConfiguration.builder()
+				.commandTimeout(Duration.ofMillis(this.getRedisTimeout()))
+				.shutdownTimeout(Duration.ZERO)
+				.poolConfig(poolConfig)
+				.build();
+
+		RedisConnectionFactory factory = new LettuceConnectionFactory(configuration, lettucePoolingClientConfiguration);
+		// setValidateConnection
+		//((LettuceConnectionFactory) factory).setValidateConnection(true);
 		return factory;
 	}
 	
