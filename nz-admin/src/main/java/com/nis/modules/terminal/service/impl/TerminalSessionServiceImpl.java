@@ -622,6 +622,13 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
         try {
             channelSftp = sftp.getClient();
 
+            boolean exist = sftp.exist(newPath);
+            log.info("[renameFileOfSftp] [rename newpath exist] [newPath: {}] [exist: {}]", newPath, exist);
+            if (exist) {
+                log.warn("[renameFileOfSftp] [The specified file name already exists, please enter another name] [path: {}]", newPath);
+                throw new NZException(RCode.TERMINAL_MKDIR_DIR_ALREADY_EXISTS);
+            }
+
             // rename
             channelSftp.rename(oldPath, newPath);
 
