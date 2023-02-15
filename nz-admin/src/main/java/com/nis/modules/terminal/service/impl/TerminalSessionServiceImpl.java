@@ -425,8 +425,16 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
         Sftp sftp = this.getSftpChannel(uuid);
         ChannelSftp channelSftp = null;
         try {
-        	channelSftp = sftp.getClient();
             boolean isPathDir = sftp.cd(path);
+            log.info("[lsOfSftp] [is the path a directory] [path: {}] [isDir: {}]", path, isPathDir);
+            if (!isPathDir) {
+                log.warn("[lsOfSftp] [cannot display remote folder] [path: {}]", path);
+                throw new NZException(RCode.TERMINAL_LS_FOLDER_ERROR);
+            }
+
+            log.info("[lsOfSftp] [ls directory] [path: {}]", path);
+
+            channelSftp = sftp.getClient();
             List<ChannelSftp.LsEntry> lsEntries = sftp.lsEntries(path);
 
             List<Object> list = Tool.ListUtil.list(true);
@@ -501,9 +509,19 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
     public void mkdirOfSftp(String uuid, String path) {
         Sftp sftp = this.getSftpChannel(uuid);
         try {
-            sftp.mkDirs(path);
+            boolean exist = sftp.exist(path);
+            log.info("[mkdirOfSftp] [the path exist] [path: {}] [value: {}]", path, exist);
+            if (exist) {
+                log.warn("[mkdirOfSftp] [The specified file name already exists, please enter another name] [path: {}]", path);
+                throw new NZException(RCode.TERMINAL_MKDIR_DIR_ALREADY_EXISTS);
+            } else {
+                log.info("[mkdirOfSftp] [create path] [path: {}]", path);
 
-            sftpLogService.saveSftpLog(uuid, path, TerminalConstant.SftpOperType.MKDIR.getValue());
+                // mkdir
+                sftp.mkDirs(path);
+                // save log
+                sftpLogService.saveSftpLog(uuid, path, TerminalConstant.SftpOperType.MKDIR.getValue());
+            }
         } finally {
             // disconnect
             sftp.getClient().disconnect();
@@ -603,6 +621,13 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
         ChannelSftp channelSftp = null;
         try {
             channelSftp = sftp.getClient();
+
+            boolean exist = sftp.exist(newPath);
+            log.info("[renameFileOfSftp] [rename newpath exist] [newPath: {}] [exist: {}]", newPath, exist);
+            if (exist && !StrUtil.equals(oldPath, newPath)) {
+                log.warn("[renameFileOfSftp] [The specified file name already exists, please enter another name] [path: {}]", newPath);
+                throw new NZException(RCode.TERMINAL_MKDIR_DIR_ALREADY_EXISTS);
+            }
 
             // rename
             channelSftp.rename(oldPath, newPath);
