@@ -501,9 +501,19 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
     public void mkdirOfSftp(String uuid, String path) {
         Sftp sftp = this.getSftpChannel(uuid);
         try {
-            sftp.mkDirs(path);
+            boolean exist = sftp.exist(path);
+            log.info("[mkdirOfSftp] [the path exist] [path: {}] [value: {}]", path, exist);
+            if (exist) {
+                log.warn("[mkdirOfSftp] [The specified file name already exists, please enter another name] [path: {}]", path);
+                throw new NZException(RCode.TERMINAL_MKDIR_DIR_ALREADY_EXISTS);
+            } else {
+                log.info("[mkdirOfSftp] [create path] [path: {}]", path);
 
-            sftpLogService.saveSftpLog(uuid, path, TerminalConstant.SftpOperType.MKDIR.getValue());
+                // mkdir
+                sftp.mkDirs(path);
+                // save log
+                sftpLogService.saveSftpLog(uuid, path, TerminalConstant.SftpOperType.MKDIR.getValue());
+            }
         } finally {
             // disconnect
             sftp.getClient().disconnect();
