@@ -624,7 +624,7 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
 
             boolean exist = sftp.exist(newPath);
             log.info("[renameFileOfSftp] [rename newpath exist] [newPath: {}] [exist: {}]", newPath, exist);
-            if (exist) {
+            if (exist && !StrUtil.equals(oldPath, newPath)) {
                 log.warn("[renameFileOfSftp] [The specified file name already exists, please enter another name] [path: {}]", newPath);
                 throw new NZException(RCode.TERMINAL_MKDIR_DIR_ALREADY_EXISTS);
             }
