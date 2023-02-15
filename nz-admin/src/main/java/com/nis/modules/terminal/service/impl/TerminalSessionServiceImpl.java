@@ -425,8 +425,16 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
         Sftp sftp = this.getSftpChannel(uuid);
         ChannelSftp channelSftp = null;
         try {
-        	channelSftp = sftp.getClient();
             boolean isPathDir = sftp.cd(path);
+            log.info("[lsOfSftp] [is the path a directory] [path: {}] [isDir: {}]", path, isPathDir);
+            if (!isPathDir) {
+                log.warn("[lsOfSftp] [cannot display remote folder] [path: {}]", path);
+                throw new NZException(RCode.TERMINAL_LS_FOLDER_ERROR);
+            }
+
+            log.info("[lsOfSftp] [ls directory] [path: {}]", path);
+
+            channelSftp = sftp.getClient();
             List<ChannelSftp.LsEntry> lsEntries = sftp.lsEntries(path);
 
             List<Object> list = Tool.ListUtil.list(true);

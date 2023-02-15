@@ -830,6 +830,7 @@ public enum RCode {
     TERMINAL_UPLOAD_PROGRESS_NOT_FOUND(616020, "Terminal upload progress information not found, expired or does not exist."),
     TERMINAL_NEW_PATH_ISNULL(611021, "File new path cannot be empty"),
     TERMINAL_MKDIR_DIR_ALREADY_EXISTS(612022, "The specified file name already exists, please enter another name."),
+    TERMINAL_LS_FOLDER_ERROR(616023, "Cannot display remote folder"),
 
     /**
      * LINK
