@@ -657,14 +657,57 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
         String duplicateSessionUUID = StrUtil.uuid();
         log.info("[duplicateSession] [source session exists. duplicate session info] [source uuid: {}] [duplicate uuid: {}]", uuid, duplicateSessionUUID);
 
-        // duplicate session
-        TerminalSession.TERMINAL_CONNECTED_CACHE.put(duplicateSessionUUID, connObjMap);
-
-        // connected last active time
-        TerminalSession.TERMINAL_CONNECTED_LAST_ACTIVE_MAP.put(uuid, Tool.DateUtil.currentSeconds());
-
         // terminal Connection Info
         AssetAsset terminalConnInfo = (AssetAsset) connObjMap.get(TerminalSession.CONNECTION_ASSET_KEY);
+        log.info("[duplicateSession] [duplicate session source information] [asset: {}]", JSONUtil.toJsonStr(terminalConnInfo));
+
+        // SSH
+        if (TerminalConstant.ProtocolType.SSH.getValue().equals(terminalConnInfo.getAuthProtocol())) {
+            try {
+                log.info("[duplicateSession] [reopen SSH connection begin.] [duplicate uuid: {}]", duplicateSessionUUID);
+                Session session = SshUtil.getSshConnection(terminalConnInfo);
+                TerminalSession.TERMINAL_CONNECTED_CACHE.put(duplicateSessionUUID,
+                        Tool.MapUtil.builder()
+                                .put(TerminalSession.CONNECTION_ASSET_KEY, terminalConnInfo)
+                                .put(TerminalSession.CONNECTION_CONNECTION_ENTITY_KEY, session)
+                                .map());
+                TerminalSession.TERMINAL_CONNECTED_LAST_ACTIVE_MAP.put(duplicateSessionUUID, Tool.DateUtil.currentSeconds());
+                log.info("[duplicateSession] [reopen SSH connection success.] [duplicate uuid: {}]", duplicateSessionUUID);
+            } catch (Exception e) {
+                log.error(e, "[duplicateSession] [reopen SSH connection error.] [duplicate uuid: {}]", duplicateSessionUUID);
+                throw new NZException(RCode.TERMINAL_DUPLICATE_SESSION_FAILED);
+            }
+        }
+
+        // TELNET
+        if (TerminalConstant.ProtocolType.TELNET.getValue().equals(terminalConnInfo.getAuthProtocol())) {
+            try {
+                log.info("[duplicateSession] [reopen TELNET connection begin.] [duplicate uuid: {}]", duplicateSessionUUID);
+                TelnetUtil telnetUtil = new TelnetUtil();
+                telnetUtil.connect(terminalConnInfo.getManageIp(), terminalConnInfo.getAuthProtocolPort());
+                List<SysConfigEntity> configList = sysConfService.list(new LambdaQueryWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey, "terminal_telnet_user_tip", "terminal_telnet_pin_tip"));
+                Map<String, String> systemTipConfigMap = configList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
+
+                String authUserTip = TelnetUtil.getTelenetLoginTip(terminalConnInfo.getAuthUserTip(), systemTipConfigMap, "terminal_telnet_user_tip");
+                String authPinTip = TelnetUtil.getTelenetLoginTip(terminalConnInfo.getAuthPinTip(), systemTipConfigMap, "terminal_telnet_pin_tip");
+                boolean isLogin = telnetUtil.login(terminalConnInfo.getAuthUsername(), StringUtils.str(Base64.getDecoder().decode(terminalConnInfo.getAuthPin())), authUserTip, authPinTip);
+                if (isLogin) {
+                    TerminalSession.TERMINAL_CONNECTED_CACHE.put(duplicateSessionUUID,
+                            Tool.MapUtil.builder()
+                                    .put(TerminalSession.CONNECTION_ASSET_KEY, terminalConnInfo)
+                                    .put(TerminalSession.CONNECTION_CONNECTION_ENTITY_KEY, telnetUtil.getTelnetClient())
+                                    .map());
+                    TerminalSession.TERMINAL_CONNECTED_LAST_ACTIVE_MAP.put(duplicateSessionUUID, Tool.DateUtil.currentSeconds());
+                    log.info("[duplicateSession] [reopen TELNET connection success.] [duplicate uuid: {}]", duplicateSessionUUID);
+                } else {
+                    log.warn("[duplicateSession] [reopen TELNET connection error.] [duplicate uuid: {}]", duplicateSessionUUID);
+                    throw new NZException(RCode.TERMINAL_DUPLICATE_SESSION_FAILED);
+                }
+            } catch (Exception e) {
+                log.error(e, "[duplicateSession] [reopen TELNET connection error.] [duplicate uuid: {}]", duplicateSessionUUID);
+                throw new NZException(RCode.TERMINAL_DUPLICATE_SESSION_FAILED);
+            }
+        }
 
         // return duplicate session map
         Map<Object, Object> duplicateSessionMap = Tool.MapUtil.builder()
