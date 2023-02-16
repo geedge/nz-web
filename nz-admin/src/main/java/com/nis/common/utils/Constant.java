@@ -293,6 +293,8 @@ public class Constant {
 		CHART_SINGLESTAT_STATISTICS.add("last");
 		CHART_SINGLESTAT_STATISTICS.add("range");
 		CHART_SINGLESTAT_STATISTICS.add("different");
+		CHART_SINGLESTAT_STATISTICS.add("first*");
+		CHART_SINGLESTAT_STATISTICS.add("last*");
 
 		RULE_OPERATORS = Arrays.asList(new String[] { "==", "!=", ">", "<", ">=", "<=" });
 

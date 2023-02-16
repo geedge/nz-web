@@ -79,7 +79,7 @@ public enum RCode {
     CHART_PARAM_FORMAT(123038,"Chart param must be JSON format"),
     CHART_PARAMURL_FORMAT(123039,"Chart param url value must be URL format"),
     CHART_PARAMSINGLESTAT_ISNULL(121040,"Chart param statistics not found when type is singleStat"),
-    CHART_PARAMSINGLESTAT_INVALIDE(124041,"Chart param statistics must be min, max, average, total, first, last, range  or different"),
+    CHART_PARAMSINGLESTAT_INVALIDE(124041,"Chart param statistics must be min, max, average, total, first, first*, last, last*, range  or different"),
     CHART_PANEL_ISNULL(126042,"Panel is not exsits"),
     CHART_NOTEXSITS(126043,"Chart is not exsits"),
     CHART_NAME_TOO_LONG(121044,"Chart name too long than 64"),
