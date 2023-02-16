@@ -296,40 +296,54 @@ public class TerminalHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         try {
-            log.info("Connection Closed. process terminal related information begin...");
+            log.info("[afterConnectionClosed] [WebSocket connection closed] [websocket uri: {}]", session.getUri());
             super.afterConnectionClosed(session, status);
+
+            TerminalClient terminalClient = TerminalSession.TERMINAL_SESSION.get(session);
+            log.info("[afterConnectionClosed] [Close terminal client connection] [clientId: {}]", ObjectUtil.isNull(terminalClient) ? null : terminalClient.getClientId());
+            if (ObjectUtil.isNull(terminalClient)) {
+                log.warn("[afterConnectionClosed] [failed to get terminal client through websocket connection.] [websocket uri: {}]", session.getUri());
+                return;
+            }
+
+            // close terminal
             this.closeTerminal(session);
 
+            // client id
+            String clientId = terminalClient.getClientId();
+
             // client 关闭后，处理 session 和 record 信息
-            TerminalSessionEntity sessionEntity = (TerminalSessionEntity) TerminalSession.getTerminalAttributeInfo(uuid).get("terminalSessionEntity");
+            TerminalSessionEntity sessionEntity = (TerminalSessionEntity) TerminalSession.getTerminalAttributeInfo(clientId).get("terminalSessionEntity");
             if (Tool.ObjectUtil.isNotNull(sessionEntity)) {
+                log.info("[afterConnectionClosed] [udpate session status] [session id: {}] [status: {}]", sessionEntity.getUuid(), sessionEntity.getStatus());
                 // 正常连接状态 关闭窗口，将状态改为 已结束，其他不做处理
                 if (TerminalConstant.SessionStatus.CONNECTING.getValue() == sessionEntity.getStatus()) {
                     sessionEntity.setStatus(TerminalConstant.SessionStatus.OVER.getValue());
                 }
                 sessionEntity.setEndTime(new Date());
-
-                log.info("Connection Closed, udpate session status is over. session id: {}, entity info: {}", uuid, JSONUtil.toJsonStr(sessionEntity));
                 terminalSessionService.saveOrUpdate(sessionEntity);
 
                 // save Record Content After Client Closed
-                TerminalHandler.saveRecordContentAfterClientClosed(uuid);
+                TerminalHandler.saveRecordContentAfterClientClosed(clientId);
+            } else {
+                log.warn("[afterConnectionClosed] [not found TerminalSessionEntity through client id.] [clientId: {}]", clientId);
             }
 
             // remove Terminal Attribute Info
-            TerminalSession.removeTerminalAttributeInfo(uuid);
+            TerminalSession.removeTerminalAttributeInfo(clientId);
 
             // monitor terminal session
-            List<WebSocketSession> monitorWebSocketSessions = TerminalSession.TERMINAL_MONITORS_MAPPING.get(uuid);
+            List<WebSocketSession> monitorWebSocketSessions = TerminalSession.TERMINAL_MONITORS_MAPPING.get(clientId);
             if (Tool.CollUtil.isNotEmpty(monitorWebSocketSessions)) {
+                log.info("[afterConnectionClosed] [close monitor windows] [size: {}]", monitorWebSocketSessions.size());
                 for (WebSocketSession socketSession : monitorWebSocketSessions) {
                     socketSession.sendMessage(new TextMessage("\u001B[01;31m\u001B[KConnection closed \u001B[m\u001B[K"));
                 }
-                TerminalSession.TERMINAL_MONITORS_MAPPING.remove(uuid);
+                TerminalSession.TERMINAL_MONITORS_MAPPING.remove(clientId);
             }
-            log.info("Connection Closed finished.");
+            log.info("[afterConnectionClosed] [close resource finshed.] [clientId: {}]", clientId);
         } catch (Exception e) {
-            log.error(e, "Connection Closed error. session: {}, status: {}", session, status.toString());
+            log.error(e, "[afterConnectionClosed] [error] [session: {}] [status: {}]", JSONUtil.toJsonStr(session), JSONUtil.toJsonStr(status));
             throw e;
         }
     }
