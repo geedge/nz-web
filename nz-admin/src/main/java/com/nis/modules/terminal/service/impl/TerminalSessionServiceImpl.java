@@ -24,6 +24,7 @@ import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import com.nis.modules.terminal.backend.TerminalClient;
 import com.nis.modules.terminal.backend.TerminalHandler;
 import com.nis.modules.terminal.backend.TerminalSession;
 import com.nis.modules.terminal.dao.TerminalSessionDao;
@@ -140,38 +141,65 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
 
     @Override
     public void killSession(String uuid) {
+        log.info("[killSession] [begin] [uuid: {}]", uuid);
         WebSocketSession session = TerminalSession.findSession(uuid);
-        if (session == null) {
-            return;
+
+        // 未找到 websocket session 信息，连接信息已不在，更新 db 中 terminal session 状态
+        if (ObjectUtil.isNull(session)) {
+            log.warn("[killSession] [failed to get websocket connection through terminal session] [uuid: {}]", uuid);
+
+            TerminalSessionEntity terminalSessionEntity = this.getOne(new LambdaQueryWrapper<TerminalSessionEntity>().eq(TerminalSessionEntity::getUuid, uuid));
+            log.info("[killSession] [get the terminal session entity in the db] [uuid: {}] [status: {}]", uuid, ObjectUtil.isNull(terminalSessionEntity) ? null : terminalSessionEntity.getStatus());
+            if (ObjectUtil.isNull(terminalSessionEntity)) {
+                log.error("[killSession] [failed to get terminal session information] [uuid: {}]", uuid);
+                throw new NZException(RCode.TERMINAL_SESSION_NOT_FOUND);
+            }
+
+            log.info("[killSession] [update terminal session state] [uuid: {}]", uuid);
+            terminalSessionEntity.setEndTime(new Date());
+            terminalSessionEntity.setKillUserId(ShiroUtils.getUserId());
+            terminalSessionEntity.setStatus(TerminalConstant.SessionStatus.FORCE_QUIT.getValue());
+            // update status
+            this.saveOrUpdate(terminalSessionEntity);
+
+            // 根据 websocket 找到 terminal session，更新状态，设置结束时间
+        } else {
+            try {
+                TerminalClient terminalClient = TerminalSession.TERMINAL_SESSION.get(session);
+                log.info("[killSession] [get connected session] [terminal session: {}]", JSONUtil.toJsonStr(terminalClient));
+                String clientId = terminalClient.getClientId();
+                TerminalSessionEntity sessionEntity = this.getOne(new LambdaQueryWrapper<TerminalSessionEntity>().eq(TerminalSessionEntity::getUuid, clientId));
+
+                // TerminalSessionEntity sessionEntity = (TerminalSessionEntity) TerminalSession.getTerminalAttributeInfo(uuid).get("terminalSessionEntity");
+                if (sessionEntity.getStartTime() == null) {
+                    sessionEntity.setStartTime(new Date());
+                }
+
+                log.info("[killSession] [update terminal session state] [uuid: {}]", uuid);
+                sessionEntity.setEndTime(new Date());
+                sessionEntity.setKillUserId(ShiroUtils.getUserId());
+                sessionEntity.setStatus(TerminalConstant.SessionStatus.FORCE_QUIT.getValue());
+                // update status
+                this.saveOrUpdate(sessionEntity);
+
+                try {
+                    TerminalSession.remove(session);
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("\u001B[01;31m\u001B[K Administrator disconnected \u001B[m\u001B[K  \r\n");
+                    sb.append("$: ");
+                    session.sendMessage(new TextMessage(sb.toString()));
+                } catch (IOException e) {
+                    log.error(e, "[killSession] [send exit prompt error] [uuid: {}]", uuid);
+                }
+
+                // kill 之后，将剩余文件写到数据库中
+                TerminalHandler.saveRecordContentAfterClientClosed(uuid);
+            } catch (Exception e) {
+                log.error(e, "[killSession] [error] [uuid: {}]", uuid);
+                throw new NZException(RCode.TERMINAL_STOP_SESSION_FAILED);
+            }
         }
-
-        /**
-         * session 已经结束，更新状态，设置结束时间
-         */
-        TerminalSessionEntity sessionEntity = (TerminalSessionEntity) TerminalSession.getTerminalAttributeInfo(uuid).get("terminalSessionEntity");
-        if (sessionEntity.getStartTime() == null) {
-            sessionEntity.setStartTime(new Date());
-        }
-
-        sessionEntity.setEndTime(new Date());
-        sessionEntity.setKillUserId(ShiroUtils.getUserId());
-        sessionEntity.setStatus(TerminalConstant.SessionStatus.FORCE_QUIT.getValue());
-        TerminalSessionService terminalSessionService = (TerminalSessionService) TerminalSession.CLIENT_ATTRIBUTE_INFO.get("terminalSessionService");
-        terminalSessionService.saveOrUpdate(sessionEntity);
-
-
-        try {
-            TerminalSession.remove(session);
-            StringBuilder sb = new StringBuilder();
-            sb.append("\u001B[01;31m\u001B[K Administrator disconnected \u001B[m\u001B[K  \r\n");
-            sb.append("$: ");
-            session.sendMessage(new TextMessage(sb.toString()));
-        } catch (IOException e) {
-            log.error(String.format("terminal session kill failed,uuid = %s,错误信息 = %s", uuid, e.getMessage()), e);
-        }
-
-        // kill 之后，将剩余文件写到数据库中
-        TerminalHandler.saveRecordContentAfterClientClosed(uuid);
+        log.info("[killSession] [finshed] [uuid: {}]", uuid);
     }
 
     @Override

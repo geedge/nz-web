@@ -832,6 +832,7 @@ public enum RCode {
     TERMINAL_MKDIR_DIR_ALREADY_EXISTS(612022, "The specified file name already exists, please enter another name."),
     TERMINAL_LS_FOLDER_ERROR(616023, "Cannot display remote folder"),
     TERMINAL_DUPLICATE_SESSION_FAILED(618024, "Duplicate session failed."),
+    TERMINAL_STOP_SESSION_FAILED(618025, "Failed to stop session"),
 
     /**
      * LINK
