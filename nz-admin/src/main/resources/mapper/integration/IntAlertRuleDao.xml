@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.nis.modules.integration.dao.IntAlertRuleDao">
+    <resultMap type="com.nis.modules.integration.entity.IntAlertRuleEntity" id="intAlertRule">
+        <result property="id" column="id"/>
+        <result property="intModuleId" column="int_module_id"/>
+        <result property="name" column="name"/>
+        <result property="type" column="type"/>
+        <result property="inr" column="inr"/>
+        <result property="timeout" column="timeout"/>
+        <result property="expr" column="expr"/>
+        <result property="cond" column="cond"/>
+        <result property="extLabels" column="ext_labels"/>
+        <result property="unit" column="unit"/>
+        <result property="last" column="last"/>
+        <result property="summary" column="summary"/>
+        <result property="description" column="description"/>
+        <result property="receiver" column="receiver"/>
+        <result property="method" column="method"/>
+        <result property="state" column="state"/>
+        <result property="autoExpired" column="auto_expired"/>
+        <result property="schedEnable" column="sched_enable"/>
+        <result property="schedDays" column="sched_days"/>
+        <result property="schedStime" column="sched_stime"/>
+        <result property="schedEtime" column="sched_etime"/>
+        <result property="notifyActive" column="notify_active"/>
+        <result property="notifyExpired" column="notify_expired"/>
+        <result property="trbShot" column="trb_shot"/>
+        <result property="buildIn" column="build_in"/>
+
+        <association property="intModule" columnPrefix="im_"
+                     javaType="com.nis.modules.integration.entity.IntModuleEntity">
+            <id column="id" property="id"/>
+            <result column="name" property="name"/>
+        </association>
+    </resultMap>
+
+    <select id="queryList" resultMap="intAlertRule">
+        SELECT
+        iar.*,
+        im.id as im_id,
+        im.name as im_name
+        FROM
+        int_alert_rule iar left join int_module im on iar.int_module_id = im.id
+        <where>
+            <if test="params.moduleIds != null and params.moduleIds.size > 0">
+                im.id IN
+                <foreach collection="params.moduleIds" item="id" index="no" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
+            </if>
+            <if test="params.name != null and params.name != ''">
+                AND locate(#{params.name} , iar.name)
+            </if>
+            <if test="params.moduleName != null and params.moduleName != ''">
+                AND locate(#{params.moduleName} , im.name)
+            </if>
+        </where>
+        <if test="params.orderBy == null or params.orderBy == ''">
+            ORDER BY iar.id
+        </if>
+    </select>
+</mapper>

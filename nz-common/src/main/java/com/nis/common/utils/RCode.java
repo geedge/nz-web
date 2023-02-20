@@ -1025,6 +1025,12 @@ public enum RCode {
     TOOL_PING_IP_ISNULL(751000, "Ping ip can not be empty"),
     TOOL_TRACEROUTE_IP_ISNULL(751001, "Traceroute ip can not be empty"),
 
+    /**
+     * integration 相关
+     */
+    INT_MODULE_ID_ISNULL(761000,"integration module id can not be null"),
+    INT_MODULE_NOT_FOUNT(761001,"integration module not fount"),
+
     CONTENT_MORETHAN_MAXLENGTH(998, "Field content length more than {0}"),
     ERROR(999, "error"); //通用错误/未知错误
 
