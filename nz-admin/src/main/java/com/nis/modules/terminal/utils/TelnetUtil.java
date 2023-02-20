@@ -2,6 +2,7 @@ package com.nis.modules.terminal.utils;
 
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.nis.common.utils.Tool;
 import lombok.Data;
 import org.apache.commons.net.telnet.TelnetClient;
@@ -10,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
+import java.util.concurrent.*;
 
 /**
  * TelnetUtil
@@ -20,12 +22,17 @@ import java.util.Map;
 @Data
 public class TelnetUtil {
 
+    private static final Log log = Log.get();
+
     private byte[] buff = new byte[2048];
 
     private TelnetClient telnetClient = new TelnetClient();
 
     private InputStream inputStream = null;
     private OutputStream outputStream = null;
+
+    private String host;
+    private Integer port;
 
     /**
      * default Prompt str
@@ -48,6 +55,8 @@ public class TelnetUtil {
      * @throws IOException
      */
     public void connect(String ip, Integer port) throws IOException {
+        this.host = ip;
+        this.port = Tool.ObjectUtil.defaultIfNull(port, 23);
         telnetClient.connect(ip, Tool.ObjectUtil.defaultIfNull(port, 23));
         inputStream = telnetClient.getInputStream();
         outputStream = telnetClient.getOutputStream();
@@ -55,6 +64,7 @@ public class TelnetUtil {
 
     /**
      * login
+     * 防止该方法出现解析失败情况，陷入死循环，设置 3 分钟登录超时，超时则视为登录失败
      *
      * @param user
      * @param pin
@@ -64,39 +74,71 @@ public class TelnetUtil {
      * @throws IOException
      */
     public boolean login(String user, String pin, String userPrompt, String pinPrompt) throws IOException {
+        log.info("[login begin] [host: {}] [user: {}] [userPrompt: {}] [pinPrompt: {}]", this.host, user, userPrompt, pinPrompt);
         userPrompt = Tool.StrUtil.emptyToDefault(userPrompt, USER_PROMPT);
         pinPrompt = Tool.StrUtil.emptyToDefault(pinPrompt, PIN_PROMPT);
 
-        // user name
-        String read = readString();
-        while (true) {
-            if (Tool.ReUtil.isMatch(userPrompt, read.trim())) {
-                break;
-            } else {
-                read = readString();
-            }
-        }
-        write(user);
+        String finalUserPrompt = userPrompt;
+        String finalPinPrompt = pinPrompt;
+        Callable<Boolean> task = new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                // user name
+                String read = readString();
+                while (true) {
+                    log.info("[login] [read the response content. find user name prompt] [host: {}] [response: {}] [user tip: {}]", host, read, finalUserPrompt);
+                    if (Tool.ReUtil.isMatch(finalUserPrompt, read.trim())) {
+                        break;
+                    } else {
+                        read = readString();
+                    }
+                }
+                log.info("[login] [write user name] [host: {}] [user: {}]", host, user);
+                write(user);
 
-        // pin
-        read = readString();
-        while (true) {
-            if (Tool.ReUtil.isMatch(pinPrompt, read.trim())) {
-                break;
-            } else {
+                // pin
                 read = readString();
-            }
-        }
-        write(pin);
+                while (true) {
+                    log.info("[login] [read the response content. find password prompt] [host: {}] [response: {}] [password tip: {}]", host, read, finalPinPrompt);
+                    if (Tool.ReUtil.isMatch(finalPinPrompt, read.trim())) {
+                        break;
+                    } else {
+                        read = readString();
+                    }
+                }
+                log.info("[login] [write password] [host: {}] [pin: {}]", host, "******");
+                write(pin);
 
-        for (; ; ) {
-            read = readString();
-            if (StrUtil.contains(read, "Last login")) {
-                return true;
-            } else if (StrUtil.contains(read, "Login incorrect")) {
-                return false;
+                for (; ; ) {
+                    read = readString();
+                    log.info("[login] [server response] [content: {}]", read);
+                    if (StrUtil.containsIgnoreCase(read, "Last login")) {
+                        log.info("[login] [login success] [host: {}] [user: {}]", host, user);
+                        return true;
+                    } else if (StrUtil.containsIgnoreCase(read, "Login incorrect")) {
+                        log.warn("[login] [login failed] [host: {}] [user: {}]", host, user);
+                        return false;
+                    }
+                }
             }
+        };
+        Boolean loginResult = false;
+        ExecutorService executorService = Tool.ThreadUtil.newExecutor();
+        try {
+            Future<Boolean> future = executorService.submit(task);
+            if (!future.isCancelled()) {
+                // 防止该方法出现解析失败情况，陷入死循环，设置 3分钟登录超时，超时则视为登录失败
+                loginResult = future.get(3, TimeUnit.MINUTES);
+            }
+        } catch (InterruptedException | ExecutionException e) {
+            log.error(e, "[login] [error] [host: {}] [user: {}] [userPrompt: {}] [pinPrompt: {}]", this.host, user, userPrompt, pinPrompt);
+        } catch (TimeoutException e) {
+            log.error(e, "[login] [login timeout] [host: {}] [user: {}] [userPrompt: {}] [pinPrompt: {}]", this.host, user, userPrompt, pinPrompt);
+        } finally {
+            executorService.shutdown();
         }
+        log.info("[TelnetUtil] [login finshed] [host: {}] [user: {}]", this.host, user);
+        return loginResult;
     }
 
 
@@ -132,6 +174,8 @@ public class TelnetUtil {
         IoUtil.write(outputStream, false, text.getBytes());
         IoUtil.write(outputStream, false, Tool.StrUtil.CRLF.getBytes());
         IoUtil.flush(outputStream);
+        // sleep for wait response
+        Tool.ThreadUtil.sleep(200);
     }
 
     /**

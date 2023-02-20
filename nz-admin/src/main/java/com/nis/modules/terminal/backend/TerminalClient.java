@@ -29,7 +29,6 @@ import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
-import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import com.jcraft.jsch.ChannelShell;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
@@ -78,13 +77,6 @@ public class TerminalClient {
     private InputStream inputStream;
     private OutputStream outputStream;
     private BufferedWriter writer;
-
-    /**
-     * Enter
-     */
-    private Boolean sendEnter = false;
-    private StringBuffer sendBuffer = new StringBuffer();
-
 
     public TerminalClient(WebSocketSession webSocketSession, AssetAsset asset, String clientId) {
         log.info("init TerminalClient, uuid: {}, terminal Connection Info: {}", clientId, JSONUtil.toJsonStr(asset));
@@ -446,17 +438,6 @@ public class TerminalClient {
      * @throws IOException
      */
     public void writeContentToTerminal(String message) {
-        // \r
-        if (StrUtil.equals(StrUtil.CR, message)) {
-            sendEnter = true;
-        } else {
-            // 防止用户输入 ctrl+c 出现程序异常 以及记录日志异常
-            if (ObjectUtils.isNotEmpty(message) && message.getBytes()[0] != 3) {
-                sendEnter = false;
-                sendBuffer.append(message);
-            }
-        }
-
         // write
         if (Tool.ObjectUtil.isNotNull(outputStream)) {
             IoUtil.write(outputStream, false, message.getBytes());
@@ -489,7 +470,11 @@ public class TerminalClient {
      * @throws IOException
      */
     public void disconnect() {
+        log.info("[disconnect] [begin] [client id: {}]", clientId);
+
         IoUtil.close(writer);
+        IoUtil.close(inputStream);
+        IoUtil.close(outputStream);
 
         if (shellChannel != null) {
             shellChannel.disconnect();
@@ -498,12 +483,17 @@ public class TerminalClient {
         if (session != null) {
             session.disconnect();
             session = null;
+            // remove cache
+            TerminalSession.TERMINAL_CONNECTED_CACHE.remove(clientId);
+            TerminalSession.TERMINAL_CONNECTED_LAST_ACTIVE_MAP.remove(clientId);
         }
 
         if (webSocketSession != null) {
             IoUtil.close(webSocketSession);
             TerminalSession.remove(webSocketSession);
         }
+
+        log.info("[disconnect] [finshed] [client id: {}]", clientId);
     }
 
 }
