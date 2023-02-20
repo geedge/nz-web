@@ -244,7 +244,7 @@ public class TerminalHandler extends TextWebSocketHandler {
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         // 每次请求获取对应的 uuid 信息
         Map<String, Object> attributes = session.getAttributes();
-        uuid = (String) attributes.get("uuid");
+        String uuid = (String) attributes.get("uuid");
         super.handleTextMessage(session, message);
         log.info("handleTextMessage meesage info : {}", message.getPayload());
 
@@ -290,7 +290,7 @@ public class TerminalHandler extends TextWebSocketHandler {
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
         log.error(exception, "WebSocket handle Transport Error");
         super.handleTransportError(session, exception);
-        this.closeTerminal(session);
+        TerminalHandler.closeTerminalRescourse(session);
     }
 
     @Override
@@ -307,27 +307,16 @@ public class TerminalHandler extends TextWebSocketHandler {
             }
 
             // close terminal
-            this.closeTerminal(session);
+            TerminalHandler.closeTerminalRescourse(session);
 
             // client id
             String clientId = terminalClient.getClientId();
 
-            // client 关闭后，处理 session 和 record 信息
-            TerminalSessionEntity sessionEntity = (TerminalSessionEntity) TerminalSession.getTerminalAttributeInfo(clientId).get("terminalSessionEntity");
-            if (Tool.ObjectUtil.isNotNull(sessionEntity)) {
-                log.info("[afterConnectionClosed] [udpate session status] [session id: {}] [status: {}]", sessionEntity.getUuid(), sessionEntity.getStatus());
-                // 正常连接状态 关闭窗口，将状态改为 已结束，其他不做处理
-                if (TerminalConstant.SessionStatus.CONNECTING.getValue() == sessionEntity.getStatus()) {
-                    sessionEntity.setStatus(TerminalConstant.SessionStatus.OVER.getValue());
-                }
-                sessionEntity.setEndTime(new Date());
-                terminalSessionService.saveOrUpdate(sessionEntity);
+            // update Session Status After Client Closed
+            TerminalHandler.updateSessionStatusAfterClientClosed(clientId);
 
-                // save Record Content After Client Closed
-                TerminalHandler.saveRecordContentAfterClientClosed(clientId);
-            } else {
-                log.warn("[afterConnectionClosed] [not found TerminalSessionEntity through client id.] [clientId: {}]", clientId);
-            }
+            // save Record Content After Client Closed
+            TerminalHandler.saveRecordContentAfterClientClosed(clientId);
 
             // remove Terminal Attribute Info
             TerminalSession.removeTerminalAttributeInfo(clientId);
@@ -349,58 +338,103 @@ public class TerminalHandler extends TextWebSocketHandler {
     }
 
     /**
-     * client 关闭后，保存 recored 内容
-     *
-     * @param uuid
-     */
-    public static void saveRecordContentAfterClientClosed(String uuid) {
-        File tempFile = Tool.FileUtil.file(Tool.StrUtil.concat(true, Constant.TEMP_PATH, File.separator, uuid, ".log"));
-        if (!Tool.FileUtil.exist(tempFile)) {
-            log.info("Terminal is closed.  no save record file exsit. clientId: {}", uuid);
-            return;
-        }
-
-        try {
-            log.info("Terminal is closed. save Record content. clientid: {}, file length: {}, File info: {}", uuid, tempFile.length(), tempFile.toString());
-            TerminalRecordService terminalRecordService = (TerminalRecordService) TerminalSession.CLIENT_ATTRIBUTE_INFO.get("terminalRecordService");
-            // 将本次内容保存至数据库
-            List<TerminalRecord> list = terminalRecordService.list(new LambdaQueryWrapper<TerminalRecord>().eq(TerminalRecord::getUuid, uuid).orderByAsc(TerminalRecord::getId));
-            TerminalRecord terminalRecord = new TerminalRecord();
-            terminalRecord.setUuid(uuid);
-            // first time, start time = 0
-            if (Tool.CollUtil.isEmpty(list)) {
-                terminalRecord.setStartTime(0);
-            } else {
-                // start time == end of the last time
-                terminalRecord.setStartTime(list.get(list.size() - 1).getEndTime());
-            }
-            long terminalSessionStartTime = (long) TerminalSession.getTerminalAttributeInfo(uuid).get("terminalSessionStartTime");
-            terminalRecord.setEndTime((int) (System.currentTimeMillis() - terminalSessionStartTime));
-            terminalRecord.setContent(Files.readAllBytes(tempFile.toPath()));
-            terminalRecordService.saveTerminalRecordContent(terminalRecord);
-        } catch (Exception e) {
-            log.error(e, "Save terminal record content error. clientid: {}, file length: {}, File info: {}", uuid, tempFile.length(), tempFile.toString());
-        } finally {
-            // del file
-            FileUtil.del(tempFile);
-        }
-    }
-
-    /**
      * close Terminal
      *
      * @param session
      */
-    private void closeTerminal(WebSocketSession session) {
-        terminalClient = TerminalSession.remove(session);
-        if (Tool.ObjectUtil.isNull(terminalClient)) {
-            return;
+    public static synchronized void closeTerminalRescourse(WebSocketSession session) {
+        log.info("[closeTerminalRescourse] [begin] [websocket uri: {}]", session.getUri());
+        TerminalClient terminalClient = TerminalSession.remove(session);
+        log.info("[closeTerminalRescourse] [find terminal client] [exist: {}]", Tool.ObjectUtil.isNotNull(terminalClient));
+
+        if (Tool.ObjectUtil.isNotNull(terminalClient)) {
+            log.info("[closeTerminalRescourse] [terminal client exist. close rescourse] [client id: {}]", terminalClient.getClientId());
+
+            // disconnect
+            terminalClient.disconnect();
+
+            // remove cache
+            TerminalSession.TERMINAL_CONNECTED_CACHE.remove(terminalClient.getClientId());
+            TerminalSession.TERMINAL_CONNECTED_LAST_ACTIVE_MAP.remove(terminalClient.getClientId());
+        } else {
+            log.warn("[closeTerminalRescourse] [terminal client not exist] [websocket uri: {}]", session.getUri());
         }
 
-        // disconnect
-        terminalClient.disconnect();
+        log.info("[closeTerminalRescourse] [finshed] [websocket uri: {}]", session.getUri());
+    }
 
-        // remove cache
-        TerminalSession.TERMINAL_CONNECTED_CACHE.remove(terminalClient.getClientId());
+    /**
+     * update Session Status After Client Closed
+     *
+     * @param clientId
+     */
+    public static synchronized void updateSessionStatusAfterClientClosed(String clientId) {
+        log.info("[updateSessionStatusAfterClientClosed] [begin] [clientId: {}]", clientId);
+        TerminalSessionEntity sessionEntity = (TerminalSessionEntity) TerminalSession.getTerminalAttributeInfo(clientId).get("terminalSessionEntity");
+        log.info("[updateSessionStatusAfterClientClosed] [update session entity] [clientId: {}] [exist: {}]", clientId, Tool.ObjectUtil.isNotNull(sessionEntity));
+
+        if (Tool.ObjectUtil.isNotNull(sessionEntity)) {
+            log.info("[updateSessionStatusAfterClientClosed] [udpate session status] [session id: {}] [status: {}]", sessionEntity.getUuid(), sessionEntity.getStatus());
+            if (sessionEntity.getStartTime() == null) {
+                sessionEntity.setStartTime(new Date());
+            }
+
+            // 正常连接状态 关闭窗口，将状态改为 已结束，其他不做处理
+            if (TerminalConstant.SessionStatus.CONNECTING.getValue() == sessionEntity.getStatus()) {
+                sessionEntity.setStatus(TerminalConstant.SessionStatus.OVER.getValue());
+            }
+
+            sessionEntity.setEndTime(new Date());
+            TerminalSessionService terminalSessionService = (TerminalSessionService) TerminalSession.CLIENT_ATTRIBUTE_INFO.get("terminalSessionService");
+            terminalSessionService.saveOrUpdate(sessionEntity);
+        } else {
+            log.warn("[updateSessionStatusAfterClientClosed] [not found TerminalSessionEntity through client id.] [clientId: {}]", clientId);
+        }
+        log.info("[updateSessionStatusAfterClientClosed] [finshed] [clientId: {}]", clientId);
+    }
+
+    /**
+     * save Record Content After Client Closed
+     *
+     * @param uuid
+     */
+    public static synchronized void saveRecordContentAfterClientClosed(String uuid) {
+        log.info("[saveRecordContentAfterClientClosed] [begin] [uuid: {}]", uuid);
+        File tempFile = Tool.FileUtil.file(Tool.StrUtil.concat(true, Constant.TEMP_PATH, File.separator, uuid, ".log"));
+        log.info("[saveRecordContentAfterClientClosed] [save ending file] [uuid: {}] [exist: {}]", uuid, Tool.FileUtil.exist(tempFile));
+
+        // exist
+        if (Tool.FileUtil.exist(tempFile)) {
+            try {
+                log.info("[saveRecordContentAfterClientClosed] [Terminal is closed. save Record content] [clientid: {}] [file length: {}] [File info: {}]", uuid, tempFile.length(), tempFile.toString());
+                TerminalRecordService terminalRecordService = (TerminalRecordService) TerminalSession.CLIENT_ATTRIBUTE_INFO.get("terminalRecordService");
+                // 将本次内容保存至数据库
+                List<TerminalRecord> list = terminalRecordService.list(new LambdaQueryWrapper<TerminalRecord>().eq(TerminalRecord::getUuid, uuid).orderByAsc(TerminalRecord::getId));
+                TerminalRecord terminalRecord = new TerminalRecord();
+                terminalRecord.setUuid(uuid);
+                // first time, start time = 0
+                if (Tool.CollUtil.isEmpty(list)) {
+                    terminalRecord.setStartTime(0);
+                } else {
+                    // start time == end of the last time
+                    terminalRecord.setStartTime(list.get(list.size() - 1).getEndTime());
+                }
+                long terminalSessionStartTime = (long) TerminalSession.getTerminalAttributeInfo(uuid).get("terminalSessionStartTime");
+                terminalRecord.setEndTime((int) (System.currentTimeMillis() - terminalSessionStartTime));
+                terminalRecord.setContent(Files.readAllBytes(tempFile.toPath()));
+                terminalRecordService.saveTerminalRecordContent(terminalRecord);
+            } catch (Exception e) {
+                log.error(e, "[saveRecordContentAfterClientClosed] [Save terminal record content error] [clientid: {}] [file length: {}] [File info: {}]", uuid, tempFile.length(), tempFile.toString());
+            } finally {
+                // del file
+                FileUtil.del(tempFile);
+            }
+
+            // not exsit.
+        } else {
+            log.info("[saveRecordContentAfterClientClosed] [Terminal is closed. No save record file exsit] [clientId: {}]", uuid);
+        }
+
+        log.info("[saveRecordContentAfterClientClosed] [finshed] [uuid: {}]", uuid);
     }
 }
