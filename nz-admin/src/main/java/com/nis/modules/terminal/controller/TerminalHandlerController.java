@@ -46,7 +46,8 @@ public class TerminalHandlerController {
 
     @PostMapping(value = "resize")
     @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.TERMINAL)
-    public R resize(@RequestBody TerminalConfigDto dto) {
+    public R resize(@RequestHeader(name = "Authorization", required = true) String token,
+                    @RequestBody TerminalConfigDto dto) {
         Integer cols = dto.getCols();
         Integer height = dto.getHeight();
         Integer rows = dto.getRows();
@@ -54,14 +55,20 @@ public class TerminalHandlerController {
         if (Tool.ObjectUtil.hasEmpty(cols, height, rows, width)) {
             return R.error(RCode.TERMINAL_PARAM_ISNULL);
         }
+
+        log.info("[resize] [begin]");
         try {
-            List<TerminalClient> terminalClients = TerminalSession.TERMINAL_SESSION.values().stream().distinct().collect(Collectors.toList());
-            for (TerminalClient terminalClient : terminalClients) {
+            List<TerminalClient> allTerminalClients = TerminalSession.TERMINAL_SESSION.values().stream().distinct().collect(Collectors.toList());
+            List<TerminalClient> resizeClients = allTerminalClients.stream().filter(terminalClient -> Tool.StrUtil.equals(token, terminalClient.getToken())).collect(Collectors.toList());
+            log.info("[resize] [all session: {}] [token: {}] [resize session: {}]", allTerminalClients.size(), token, resizeClients.size());
+
+            for (TerminalClient terminalClient : resizeClients) {
                 // resize
                 terminalClient.resize(cols, rows, width, height);
             }
+            log.info("[resize] [finshed]");
         } catch (Exception e) {
-            log.error(e);
+            log.error(e, "[resize] [error.]");
             return R.error();
         }
         return R.ok();
@@ -115,14 +122,16 @@ public class TerminalHandlerController {
 
     @PostMapping("/login")
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.TERMINAL)
-    public Map<Object, Object> login(@RequestBody TerminalConfigDto configEntity) {
-        Map<Object, Object> map = terminalSessionService.login(configEntity);
+    public Map<Object, Object> login(@RequestHeader(name = "Authorization") String token,
+                                     @RequestBody TerminalConfigDto configEntity) {
+        Map<Object, Object> map = terminalSessionService.login(token, configEntity);
         return map;
     }
 
     @PostMapping("/login/duplicate")
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.TERMINAL)
-    public R loginDuplicate(@RequestBody TerminalConfigDto terminalConfigDto) {
+    public R loginDuplicate(@RequestHeader(name = "Authorization") String token,
+                            @RequestBody TerminalConfigDto terminalConfigDto) {
         ValidateUtils.is(terminalConfigDto.getUuid()).notNull(RCode.TERMINAL_UUID_ISNULL);
 
         String uuid = terminalConfigDto.getUuid();
@@ -132,7 +141,7 @@ public class TerminalHandlerController {
         Integer rows = terminalConfigDto.getRows();
 
         return R.ok(
-                terminalSessionService.duplicateSession(uuid, width, height, cols, rows)
+                terminalSessionService.duplicateSession(token, uuid, width, height, cols, rows)
         );
     }
 

@@ -81,8 +81,6 @@ public class TerminalHandler extends TextWebSocketHandler {
 
     private Long userId;
 
-    private TerminalClient terminalClient;
-
     private SysConfService sysConfService;
 
     private AssetAssetService assetAssetService;
@@ -128,19 +126,16 @@ public class TerminalHandler extends TextWebSocketHandler {
      * @param asset
      * @return
      */
-    private void initTerminalClient(WebSocketSession session, AssetAsset asset) {
-        this.terminalClient = TerminalSession.TERMINAL_SESSION.get(session);
-        if (Tool.ObjectUtil.isNotNull(this.terminalClient)) {
-            return;
+    private TerminalClient initTerminalClient(WebSocketSession session, AssetAsset asset, String token) {
+        TerminalClient terminalClient = TerminalSession.TERMINAL_SESSION.get(session);
+        if (Tool.ObjectUtil.isNotNull(terminalClient)) {
+            return terminalClient;
         }
 
-        if (Tool.ObjectUtil.isNotEmpty(asset)) {
-            // init
-            this.terminalClient = new TerminalClient(session, asset, uuid);
-            TerminalSession.TERMINAL_SESSION.put(session, this.terminalClient);
-        } else {
-            throw new IllegalArgumentException("failure to get terminal client.");
-        }
+        // init
+        terminalClient = new TerminalClient(session, asset, uuid, token);
+        TerminalSession.TERMINAL_SESSION.put(session, terminalClient);
+        return terminalClient;
     }
 
 
@@ -192,12 +187,15 @@ public class TerminalHandler extends TextWebSocketHandler {
         sessionEntity.setRemoteAddr(session.getRemoteAddress().getHostString());
         sessionEntity.setStartTime(new Date());
         sessionEntity.setStatus(TerminalConstant.SessionStatus.CONNECTING.getValue());
+
+        TerminalClient terminalClient = null;
         try {
+            String token = (String) connObjMap.get(Constant.AUTH_TOKEN_CODE);
             // init client
-            this.initTerminalClient(session, terminalConnInfo);
+            terminalClient = this.initTerminalClient(session, terminalConnInfo, token);
 
             // asset info
-            this.terminalClient.setAsset(terminalConnInfo);
+            terminalClient.setAsset(terminalConnInfo);
 
             TerminalSession.setTerminalAttributeInfo(uuid, "terminalSessionEntity", sessionEntity);
             TerminalSession.setTerminalAttributeInfo(uuid, "terminalSessionStartTime", System.currentTimeMillis());
@@ -214,13 +212,13 @@ public class TerminalHandler extends TextWebSocketHandler {
             if (TerminalConstant.ProtocolType.SSH.getValue().equals(authProtocol)) {
                 log.info("open ssh terminal,uuid: {},terminal Connection Info: {}", uuid, JSONUtil.toJsonStr(terminalConnInfo));
                 Session jschSession = (Session) connObjMap.get(TerminalSession.CONNECTION_CONNECTION_ENTITY_KEY);
-                this.terminalClient.openSshTerminal(jschSession, cols, rows, width, height);
+                terminalClient.openSshTerminal(jschSession, cols, rows, width, height);
             }
             // TELNET
             if (TerminalConstant.ProtocolType.TELNET.getValue().equals(authProtocol)) {
                 log.info("open telnet terminal,uuid: {},terminal Connection Info: {}", uuid, JSONUtil.toJsonStr(terminalConnInfo));
                 TelnetClient telnetClient = (TelnetClient) connObjMap.get(TerminalSession.CONNECTION_CONNECTION_ENTITY_KEY);
-                this.terminalClient.openTelnetTerminal(telnetClient, width, height);
+                terminalClient.openTelnetTerminal(telnetClient, width, height);
             }
             terminalSessionService.save(sessionEntity);
             log.info("WebSocket connectioned. after connection established open terminal finished. uuid: {}", uuid);
@@ -235,7 +233,9 @@ public class TerminalHandler extends TextWebSocketHandler {
             terminalSessionService.save(sessionEntity);
 
             // disconnect
-            terminalClient.disconnect();
+            if (ObjectUtil.isNotNull(terminalClient)) {
+                terminalClient.disconnect();
+            }
             TerminalSession.remove(session);
         }
     }
@@ -248,9 +248,9 @@ public class TerminalHandler extends TextWebSocketHandler {
         super.handleTextMessage(session, message);
         log.info("handleTextMessage meesage info : {}", message.getPayload());
 
+        TerminalClient terminalClient = TerminalSession.TERMINAL_SESSION.get(session);
         try {
-            this.initTerminalClient(session, null);
-            if (this.terminalClient != null) {
+            if (terminalClient != null) {
                 // 保存当前输入字符信息  以便 client 端获取对应的操作字符
                 terminalClient.writeContentToTerminal(message.getPayload());
             }

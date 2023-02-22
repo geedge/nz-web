@@ -22,7 +22,7 @@ public interface TerminalSessionService extends IService<TerminalSessionEntity> 
      */
     void cleanExpiredDataByTime(DateTime startCleanTerminalTime);
 
-    Map<Object, Object> login(TerminalConfigDto configEntity);
+    Map<Object, Object> login(String token, TerminalConfigDto configEntity);
 
     Map<Object, Object> lsOfSftp(String uuid, String path);
 
@@ -40,5 +40,5 @@ public interface TerminalSessionService extends IService<TerminalSessionEntity> 
 
     void renameFileOfSftp(String uuid, String oldPath, String newPath);
 
-    Map<Object, Object> duplicateSession(String uuid, Integer width, Integer height, Integer cols, Integer rows);
+    Map<Object, Object> duplicateSession(String token, String uuid, Integer width, Integer height, Integer cols, Integer rows);
 }

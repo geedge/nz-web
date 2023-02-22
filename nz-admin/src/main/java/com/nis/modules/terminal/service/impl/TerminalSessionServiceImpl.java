@@ -330,7 +330,7 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
     }
 
     @Override
-    public Map<Object, Object> login(TerminalConfigDto configEntity) {
+    public Map<Object, Object> login(String token, TerminalConfigDto configEntity) {
         // validate login Param
         this.validateloginParam(configEntity);
 
@@ -354,6 +354,7 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
                         Tool.MapUtil.builder()
                                 .put(TerminalSession.CONNECTION_ASSET_KEY, terminalConnInfo)
                                 .put(TerminalSession.CONNECTION_CONNECTION_ENTITY_KEY, session)
+                                .put(Constant.AUTH_TOKEN_CODE, token)
                                 .map());
                 // connected last active time
                 TerminalSession.TERMINAL_CONNECTED_LAST_ACTIVE_MAP.put(uuid, Tool.DateUtil.currentSeconds());
@@ -397,6 +398,7 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
                             Tool.MapUtil.builder()
                                     .put(TerminalSession.CONNECTION_ASSET_KEY, terminalConnInfo)
                                     .put(TerminalSession.CONNECTION_CONNECTION_ENTITY_KEY, telnetClient)
+                                    .put(Constant.AUTH_TOKEN_CODE, token)
                                     .map());
                     // connected last active time
                     TerminalSession.TERMINAL_CONNECTED_LAST_ACTIVE_MAP.put(uuid, Tool.DateUtil.currentSeconds());
@@ -672,7 +674,7 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
     }
 
     @Override
-    public Map<Object, Object> duplicateSession(String uuid, Integer width, Integer height, Integer cols, Integer rows) {
+    public Map<Object, Object> duplicateSession(String token, String uuid, Integer width, Integer height, Integer cols, Integer rows) {
         log.info("[duplicateSession] [begin] [uuid: {}]", uuid);
         Map<Object, Object> connObjMap = TerminalSession.TERMINAL_CONNECTED_CACHE.get(uuid);
         log.info("[duplicateSession] [source sesion] [uuid: {}] [exist: {}]", uuid, Tool.MapUtil.isNotEmpty(connObjMap));
@@ -698,6 +700,7 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
                         Tool.MapUtil.builder()
                                 .put(TerminalSession.CONNECTION_ASSET_KEY, terminalConnInfo)
                                 .put(TerminalSession.CONNECTION_CONNECTION_ENTITY_KEY, session)
+                                .put(Constant.AUTH_TOKEN_CODE, token)
                                 .map());
                 TerminalSession.TERMINAL_CONNECTED_LAST_ACTIVE_MAP.put(duplicateSessionUUID, Tool.DateUtil.currentSeconds());
                 log.info("[duplicateSession] [reopen SSH connection success.] [duplicate uuid: {}]", duplicateSessionUUID);
@@ -724,6 +727,7 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
                             Tool.MapUtil.builder()
                                     .put(TerminalSession.CONNECTION_ASSET_KEY, terminalConnInfo)
                                     .put(TerminalSession.CONNECTION_CONNECTION_ENTITY_KEY, telnetUtil.getTelnetClient())
+                                    .put(Constant.AUTH_TOKEN_CODE, token)
                                     .map());
                     TerminalSession.TERMINAL_CONNECTED_LAST_ACTIVE_MAP.put(duplicateSessionUUID, Tool.DateUtil.currentSeconds());
                     log.info("[duplicateSession] [reopen TELNET connection success.] [duplicate uuid: {}]", duplicateSessionUUID);

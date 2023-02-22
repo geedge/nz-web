@@ -65,6 +65,11 @@ public class TerminalClient {
      */
     private String clientId;
 
+    /**
+     * User Authorization Token
+     */
+    private String token;
+
     private AssetAsset asset;
 
     /**
@@ -82,11 +87,12 @@ public class TerminalClient {
     private OutputStream outputStream;
     private BufferedWriter writer;
 
-    public TerminalClient(WebSocketSession webSocketSession, AssetAsset asset, String clientId) {
-        log.info("init TerminalClient, uuid: {}, terminal Connection Info: {}", clientId, JSONUtil.toJsonStr(asset));
+    public TerminalClient(WebSocketSession webSocketSession, AssetAsset asset, String clientId, String token) {
+        log.info("[TerminalClient] [init] [clientId: {}] [connection info: {}] [websocket uri: {}] [token: {}]", clientId, JSONUtil.toJsonStr(asset), webSocketSession.getUri(), token);
         this.webSocketSession = webSocketSession;
         this.asset = asset;
         this.clientId = clientId;
+        this.token = token;
     }
 
     /**
