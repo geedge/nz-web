@@ -220,7 +220,7 @@ public class TerminalHandler extends TextWebSocketHandler {
             if (TerminalConstant.ProtocolType.TELNET.getValue().equals(authProtocol)) {
                 log.info("open telnet terminal,uuid: {},terminal Connection Info: {}", uuid, JSONUtil.toJsonStr(terminalConnInfo));
                 TelnetClient telnetClient = (TelnetClient) connObjMap.get(TerminalSession.CONNECTION_CONNECTION_ENTITY_KEY);
-                this.terminalClient.openTelnetTerminal(telnetClient);
+                this.terminalClient.openTelnetTerminal(telnetClient, width, height);
             }
             terminalSessionService.save(sessionEntity);
             log.info("WebSocket connectioned. after connection established open terminal finished. uuid: {}", uuid);

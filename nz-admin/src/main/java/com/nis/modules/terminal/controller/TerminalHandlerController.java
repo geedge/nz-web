@@ -21,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/terminal")
@@ -45,8 +46,7 @@ public class TerminalHandlerController {
 
     @PostMapping(value = "resize")
     @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.TERMINAL)
-    public R resize(@RequestHeader(name = "Authorization") String token,
-                    @RequestBody TerminalConfigDto dto) {
+    public R resize(@RequestBody TerminalConfigDto dto) {
         Integer cols = dto.getCols();
         Integer height = dto.getHeight();
         Integer rows = dto.getRows();
@@ -55,7 +55,7 @@ public class TerminalHandlerController {
             return R.error(RCode.TERMINAL_PARAM_ISNULL);
         }
         try {
-            List<TerminalClient> terminalClients = TerminalSession.getAllTerminalClient(token);
+            List<TerminalClient> terminalClients = TerminalSession.TERMINAL_SESSION.values().stream().distinct().collect(Collectors.toList());
             for (TerminalClient terminalClient : terminalClients) {
                 // resize
                 terminalClient.resize(cols, rows, width, height);
