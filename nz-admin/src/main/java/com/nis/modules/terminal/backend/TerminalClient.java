@@ -41,7 +41,10 @@ import com.nis.modules.terminal.service.TerminalCmdService;
 import com.nis.modules.terminal.service.TerminalRecordService;
 import com.nis.modules.terminal.utils.TerminalConstant;
 import lombok.Data;
+import org.apache.commons.net.telnet.InvalidTelnetOptionException;
 import org.apache.commons.net.telnet.TelnetClient;
+import org.apache.commons.net.telnet.TelnetOption;
+import org.apache.commons.net.telnet.WindowSizeOptionHandler;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -69,6 +72,7 @@ public class TerminalClient {
      */
     private Session session;
     private ChannelShell shellChannel;
+    private TelnetClient telnetClient;
     private WebSocketSession webSocketSession;
 
     /**
@@ -122,11 +126,15 @@ public class TerminalClient {
      * TELNET Terminal
      *
      * @param telnetClient
+     * @param width
+     * @param height
      * @throws IOException
      */
-    public void openTelnetTerminal(TelnetClient telnetClient) throws IOException {
-        this.inputStream = telnetClient.getInputStream();
-        this.outputStream = telnetClient.getOutputStream();
+    public void openTelnetTerminal(TelnetClient telnetClient, Integer width, Integer height) throws IOException, InvalidTelnetOptionException {
+        this.telnetClient = telnetClient;
+        this.telnetClient.addOptionHandler(new WindowSizeOptionHandler(width, height, true, true, true, true));
+        this.inputStream = this.telnetClient.getInputStream();
+        this.outputStream = this.telnetClient.getOutputStream();
         this.writer = new BufferedWriter(new OutputStreamWriter(this.outputStream, "UTF-8"));
 
         // send login Success Prompt
@@ -458,6 +466,11 @@ public class TerminalClient {
         try {
             if (this.shellChannel != null) {
                 this.shellChannel.setPtySize(cols, rows, width, height);
+            }
+            // RFC 1073
+            if (this.telnetClient != null) {
+                this.telnetClient.deleteOptionHandler(TelnetOption.WINDOW_SIZE);
+                this.telnetClient.addOptionHandler(new WindowSizeOptionHandler(width, height, true, true, true, true));
             }
         } catch (Exception e) {
             log.error(e, "terminal re window size error. col: {}, rows: {}, width: {}, height: {}", cols, rows, width, height);
