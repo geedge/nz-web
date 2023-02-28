@@ -26,13 +26,17 @@
 			su.lang,
 			su.theme
 		FROM
-			sys_user su
+			sys_user su left join sys_user_role sur on sur.user_id = su.id
 		<where>
 			<if test="params.ids != null">
 				su.id in 
 				<foreach item="id" collection="params.ids" separator="," open="(" close=")" index="">
 		       		#{id}
 			     </foreach>
+			</if>
+
+			<if test="params.roleId != null and params.roleId != ''">
+				AND #{params.roleId} = sur.role_id
 			</if>
 
 			<if test="params.name != null and params.name != ''">
