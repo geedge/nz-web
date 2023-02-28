@@ -1,12 +1,13 @@
 package com.nis.common.utils;
 
-import java.util.Map;
-
-import com.nis.common.exception.NZException;
-
 import Aladdin.Hasp;
 import Aladdin.HaspStatus;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.nis.common.exception.NZException;
+import com.nis.modules.sys.utils.HaspStatusEnum;
+
+import java.util.Map;
 
 public class HaspUtil {
 	private static final Log log = Log.get();
@@ -105,7 +106,7 @@ public class HaspUtil {
 			status = hasp.getLastError();
 			log.info("license status: {}", status);
 			if (status != HaspStatus.HASP_STATUS_OK) {
-				log.error("Error: updateLicense Fails with status code :{}",status);
+				log.error("Error: updateLicense Fails with status code :{}", StrUtil.toString(HaspStatusEnum.getHaspStatusByStatus(status)));
 			}else {
 				Map<String, Object> xmlToMap = Tool.XmlUtil.xmlToMap(licenseInfo);
 				String haspId = Tool.BeanUtil.getProperty(xmlToMap, "hasp.id");
@@ -113,7 +114,7 @@ public class HaspUtil {
 			}
 			return licenseInfo;
 		}else {
-			log.error("Error: with status code :{}",status);
+			log.error("Error: with status code :{}", StrUtil.toString(HaspStatusEnum.getHaspStatusByStatus(status)));
 			throw new NZException(RCode.LICENSE_ERROR_CODE.setParam(status));	
 		}
 	}
@@ -131,7 +132,7 @@ public class HaspUtil {
 		int status = hasp.getLastError();
 		log.info("license status: {}", status);
 		if (status != HaspStatus.HASP_STATUS_OK) {
-			log.error("Error: updateLicense Fails with status code :{}",status);
+			log.error("Error: updateLicense Fails with status code :{}", StrUtil.toString(HaspStatusEnum.getHaspStatusByStatus(status)));
 		}
 		return status;
 	}
@@ -154,7 +155,7 @@ public class HaspUtil {
 			status = hasp.getLastError();
 			log.info("license status: {}", status);
 			if (status != HaspStatus.HASP_STATUS_OK) {
-				log.error("Error: updateLicense Fails with status code :{}",status);
+				log.error("Error: updateLicense Fails with status code :{}",StrUtil.toString(HaspStatusEnum.getHaspStatusByStatus(status)));
 			}
 			return licenseInfo;
 		}else {
@@ -163,7 +164,7 @@ public class HaspUtil {
 			status = hasp.getLastError();
 			log.info("license status: {}", status);
 			if(status != HaspStatus.HASP_STATUS_OK) {
-				log.error("Error: getLicense c2v Fails with status code :{}",status);
+				log.error("Error: getLicense c2v Fails with status code :{}", StrUtil.toString(HaspStatusEnum.getHaspStatusByStatus(status)));
 				throw new NZException(RCode.LICENSE_ERROR_CODE.setParam(status));	
 			}
 			return infos;
@@ -176,7 +177,7 @@ public class HaspUtil {
 		int status = hasp.getLastError();
 		log.info("license status: {}", status);
 		if(status != HaspStatus.HASP_STATUS_OK) {
-			log.error("Error: license login  Fails with status code :{}",status);
+			log.error("Error: license login  Fails with status code :{}", StrUtil.toString(HaspStatusEnum.getHaspStatusByStatus(status)));
 		}
 		hasp.logout();
 		return status;
