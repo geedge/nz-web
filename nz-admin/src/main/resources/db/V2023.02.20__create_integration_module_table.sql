@@ -19,7 +19,7 @@ CREATE TABLE `int_module`  (
   `remark` VARCHAR(4096) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '备注',
   `icon` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '图标',
   `configuration` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '配置, markdown 格式',
-  `dash_tpl` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '仪表盘模板 ',
+  `tempId` int(10) NOT NULL DEFAULT -1 COMMENT '仪表盘模板id ',
   `status` int(1) NOT NULL DEFAULT 1 COMMENT '状态, 0：隐藏 ,1：显示,默认：1 ',
   `build_in` int(1) NOT NULL DEFAULT 0 COMMENT '可选值：0：非内置 1：内置 默认：0 ',
   `uid` int(10) NOT NULL COMMENT '更新人id',

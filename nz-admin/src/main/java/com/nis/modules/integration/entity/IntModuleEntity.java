@@ -39,9 +39,9 @@ public class IntModuleEntity implements Serializable {
     private String configuration;
 
     /**
-     * 图表模板
+     * 图表模板id
      */
-    private String dashboardTemplate;
+    private Integer tempId;
     /**
      * 状态
      * 0：隐藏

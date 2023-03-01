@@ -8,7 +8,7 @@
         <result property="remark" column="remark"/>
         <result property="icon" column="icon"/>
         <result property="configuration" column="configuration"/>
-        <result property="dashboardTemplate" column="dash_tpl"/>
+        <result property="tempId" column="tempId"/>
         <result property="status" column="status"/>
         <result property="buildIn" column="build_in"/>
         <result property="uts" column="uts"/>
