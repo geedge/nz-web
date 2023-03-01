@@ -1,12 +1,13 @@
 package com.nis.modules.agent.util;
 
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.net.url.UrlBuilder;
 import cn.hutool.core.net.url.UrlPath;
 import cn.hutool.core.net.url.UrlQuery;
+import cn.hutool.json.JSONObject;
 import cn.hutool.log.Log;
 import com.nis.common.exception.NZException;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.RCode;
+import com.nis.common.utils.*;
 import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.service.PromApiService;
 import com.nis.modules.sys.service.SysConfigService;
@@ -19,8 +20,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.File;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.regex.Pattern;
 
 @Configuration
 @SuppressWarnings("all")
@@ -186,6 +189,56 @@ public class TalonUtil {
         return exchange.getBody();
     }
 
+    /**
+     * get Talon Rpm Package
+     *
+     * @param os                      default: centos
+     * @param talonInstallPackagePath
+     * @return
+     */
+    public static File getTalonRpmPackage(String os, String talonInstallPackagePath) {
+        try {
+            os = Tool.StrUtil.emptyToDefault(os, "centos");
+            log.info("[getTalonRpmPackage] [begin] [os: {}]", os);
+
+            File installPackageDir = CommonUtils.getResourceFile(talonInstallPackagePath);
+            log.info("[getTalonRpmPackage] [Package Path: {}] [IsExist: {}] [IsDir: {}]",
+                    talonInstallPackagePath, FileUtil.exist(installPackageDir), FileUtil.isDirectory(installPackageDir));
+
+            if (Tool.BooleanUtil.or(
+                    Tool.BooleanUtil.negate(FileUtil.exist(installPackageDir)),
+                    Tool.BooleanUtil.negate(FileUtil.isDirectory(installPackageDir))
+            )) {
+                log.warn("[getTalonRpmPackage] [Package Path Error] [Path: {}]", talonInstallPackagePath);
+                throw new NZException("file download error", 500);
+            }
+
+            String talonRpmNameRegexJsonStr = sysConfigService.getValue("talon_name");
+            JSONObject jsonObject = JSONUtil.parseObj(talonRpmNameRegexJsonStr);
+
+            String talonNameRegex = (String) jsonObject.get(os);
+            Pattern talonNamePattern = Pattern.compile(talonNameRegex);
+            log.info("[getTalonRpmPackage] [Talon Name Regex: {}]", talonNameRegex);
+
+            File[] listFiles = installPackageDir.listFiles((file, name) -> {
+                return talonNamePattern.matcher(name).find();
+            });
+            log.info("[getTalonRpmPackage] [Files filtered by talon name regex] [size: {}]", listFiles.length);
+
+            if (Tool.ArrayUtil.isEmpty(listFiles)) {
+                log.warn("[getTalonRpmPackage] [talon installation package not found]");
+                throw new NZException("file download error", 500);
+            }
+
+            File file = CommonUtils.getResourceFile(listFiles[0].getAbsolutePath());
+            log.info("[getTalonRpmPackage] [finshed]");
+
+            return file;
+        } catch (Exception e) {
+            log.error(e, "[getTalonRpmPackage] [error]");
+            throw new NZException("file download error", 500);
+        }
+    }
 
     @Autowired
     public void setRestTemplate(RestTemplate restTemplate) {

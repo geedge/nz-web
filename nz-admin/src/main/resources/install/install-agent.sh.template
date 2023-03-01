@@ -165,7 +165,7 @@ EOF
 }
 
 if [ 1 -eq $(isInstall) ];then
-  log yellow "The nz-agent is installed , token is "$(cat $INSTALL_PATH/config/auth.token)
+  log yellow "The nz-agent is installed , token is "$(cat $INSTALL_PATH/config/token.auth)
 else
   downloadPackaget && installPackage
   log green "The nz-agent install finish,you can check agent info in WEB gui"

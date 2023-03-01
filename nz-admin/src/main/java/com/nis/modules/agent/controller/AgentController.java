@@ -140,7 +140,7 @@ public class AgentController {
 		ValidateUtils.is(dcId).notNull(RCode.AGENT_INSTALL_PARAM_MISS).and(type)
 				.notNull(RCode.AGENT_INSTALL_PARAM_MISS);
 		// 读取sh脚本内容
-		File shFile = CommonUtils.getResourceFile(installPath + "install.sh.template");
+		File shFile = CommonUtils.getResourceFile(installPath + "install-agent.sh.template");
 		if (shFile != null && shFile.exists()) {
 			// 组织变量内容
 			String scriptContent = Tool.FileUtil.readUtf8String(shFile);

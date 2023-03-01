@@ -1,0 +1,175 @@
+#!/bin/bash
+{ # this ensures the entire script is downloaded #
+# Find Java
+if [[ -n "$JAVA_HOME" ]] && [[ -x "$JAVA_HOME/bin/java" ]]; then
+    JAVA_EXE="$JAVA_HOME/bin/java"
+elif type -p java > /dev/null 2>&1; then
+    JAVA_EXE=$(type -p java)
+elif [[ -x "/usr/bin/java" ]];  then
+    JAVA_EXE="/usr/bin/java"
+else
+    echo -e "\e[1;31mUnable to find Java\e[0m"
+    exit 1
+fi
+
+echo "java: $JAVA_EXE"
+
+
+#auto replace parameter start
+WEB_TOKEN=${webToken}
+
+REMOTE_IP=${remoteIP}
+
+REMOTE_PORT=${remotePort}
+
+SSL_ENABLED=${sslEnabled}
+
+ASSET_ID=${assetId}
+
+if [ ! -z "$REMOTE_PORT" ];then
+  REMOTE_IP=$REMOTE_IP:$REMOTE_PORT
+fi
+
+LOCALHOST=${localhost}
+#auto replace parameter end
+
+
+# random token
+TALON_TOKEN=$(cut -d '-' -f 1 /proc/sys/kernel/random/uuid)
+
+# path var
+ROOT_PATH=/opt/nezha
+
+INSTALL_PATH=$ROOT_PATH/nz-talon
+
+# reset work tmp dir
+WORK_PATH=/tmp/.nezha/nz-talon
+rm -rf $WORK_PATH&&mkdir -p $WORK_PATH
+
+
+function osInfo() {
+  if [ -e /etc/centos-release ];then
+      echo 'centos'
+  elif [ -e /etc/debian_version ]; then
+      echo 'debian'
+  elif [ -e /etc/lsb_release ]; then
+      echo 'ubuntu'
+  else
+      echo 'centos';
+  fi
+}
+
+CURRENT_OS=$(osInfo)
+
+function log() {
+  case $1 in
+    "red")
+      echo -e "\e[1;31m$2\e[0m"
+      ;;
+    "yellow")
+      echo -e "\e[1;33m$2\e[0m"
+      ;;
+    "green")
+      echo -e "\e[1;32m$2\e[0m"
+      ;;
+    *)
+      echo $2
+      ;;
+  esac
+}
+
+# rpm -aq | grep nz-talon
+function isInstall() {
+  case $CURRENT_OS in
+  'centos')
+    if [ $(rpm -aq | grep nz-talon | wc -l) -lt 1 ];then
+      echo 0
+    else
+      echo 1;
+    fi
+    ;;
+  esac
+}
+
+function getPackageName() {
+  case $CURRENT_OS in
+  'centos')
+    echo "nz-talon.rpm"
+    ;;
+  esac
+}
+PACKAGE_NAME=$(getPackageName $CURRENT_OS)
+
+function downloadPackaget() {
+  cd $WORK_PATH;
+  log yellow "current os is $CURRENT_OS ,download package from http://$REMOTE_IP/asset/talon/download?os=$CURRENT_OS"
+  if command -v wget >/dev/null 2>&1;then
+    if $SSL_ENABLED ;then
+      wget -O $PACKAGE_NAME --no-check-certificate --header="Authorization:"$WEB_TOKEN "https://$REMOTE_IP/asset/talon/download?os="$CURRENT_OS
+    else
+      wget -O $PACKAGE_NAME --header="Authorization:"$WEB_TOKEN "http://$REMOTE_IP/asset/talon/download?os="$CURRENT_OS
+    fi
+    return 0
+  elif command -v curl >/dev/null 2>&1;then
+    if $SSL_ENABLED ;then
+      curl -o $PACKAGE_NAME -k -H "Authorization:"$WEB_TOKEN "https://$REMOTE_IP/asset/talon/download?os="$CURRENT_OS
+    else
+      curl -o $PACKAGE_NAME -H "Authorization:"$WEB_TOKEN "http://$REMOTE_IP/asset/talon/download?os="$CURRENT_OS
+    fi
+    return 0
+  else
+    log red "The wget/curl command is required"
+    exit 1
+  fi
+}
+
+function installPackage() {
+  case $CURRENT_OS in
+  'centos')
+    log yellow 'install package right now...'
+    rpm -ivh $WORK_PATH/$PACKAGE_NAME && mkdir -p $INSTALL_PATH/config; echo -n $TALON_TOKEN > $INSTALL_PATH/config/token.auth
+    ;;
+  esac
+
+  if [ 0 -eq $? ];then
+    cat > $WORK_PATH/param.tmp <<EOF
+    {
+      "assetId":"$ASSET_ID",
+      "port":10092,
+      "token":"$TALON_TOKEN"
+    }
+EOF
+    log yellow 'now regist talon to system with information :'
+    cat $WORK_PATH/param.tmp
+    if $SSL_ENABLED ;then
+      local msg=`curl -s -k -X POST -H "Content-Type:application/json" -H "Authorization:"$WEB_TOKEN -d @$WORK_PATH/param.tmp  "https://$REMOTE_IP/asset/talon/register"`
+    else
+      local msg=`curl -s -X POST -H "Content-Type:application/json" -H "Authorization:"$WEB_TOKEN -d @$WORK_PATH/param.tmp  "http://$REMOTE_IP/asset/talon/register"`
+    fi
+    local code=`echo $msg |grep -E -o '"code":[0-9]+'|grep -E -o '[0-9]+'`
+    rm -rf $WORK_PATH/param.tmp
+    if [ 200 -eq $code ];then
+      log green 'regist talon success!'
+    else
+      log red 'regist talon failed,cause:'
+      echo $msg
+      exit 1
+    fi
+  else
+    log red "install nz-talon package may be has some error please try again or install by yourself"
+    exit 1
+  fi
+}
+
+if [ 1 -eq $(isInstall) ];then
+  log yellow "The nz-talon is installed , token is "$(cat $INSTALL_PATH/config/token.auth)
+else
+  downloadPackaget && installPackage
+  log green "The nz-talon install finish,you can check talon info in WEB gui"
+fi
+
+
+}
+
+# this ensures the entire script is downloaded #
+
