@@ -74,11 +74,10 @@ public class AgentServiceImpl extends ServiceImpl<AgentDao, Agent> implements Ag
 
 
 	public void validateParam(Agent agentEntity) {
-		// host port type 唯一
+		// host port 唯一
 		List<Agent> pList = this.list(new LambdaQueryWrapper<Agent>()
 				.eq(Agent::getHost, agentEntity.getHost())
-				.eq(Agent::getPort, agentEntity.getPort())
-				.eq(Agent::getType, agentEntity.getType()));
+				.eq(Agent::getPort, agentEntity.getPort()));
 
 		boolean flag = false;
 		if ((pList == null || pList.size() == 0) || (pList != null && pList.size() == 1 && pList.get(0).getId().equals(agentEntity.getId()))) {
