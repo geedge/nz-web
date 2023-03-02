@@ -580,7 +580,7 @@ public enum RCode {
     AGENT_PORT_ERROR(523012, "Agent port is incorrect"),
     AGENT_HOST_ERROR(523013, "Agent host is incorrect"),
     AGENT_NOTEXSITS(526014, "Agent is not exsits"),    // Agent 不存在
-    AGENT_EXIST_ERROR(526015, "Agent is exists : host,type,port repeat"),
+    AGENT_EXIST_ERROR(526015, "Agent is exists : host,port repeat"),
     AGENT_TYPE_INVALIDE(523016,"Agent type is incorrect"),
     AGENT_UNAVAILABLE(526017,"No agent available"),
     AGENT_TOKEN_ISNULL(521018, "Agent token info can not be empty"),
