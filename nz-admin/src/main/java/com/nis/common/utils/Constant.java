@@ -1198,25 +1198,52 @@ public class Constant {
      * 导入导出支持的文件类型
      */
     public enum ImportFileType {
-        EXCEL("1"),
-        CSV("2"),
-        JSON("3");
+	    XLSX("xlsx", "1"),
+	    XLS("xls", "1"),
+	    CSV("csv", "2"),
+	    JSON("json", "3");
 
-        private String value;
+	    private String type;
+	    private String value;
 
-        public String getValue() {
-            return value;
-        }
+	    ImportFileType(String type, String value) {
+		    this.type = type;
+		    this.value = value;
+	    }
 
-        ImportFileType(String value) {
-            this.value = value;
-        }
+	    public String getType() {
+		    return type;
+	    }
 
-        public static ImportFileType getType(String value) {
-            for (ImportFileType v : values())
-                if (v.getValue().equalsIgnoreCase(value)) return v;
-            throw new IllegalArgumentException();
-        }
+	    public void setType(String type) {
+		    this.type = type;
+	    }
+
+	    public String getValue() {
+		    return value;
+	    }
+
+	    public void setValue(String value) {
+		    this.value = value;
+	    }
+
+	    public static ImportFileType getInstanceByType(String type) {
+		    for (ImportFileType v : values()) {
+			    if (StrUtil.equalsIgnoreCase(v.getType(), type)) {
+				    return v;
+			    }
+		    }
+		    throw new IllegalArgumentException();
+	    }
+
+	    public static ImportFileType getInstanceByValue(String value) {
+		    for (ImportFileType v : values()) {
+			    if (StrUtil.equalsIgnoreCase(v.getValue(), value)) {
+				    return v;
+			    }
+		    }
+		    throw new IllegalArgumentException();
+	    }
     }
 
 	public static final String ENDPOINT_METRICS_STATE_CACHE_KEY = "endpoint_metrics_state";

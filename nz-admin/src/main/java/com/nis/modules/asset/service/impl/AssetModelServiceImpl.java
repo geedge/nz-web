@@ -31,6 +31,7 @@ import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.snmp4j.util.SimpleOIDTextFormat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -366,6 +367,9 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
         // 表头信息 国际化之后的
         List<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
 
+        String fileExtension = FilenameUtils.getExtension(multipartFile.getOriginalFilename());
+        params.put("fileExtension", fileExtension);
+
         // 返回统计信息
         Map statMap = this.saveAssetModelsFromImportDataList(importDataList, headerInfos, params);
         return statMap;
@@ -492,7 +496,7 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
             }
         }
         String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_MODEL_EXPORT_HEADER);
-        String failedContentFileBase64Str = basicImportAndExportServices.getFailedContentFileBase64Str(failContentList, sysHeaderJsonStr, Constant.ImportFileType.EXCEL.getValue());
+        String failedContentFileBase64Str = basicImportAndExportServices.getFailedContentFileBase64Str(failContentList, sysHeaderJsonStr, MapUtil.getStr(params, "fileExtension"));
         //  返回统计信息
         Map<Object, Object> statMap = Tool.MapUtil.builder()
                 .put("seq", seq)

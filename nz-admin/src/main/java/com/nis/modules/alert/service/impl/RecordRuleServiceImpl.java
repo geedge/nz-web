@@ -25,6 +25,7 @@ import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
@@ -309,6 +310,9 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 		// 表头信息 国际化之后的
 		List<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
 
+		String fileExtension = FilenameUtils.getExtension(excelFile.getOriginalFilename());
+		params.put("fileExtension", fileExtension);
+
 		// 返回统计信息
 		Map statMap = this.saveRulesFromImportDataList(importDataList, headerInfos, params);
 		return statMap;
@@ -412,7 +416,7 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 			}
 		}
 		String sysHeaderJsonStr = configService.getValue(Constant.SYSCONFIG_KEY_RUCORDRULE_IMPORT_HEADER);
-		String failedContentFileBase64Str = basicImportAndExportServices.getFailedContentFileBase64Str(failContentList, sysHeaderJsonStr, Constant.ImportFileType.EXCEL.getValue());
+		String failedContentFileBase64Str = basicImportAndExportServices.getFailedContentFileBase64Str(failContentList, sysHeaderJsonStr, MapUtil.getStr(params, "fileExtension"));
 		//  返回统计信息
 		Map<Object, Object> statMap = Tool.MapUtil.builder()
 				.put("seq", seq)
