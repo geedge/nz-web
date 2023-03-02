@@ -55,6 +55,7 @@ import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.modules.vsys.entity.VsysAssetRel;
 import com.nis.modules.vsys.service.VsysAssetRelService;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.shiro.ShiroException;
 import org.snmp4j.smi.TimeTicks;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -1655,6 +1656,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // 表头信息 国际化之后的
         List<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
 
+        String fileExtension = FilenameUtils.getExtension(multipartFile.getOriginalFilename());
+        params.put("fileExtension", fileExtension);
+
         // 返回统计信息
         Map statMap = this.saveAssetsFromImportDataList(importDataList, headerInfos, params);
         return statMap;
@@ -1751,7 +1755,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         for (int i = 0; i < handleImportData.size(); i++) {
             Map saveEntitys = Tool.MapUtil.newHashMap();
             Map<Integer, String> dataMap = handleImportData.get(i);
-            Integer lineNum = Integer.parseInt(dataMap.get(999)) + 1;
+            Integer lineNum = Integer.parseInt(dataMap.get(Tool.StrUtil.INDEX_NOT_FOUND)) + 1;
             // name， 以 name作为索引 标识该条记录是否存在
             String assetName = dataMap.get(AssetImportEnum.NAME.getIndex());
             validateUtil.validateRequired(assetName, lineNum, AssetImportEnum.NAME.getIndex());
@@ -1759,6 +1763,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             // 索引列重复 & 忽略标识，提示忽略本行
             if (BooleanUtil.and(indexDuplicate, StrUtil.equals("2", existed))) {
                 validateUtil.ignoreThisRow(lineNum, AssetImportEnum.NAME.getIndex());
+                // 删除标记元素
+                MapUtil.removeAny(dataMap, Tool.StrUtil.INDEX_NOT_FOUND);
                 failContentList.add(dataMap);
                 continue;
             }
@@ -1953,8 +1959,11 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             if (BooleanUtil.and(Tool.StrUtil.equals("0", ignoreError), Tool.CollUtil.isNotEmpty(errMsgForThisLine))) {
                 // 结束本次导入，自导入行开始 到结尾数据行，提示错误信息
                 for (int j = i; j < handleImportData.size(); j++) {
-                    validateUtil.recordImportAttrErr(Integer.parseInt(handleImportData.get(j).get(999)) + 1, RCode.IMPORT_ERROR_STOP);
-                    failContentList.add(handleImportData.get(j));
+                    validateUtil.recordImportAttrErr(Integer.parseInt(handleImportData.get(j).get(Tool.StrUtil.INDEX_NOT_FOUND)) + 1, RCode.IMPORT_ERROR_STOP);
+                    Map<Integer, String> tmap = handleImportData.get(j);
+                    // 删除标记元素
+                    MapUtil.removeAny(tmap, Tool.StrUtil.INDEX_NOT_FOUND);
+                    failContentList.add(tmap);
                 }
                 break;
             }
@@ -2036,17 +2045,21 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                         updateNum++;
                     }
                 } catch (Exception e) {
+                    // 删除标记元素
+                    MapUtil.removeAny(dataMap, Tool.StrUtil.INDEX_NOT_FOUND);
                     failContentList.add(dataMap);
                     dataSourceTransactionManager.rollback(transactionStatus);
                     validateUtil.recordImportAttrErr(lineNum, RCode.ERROR);
                     log.error("Asset import roll back the transaction failure", e);
                 }
             } else {
+                // 删除标记元素
+                MapUtil.removeAny(dataMap, Tool.StrUtil.INDEX_NOT_FOUND);
                 failContentList.add(dataMap);
             }
         }
         String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_ASSET_ASSET_EXPORT_HEADER);
-        String failedContentFileBase64Str = basicImportAndExportServices.getFailedContentFileBase64Str(failContentList, sysHeaderJsonStr, Constant.ImportFileType.EXCEL.getValue());
+        String failedContentFileBase64Str = basicImportAndExportServices.getFailedContentFileBase64Str(failContentList, sysHeaderJsonStr, MapUtil.getStr(params, "fileExtension"));
         //  返回统计信息
         Map<Object, Object> statMap = Tool.MapUtil.builder()
                 .put("seq", seq)
@@ -2268,8 +2281,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         List<Map<Integer, String>> childList = new ArrayList<>();
         for (int i = 0; i < importDataList.size(); i++) {
             Map<Integer, String> dataMap = importDataList.get(i);
-            dataMap.put(999, i + "");// 实际数据行数
-            if (StringUtils.isEmpty(dataMap.get(2))) {
+            dataMap.put(Tool.StrUtil.INDEX_NOT_FOUND, i + "");// 实际数据行数
+            if (StringUtils.isEmpty(dataMap.get(AssetImportEnum.PARENT.getIndex()))) {
                 list.add(dataMap);
             } else {
                 childList.add(dataMap);

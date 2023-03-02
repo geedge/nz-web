@@ -32,6 +32,7 @@ import inet.ipaddr.AddressStringException;
 import inet.ipaddr.IPAddress;
 import inet.ipaddr.IPAddressString;
 import inet.ipaddr.IncompatibleAddressException;
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -274,6 +275,9 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 		// 表头信息 国际化之后的
 		List<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
 
+		String fileExtension = FilenameUtils.getExtension(multipartFile.getOriginalFilename());
+		params.put("fileExtension", fileExtension);
+
 		// 返回统计信息
 		Map statMap = this.saveIpamSubnetsFromImportDataList(importDataList, headerInfos, params);
 		return statMap;
@@ -382,7 +386,7 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 			}
 		}
 		String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_IPAMSUBNET_IMPORT_HEADER);
-		String failedContentFileBase64Str = basicImportAndExportServices.getFailedContentFileBase64Str(failContentList, sysHeaderJsonStr, Constant.ImportFileType.EXCEL.getValue());
+		String failedContentFileBase64Str = basicImportAndExportServices.getFailedContentFileBase64Str(failContentList, sysHeaderJsonStr, MapUtil.getStr(params, "fileExtension"));
 		//  返回统计信息
 		Map<Object, Object> statMap = Tool.MapUtil.builder()
 				.put("seq", seq)

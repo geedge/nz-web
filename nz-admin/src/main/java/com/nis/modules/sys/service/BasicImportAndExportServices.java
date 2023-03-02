@@ -17,7 +17,7 @@ public interface BasicImportAndExportServices {
 
     void exportDataByFormat(HttpServletResponse response, List<List<String>> exportDataList, String sysHeaderJsonStr, String format, String fileName) throws IOException;
 
-    String getFailedContentFileBase64Str(List<Map<Integer, String>> failContentList, String sysHeaderJsonStr, String format);
+    String getFailedContentFileBase64Str(List<Map<Integer, String>> failContentList, String sysHeaderJsonStr, String fileExtension);
 
     /**
      * 根据表名、列名、value值查询列表，导入判定对象是否存在时使用

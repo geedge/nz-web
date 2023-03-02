@@ -16,9 +16,11 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
+import com.nis.common.utils.Constant.ImportFileType;
 import com.nis.modules.sys.dao.BasicMapper;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysI18nService;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
@@ -68,8 +70,9 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
     @Override
     public void getTemplate(String sysHeaderJsonStr, String format, String fileName, HttpServletResponse response) throws IOException {
         Map<String, String> exportHeaderMap = this.getI18nHeaderMap(sysHeaderJsonStr);
-        switch (format) {
-            case "1": { // XLSX
+        switch (ImportFileType.getInstanceByValue(format)) {
+            case XLS:
+            case XLSX: {
                 SXSSFWorkbook workbook = null;
                 try {
                     workbook = ExcelUtils.createExcel07(exportHeaderMap, "Datasheet", true);
@@ -82,11 +85,11 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
                 }
                 break;
             }
-            case "2": {// CSV
+            case CSV: {
                 fileName += ".csv";
                 File file = FileUtil.file(Constant.TMP_ROOT_PATH + fileName);
                 FileOutputStream fos = new FileOutputStream(file);
-                fos.write(new byte[] { (byte) 0xEF, (byte) 0xBB,(byte) 0xBF});
+                fos.write(new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF});
                 try {
                     CsvWriter writer = CsvUtil.getWriter(file, CharsetUtil.CHARSET_UTF_8, true);
                     writer.write(
@@ -99,7 +102,7 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
                 }
                 break;
             }
-            case "3": {// JSON
+            case JSON: {
                 for (Map.Entry<String, String> entry : exportHeaderMap.entrySet()) {
                     entry.setValue(StrUtil.EMPTY);
                 }
@@ -122,17 +125,15 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
 
     @Override
     public List<Map<Integer, String>> getImportDataFromMultipartFile(MultipartFile multipartFile, String sysHeaderJsonStr) throws IOException {
-        String originalFilename = multipartFile.getOriginalFilename();
-        String fileType = originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
-        fileType = fileType.toLowerCase();
+        String fileType = FilenameUtils.getExtension(multipartFile.getOriginalFilename());
 
         Map<String, String> exportHeaderMap = this.getI18nHeaderMap(sysHeaderJsonStr);
-
         List<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
+
         List<Map<Integer, String>> importDataList = new ArrayList<>();
-        switch (fileType) {
-            case "xlsx":
-            case "xls": {
+        switch (ImportFileType.getInstanceByType(fileType)) {
+            case XLS:
+            case XLSX: {
                 Workbook work = ExcelUtils.getWorkBookFromMultipartFile(multipartFile);
                 Sheet sheet = work.getSheetAt(0);
                 // 表头校验
@@ -151,7 +152,7 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
                 }
                 break;
             }
-            case "csv": {
+            case CSV: {
                 CsvData csvData = CSVUtils.getCsvDataFromMultipartFile(multipartFile);
                 List<CsvRow> rows = csvData.getRows();
                 CsvRow headers = rows.get(0);
@@ -164,8 +165,8 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
                     Map<Integer, String> tmpMap = Tool.MapUtil.newHashMap();
                     for (int j = 0; j < headerInfos.size(); j++) {
                         String cellStr = StrUtil.trim(csvRow.get(j));
-                        if((StrUtil.startWith(cellStr, "[") && StrUtil.endWith(cellStr, "]")) ||
-                                (StrUtil.startWith(cellStr, "{") && StrUtil.endWith(cellStr, "}"))){ // csv文件中json格式双引号会变成两个
+                        if ((StrUtil.startWith(cellStr, "[") && StrUtil.endWith(cellStr, "]")) ||
+                                (StrUtil.startWith(cellStr, "{") && StrUtil.endWith(cellStr, "}"))) { // csv文件中json格式双引号会变成两个
                             cellStr = StrUtil.replace(cellStr, "\"\"", "\"");
                         }
                         tmpMap.put(j, cellStr);
@@ -174,7 +175,7 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
                 }
                 break;
             }
-            case "json": {
+            case JSON: {
                 String str = IoUtil.read(multipartFile.getInputStream(), CharsetUtil.charset("UTF-8"));
                 List<LinkedHashMap> mapList = JSONObject.parseArray(str, LinkedHashMap.class);
                 LinkedHashMap map = mapList.get(0);
@@ -207,9 +208,9 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
     @Override
     public void exportDataByFormat(HttpServletResponse response, List<List<String>> exportDataList, String sysHeaderJsonStr, String format, String fileName) throws IOException {
         Map<String, String> exportHeaderMap = this.getI18nHeaderMap(sysHeaderJsonStr);
-        Constant.ImportFileType fileType = Constant.ImportFileType.getType(format);
-        switch (fileType) {
-            case EXCEL: {
+        switch (ImportFileType.getInstanceByValue(format)) {
+            case XLS:
+            case XLSX: {
                 SXSSFWorkbook workbook = null;
                 try {
                     String sheetName = "Datasheet";
@@ -283,7 +284,7 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
     }
 
     @Override
-    public String getFailedContentFileBase64Str(List<Map<Integer, String>> failContentList, String sysHeaderJsonStr, String format) {
+    public String getFailedContentFileBase64Str(List<Map<Integer, String>> failContentList, String sysHeaderJsonStr, String fileExtension) {
         if (CollUtil.isEmpty(failContentList)) return StrUtil.EMPTY;
 
         List<List<String>> list = ListUtil.list(true);
@@ -293,11 +294,10 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
         });
 
         Map<String, String> exportHeaderMap = this.getI18nHeaderMap(sysHeaderJsonStr);
-        format = StrUtil.emptyToDefault(format, Constant.ImportFileType.EXCEL.getValue());
-        Constant.ImportFileType fileType = Constant.ImportFileType.getType(format);
         try {
-            switch (fileType) {
-                case EXCEL: {
+            switch (ImportFileType.getInstanceByType(fileExtension)) {
+                case XLS:
+                case XLSX: {
                     String sheetName = "Datasheet";
                     SXSSFWorkbook workbook = ExcelUtils.createExcel07(exportHeaderMap, sheetName, true);
                     SXSSFSheet sheet = workbook.getSheet(sheetName);
