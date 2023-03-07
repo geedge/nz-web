@@ -81,7 +81,7 @@
   },
   "------------------ PUT  /terminal/kill data---------------------": "note",
   "kill_success": {
-    "uuid": "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ"
+    "uuid": "8b883310-589f-4407-9c71-a7b171e83657"
   },
   "kill_terminalUuidIsnull": {
     "uuid": ""
