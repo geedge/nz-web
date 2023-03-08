@@ -254,6 +254,9 @@
                     #{tmplId}
                 </foreach>
             </if>
+            <if test="params.snmpEnable != null and params.snmpEnable != ''">
+                AND type.snmp_enable = #{params.snmpEnable}
+            </if>
 
          </where>
         <if test="params.orderBy == null or params.orderBy == ''">
