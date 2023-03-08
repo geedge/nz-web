@@ -26,14 +26,10 @@ public interface VisualChartService extends IService<VisualChart> {
 	void weights(Integer panelId,List<VisualChart> chartList);
     
     void delVisualChartsByPanelId(Integer... panelId);
-    
-    Integer fromTmpl(Map<String,Object> params);
-    
-    Integer syncTmpl(Map<String,Object> params);
+
+	Integer chartTmplSynch(Integer pid, List<Integer> chartIdList);
 
 	void saveRelPanelAndChart(String typeStr, Integer linkId, Integer tempId, String seq, VisualChart chartTemplate);
-
-	List<VisualChart> queryChartWithElementByIds(List<Integer> chartIdList);
 
 	/**
 	 * 平铺 获取所有 chart 节点

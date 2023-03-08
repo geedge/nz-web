@@ -19,10 +19,10 @@ import java.util.Map;
 @RestController
 @RequestMapping("/visual/panel/chart")
 public class VisualPanelChartController {
-	
+
 	@Autowired
 	private VisualChartService visualChartService;
-	
+
 	@GetMapping(value={"/{id}"})
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.VISUALCHART)
     public R chartInfo(@PathVariable Integer id){
@@ -36,7 +36,7 @@ public class VisualPanelChartController {
 		PageUtils page = visualChartService.queryPage(params);
         return R.ok(page);
     }
-	
+
     @PostMapping
     @SysLog(operation = OperationEnum.ADD,type = TypeEnum.VISUALCHART)
     @RequiresPermissions({"visual:chart:save"})
@@ -65,31 +65,30 @@ public class VisualPanelChartController {
         visualChartService.delCharts(ids, sync);
         return R.ok();
     }
-    
+
     /**
      * charts 调整大小接口
      *
-     * @param panelId
      * @param chart
      * @return
      */
     @PutMapping(value = {"/modify"})
-    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.VISUALCHART)
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.VISUALCHART)
     public R modify(@RequestBody VisualChart chart) {
         ValidateUtils.is(chart.getId()).notNull(RCode.CHART_ID_ISNULL)
                 .and(chart.getSpan()).notNull(RCode.CHART_SPAN_ISNULL)
                 .and(chart.getHeight()).notNull(RCode.CHART_HEIGHT_ISNULL);
-             
+
 
         visualChartService.modify(chart);
         return R.ok();
     }
 
-    
+
     /**
      * 调整位置接口
-     * @param panelId
-     * @param chartList
+     *
+     * @param params
      * @return
      */
     @PutMapping(value = {"/weights"})
@@ -106,26 +105,29 @@ public class VisualPanelChartController {
         visualChartService.weights(panelId,chartList);
         return R.ok();
     }
-    
+
     /**
-     * charts 通过模板添加
-     */
-    @PostMapping(value = {"/fromTmpl"})
-    @SysLog(operation = OperationEnum.ADD,type = TypeEnum.VISUALCHART)
-    @RequiresPermissions({"visual:chart:save"})
-    public R fromTmpl(@RequestBody Map<String,Object> params) {
-    	Integer total = visualChartService.fromTmpl(params);
-    	return R.ok().putData("total", total);
-    }
-    
-    /**
-     * charts 通过模板添加
+     * charts 模板同步接口
+     *
+     * @param params pid & ids cannot be empty at the same time
+     * @return
      */
     @PostMapping(value = {"/syncTmpl"})
-    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.VISUALCHART)
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.VISUALCHART)
     @RequiresPermissions({"visual:chart:save"})
-    public synchronized R syncTmpl(@RequestBody Map<String,Object> params) {
-    	Integer total = visualChartService.syncTmpl(params);
-    	return R.ok().putData("total", total);
+    public synchronized R syncTmpl(@RequestBody Map<String, Object> params) {
+        // validate
+        // pid and chartIds cannot be empty at the same time
+        Integer pid = (Integer) params.get("pid");
+        List<Integer> chartIdList = (List<Integer>) params.get("ids");
+
+        if (Tool.BooleanUtil.and(Tool.ObjectUtil.isNull(pid),
+                Tool.CollUtil.isEmpty(chartIdList))) {
+            return R.error(RCode.CHART_SYNCTMPL_ERROR);
+        }
+
+        chartIdList = Tool.CollUtil.defaultIfEmpty(chartIdList, Tool.ListUtil.empty());
+        Integer total = visualChartService.chartTmplSynch(pid, chartIdList);
+        return R.ok().putData("total", total);
     }
 }

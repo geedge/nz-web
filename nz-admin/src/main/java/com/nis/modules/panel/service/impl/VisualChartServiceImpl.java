@@ -1,6 +1,7 @@
 package com.nis.modules.panel.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
@@ -13,12 +14,9 @@ import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.common.utils.Constant.ChartDatasourceType;
-import com.nis.common.utils.Tool.NzExpressionUtil;
-import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetModel;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetModelService;
-import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
@@ -40,7 +38,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service("visualChartService")
@@ -58,7 +55,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	private VisualChartElementService chartElementService;
 
 	@Autowired
-	private AssetAssetService assetAssetService;
+	private AssetAssetService assetService;
 
 	@Autowired
 	private AssetModelService assetModelService;
@@ -67,7 +64,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	private MonitorModuleService monitorModuleService;
 
 	@Autowired
-	private MonitorEndpointService monitorEndpointService;
+	private MonitorEndpointService endpointService;
 
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
@@ -238,11 +235,6 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	        }
 	        // group 类型不需要校验 elements
 	        case Constant.CHART_GROUP_TYPE:{
-	        	// 当chart为group时 不允许name重复  会影响chart批量导入
-	        	List<VisualChart> charts = this.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, chart.getName()).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()).eq(VisualChart::getPanelId, chart.getPanelId()).ne(ToolUtil.isNotEmpty(chart.getId()), VisualChart::getId,chart.getId()).ne(ToolUtil.isNotEmpty(chart.getVarType()), VisualChart::getVarType,chart.getVarType()));
-	            if(ToolUtil.isNotEmpty(charts)) {
-	            	throw new NZException(RCode.CHART_GROUP_NAME_DUPLICATE);
-	            }
 	            chart.setElements(null);
 	            break;
 	        }
@@ -505,383 +497,212 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 
 	@Override
 	@Transactional(rollbackFor = Exception.class)
-	public Integer fromTmpl(Map<String, Object> params) {
-		// 校验参数合法
-		Integer pid = (Integer) params.get("pid");
-		List<Integer> varIds = (List<Integer>) params.get("varIds");
-		ValidateUtils.is(pid).notNull(RCode.CHART_PID_ISNULL).and(varIds).notNull(RCode.CHART_VARID_ISNULL);
-		/*
-		 * 当panelId 不为空时，是向一个panel添加多个 chart
-		 * 当panelId 为空时，则向多个panel (varIds) 添加一个chart
-		 */
-		Integer panelId = (Integer) params.get("panelId");
+	public Integer chartTmplSynch(Integer pid, List<Integer> chartIdList) {
+		log.info("[chartTmplSynch] [begin]");
 
-		List<VisualChart> chartList = new ArrayList<>();
-		// 查询模板添加的chart信息
-		VisualChart chartInfo = this.baseMapper.queryInfo(pid);
-		chartList.add(chartInfo);
-		if (Constant.CHART_GROUP_TYPE.equalsIgnoreCase(chartInfo.getType())) {
-			// 如果类型为 group 则添加组下所有 charts
-			List<VisualChart> childrenChartList = this.list(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getGroupId, chartInfo.getId()).eq(VisualChart::getPanelId, 0));
-			List<Integer> childrenChartIdList = childrenChartList.stream().map(VisualChart::getId).distinct().collect(Collectors.toList());
-			
-			if(ObjectUtil.isNotEmpty(childrenChartIdList)) {
-				List<VisualChart> visualCharts = this.baseMapper.queryList(childrenChartIdList);
-				chartList.addAll(visualCharts);
-			}
+		// get All Charts Need Be Synch By Params
+		List<VisualChart> chartListToBeSync = this.getAllChartsNeedBeSynchByParams(pid, chartIdList);
+
+		if (Tool.CollUtil.isEmpty(chartListToBeSync)) {
+			log.warn("[chartTmplSynch] [No charts found need to be synchronized] [pid: {}] [chartIdList: {}]", pid, Tool.JSONUtil.toJsonStr(chartIdList));
+			return chartListToBeSync.size();
 		}
 
-		// 按照 group 升序，先添加组
-		chartList = chartList.stream().sorted(Comparator.comparing(VisualChart::getGroupId)).collect(Collectors.toList());
+		// 获取所有模板数据
+		List<Integer> allTmplChartIdList = chartListToBeSync.stream().map(VisualChart::getPid).distinct().collect(Collectors.toList());
+		List<VisualChart> templateCharts = this.baseMapper.queryList(allTmplChartIdList);
 
-		List<VisualPanel> panelList = visualPanelService.list();
+		// 将不必要的图表过滤掉，避免重复同步
+		// Group A {Chart-1,Chart-2,Chart-3}  只需要同步  Group A  即可
+		List<Integer> syncChartGroupIdList = chartListToBeSync.stream().filter(chart -> StrUtil.equals(Constant.CHART_GROUP_TYPE, chart.getType())).map(VisualChart::getId).collect(Collectors.toList());
 
-		if (ObjectUtil.isNotEmpty(panelId)) {
-			VisualPanel panel = panelList.stream().filter(visualPanel -> visualPanel.getId().equals(panelId)).findAny().orElse(null);
-			ValidateUtils.is(panel).notNull(RCode.PANEL_NOT_EXIST);
-		}
+		// perform Sync Chart List
+		List<VisualChart> performSyncChartList = chartListToBeSync.stream().filter(chart -> BooleanUtil.negate(Tool.CollUtil.contains(syncChartGroupIdList, chart.getGroupId()))).collect(Collectors.toList());
+		this.syncChart(performSyncChartList, templateCharts);
 
-		Integer total = 0;
-		for (Integer entityId : varIds) {
-			Map<Integer, Integer> groupIdMapping = new HashMap<>();
+		// delete
+		List<Integer> removeChartIdList = chartListToBeSync.stream().map(VisualChart::getId).collect(Collectors.toList());
+		// del charts
+		this.removeByIds(removeChartIdList);
+		// del chart Elements
+		chartElementService.delElementByChartIds(removeChartIdList);
 
-			List<VisualChart> tempChartList = JSONObject.parseArray(JSONObject.toJSONString(chartList), VisualChart.class);
-			for (VisualChart chart : tempChartList) {
-				Map<Integer, Object> objs = new HashMap<>();
-				// 查询所有 varId 对应数据信息
-				if (chart.getVarType().equals(Constant.ChartVariableType.ASSET.getValue())) {
-					AssetAsset asset = assetAssetService.queryAssetInfo(entityId);
-					objs.put(entityId, asset);
-				} else if (chart.getVarType().equals(Constant.ChartVariableType.ENDPOINT.getValue())) {
-					MonitorEndpoint endpoint = monitorEndpointService.queryEndpointEntity(entityId);
-					objs.put(entityId, endpoint);
-				}
-
-				if (ToolUtil.isEmpty(objs.get(entityId))) {
-					throw new NZException(RCode.CHART_VARID_ERROR);
-				}
-
-				VisualChart visualChart = new VisualChart();
-				BeanUtil.copyProperties(chart, visualChart);
-
-				visualChart.setId(null);
-				visualChart.setPid(chart.getId());
-				visualChart.setVarId(entityId);
-				visualChart.setUpdateAt(new Date());
-				visualChart.setUpdateBy(ShiroUtils.getUserId().intValue());
-
-				if (ObjectUtil.isNotEmpty(panelId)) {
-					visualChart.setPanelId(panelId);
-				} else {
-					String type = chart.getVarType().equals(Constant.ChartVariableType.ASSET.getValue()) ? DashboardConstant.Type.ASSET.getValue() : DashboardConstant.Type.ENDPOINT.getValue();
-					VisualPanel linkPanel = panelList.stream().filter(panel -> type.equalsIgnoreCase(panel.getType()) && entityId.equals(panel.getLink())).findAny().orElse(null);
-					visualChart.setPanelId(linkPanel.getId());
-				}
-
-				visualChart.setName(NzExpressionUtil.renderExpression(visualChart.getName(), objs.get(entityId)));
-				visualChart.setParam(ToolUtil.isNotEmpty(visualChart.getParam()) ? Tool.NzExpressionUtil.renderExpression(visualChart.getParam().toString(), objs.get(entityId)) : null);
-
-				Integer newGroupId = groupIdMapping.get(visualChart.getGroupId());
-				visualChart.setGroupId(newGroupId == null ? 0 : newGroupId);
-
-				// 因为 组名不能重复问题 如果添加组则校验组名唯一
-				if (Constant.CHART_GROUP_TYPE.equalsIgnoreCase(chart.getType())) {
-					List<VisualChart> charts = this.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, visualChart.getName()).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()).eq(VisualChart::getPanelId, visualChart.getPanelId()));
-					if (ToolUtil.isNotEmpty(charts)) {
-						throw new NZException(RCode.CHART_GROUP_NAME_DUPLICATE);
-					}
-				}
-
-				// 保存
-				this.save(visualChart);
-				total++;
-
-				// 添加之后 group 类型保存 id mapping
-				if (Constant.CHART_GROUP_TYPE.equalsIgnoreCase(chart.getType())) {
-					groupIdMapping.put(chart.getId(), visualChart.getId());
-				}
-
-				if (CollectionUtils.isNotEmpty(visualChart.getElements())) {
-					for (VisualChartElement element : visualChart.getElements()) {
-						element.setId(null);
-						element.setExpression(NzExpressionUtil.renderExpression(element.getExpression(), objs.get(entityId)));
-						element.setChartId(visualChart.getId());
-					}
-					chartElementService.saveBatch(visualChart.getElements());
-				}
-			}
-		}
-		return total;
+		log.info("[chartTmplSynch] [finshed]");
+		// total
+		return removeChartIdList.size();
 	}
 
-	@Override
-	@Transactional(rollbackFor = Exception.class)
-	public Integer syncTmpl(Map<String, Object> params) {
-		// 校验参数合法
-		Integer pid = (Integer) params.get("pid");
-		List<Integer> ids = (List<Integer>) params.get("ids");
-		Integer panelId = (Integer) params.get("panelId");
-		List<Integer> models = (List<Integer>) params.get("models");
-		Integer modules = (Integer) params.get("modules");
-		// 五个参数不能同时为空
-		if (ObjectUtil.isAllEmpty(pid, ids, panelId, models, modules)) {
-			throw new NZException(RCode.CHART_SYNCTMPL_ERROR);
-		}
-		List<VisualChart> analysis = new ArrayList<VisualChart>();
-		if(ToolUtil.isNotEmpty(pid) || ToolUtil.isNotEmpty(ids) || ToolUtil.isNotEmpty(panelId)) {
-			// 查询
-			List<VisualChart> charts = this.baseMapper.selectTmplCharts(params);
-			if(ToolUtil.isEmpty(charts)) {
-				return 0;
-			}
-			// 记录同步的chartId统一删除
-			List<Integer> removeIds = charts.stream().map(VisualChart::getId).collect(Collectors.toList());
-			// 获取所有父类模板的id信息
-			List<Integer> pids = charts.stream().map(VisualChart::getPid).collect(Collectors.toList());
-			// 获取所有模板数据
-			List<VisualChart> templateCharts = this.baseMapper.queryList(pids);
-			List<VisualChart> chartResult = this.handlerSyncChart(charts,templateCharts,null);
-			if(ToolUtil.isNotEmpty(chartResult)) {
-				// 批量删除chart 重新同步chart
-				this.delCharts(removeIds.toArray(new Integer[] {removeIds.size()}), 1);
-			}
-			analysis.addAll(chartResult);
-		}
-		if(ToolUtil.isNotEmpty(models) || ToolUtil.isNotEmpty(modules)) {
-			if(ToolUtil.isNotEmpty(models)) {
-				List<AssetModel> assetModels = (List<AssetModel>) assetModelService.listByIds(models);
-				for(AssetModel assetModel : assetModels) {
-					if(StrUtil.isNotBlank(assetModel.getChartIds())) {
-						List<String> assetModelChartIds = Arrays.asList(assetModel.getChartIds().split(","));
-						List<Integer> chartIdList = assetModelChartIds.stream().map(Integer::parseInt).collect(Collectors.toList());					
-						// 获取所有模板数据
-						List<VisualChart> templateCharts = this.baseMapper.queryList(chartIdList);
-						// 获取所有实例化图表数据信息 用于删除操作
-						List<VisualChart> charts = this.baseMapper.selectInstanceChart(1, assetModel.getId());
-						// 记录同步的chartId统一删除
-						List<Integer> removeIds = charts.stream().map(VisualChart::getId).collect(Collectors.toList());
-						Map<String,Object> assetMap =new HashMap<String,Object>();
-						assetMap.put("modelIds", assetModel.getId()+"");
-						assetMap.put("pageSize", "-1");
-						PageUtils assetPage = assetAssetService.queryAssetPage(assetMap);
-						List<AssetAsset> assetAssets = (List<AssetAsset>) assetPage.getList();
-						if(ToolUtil.isEmpty(assetAssets)) {
-							continue;
-						}
-						List<VisualChart> chartResult = this.handlerSyncChart(null,templateCharts,assetAssets);
-						if(ToolUtil.isNotEmpty(chartResult)) {
-							// 批量删除chart 重新同步chart
-							this.delCharts(removeIds.toArray(new Integer[] {removeIds.size()}), 1);
-						}
-						analysis.addAll(chartResult);
-					}
-				}
-			}
-			
-			if(ToolUtil.isNotEmpty(modules)) {
-				MonitorModule monitorModule = monitorModuleService.getById(modules);
-				if(StrUtil.isNotBlank(monitorModule.getChartIds())) {
-					List<String> moduleChartIds = Arrays.asList(monitorModule.getChartIds().split(","));
-					List<Integer> chartIdList = moduleChartIds.stream().map(Integer::parseInt).collect(Collectors.toList());					
-					// 获取所有模板数据
-					List<VisualChart> templateCharts = this.baseMapper.queryList(chartIdList);
-					// 获取所有实例化图表数据信息 用于删除操作
-					List<VisualChart> charts = this.baseMapper.selectInstanceChart(2, monitorModule.getId());
-					// 记录同步的chartId统一删除
-					List<Integer> removeIds = charts.stream().map(VisualChart::getId).collect(Collectors.toList());
-					Map<String,Object> endpointMap =new HashMap<String,Object>();
-					endpointMap.put("moduleIds", monitorModule.getId()+"");
-					endpointMap.put("pageSize", "-1");
-					PageUtils endpointPage = (PageUtils) monitorEndpointService.queryPage(endpointMap).get("page");
-					List<MonitorEndpoint> monitorEndpoints = (List<MonitorEndpoint>) endpointPage.getList();
-					if(ToolUtil.isEmpty(monitorEndpoints)) {
-						return 0;
-					}
-					List<VisualChart> chartResult = this.handlerSyncChart(null,templateCharts,monitorEndpoints);
-					if(ToolUtil.isNotEmpty(chartResult)) {
-						// 批量删除chart 重新同步chart
-						this.delCharts(removeIds.toArray(new Integer[] {removeIds.size()}), 1);
-					}
-					analysis.addAll(chartResult);
-				}
-			}
-		}
-		return analysis.size();
-	}
-	
 	/**
-	 * 传入已经通过模板生成的图表 用于获取绑定关联关系
-	 * 传入模板图表 进行sync操作
-	 * 
-	 * @param instanceCharts
-	 * @param tmpCharts
+	 * get All Charts Need Be Synch By Params
+	 *
+	 * @param pid
+	 * @param chartIdList
 	 * @return
 	 */
-	public List<VisualChart> handlerSyncChart(List<VisualChart> instanceCharts,List<VisualChart> tmpCharts,Object obj) {
-		List<VisualChart> resultCharts = new ArrayList<VisualChart>();
-		// 处理模板图表 主要处理当前模板图表中有group组新增图表情况的可能 将图表类型是组下的图表先剔除 后添加 避免重复添加
-		List<VisualChart> groupTmpCharts = new ArrayList<VisualChart>();
-		
-		Map<Integer,List<VisualChart>> groupIdAndChildren = new HashMap<Integer,List<VisualChart>>();
-		// 根据组进行排序
-		tmpCharts=tmpCharts.stream().sorted(Comparator.comparing(VisualChart::getGroupId).reversed()).collect(Collectors.toList());
-		for(int i =tmpCharts.size()-1;i>=0;i--) {
-			VisualChart tmpChart = tmpCharts.get(i);
-			if(tmpChart.getType().equals(Constant.CHART_GROUP_TYPE)) {
-				// 如果类型为组 查询组下所有模板信息
-				List<VisualChart> list = this.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getGroupId, tmpChart.getId()));
-				List<Integer> childIds = list.stream().map(VisualChart::getId).collect(Collectors.toList());
-				if(ToolUtil.isNotEmpty(childIds)) {
-					List<VisualChart> groupChildrens = this.baseMapper.queryList(childIds);
-					groupTmpCharts.addAll(groupChildrens);
-					groupIdAndChildren.put(tmpChart.getId(),groupChildrens);
-				}
-			}
-			if(tmpChart.getGroupId()!=0 && ToolUtil.isNotEmpty(groupIdAndChildren.get(tmpChart.getGroupId()))) {
-				tmpCharts.remove(i);
+	private List<VisualChart> getAllChartsNeedBeSynchByParams(Integer pid, List<Integer> chartIdList) {
+		log.info("[getAllChartsNeedBeSynchByParams] [pid: {}] [chartIdList: {}]", pid, Tool.JSONUtil.toJsonStr(chartIdList));
+
+		List<VisualChart> chartListToBeSync = Tool.ListUtil.list(true);
+		if (ObjectUtil.isNotNull(pid)) {
+			List<VisualChart> list = this.list(new LambdaQueryWrapper<VisualChart>().isNotNull(VisualChart::getPid).eq(VisualChart::getPid, pid));
+			chartListToBeSync.addAll(list);
+			if (Tool.CollUtil.isNotEmpty(list)) {
+				List<Integer> tempChartIdList = list.stream().map(VisualChart::getId).collect(Collectors.toList());
+				List<VisualChart> chaildChartList = this.list(new LambdaQueryWrapper<VisualChart>().isNotNull(VisualChart::getPid).in(VisualChart::getGroupId, tempChartIdList));
+				chartListToBeSync.addAll(chaildChartList);
 			}
 		}
-		// 组装所有模板图表包含新增图表
-		tmpCharts.addAll(groupTmpCharts);
-		// 根据后两项参数进行逻辑区分
-		if (ToolUtil.isEmpty(obj) && instanceCharts!=null) {
-			Map<Integer, VisualChart> map = tmpCharts.stream().collect(Collectors.toMap(VisualChart::getId, Function.identity()));
-			instanceCharts = instanceCharts.stream().sorted(Comparator.comparing(VisualChart::getGroupId)).collect(Collectors.toList());
-			for(VisualChart instanceChart : instanceCharts) {
-				VisualChart temp = map.get(instanceChart.getPid());
-				if(ToolUtil.isEmpty(temp) || (temp.getGroupId()!=0 && ToolUtil.isNotEmpty(groupIdAndChildren.get(temp.getGroupId())))) {
+
+		if (Tool.CollUtil.isNotEmpty(chartIdList)) {
+			List<VisualChart> list = this.list(new LambdaQueryWrapper<VisualChart>().isNotNull(VisualChart::getPid).in(VisualChart::getId, chartIdList));
+			List<VisualChart> chaildChartList = this.list(new LambdaQueryWrapper<VisualChart>().isNotNull(VisualChart::getPid).in(VisualChart::getGroupId, chartIdList));
+			chartListToBeSync.addAll(list);
+			chartListToBeSync.addAll(chaildChartList);
+		}
+		// distinct data
+		chartListToBeSync = chartListToBeSync.stream().distinct().collect(Collectors.toList());
+
+		log.info("[getAllChartsNeedBeSynchByParams] [sync chart list] [size: {}]", chartListToBeSync.size());
+		return chartListToBeSync;
+	}
+
+	/**
+	 * sync Chart
+	 *
+	 * @param performSyncChartList
+	 * @param templateCharts
+	 */
+	private void syncChart(List<VisualChart> performSyncChartList, List<VisualChart> templateCharts) {
+		log.info("[syncChart] [begin] [perform Sync Chart List size: {}]", performSyncChartList.size());
+		// 详情接口查询效率低，避免渲染时多次查询影响效率
+		Map<VisualPanel, Object> panelAndLinkObjectMap = Tool.MapUtil.newHashMap();
+		performSyncChartList.stream().map(VisualChart::getPanelId).distinct().forEach(panelId -> {
+			VisualPanel syncChartPanel = visualPanelService.getById(panelId);
+			Object linkObject = null;
+			if (ObjectUtil.equal(DashboardConstant.VariableType.ASSET.getValue(), syncChartPanel.getVarType())) {
+				linkObject = assetService.queryAssetInfo(syncChartPanel.getLink());
+			} else if (ObjectUtil.equal(DashboardConstant.VariableType.ENDPOINT.getValue(), syncChartPanel.getVarType())) {
+				linkObject = endpointService.queryEndpointEntity(syncChartPanel.getLink());
+			}
+			panelAndLinkObjectMap.put(syncChartPanel, linkObject);
+		});
+
+		// save batch
+		List<VisualChartElement> saveChartElementList = Tool.ListUtil.list(true);
+
+		Map<Integer, Integer> groupIdMapping = Tool.MapUtil.newHashMap();
+		// 先同步独立的 Chart 和 独立的 Group Chart(不包含 Group 包含的图表)
+		for (VisualChart syncChart : performSyncChartList) {
+			Integer chartId = syncChart.getId();
+			// find template chart
+			VisualChart tmplChartForSync = templateCharts.stream().filter(tmpl -> ObjectUtil.equal(tmpl.getId(), syncChart.getPid())).findFirst().get();
+			if (ObjectUtil.isNull(tmplChartForSync)) {
+				log.warn("[syncChart] [chart template does not exist] [sync chart id: {}] [pid: {}]", chartId, syncChart.getPid());
+				continue;
+			}
+
+			// 同步时，var_type, link 值取自 sync panel
+			VisualPanel syncChartPanel = panelAndLinkObjectMap.keySet().stream().filter(visualPanel -> ObjectUtil.equal(visualPanel.getId(), syncChart.getPanelId())).findFirst().get();
+			Object linkObject = panelAndLinkObjectMap.get(syncChartPanel);
+
+			if (StrUtil.equals(Constant.CHART_GROUP_TYPE, tmplChartForSync.getType())) {
+				// group
+				VisualChart visualChart = this.performChartSync(tmplChartForSync, syncChartPanel, linkObject, 0);
+				groupIdMapping.put(chartId, visualChart.getId());
+
+				saveChartElementList.addAll(visualChart.getElements());
+			} else {
+				// 同步单个图表，group id 依旧为当前 group 下
+				VisualChart visualChart = this.performChartSync(tmplChartForSync, syncChartPanel, linkObject, syncChart.getGroupId());
+				saveChartElementList.addAll(visualChart.getElements());
+			}
+		}
+
+		// 同步 Group Chart 含有的 Chart
+		List<VisualChart> syncGroupChartList = performSyncChartList.stream().filter(chart -> StrUtil.equals(Constant.CHART_GROUP_TYPE, chart.getType())).collect(Collectors.toList());
+		for (VisualChart syncGroupChart : syncGroupChartList) {
+			Integer syncGroupChartId = syncGroupChart.getId();
+			List<VisualChart> chartList = this.list(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getGroupId, syncGroupChartId));
+
+			// 同步时，var_type, link 值取自 sync panel
+			VisualPanel syncChartPanel = panelAndLinkObjectMap.keySet().stream().filter(visualPanel -> ObjectUtil.equal(visualPanel.getId(), syncGroupChart.getPanelId())).findFirst().get();
+			Object linkObject = panelAndLinkObjectMap.get(syncChartPanel);
+
+			for (VisualChart syncChart : chartList) {
+				// find template chart
+				VisualChart tmplChartForSync = templateCharts.stream().filter(tmpl -> ObjectUtil.equal(tmpl.getId(), syncChart.getPid())).findFirst().get();
+				if (ObjectUtil.isNull(tmplChartForSync)) {
+					log.warn("[syncChart] [chart template does not exist] [sync chart id: {}] [pid: {}]", syncChart.getId(), syncChart.getPid());
 					continue;
 				}
-				Integer groupChartId = handlerSyncGroupChart(temp,instanceChart,resultCharts);
-				if(temp.getType().equals(Constant.CHART_GROUP_TYPE)) {
-					instanceChart.setGroupId(groupChartId);
-					List<VisualChart> children = groupIdAndChildren.get(temp.getId());
-					if(ToolUtil.isNotEmpty(children)) {
-						for(VisualChart child : children) {
-							handlerSyncGroupChart(child,instanceChart,resultCharts);
-						}
-					}
-					
-				}
-			}
-		}else if(ToolUtil.isNotEmpty(obj) && instanceCharts==null){
-			Map<String,Integer> tmpGroupIdAndInstanceGroupId = new HashMap<String,Integer>();
-			for(VisualChart tmpChart : tmpCharts) {
-				for(Object data : (List<Object>)obj) {
-					Integer varId =0;
-					String type="";
-					if(data instanceof MonitorEndpoint) {
-						data = (MonitorEndpoint) data;
-						varId = ((MonitorEndpoint) data).getId();
-						type = DashboardConstant.Type.ENDPOINT.getValue();
-					}else if(data instanceof AssetAsset){
-						data = (AssetAsset) data;
-						varId = ((AssetAsset) data).getId();
-						type = DashboardConstant.Type.ASSET.getValue();
-					}
-					VisualChart syncChart =new VisualChart();
-					BeanUtils.copyProperties(tmpChart, syncChart);
-					Integer instantceId = tmpGroupIdAndInstanceGroupId.get(tmpChart.getGroupId()+":"+varId);
-					syncChart.setGroupId(ToolUtil.isEmpty(instantceId)? 0:instantceId);
-					syncChart.setPid(tmpChart.getId());
-					syncChart.setVarId(varId);
-					syncChart.setUpdateAt(new Date());
-					syncChart.setUpdateBy(ShiroUtils.getUserId().intValue());
-					syncChart.setName(NzExpressionUtil.renderExpression(tmpChart.getName(),data));
-					syncChart.setRemark(NzExpressionUtil.renderExpression(tmpChart.getRemark(),data));
-					syncChart.setParam(ToolUtil.isNotEmpty(tmpChart.getParam()) ? Tool.NzExpressionUtil.renderExpression(tmpChart.getParam().toString(), data) : null);
-					// 获取各自的panelId信息
-					VisualPanel panel = visualPanelService.getOne(new QueryWrapper<VisualPanel>().lambda().eq(VisualPanel::getType, type).eq(VisualPanel::getLink, varId));
-					syncChart.setPanelId(panel.getId());
-					List<VisualChartElement> elements = tmpChart.getElements();
-					List<VisualChartElement> copyElements = new ArrayList<VisualChartElement>();
-					//将表达式进行替换
-					for(VisualChartElement element : elements) {
-						VisualChartElement vce = new VisualChartElement();
-						BeanUtil.copyProperties(element, vce);
-						String renderExpression = NzExpressionUtil.renderExpression(vce.getExpression(), data);
-						vce.setExpression(renderExpression);
-						copyElements.add(vce);
-					}
-					syncChart.setElements(copyElements);
-					resultCharts.add(syncChart);
-					
-					if(syncChart.getType().equals(Constant.CHART_GROUP_TYPE)) {
-						// 当chart为group时 不允许name重复  会影响chart批量导入
-						VisualChart chart = this.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, syncChart.getName()).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()).eq(VisualChart::getPanelId, syncChart.getPanelId()).ne(ToolUtil.isNotEmpty(syncChart.getId()), VisualChart::getId,syncChart.getId()));
-			            if(ToolUtil.isNotEmpty(chart)) {
-			            	// group chart不能重复  先将group删除 防止不能创建组
-							this.removeById(chart.getId());
-			            }
-					}
-					this.save(syncChart);
-					List<VisualChartElement> tmplChartElements = new ArrayList<VisualChartElement>();
-					List<VisualChartElement> instanceElements = syncChart.getElements();
-					for(VisualChartElement element : instanceElements) {
-						element.setChartId(syncChart.getId());
-						tmplChartElements.add(element);
-					}
-					chartElementService.saveBatch(tmplChartElements);
-					if(tmpChart.getType().equals(Constant.CHART_GROUP_TYPE)) {
-						tmpGroupIdAndInstanceGroupId.put(tmpChart.getId()+":"+varId, syncChart.getId());
-					}
-				}
+
+				// group id is new group chart id
+				VisualChart visualChart = this.performChartSync(tmplChartForSync, syncChartPanel, linkObject, groupIdMapping.get(syncGroupChartId));
+				saveChartElementList.addAll(visualChart.getElements());
 			}
 		}
-		return resultCharts;
+
+		// save element
+		if (Tool.CollUtil.isNotEmpty(saveChartElementList)) {
+			chartElementService.saveBatch(saveChartElementList);
+		}
+
+		log.info("[syncChart] [finshed]");
 	}
 
-	public Integer handlerSyncGroupChart(VisualChart temp,VisualChart instance,List<VisualChart> result) {
-		VisualChart syncChart =new VisualChart();
-		BeanUtils.copyProperties(temp, syncChart);
-		syncChart.setPid(temp.getId());
-		syncChart.setVarId(instance.getVarId());
-		syncChart.setUpdateAt(new Date());
-		syncChart.setUpdateBy(ShiroUtils.getUserId().intValue());
+	/**
+	 * perform Chart Sync
+	 *
+	 * @param tmplChartForSync
+	 * @param syncChartPanel
+	 * @param linkObject
+	 * @param groupId
+	 * @return
+	 */
+	private VisualChart performChartSync(VisualChart tmplChartForSync, VisualPanel syncChartPanel, Object linkObject, Integer groupId) {
+		Integer syncPanelId = syncChartPanel.getId();
+		Integer syncPanelVarType = syncChartPanel.getVarType();
+		Integer syncPanelLink = syncChartPanel.getLink();
 
-		Object obj = null;
-		if (instance.getVarType().equals(Constant.ChartVariableType.ENDPOINT.getValue())) {
-			obj = monitorEndpointService.queryEndpointEntity(instance.getVarId());
-		} else if (instance.getVarType().equals(Constant.ChartVariableType.ASSET.getValue())) {
-			obj = assetAssetService.queryAssetInfo(instance.getVarId());
-		}
-		
-		syncChart.setName(NzExpressionUtil.renderExpression(temp.getName(),obj));
-		syncChart.setRemark(NzExpressionUtil.renderExpression(temp.getRemark(),obj));
-		syncChart.setParam(ToolUtil.isNotEmpty(temp.getParam()) ? Tool.NzExpressionUtil.renderExpression(temp.getParam().toString(), obj) : null);
-		syncChart.setPanelId(instance.getPanelId());
-		syncChart.setGroupId(instance.getGroupId());
-		List<VisualChartElement> elements = temp.getElements();
-		List<VisualChartElement> copyElements = new ArrayList<VisualChartElement>();
-		//将表达式进行替换
-		for(VisualChartElement element : elements) {
-			VisualChartElement vce = new VisualChartElement();
-			BeanUtil.copyProperties(element, vce);
-			String renderExpression = NzExpressionUtil.renderExpression(vce.getExpression(), obj);
-			vce.setExpression(renderExpression);
-			copyElements.add(vce);
-		}
-		syncChart.setElements(copyElements);
-		result.add(syncChart);		
-		if(syncChart.getType().equals(Constant.CHART_GROUP_TYPE)) {
-			// 当chart为group时 不允许name重复
-        	VisualChart chart = this.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, syncChart.getName()).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()).eq(VisualChart::getPanelId, syncChart.getPanelId()).ne(ToolUtil.isNotEmpty(syncChart.getId()), VisualChart::getId,syncChart.getId()));
-			if(ToolUtil.isNotEmpty(chart)) {
-				// group chart不能重复  先将group删除 防止不能创建组
-				this.removeById(chart.getId());
+		// copy Properties
+		VisualChart saveChart = new VisualChart();
+		BeanUtil.copyProperties(tmplChartForSync, saveChart);
+
+		saveChart.setId(null);
+		saveChart.setPanelId(syncPanelId);
+		saveChart.setPid(tmplChartForSync.getId());
+		saveChart.setVarId(syncPanelLink);
+		saveChart.setVarType(syncPanelVarType);
+
+		saveChart.setUpdateAt(new Date());
+		saveChart.setUpdateBy(ShiroUtils.getUserId().intValue());
+
+		saveChart.setName(Tool.NzExpressionUtil.renderExpression(saveChart.getName(), linkObject));
+		saveChart.setParam(ToolUtil.isNotEmpty(saveChart.getParam()) ? Tool.NzExpressionUtil.renderExpression(saveChart.getParam().toString(), linkObject) : null);
+
+		// group id
+		saveChart.setGroupId(ObjectUtil.defaultIfNull(groupId, 0));
+
+		// save chart
+		this.save(saveChart);
+
+		// element
+		if (Tool.CollUtil.isNotEmpty(saveChart.getElements())) {
+			List<VisualChartElement> saveElementList = Tool.ListUtil.list(true);
+			for (VisualChartElement element : saveChart.getElements()) {
+				VisualChartElement saveElement = new VisualChartElement();
+				BeanUtil.copyProperties(element, saveElement);
+
+				saveElement.setId(null);
+				saveElement.setExpression(Tool.NzExpressionUtil.renderExpression(element.getExpression(), linkObject));
+				saveElement.setChartId(saveChart.getId());
+				saveElementList.add(saveElement);
 			}
+			saveChart.setElements(saveElementList);
 		}
-		this.save(syncChart);
-		List<VisualChartElement> tmplChartElements = new ArrayList<VisualChartElement>();
-		List<VisualChartElement> instanceElements = syncChart.getElements();
-		for(VisualChartElement element : instanceElements) {
-			element.setChartId(syncChart.getId());
-			tmplChartElements.add(element);
-		}
-		chartElementService.saveBatch(tmplChartElements);
-		return syncChart.getId();
+		return saveChart;
 	}
-	
+
 	@Override
 	public void saveRelPanelAndChart(String typeStr, Integer linkId, Integer tempId, String seq, VisualChart chartTemplate) {
 		VisualPanel panel = new VisualPanel();
@@ -918,12 +739,6 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 			target.setSeq(seq);
 		}
 		this.save(target);
-	}
-
-	@Override
-	public List<VisualChart> queryChartWithElementByIds(List<Integer> chartIdList) {
-		List<VisualChart> visualCharts = this.baseMapper.queryChartWithElementByIds(chartIdList);
-		return CollectionUtils.isEmpty(visualCharts) ? new ArrayList<>() : visualCharts;
 	}
 
 	@Override
