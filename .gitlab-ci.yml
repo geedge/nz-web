@@ -19,7 +19,7 @@ variables:
   NZ_DB_NAME: "nz-dev-3.7"
 # 定义全局依赖的docker服务，即 这条流水线 pipeline 中的任务都用这里的服务
 services:
-  - mariadb:10.2.14
+  - mariadb:10.11.2
   - redis:6.2.5
 # 开始执行脚本前所需执行脚本
 before_script:
@@ -110,7 +110,7 @@ dev_build:
     - cd ../../
   # 在哪个分支上可用
   only:
-    - /^dev-.*$/i
+    - /^rel-.*$/i
   # 指定不执行的标签
   except:
     - schedules
@@ -142,7 +142,7 @@ junit_test:
   # 在哪个分支上可用
   only:
     # 定时任务设置
-    - schedules
+    - /^dev-.*$/i
   # 指定哪个ci runner跑该工作
   tags:
     - nezha
