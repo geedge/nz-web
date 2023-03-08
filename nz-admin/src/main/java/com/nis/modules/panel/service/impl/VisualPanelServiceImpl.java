@@ -995,11 +995,6 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
 	@Override
 	public void export(HttpServletResponse response, Map<String, Object> params) throws IOException {
-		String type = ToolUtil.toStr(params.get("type"), DashboardConstant.Type.DASHBOARD.getValue());
-		if (!StrUtil.equalsAnyIgnoreCase(type, DashboardConstant.Type.DASHBOARD.getValue(), DashboardConstant.Type.TEMPLATE.getValue())) {
-			throw new NZException(RCode.PANEL_IMPORT_TYPE_INCORRECT);
-		}
-
 		String maxLine = sysConfigService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
 		long exportMaxLine = Integer.parseInt(StrUtil.emptyToDefault(maxLine, "10000"));
 		// 导出最大条数限制
@@ -1746,7 +1741,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
 	private List<Map<String, Object>> handlePanelExportDataList(List<VisualPanel> panelList, Map<String, String> chartTypeAndI18nMap) {
 		if(CollectionUtils.isEmpty(panelList)){
-			return null;
+			return ListUtil.empty();
 		}
 		List<Map<String, Object>> exportDataList = new ArrayList<>();
 		Map<String, Object> tempMap;
