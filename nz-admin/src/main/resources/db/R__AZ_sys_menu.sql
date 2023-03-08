@@ -181,5 +181,5 @@ INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type
 INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (2275, 'Dashboard Temp Edit', 'dashboard_temp_edit', 'buttons.edit', 2273, '', 2, '', 3, '', '', 1);
 INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (2276, 'Dashboard Temp View', 'dashboard_temp_view', 'buttons.view', 2273, '', 2, '', 1, '', '', 1);
 INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (2277, 'Dashboard Temp Delete', 'dashboard_temp_delete', 'buttons.delete', 2273, '', 2, '', 4, '', '', 1);
-INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (2278, 'Integration', 'integration', 'Integration', 0, '', 1, '', 1, 'nz-icon nz-icon-integration', '', 1);
+INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (2278, 'Integration', 'integration', 'integration', 0, '', 1, '', 95, 'nz-icon nz-icon-Integration', '', 1);
 
