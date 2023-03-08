@@ -59,6 +59,8 @@
             vce.state AS vce_state,
             vp.id as panel_id,
             vp.name as panel_name,
+            vp.var_type as panel_var_type,
+            vp.link as panel_link,
             case when vch.var_type=1 then aa.name when vch.var_type=2 then me.name end as var_name
         FROM visual_chart vch
         LEFT JOIN visual_chart_element vce ON vch.id = vce.chart_id

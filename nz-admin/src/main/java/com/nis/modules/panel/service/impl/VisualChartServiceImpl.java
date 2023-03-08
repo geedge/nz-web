@@ -510,7 +510,13 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 
 		// 获取所有模板数据
 		List<Integer> allTmplChartIdList = chartListToBeSync.stream().map(VisualChart::getPid).distinct().collect(Collectors.toList());
-		List<VisualChart> templateCharts = this.baseMapper.queryList(allTmplChartIdList);
+		List<VisualChart> chartTemplateWithinGroup = this.list(new LambdaQueryWrapper<VisualChart>().in(VisualChart::getGroupId, allTmplChartIdList));
+		if (Tool.CollUtil.isNotEmpty(chartTemplateWithinGroup)) {
+			List<Integer> chartTemplateIdListWithinGroup = chartTemplateWithinGroup.stream().map(VisualChart::getId).collect(Collectors.toList());
+			allTmplChartIdList.addAll(chartTemplateIdListWithinGroup);
+			allTmplChartIdList = allTmplChartIdList.stream().distinct().collect(Collectors.toList());
+		}
+		List<VisualChart> allChartTemplateList = this.baseMapper.queryList(allTmplChartIdList);
 
 		// 将不必要的图表过滤掉，避免重复同步
 		// Group A {Chart-1,Chart-2,Chart-3}  只需要同步  Group A  即可
@@ -518,7 +524,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 
 		// perform Sync Chart List
 		List<VisualChart> performSyncChartList = chartListToBeSync.stream().filter(chart -> BooleanUtil.negate(Tool.CollUtil.contains(syncChartGroupIdList, chart.getGroupId()))).collect(Collectors.toList());
-		this.syncChart(performSyncChartList, templateCharts);
+		this.syncChart(performSyncChartList, allChartTemplateList);
 
 		// delete
 		List<Integer> removeChartIdList = chartListToBeSync.stream().map(VisualChart::getId).collect(Collectors.toList());
@@ -570,9 +576,9 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	 * sync Chart
 	 *
 	 * @param performSyncChartList
-	 * @param templateCharts
+	 * @param allChartTemplateList
 	 */
-	private void syncChart(List<VisualChart> performSyncChartList, List<VisualChart> templateCharts) {
+	private void syncChart(List<VisualChart> performSyncChartList, List<VisualChart> allChartTemplateList) {
 		log.info("[syncChart] [begin] [perform Sync Chart List size: {}]", performSyncChartList.size());
 		// 详情接口查询效率低，避免渲染时多次查询影响效率
 		Map<VisualPanel, Object> panelAndLinkObjectMap = Tool.MapUtil.newHashMap();
@@ -595,10 +601,10 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		for (VisualChart syncChart : performSyncChartList) {
 			Integer chartId = syncChart.getId();
 			// find template chart
-			VisualChart tmplChartForSync = templateCharts.stream().filter(tmpl -> ObjectUtil.equal(tmpl.getId(), syncChart.getPid())).findFirst().get();
+			VisualChart tmplChartForSync = allChartTemplateList.stream().filter(tmpl -> ObjectUtil.equal(tmpl.getId(), syncChart.getPid())).findFirst().orElse(null);
 			if (ObjectUtil.isNull(tmplChartForSync)) {
 				log.warn("[syncChart] [chart template does not exist] [sync chart id: {}] [pid: {}]", chartId, syncChart.getPid());
-				continue;
+				tmplChartForSync = this.queryInfo(syncChart.getPid());
 			}
 
 			// 同步时，var_type, link 值取自 sync panel
@@ -610,11 +616,11 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 				VisualChart visualChart = this.performChartSync(tmplChartForSync, syncChartPanel, linkObject, 0);
 				groupIdMapping.put(chartId, visualChart.getId());
 
-				saveChartElementList.addAll(visualChart.getElements());
+				saveChartElementList.addAll(Tool.CollUtil.defaultIfEmpty(visualChart.getElements(), Tool.ListUtil.empty()));
 			} else {
 				// 同步单个图表，group id 依旧为当前 group 下
 				VisualChart visualChart = this.performChartSync(tmplChartForSync, syncChartPanel, linkObject, syncChart.getGroupId());
-				saveChartElementList.addAll(visualChart.getElements());
+				saveChartElementList.addAll(Tool.CollUtil.defaultIfEmpty(visualChart.getElements(), Tool.ListUtil.empty()));
 			}
 		}
 
@@ -622,23 +628,24 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		List<VisualChart> syncGroupChartList = performSyncChartList.stream().filter(chart -> StrUtil.equals(Constant.CHART_GROUP_TYPE, chart.getType())).collect(Collectors.toList());
 		for (VisualChart syncGroupChart : syncGroupChartList) {
 			Integer syncGroupChartId = syncGroupChart.getId();
-			List<VisualChart> chartList = this.list(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getGroupId, syncGroupChartId));
+			// 直接以 Group 模板内的图表进行渲染，保证同步后 Group 内图表完全一致
+			List<VisualChart> chartTemplateListWithinGroup = this.list(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getGroupId, syncGroupChart.getPid()));
 
 			// 同步时，var_type, link 值取自 sync panel
 			VisualPanel syncChartPanel = panelAndLinkObjectMap.keySet().stream().filter(visualPanel -> ObjectUtil.equal(visualPanel.getId(), syncGroupChart.getPanelId())).findFirst().get();
 			Object linkObject = panelAndLinkObjectMap.get(syncChartPanel);
 
-			for (VisualChart syncChart : chartList) {
+			for (VisualChart syncChart : chartTemplateListWithinGroup) {
 				// find template chart
-				VisualChart tmplChartForSync = templateCharts.stream().filter(tmpl -> ObjectUtil.equal(tmpl.getId(), syncChart.getPid())).findFirst().get();
+				VisualChart tmplChartForSync = allChartTemplateList.stream().filter(tmpl -> ObjectUtil.equal(tmpl.getId(), syncChart.getId())).findFirst().orElse(null);
 				if (ObjectUtil.isNull(tmplChartForSync)) {
-					log.warn("[syncChart] [chart template does not exist] [sync chart id: {}] [pid: {}]", syncChart.getId(), syncChart.getPid());
-					continue;
+					log.warn("[syncChart] [chart template does not exist] [chart template id: {}] [sync group id: {}]", syncChart.getId(), syncGroupChart.getId());
+					tmplChartForSync = this.queryInfo(syncChart.getId());
 				}
 
 				// group id is new group chart id
 				VisualChart visualChart = this.performChartSync(tmplChartForSync, syncChartPanel, linkObject, groupIdMapping.get(syncGroupChartId));
-				saveChartElementList.addAll(visualChart.getElements());
+				saveChartElementList.addAll(Tool.CollUtil.defaultIfEmpty(visualChart.getElements(), Tool.ListUtil.empty()));
 			}
 		}
 
