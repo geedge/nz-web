@@ -29,7 +29,7 @@ public interface VisualChartService extends IService<VisualChart> {
 
 	Integer chartTmplSynch(Integer pid, List<Integer> chartIdList);
 
-	void saveRelPanelAndChart(String typeStr, Integer linkId, Integer tempId, String seq, VisualChart chartTemplate);
+	void saveRelPanelAndChart(String type, Integer linkId, String name, Integer tempId, String seq);
 
 	/**
 	 * 平铺 获取所有 chart 节点

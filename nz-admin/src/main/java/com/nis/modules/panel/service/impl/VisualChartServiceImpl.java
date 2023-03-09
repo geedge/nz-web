@@ -28,6 +28,7 @@ import com.nis.modules.panel.service.VisualChartElementService;
 import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.panel.utils.DashboardConstant;
+import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
@@ -47,6 +48,9 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 
 	@Autowired
 	private SysDictService sysDictService;
+
+	@Autowired
+    private SysConfService sysConfService;
 
 	@Autowired
 	private VisualPanelService visualPanelService;
@@ -710,43 +714,62 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		return saveChart;
 	}
 
-	@Override
-	public void saveRelPanelAndChart(String typeStr, Integer linkId, Integer tempId, String seq, VisualChart chartTemplate) {
-		VisualPanel panel = new VisualPanel();
-		panel.setName(typeStr + "_panel_" + linkId);
-		panel.setType(typeStr);
-		panel.setPid(0);
-		panel.setLink(linkId);
-		// temp_id
-		// assetInfo dashboard from model.panel_id
-		// endpointInfo dashboard from module.panel_id
-		panel.setTmplId(ObjectUtil.defaultIfNull(tempId, -1));
-		panel.setWeight(0);
-		panel.setCreateBy(ShiroUtils.getUserId().intValue());
-		panel.setUts(System.currentTimeMillis());
-		if (StrUtil.equals(DashboardConstant.Type.ASSET.getValue(), typeStr)) {
-			panel.setVarType(DashboardConstant.VariableType.ASSET.getValue());
-		} else if (StrUtil.equals(DashboardConstant.Type.ENDPOINT.getValue(), typeStr)) {
-			panel.setVarType(DashboardConstant.VariableType.ENDPOINT.getValue());
-		}
-		if(StringUtils.isNotEmpty(seq)){
-			panel.setSeq(seq);
-		}
-		visualPanelService.save(panel);
+    @Override
+    public void saveRelPanelAndChart(String type, Integer linkId, String name, Integer tempId, String seq) {
+        VisualPanel panel = new VisualPanel();
+        panel.setName(name);
+        panel.setType(type);
+        panel.setPid(0);
+        panel.setLink(linkId);
+        // temp_id
+        // assetInfo dashboard from model.panel_id
+        // endpointInfo dashboard from module.panel_id
+        panel.setTmplId(ObjectUtil.defaultIfNull(tempId, -1));
+        panel.setWeight(0);
+        panel.setCreateBy(ShiroUtils.getUserId().intValue());
+        panel.setUts(System.currentTimeMillis());
+        if (StrUtil.equals(DashboardConstant.Type.ASSET.getValue(), type)) {
+            panel.setVarType(DashboardConstant.VariableType.ASSET.getValue());
+        } else if (StrUtil.equals(DashboardConstant.Type.ENDPOINT.getValue(), type)) {
+            panel.setVarType(DashboardConstant.VariableType.ENDPOINT.getValue());
+        }
+        if (StrUtil.isNotEmpty(seq)) {
+            panel.setSeq(seq);
+        }
+        visualPanelService.save(panel);
 
-		VisualChart target = new VisualChart();
-		BeanUtils.copyProperties(chartTemplate, target);
-		target.setParam(ToolUtil.isNotEmpty(target.getParam()) ? JSONObject.toJSONString(target.getParam()) : null);
-		target.setPanelId(panel.getId());
-		target.setGroupId(0);
-		target.setDatasource(ChartDatasourceType.SYSTEM.getValue());
-		target.setUpdateAt(new Date());
-		target.setUpdateBy(ShiroUtils.getUserId().intValue());
-		if(StringUtils.isNotEmpty(seq)){
-			target.setSeq(seq);
-		}
-		this.save(target);
-	}
+        // build-in chart include assetInfo and endpointInfo chart
+        String chartConfigTempJsonStr = StrUtil.EMPTY;
+        DashboardConstant.Type instanceByType = DashboardConstant.Type.getInstanceByType(type);
+        switch (instanceByType) {
+            case ASSET: {
+                chartConfigTempJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_ASSET_CHART_TPL);
+                break;
+            }
+            case ENDPOINT: {
+                chartConfigTempJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_ENDPOINT_CHART_TPL);
+                break;
+            }
+            default:
+                break;
+        }
+
+        // assetInfo or endpointInfo
+        VisualChart chartTemplate = JSONObject.parseObject(chartConfigTempJsonStr, VisualChart.class);
+
+        VisualChart target = new VisualChart();
+        BeanUtils.copyProperties(chartTemplate, target);
+        target.setParam(ToolUtil.isNotEmpty(target.getParam()) ? JSONObject.toJSONString(target.getParam()) : null);
+        target.setPanelId(panel.getId());
+        target.setGroupId(0);
+        target.setDatasource(ChartDatasourceType.SYSTEM.getValue());
+        target.setUpdateAt(new Date());
+        target.setUpdateBy(ShiroUtils.getUserId().intValue());
+        if (StrUtil.isNotEmpty(seq)) {
+            target.setSeq(seq);
+        }
+        this.save(target);
+    }
 
 	@Override
 	public List<VisualChart> getAllChartList(List<VisualChart> sourceChartList) {

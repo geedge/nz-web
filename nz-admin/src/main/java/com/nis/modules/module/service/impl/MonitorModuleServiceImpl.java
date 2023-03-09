@@ -1,5 +1,6 @@
 package com.nis.modules.module.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.BooleanUtil;
@@ -11,6 +12,7 @@ import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -436,10 +438,22 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
         }
 
         // 4. 修改了 project ， 修改 topo config
-        if (!oldModule.getProjectId().equals(moduleEntity.getProjectId())) {
+        if (ObjectUtil.notEqual(oldModule.getProjectId(), moduleEntity.getProjectId())) {
             List<MonitorModule> modules = new ArrayList();
             modules.add(oldModule);
             topoService.removeTopoConfigNodeAndLineByModules(modules);
+        }
+
+        // If the panel template is modified, the endpoint panel template ID will also be modified
+        if (ObjectUtil.notEqual(oldModule.getPanelId(), moduleEntity.getPanelId())) {
+            List<MonitorEndpoint> endpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getModuleId, moduleEntity.getId()));
+            if (CollUtil.isNotEmpty(endpointList)) {
+                List<Integer> endpointIdList = endpointList.stream().map(MonitorEndpoint::getId).collect(Collectors.toList());
+                visualPanelService.update(new LambdaUpdateWrapper<VisualPanel>()
+                        .set(VisualPanel::getTmplId, moduleEntity.getPanelId())
+                        .in(VisualPanel::getLink, endpointIdList)
+                        .eq(VisualPanel::getType, DashboardConstant.Type.ENDPOINT.getValue()));
+            }
         }
 
         // 保存

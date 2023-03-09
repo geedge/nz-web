@@ -44,7 +44,6 @@ import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.entity.SnmpCredential;
-import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
@@ -892,17 +891,16 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
      * @param asset
      */
     private void saveAssetInfoPanel(AssetAsset asset) {
-        // 配置信息获取
-        SysConfigEntity assetChartConfig = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_CHART_TPL));
-        // asset config
-        VisualChart chartTemplate = JSONObject.parseObject(assetChartConfig.getParamValue(), VisualChart.class);
-
         // get model template id
         AssetModel model = modelService.getById(asset.getModelId());
         Integer templateId = model.getPanelId();
 
-        // 新增时需要新增 panel chart
-        chartService.saveRelPanelAndChart(DashboardConstant.Type.ASSET.getValue(), asset.getId(), templateId, null, chartTemplate);
+        Integer linkId = asset.getId();
+        String name = asset.getName();
+        String seq = asset.getSeq();
+
+        // save Rel Panel And Chart
+        chartService.saveRelPanelAndChart(DashboardConstant.Type.ASSET.getValue(), linkId, name, templateId, seq);
     }
 
     /**
@@ -965,7 +963,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             asset.setCabinetEnd(parent.getCabinetEnd());
         }
 
-        // 留作对比是否更改 model
+        // 留作对比是否更改属性
         AssetAsset oldAsset = this.getById(asset.getId());
 
         // authPrivKey
@@ -988,6 +986,14 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             );
             // sync dashboard
             this.syncAssetDashboardViaModel(asset.getId(), asset.getModelId());
+        }
+
+        // If the asset name is modified, the asset panel name is also modified
+        if (ObjectUtil.notEqual(oldAsset.getName(), asset.getName())) {
+            panelService.update(new LambdaUpdateWrapper<VisualPanel>()
+                    .set(VisualPanel::getName, asset.getName())
+                    .eq(VisualPanel::getLink, asset.getId())
+                    .eq(VisualPanel::getType, DashboardConstant.Type.ASSET.getValue()));
         }
 
         // 如果没有指定 meta, 则视为删除 asset之前关联的 meta 信息

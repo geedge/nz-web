@@ -11,6 +11,7 @@ import cn.hutool.log.Log;
 import com.alibaba.fastjson.*;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -1277,16 +1278,16 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
      * @param endpoint
      */
     private void saveEndpointInfoPanel(MonitorEndpoint endpoint) {
-        // endpoint config
-        String sysEndpointChartTplStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_ENDPOINT_CHART_TPL);
-        VisualChart chartTemplate = JSONObject.parseObject(sysEndpointChartTplStr, VisualChart.class);
-
         // get module template id
         MonitorModule module = monitorModuleService.getById(endpoint.getModuleId());
         Integer templateId = module.getPanelId();
 
-        // insert panel chart
-        visualChartService.saveRelPanelAndChart(DashboardConstant.Type.ENDPOINT.getValue(), endpoint.getId(), templateId, endpoint.getSeq(), chartTemplate);
+        Integer linkId = endpoint.getId();
+        String name = endpoint.getName();
+        String seq = endpoint.getSeq();
+
+        // save Rel Panel And Chart
+        visualChartService.saveRelPanelAndChart(DashboardConstant.Type.ENDPOINT.getValue(), linkId, name, templateId, seq);
     }
 
     private void validateEndpointInfo(MonitorEndpoint endpoint) {
@@ -1620,8 +1621,19 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             throw new NZException(RCode.ENDPOINT_NAME_DUPLICATE);
         }
 
+        // 留作对比是否更改属性
+        MonitorEndpoint oldEndpoint = this.getById(endpoint.getId());
+
         // 保存
         this.updateById(endpoint);
+
+        // If the endpoint name is modified, the endpoint panel name is also modified
+        if (ObjectUtil.notEqual(oldEndpoint.getName(), endpoint.getName())) {
+            visualPanelService.update(new LambdaUpdateWrapper<VisualPanel>()
+                    .set(VisualPanel::getName, endpoint.getName())
+                    .eq(VisualPanel::getLink, endpoint.getId())
+                    .eq(VisualPanel::getType, DashboardConstant.Type.ENDPOINT.getValue()));
+        }
 
         // 保存配置信息
         this.saveOrUpdateEndpointConfigs(endpoint, module);
