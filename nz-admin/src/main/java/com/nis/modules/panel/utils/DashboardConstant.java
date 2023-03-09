@@ -1,5 +1,6 @@
 package com.nis.modules.panel.utils;
 
+import cn.hutool.core.util.StrUtil;
 import com.nis.common.utils.Tool;
 
 public class DashboardConstant {
@@ -33,6 +34,15 @@ public class DashboardConstant {
 
         public void setValue(String value) {
             this.value = value;
+        }
+
+        public static Type getInstanceByType(String type) {
+            for (Type v : values()) {
+                if (StrUtil.equalsIgnoreCase(v.getValue(), type)) {
+                    return v;
+                }
+            }
+            throw new IllegalArgumentException("Failed to find dashboard type with parameter.");
         }
     }
 

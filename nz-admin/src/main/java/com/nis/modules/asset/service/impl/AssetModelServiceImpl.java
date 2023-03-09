@@ -1,5 +1,6 @@
 package com.nis.modules.asset.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.BooleanUtil;
@@ -250,6 +251,18 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
             assetAssetService.update(new LambdaUpdateWrapper<AssetAsset>()
                     .set(AssetAsset::getBrandId, model.getBrandId())
                     .eq(AssetAsset::getModelId, model.getId()));
+        }
+
+        // If the panel template is modified, the asset panel template ID will also be modified
+        if (ObjectUtil.notEqual(oldModel.getPanelId(), model.getPanelId())) {
+            List<AssetAsset> assetList = assetAssetService.list(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getModelId, model.getId()));
+            if (CollUtil.isNotEmpty(assetList)) {
+                List<Integer> assetIdList = assetList.stream().map(AssetAsset::getId).collect(Collectors.toList());
+                visualPanelService.update(new LambdaUpdateWrapper<VisualPanel>()
+                        .set(VisualPanel::getTmplId, model.getPanelId())
+                        .in(VisualPanel::getLink, assetIdList)
+                        .eq(VisualPanel::getType, DashboardConstant.Type.ASSET.getValue()));
+            }
         }
         return model.getId();
     }
