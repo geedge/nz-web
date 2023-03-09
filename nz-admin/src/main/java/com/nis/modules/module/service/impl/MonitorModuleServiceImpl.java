@@ -450,7 +450,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
             if (CollUtil.isNotEmpty(endpointList)) {
                 List<Integer> endpointIdList = endpointList.stream().map(MonitorEndpoint::getId).collect(Collectors.toList());
                 visualPanelService.update(new LambdaUpdateWrapper<VisualPanel>()
-                        .set(VisualPanel::getTmplId, moduleEntity.getPanelId())
+                        .set(VisualPanel::getTmplId, ObjectUtil.defaultIfNull(moduleEntity.getPanelId(), -1))
                         .in(VisualPanel::getLink, endpointIdList)
                         .eq(VisualPanel::getType, DashboardConstant.Type.ENDPOINT.getValue()));
             }
