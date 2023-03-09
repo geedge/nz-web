@@ -259,7 +259,7 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
             if (CollUtil.isNotEmpty(assetList)) {
                 List<Integer> assetIdList = assetList.stream().map(AssetAsset::getId).collect(Collectors.toList());
                 visualPanelService.update(new LambdaUpdateWrapper<VisualPanel>()
-                        .set(VisualPanel::getTmplId, model.getPanelId())
+                        .set(VisualPanel::getTmplId, ObjectUtil.defaultIfNull(model.getPanelId(), -1))
                         .in(VisualPanel::getLink, assetIdList)
                         .eq(VisualPanel::getType, DashboardConstant.Type.ASSET.getValue()));
             }
