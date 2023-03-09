@@ -19,7 +19,7 @@ variables:
   NZ_DB_NAME: "nz-dev-3.7"
 # 定义全局依赖的docker服务，即 这条流水线 pipeline 中的任务都用这里的服务
 services:
-  - mysql:5.7.10
+  - mysql:5.7.7
   - redis:6.2.5
 # 开始执行脚本前所需执行脚本
 before_script:
