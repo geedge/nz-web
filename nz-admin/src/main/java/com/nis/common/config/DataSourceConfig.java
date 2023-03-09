@@ -51,7 +51,7 @@ public class DataSourceConfig {
 	/**
 	 * 数据源配置项
 	 */
-	@Value("${spring.datasource.druid.url-pattern:jdbc:mariadb://{{host}}:{{port}}/{{dbName}}?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8&useSSL=false&useMysqlMetadata=true}")
+	@Value("${spring.datasource.druid.url-pattern:jdbc:mysql://{{host}}:{{port}}/{{dbName}}?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8&useSSL=false&useMysqlMetadata=true}")
 	private String urlPattern;
 	@Value("${spring.datasource.druid.driver-class-name:com.mysql.cj.jdbc.Driver}")
 	private String driver;
