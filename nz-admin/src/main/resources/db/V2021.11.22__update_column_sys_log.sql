@@ -5,4 +5,4 @@
  */
 
 ALTER TABLE `sys_log` 
-MODIFY COLUMN `opera_id` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '-1'
+MODIFY COLUMN `opera_id` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL;
