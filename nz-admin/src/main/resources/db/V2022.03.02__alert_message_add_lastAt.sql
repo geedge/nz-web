@@ -21,13 +21,13 @@ update alert_message_silence set last_at = end_at where last_at = '1970-01-01 00
 update alert_message_history set last_at = end_at where last_at = '1970-01-01 00:00:00';
 
 ALTER TABLE `alert_message_active` 
-ADD INDEX IF NOT EXISTS `idx_last_at`(`last_at`) USING BTREE,
-ADD INDEX IF NOT EXISTS `idx_ack`(`ack`) USING BTREE;
+ADD INDEX  `idx_last_at`(`last_at`) USING BTREE,
+ADD INDEX  `idx_ack`(`ack`) USING BTREE;
 
 ALTER TABLE `alert_message_silence` 
-ADD INDEX IF NOT EXISTS `idx_last_at`(`last_at`) USING BTREE,
-ADD INDEX IF NOT EXISTS `idx_ack`(`ack`) USING BTREE;
+ADD INDEX  `idx_last_at`(`last_at`) USING BTREE,
+ADD INDEX  `idx_ack`(`ack`) USING BTREE;
 
 ALTER TABLE `alert_message_history` 
-ADD INDEX IF NOT EXISTS `idx_last_at`(`last_at`) USING BTREE,
-ADD INDEX IF NOT EXISTS `idx_ack`(`ack`) USING BTREE;
+ADD INDEX  `idx_last_at`(`last_at`) USING BTREE,
+ADD INDEX  `idx_ack`(`ack`) USING BTREE;

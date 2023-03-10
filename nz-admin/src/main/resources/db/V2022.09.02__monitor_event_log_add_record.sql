@@ -6,6 +6,6 @@
  */
 
 ALTER TABLE `monitor_event_log` 
-ADD UNIQUE INDEX IF NOT EXISTS `uniq_event`(`event`);
+ADD UNIQUE INDEX  `uniq_event`(`event`);
 
 REPLACE INTO `monitor_event_log`(`id`, `event`, `counter`) VALUES (NULL, 'record', 0);
