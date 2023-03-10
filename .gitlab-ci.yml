@@ -126,7 +126,7 @@ junit_test:
     # -Dmaven.test.skip=true 表示跳过测试运行同时跳过测试代码的编译。 如果在 pom 文件中设置跳过单元测试 一样会跳过单测的
     # -Dmaven.test.failure.ignore=true ：忽略失败的单测
     # - mvn clean package -Dmaven.test.failure.ignore=true
-    - echo "SET GLOBAL sql_mode='STRICT_ALL_TABLES,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION';" | mysql --user=root --password="$MYSQL_ROOT_PASSWORD" --host=mysql "$MYSQL_DATABASE"
+    - echo "SET GLOBAL sql_mode='STRICT_ALL_TABLES,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION';" | mysql --user=root --password="111111" --host=mysql "test"
     - mvn clean test
   # 当前 job 脚本执行完后，所需执行的脚本 http://www.ttlsa.com/auto/gitlab-cicd-gitlab-ci-yml-configuration-tasks-detailed/
   after_script:
