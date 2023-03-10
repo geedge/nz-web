@@ -4,5 +4,5 @@
  */
 
 ALTER TABLE `monitor_endpoint_state`
-ADD COLUMN IF NOT EXISTS `msg` varchar(512) NOT NULL DEFAULT '' COMMENT '错误信息';
+ADD COLUMN  `msg` varchar(512) NOT NULL DEFAULT '' COMMENT '错误信息';
 

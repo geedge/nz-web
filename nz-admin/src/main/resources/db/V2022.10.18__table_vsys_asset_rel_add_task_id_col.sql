@@ -9,7 +9,7 @@ SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 ALTER TABLE `vsys_asset_rel`
-ADD COLUMN IF NOT EXISTS `task_id` int(10) NOT NULL COMMENT '关联 vsys_task.id  0: 代表 default 内置vsys';
+ADD COLUMN  `task_id` int(10) NOT NULL COMMENT '关联 vsys_task.id  0: 代表 default 内置vsys';
 
 
 UPDATE vsys_asset_rel a

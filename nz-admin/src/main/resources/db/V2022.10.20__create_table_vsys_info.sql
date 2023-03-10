@@ -10,10 +10,10 @@ SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 ALTER TABLE `vsys_task`
-ADD COLUMN IF NOT EXISTS `asset_ids` text NOT NULL DEFAULT '' COMMENT 'asset ids';
+ADD COLUMN  `asset_ids` text NOT NULL DEFAULT '' COMMENT 'asset ids';
 
 ALTER TABLE `vsys_asset_rel`
-ADD COLUMN IF NOT EXISTS `result_id` int(10) NOT NULL COMMENT '最后一次 result.id, 0: 代表 default 内置vsys';
+ADD COLUMN  `result_id` int(10) NOT NULL COMMENT '最后一次 result.id, 0: 代表 default 内置vsys';
 
 
 UPDATE vsys_asset_rel a

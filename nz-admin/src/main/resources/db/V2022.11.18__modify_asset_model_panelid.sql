@@ -8,9 +8,9 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 
 ALTER TABLE `asset_model`
-    ADD COLUMN IF NOT EXISTS `panel_id` INT(10) COMMENT 'panel 模板id';
+    ADD COLUMN  `panel_id` INT(10) COMMENT 'panel 模板id';
 
 ALTER TABLE `monitor_module`
-    ADD COLUMN IF NOT EXISTS `panel_id` INT(10) COMMENT 'panel 模板id';
+    ADD COLUMN  `panel_id` INT(10) COMMENT 'panel 模板id';
 
 SET FOREIGN_KEY_CHECKS = 1;

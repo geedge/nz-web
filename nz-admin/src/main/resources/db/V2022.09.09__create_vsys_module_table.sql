@@ -12,7 +12,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 
 ALTER TABLE `asset_model`
-ADD COLUMN IF NOT EXISTS `tsg_appliance` int(10) NOT NULL DEFAULT 0 COMMENT '默认：0 ;   0：非tsg 设备 1：tsg 设备，支持vsys';
+ADD COLUMN `tsg_appliance` int(10) NOT NULL DEFAULT 0 COMMENT '默认：0 ;   0：非tsg 设备 1：tsg 设备，支持vsys';
 
 -- ----------------------------
 -- Table structure for vsys_task

@@ -9,7 +9,7 @@ SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 ALTER TABLE `vsys_result`
-ADD COLUMN IF NOT EXISTS  `req_param` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '接口请求参数';
+ADD COLUMN   `req_param` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '接口请求参数';
 
 ALTER TABLE `vsys_task`
 MODIFY COLUMN `device_tag` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '设备组';

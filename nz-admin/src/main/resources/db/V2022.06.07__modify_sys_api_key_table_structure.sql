@@ -3,4 +3,4 @@
  */
 
 ALTER TABLE `sys_api_key`
-ADD COLUMN IF NOT EXISTS `remark` VARCHAR (256) COMMENT '备注';
+ADD COLUMN `remark` VARCHAR (256) COMMENT '备注';
