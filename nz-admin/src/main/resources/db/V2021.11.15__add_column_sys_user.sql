@@ -5,7 +5,7 @@
  */
 
 ALTER TABLE `sys_user` 
-ADD COLUMN `pin_time` datetime NOT NULL COMMENT '最后修改密码时间';
+ADD COLUMN `pin_time` datetime NOT NULL default '2021-12-20 16:01:15' COMMENT '最后修改密码时间';
 
 update sys_user set pin_time = now();
 
