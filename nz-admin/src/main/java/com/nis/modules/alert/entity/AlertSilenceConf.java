@@ -1,12 +1,11 @@
 package com.nis.modules.alert.entity;
 
-import java.util.Date;
-
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-
 import lombok.Data;
+
+import java.util.Date;
 
 @Data
 @TableName("alert_silence_conf")

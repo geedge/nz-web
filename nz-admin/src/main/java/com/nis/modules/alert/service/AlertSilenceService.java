@@ -1,10 +1,10 @@
 package com.nis.modules.alert.service;
 
-import java.util.Map;
-
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.alert.entity.AlertSilenceConf;
+
+import java.util.Map;
 
 public interface AlertSilenceService extends IService<AlertSilenceConf>{
 

@@ -1,23 +1,14 @@
 package com.nis.modules.sys.entity;
 
-import java.io.Serializable;
-import java.util.List;
-import java.util.Map;
-
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlTransient;
-
-import com.alibaba.fastjson.annotation.JSONField;
-import com.nis.common.utils.Tool;
-
 import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.crypto.SecureUtil;
+import com.alibaba.fastjson.annotation.JSONField;
+import com.nis.common.utils.Tool;
 import lombok.Data;
-import lombok.Setter;
+
+import javax.xml.bind.annotation.*;
+import java.io.Serializable;
+import java.util.Map;
 /**
  * license证书实体
  * @author fang

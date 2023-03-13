@@ -16,8 +16,8 @@ import org.springframework.stereotype.Component;
  *     新建 chart （复制asset model已关联）
  *     更新使用 chart template 创建的图表 pid
  *     更新asset dashboard tmpl_id
- * 3、更新 asset model panel id
- * 4、删除 chart.panel_id == 0 的历史数据
+ * 3、更新 asset model dashboard id
+ * 4、删除 chart.dashboard_id == 0 的历史数据
  * 5、删除 asset_model_v3.6
  *
  * @author HUAWEI

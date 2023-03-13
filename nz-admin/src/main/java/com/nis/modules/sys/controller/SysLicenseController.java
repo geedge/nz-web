@@ -1,5 +1,31 @@
 package com.nis.modules.sys.controller;
 
+import Aladdin.HaspStatus;
+import cn.hutool.core.io.IORuntimeException;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
+import com.nis.common.annotation.SysLog;
+import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.*;
+import com.nis.modules.sys.entity.LicenseEntity;
+import com.nis.modules.sys.entity.Signature;
+import com.nis.modules.sys.entity.SysComponent;
+import com.nis.modules.sys.service.LicenseService;
+import com.nis.modules.sys.service.SysComponentService;
+import com.nis.modules.sys.service.SysConfigService;
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.DocumentHelper;
+import org.dom4j.Element;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -8,47 +34,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import javax.servlet.http.HttpServletResponse;
-
-import org.dom4j.Document;
-import org.dom4j.DocumentException;
-import org.dom4j.DocumentHelper;
-import org.dom4j.Element;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.multipart.MultipartFile;
-
-import com.nis.common.annotation.SysLog;
-import com.nis.common.exception.NZException;
-import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.LicenseUtil;
-import com.nis.common.utils.OperationEnum;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.ResponseUtil;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
-import com.nis.common.utils.TypeEnum;
-import com.nis.modules.sys.entity.LicenseEntity;
-import com.nis.modules.sys.entity.Signature;
-import com.nis.modules.sys.entity.SysComponent;
-import com.nis.modules.sys.service.LicenseService;
-import com.nis.modules.sys.service.SysComponentService;
-import com.nis.modules.sys.service.SysConfigService;
-
-import Aladdin.HaspStatus;
-import cn.hutool.core.io.IORuntimeException;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
 
 @RestController
 @RequestMapping("/sys/license")

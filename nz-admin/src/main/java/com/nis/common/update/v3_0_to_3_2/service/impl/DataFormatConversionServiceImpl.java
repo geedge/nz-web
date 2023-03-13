@@ -7,10 +7,10 @@ import com.nis.common.update.v3_0_to_3_2.dao.V3_0VisualChartDao;
 import com.nis.common.update.v3_0_to_3_2.service.DataFormatConversionService;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
-import com.nis.modules.panel.dao.VisualChartDao;
-import com.nis.modules.panel.dao.VisualChartElementDao;
-import com.nis.modules.panel.entity.VisualChart;
-import com.nis.modules.panel.entity.VisualChartElement;
+import com.nis.modules.dashboard.dao.VisualChartDao;
+import com.nis.modules.dashboard.dao.VisualChartElementDao;
+import com.nis.modules.dashboard.entity.VisualChart;
+import com.nis.modules.dashboard.entity.VisualChartElement;
 import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -66,19 +66,19 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
 
             logger.info("Start processing visual_chart data format changes.");
             // 排除 alertList ,alertList drop
-            Map<Integer, List<VisualChart>> oldChartListGroupByPanelId = oldChartList.stream().filter(visualChart -> !Tool.StrUtil.equals(visualChart.getType(), "alertList")).collect(Collectors.groupingBy(VisualChart::getPanelId));
-            for (Map.Entry<Integer, List<VisualChart>> entry : oldChartListGroupByPanelId.entrySet()) {
-                Integer panelId = entry.getKey();
-                List<VisualChart> oldChartListByPanelId = entry.getValue();
+            Map<Integer, List<VisualChart>> oldChartListGroupByDashboardId = oldChartList.stream().filter(visualChart -> !Tool.StrUtil.equals(visualChart.getType(), "alertList")).collect(Collectors.groupingBy(VisualChart::getDashboardId));
+            for (Map.Entry<Integer, List<VisualChart>> entry : oldChartListGroupByDashboardId.entrySet()) {
+                Integer dashboardId = entry.getKey();
+                List<VisualChart> oldChartListByDashboardId = entry.getValue();
 
                 // 处理 chart param/datasource
-                this.handleChartParamFormat(oldChartListByPanelId, chartIdAndElementListMap);
+                this.handleChartParamFormat(oldChartListByDashboardId, chartIdAndElementListMap);
 
                 // 处理 xy 值
-                this.handlePosition(panelId, oldChartListByPanelId);
+                this.handlePosition(dashboardId, oldChartListByDashboardId);
 
                 // 入库 visual_chart (新表)
-                visualChartDao.insertBatchChart(oldChartListByPanelId);
+                visualChartDao.insertBatchChart(oldChartListByDashboardId);
             }
             logger.info("The visual_chart data format change processing done.");
             // 4. 删除 visual_chart_v3_2 表
@@ -135,13 +135,13 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
     /**
      * 处理位置信息 x/y
      *
-     * @param panelId
+     * @param dashboardId
      * @param chartList
      */
-    private void handlePosition(Integer panelId, List<VisualChart> chartList) {
+    private void handlePosition(Integer dashboardId, List<VisualChart> chartList) {
         chartList = chartList.stream().sorted(Comparator.comparing(VisualChart::getWeight)).collect(Collectors.toList());
 
-        if (panelId == 0) {
+        if (dashboardId == 0) {
             // chart template 列表数据不需要处理 只需处理 group 内的 chart ,其他 chart 都设置为 0，0
             Map<Integer, List<VisualChart>> chartListGroupByGroupId = chartList.stream().collect(Collectors.groupingBy(VisualChart::getGroupId));
             for (Map.Entry<Integer, List<VisualChart>> entry : chartListGroupByGroupId.entrySet()) {

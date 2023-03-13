@@ -2,7 +2,6 @@ package com.nis.modules.alert.entity;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-
 import lombok.Data;
 
 @Data

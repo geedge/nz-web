@@ -1,10 +1,10 @@
 package com.nis.modules.alert.service;
 
 
-import java.util.List;
-
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.modules.alert.entity.RecordRuleEvalLog;
+
+import java.util.List;
 
 public interface RecordRuleEvalLogService extends IService<RecordRuleEvalLog>{
 	

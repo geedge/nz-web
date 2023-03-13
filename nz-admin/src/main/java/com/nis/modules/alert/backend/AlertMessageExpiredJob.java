@@ -1,9 +1,12 @@
 package com.nis.modules.alert.backend;
 
-import java.util.Date;
-import java.util.List;
-
-import com.alibaba.fastjson.JSONObject;
+import cn.hutool.core.date.StopWatch;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.Tool;
+import com.nis.modules.alert.entity.AlertMessageEntity;
+import com.nis.modules.alert.service.AlertHandlerService;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -12,14 +15,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.Tool;
-import com.nis.modules.alert.entity.AlertMessageEntity;
-import com.nis.modules.alert.service.AlertHandlerService;
-
-import cn.hutool.core.date.StopWatch;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import java.util.Date;
+import java.util.List;
 
 /**
  * 告警消息 超时判断线程，主要用于处理因为alert message 未能正常改为 expired 状态的消息

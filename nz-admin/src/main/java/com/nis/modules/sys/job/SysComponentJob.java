@@ -1,5 +1,13 @@
 package com.nis.modules.sys.job;
 
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.Tool;
+import com.nis.modules.sys.entity.SysComponent;
+import com.nis.modules.sys.service.SysComponentService;
+import com.nis.modules.sys.service.SysConfigService;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -7,16 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
-
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.Tool;
-import com.nis.modules.sys.entity.SysComponent;
-import com.nis.modules.sys.service.SysComponentService;
-import com.nis.modules.sys.service.SysConfigService;
-
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
 
 /**
  * 系统组件 状态检查线程 1、更新当前组件的状态 a、当设置了host时，直接使用 host b、没有设置host时，通过socket 连接 数据库

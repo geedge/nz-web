@@ -1,9 +1,9 @@
 package com.nis.modules.module.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.nis.modules.dashboard.entity.VisualChart;
+import com.nis.modules.dashboard.entity.VisualDashboard;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
-import com.nis.modules.panel.entity.VisualChart;
-import com.nis.modules.panel.entity.VisualPanel;
 import com.nis.modules.project.entity.MonitorProject;
 import lombok.Data;
 
@@ -104,10 +104,10 @@ public class MonitorModule implements Serializable {
      * template id
      */
     @TableField(strategy = FieldStrategy.IGNORED)
-    private Integer panelId;
+    private Integer dashboardId;
 
     @TableField(exist = false)
-    private VisualPanel panel;
+    private VisualDashboard dashboard;
 
     @TableField(exist = false)
     private List alert;

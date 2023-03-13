@@ -1,8 +1,8 @@
 package com.nis.modules.asset.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
-import com.nis.modules.panel.entity.VisualChart;
-import com.nis.modules.panel.entity.VisualPanel;
+import com.nis.modules.dashboard.entity.VisualChart;
+import com.nis.modules.dashboard.entity.VisualDashboard;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -66,7 +66,7 @@ public class AssetModel implements Serializable {
      * template id
      */
     @TableField(strategy = FieldStrategy.IGNORED)
-    private Integer panelId;
+    private Integer dashboardId;
 
 
     /**
@@ -89,7 +89,7 @@ public class AssetModel implements Serializable {
     private List<VisualChart> charts;
 
     @TableField(exist = false)
-    private VisualPanel panel;
+    private VisualDashboard dashboard;
 
     @TableField(exist = false)
     private Integer assetNum;

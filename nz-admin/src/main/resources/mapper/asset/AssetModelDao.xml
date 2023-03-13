@@ -12,7 +12,7 @@
         <result property="typeId" column="type_id"/>
         <result property="sysObjectId" column="sys_object_id"/>
         <result property="chartIds" column="chart_ids"/>
-        <result property="panelId" column="panel_id"/>
+        <result property="dashboardId" column="dashboard_id"/>
         <result property="assetNum" column="assetNum"/>
         <result property="starred" column="starred"/>
         <result property="tsgAppliance" column="tsg_appliance"/>

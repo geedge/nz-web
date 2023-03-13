@@ -10,9 +10,7 @@ package com.nis.modules.sys.controller;
 
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
-import com.nis.common.xss.XssUtil;
 import com.nis.modules.sys.service.SysLogService;
-import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

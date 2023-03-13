@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.modules.sys.entity.SysConfigEntity;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 public interface SysConfService extends IService<SysConfigEntity> {

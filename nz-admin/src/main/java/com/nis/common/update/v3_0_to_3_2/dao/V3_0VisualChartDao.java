@@ -1,7 +1,7 @@
 package com.nis.common.update.v3_0_to_3_2.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.nis.modules.panel.entity.VisualChart;
+import com.nis.modules.dashboard.entity.VisualChart;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;

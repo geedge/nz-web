@@ -25,16 +25,16 @@ import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetModelImportEnum;
 import com.nis.modules.asset.entity.Dc;
+import com.nis.modules.dashboard.entity.VisualDashboard;
+import com.nis.modules.dashboard.service.VisualDashboardService;
+import com.nis.modules.dashboard.service.VisualService;
+import com.nis.modules.dashboard.utils.DashboardConstant;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.module.dao.MonitorModuleDao;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.entity.MonitorModuleImportEnum;
 import com.nis.modules.module.service.MonitorModuleService;
-import com.nis.modules.panel.entity.VisualPanel;
-import com.nis.modules.panel.service.VisualPanelService;
-import com.nis.modules.panel.service.VisualService;
-import com.nis.modules.panel.utils.DashboardConstant;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.project.service.TopoService;
@@ -93,7 +93,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
     private SnmpCredentialService snmpCredentialService;
 
     @Autowired
-    private VisualPanelService visualPanelService;
+    private VisualDashboardService dashboardService;
 
     @Autowired
     private VisualService visualService;
@@ -133,10 +133,10 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
         List<Map<String, Object>> alert = statService.getSeverityStatByRuleMsgCount(Tool.MapUtil.empty(), ruleIdAndAlertCountMap);
         module.setAlert(alert);
 
-        Integer panelId = module.getPanelId();
-        if(ToolUtil.isNotEmpty(panelId)) {
-            VisualPanel visualPanel = visualPanelService.getById(panelId);
-            module.setPanel(visualPanel);
+        Integer dashboardId = module.getDashboardId();
+        if(ToolUtil.isNotEmpty(dashboardId)) {
+            VisualDashboard dashboard = dashboardService.getById(dashboardId);
+            module.setDashboard(dashboard);
         }
 
         // 当前用户收藏状态  1：收藏  0：未收藏
@@ -225,13 +225,13 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
         }
 
         // module dashboard template, type = template & varType = endpoint
-        Integer panelId = module.getPanelId();
-        if (ToolUtil.isNotEmpty(panelId)) {
-            VisualPanel panel = visualPanelService.getOne(new LambdaQueryWrapper<VisualPanel>()
-                    .eq(VisualPanel::getId, panelId)
-                    .eq(VisualPanel::getType, DashboardConstant.Type.TEMPLATE.getValue())
-                    .eq(VisualPanel::getVarType, DashboardConstant.VariableType.ENDPOINT.getValue()));
-            ValidateUtils.is(panel).notNull(RCode.MODULE_PANEL_ERROR);
+        Integer dashboardId = module.getDashboardId();
+        if (ToolUtil.isNotEmpty(dashboardId)) {
+            VisualDashboard dashboard = dashboardService.getOne(new LambdaQueryWrapper<VisualDashboard>()
+                    .eq(VisualDashboard::getId, dashboardId)
+                    .eq(VisualDashboard::getType, DashboardConstant.Type.TEMPLATE.getValue())
+                    .eq(VisualDashboard::getVarType, DashboardConstant.VariableType.ENDPOINT.getValue()));
+            ValidateUtils.is(dashboard).notNull(RCode.DASHBOARD_NOT_EXIST);
         }
 
         // config 格式校验
@@ -444,15 +444,15 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
             topoService.removeTopoConfigNodeAndLineByModules(modules);
         }
 
-        // If the panel template is modified, the endpoint panel template ID will also be modified
-        if (ObjectUtil.notEqual(oldModule.getPanelId(), moduleEntity.getPanelId())) {
+        // If the dashboard template is modified, the endpoint dashboard template ID will also be modified
+        if (ObjectUtil.notEqual(oldModule.getDashboardId(), moduleEntity.getDashboardId())) {
             List<MonitorEndpoint> endpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getModuleId, moduleEntity.getId()));
             if (CollUtil.isNotEmpty(endpointList)) {
                 List<Integer> endpointIdList = endpointList.stream().map(MonitorEndpoint::getId).collect(Collectors.toList());
-                visualPanelService.update(new LambdaUpdateWrapper<VisualPanel>()
-                        .set(VisualPanel::getTmplId, ObjectUtil.defaultIfNull(moduleEntity.getPanelId(), -1))
-                        .in(VisualPanel::getLink, endpointIdList)
-                        .eq(VisualPanel::getType, DashboardConstant.Type.ENDPOINT.getValue()));
+                dashboardService.update(new LambdaUpdateWrapper<VisualDashboard>()
+                        .set(VisualDashboard::getTmplId, ObjectUtil.defaultIfNull(moduleEntity.getDashboardId(), -1))
+                        .in(VisualDashboard::getLink, endpointIdList)
+                        .eq(VisualDashboard::getType, DashboardConstant.Type.ENDPOINT.getValue()));
             }
         }
 
@@ -843,10 +843,10 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
             Integer dashboardTemplateId = null;
             if (StrUtil.isNotEmpty(dashboardTemplateName)) {
                 // dashboard template, type = template  varType = endpoint
-                VisualPanel dashboardTemplate = visualPanelService.getOne(new LambdaQueryWrapper<VisualPanel>()
-                        .eq(VisualPanel::getName, dashboardTemplateName)
-                        .eq(VisualPanel::getType, DashboardConstant.Type.TEMPLATE.getValue())
-                        .eq(VisualPanel::getVarType, DashboardConstant.VariableType.ENDPOINT.getValue()));
+                VisualDashboard dashboardTemplate = dashboardService.getOne(new LambdaQueryWrapper<VisualDashboard>()
+                        .eq(VisualDashboard::getName, dashboardTemplateName)
+                        .eq(VisualDashboard::getType, DashboardConstant.Type.TEMPLATE.getValue())
+                        .eq(VisualDashboard::getVarType, DashboardConstant.VariableType.ENDPOINT.getValue()));
                 if (ObjectUtil.isNull(dashboardTemplate)) {
                     validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_RELATED_OBJ_NOT_EXIST.setParam(AssetModelImportEnum.DASHBOARD_TEMPLATE.getIndex()));
                 } else {
@@ -878,7 +878,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
                 module.setName(moduleName);
                 module.setEndpointNameTmpl(endpointNameTmpl);
                 module.setRemark(remark);
-                module.setPanelId(dashboardTemplateId);
+                module.setDashboardId(dashboardTemplateId);
                 module.setConfigs(configStr);
                 List<Map> configMapList = JSONObject.parseArray(configStr, Map.class);
                 Map metricsConfigMap = configMapList.stream().filter(map -> {
@@ -987,7 +987,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
             // 是否同步更新关联的 dashboard，可选值： 0：不同步  1：同步  默认值：1
             String syncDashboard = Tool.ObjectUtil.defaultIfEmpty((String) params.get("syncDashboard"), "1");
-            if (StrUtil.equals("1", syncDashboard) && ObjectUtil.isNotNull(module.getPanelId())) {
+            if (StrUtil.equals("1", syncDashboard) && ObjectUtil.isNotNull(module.getDashboardId())) {
                 visualService.syncTemplateDashboard(null, null, null, module.getId());
             }
         } else {
@@ -1047,8 +1047,8 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
             tempList.add(module.getProject().getName());
             tempList.add(ObjectUtil.defaultIfNull(module.getEndpointNameTmpl(), ""));
             tempList.add(ObjectUtil.defaultIfNull(module.getConfigs(), ""));
-            VisualPanel panel = module.getPanel();
-            tempList.add(ObjectUtil.isNotNull(panel) ? panel.getName() : StrUtil.EMPTY);
+            VisualDashboard dashboard = module.getDashboard();
+            tempList.add(ObjectUtil.isNotNull(dashboard) ? dashboard.getName() : StrUtil.EMPTY);
             tempList.add(ObjectUtil.defaultIfNull(module.getRemark(), "").toString());
             exportDataList.add(tempList);
         }

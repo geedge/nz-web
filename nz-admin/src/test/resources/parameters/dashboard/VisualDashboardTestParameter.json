@@ -1,0 +1,395 @@
+{
+  "------------------ get  /visual/dashboard---------------------": "note",
+  "queryVisualDashboard_success": {
+    "pageNo": 1,
+    "pageSize": 20,
+    "ids": "1,2"
+  },
+  "------------------ post  /visual/dashboard---------------------": "note",
+  "addVisualDashboard_success": {
+    "name": "dashboard_6",
+    "remark": "测试新增",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": "last",
+          "interval": 1,
+          "unit": "month"
+        },
+        "schedule": {
+          "type": 4,
+          "repeat": 1,
+          "stime": "2021-01-10 10:10:10",
+          "nums": [1, 10, 30, -1]
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "addVisualDashboard_nameIsnull": {
+    "name": "",
+    "remark": "测试新增"
+  },
+  "addVisualDashboard_nameFormatError": {
+    "name": "dashboard/7",
+    "remark": "测试新增"
+  },
+  "addVisualDashboard_nameDuplicate": {
+    "name": "dashboard_4",
+    "remark": "测试新增",
+    "type": "dashboard",
+    "pid": 10
+  },
+  "addVisualDashboard_typeIsnull": {
+    "name": "dashboard_7",
+    "remark": "测试新增",
+    "link": 1
+  },
+  "addVisualDashboard_typeInvalide": {
+    "name": "dashboard_7",
+    "remark": "测试新增",
+    "link": 1,
+    "type": "abcd"
+  },
+  "addVisualDashboard_notExist": {
+    "name": "dashboard_7",
+    "remark": "测试新增",
+    "pid": 19
+  },
+  "addVisualDashboard_error": {
+    "name": "dashboard_7_add_________________________________this_name_length_is_66",
+    "remark": "测试新增"
+  },
+  "------------------ put  /visual/dashboard---------------------": "note",
+  "updateVisualDashboard_success": {
+    "id": 3,
+    "name": "dashboard_3_update",
+    "type": "dashboard",
+    "link": 1,
+    "pid": 1,
+    "remark": "测试修改",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": "previous",
+          "interval": 1,
+          "unit": "week"
+        },
+        "schedule": {
+          "type": 3,
+          "repeat": 1,
+          "stime": "2021-01-10 10:10:10",
+          "nums": [1, 3, 7]
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "updateVisualDashboard_idIsnull": {
+    "id": null,
+    "name": "dashboard_3_update",
+    "type": "overview",
+    "link": 1,
+    "pid": 1,
+    "remark": "测试修改",
+    "param": {
+      "report": {
+        "enable": false,
+        "receivers": [1]
+      }
+    }
+  },
+  "updateVisualDashboard_error": {
+    "id": 3,
+    "name": "dashboard_3_update______________________________this_name_length_is_66",
+    "type": "overview",
+    "link": 1,
+    "pid": 1,
+    "remark": "测试修改",
+    "param": {
+      "report": {
+        "enable": false,
+        "receivers": [1]
+      }
+    }
+  },
+  "------------------ delete  /visual/dashboard---------------------": "note",
+  "deleteVisualDashboard_success": {
+    "ids": "2, 5"
+  },
+  "deleteVisualDashboard_idIsnull": {
+    "ids": ""
+  },
+  "------------------ post  /visual/dashboard  param---------------------": "note",
+  "addVisualDashboard_receiversIsNull": {
+    "name": "dashboard_param_test",
+    "remark": "测试param receivers校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": ""
+        },
+        "schedule": {
+          "type": ""
+        },
+        "receivers": ""
+      }
+    }
+  },
+  "addVisualDashboard_rangeIsNull": {
+    "name": "dashboard_param_test",
+    "remark": "测试report range校验",
+    "param": {
+      "report": {
+        "enable": true
+      }
+    }
+  },
+  "addVisualDashboard_rangeTypeIsNull": {
+    "name": "dashboard_param_test",
+    "remark": "测试range type校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": ""
+        },
+        "schedule": {
+          "type": 3
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "addVisualDashboard_rangeIntervalIsnull": {
+    "name": "dashboard_param_test",
+    "remark": "测试range interval校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": "previous"
+        },
+        "schedule": {
+          "type": 3
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "addVisualDashboard_rangeUnitIsnull": {
+    "name": "dashboard_param_test",
+    "remark": "测试range unit校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": "previous",
+          "interval": 1
+        },
+        "schedule": {
+          "type": 3
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "addVisualDashboard_rangeTypeInvalide": {
+    "name": "dashboard_param_test",
+    "remark": "测试range type校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": 1,
+          "interval": 1,
+          "unit": "week"
+        },
+        "schedule": {
+          "type": 3
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "addVisualDashboard_rangeUnitInvalide": {
+    "name": "dashboard_param_test",
+    "remark": "测试range unit校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": "previous",
+          "interval": 1,
+          "unit": "weeks"
+        },
+        "schedule": {
+          "type": 3
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "addVisualDashboard_reportScheduleIsnull": {
+    "name": "dashboard_param_test",
+    "remark": "测试report schedule校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": "last"
+        }
+      }
+    }
+  },
+  "addVisualDashboard_scheduleTypeIsnull": {
+    "name": "dashboard_param_test",
+    "remark": "测试schedule type校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": "previous",
+          "interval": 1,
+          "unit": "week"
+        },
+        "schedule": {
+          "type": ""
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "addVisualDashboard_scheduleRepeatIsnull": {
+    "name": "dashboard_param_test",
+    "remark": "测试schedule repeat校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": "previous",
+          "interval": 1,
+          "unit": "week"
+        },
+        "schedule": {
+          "type": 2,
+          "stime": "2021-01-10 10:10:10"
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "addVisualDashboard_scheduleStimeIsnull": {
+    "name": "dashboard_param_test",
+    "remark": "测试schedule stime校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": "previous",
+          "interval": 1,
+          "unit": "week"
+        },
+        "schedule": {
+          "type": 1
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "addVisualDashboard_scheduleTypeInvalide": {
+    "name": "dashboard_param_test",
+    "remark": "测试schedule type校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": "previous",
+          "interval": 1,
+          "unit": "week"
+        },
+        "schedule": {
+          "type": 10,
+          "stime": "2021-01-10 10:10:10"
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "addVisualDashboard_scheduleNumsIsnull": {
+    "name": "dashboard_param_test",
+    "remark": "测试schedule nums校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": "previous",
+          "interval": 1,
+          "unit": "week"
+        },
+        "schedule": {
+          "type": 3,
+          "repeat": 1,
+          "stime": "2021-01-10 10:10:10"
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "addVisualDashboard_scheduleNumsInvalide3": {
+    "name": "dashboard_param_test",
+    "remark": "测试schedule type=3, nums校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": "previous",
+          "interval": 1,
+          "unit": "week"
+        },
+        "schedule": {
+          "type": 3,
+          "repeat": 1,
+          "stime": "2021-01-10 10:10:10",
+          "nums": [1, 10]
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "addVisualDashboard_scheduleNumsInvalide4": {
+    "name": "dashboard_param_test",
+    "remark": "测试schedule type=4, nums校验",
+    "param": {
+      "report": {
+        "enable": true,
+        "range": {
+          "type": "previous",
+          "interval": 1,
+          "unit": "week"
+        },
+        "schedule": {
+          "type": 3,
+          "repeat": 1,
+          "stime": "2021-01-10 10:10:10",
+          "nums": [1, 10, 32]
+        },
+        "receivers": [1]
+      }
+    }
+  },
+  "addVisualDashboard_reportChartShareInvalide": {
+    "name": "dashboard_param_test",
+    "remark": "测试report chartShare校验",
+    "param": {
+      "report": {
+        "enable": false,
+        "receivers": [1]
+      },
+      "chartShare": "chart"
+    }
+  }
+}

@@ -7,8 +7,8 @@ public enum TypeEnum {
 	// 类型type
 	ASSET("asset"), ASSETACCOUNT("asset account"), ASSETACCOUNTREL("asset account rel"),
 	ASSETFIELDGROUP("asset field group"), ASSETFIELDMETA("asset field meta"), ENDPOINT("endpoint"), PROJECT("project"),
-	TOPO("project topo"), MODULE("module"), ALERTRULE("alert rule"), ALERTMESSAGE("alert message"), PANEL("panel"),
-	CHART("chart"), VISUALPANEL("visual panel"), VISUALCHART("visual chart"), DATACENTER("datacenter"),
+	TOPO("project topo"), MODULE("module"), ALERTRULE("alert rule"), ALERTMESSAGE("alert message"),
+	CHART("chart"), DASHBOARD("dashboard"), VISUALCHART("visual chart"), DATACENTER("datacenter"),
 	CABINET("cabinet"), UNKNOWN("unknown"), MODEL("model"), PROMSERVER("promServer"), ACCOUNT("account"), MIB("mib"),
 	SYSTEM("system"), LINK("link"), SCRIPT("notification script"), ALERTSILENCE("alert silence"),
 	ALERTSEVERITY("alert severity"), ALERTNOTIFYMETHOD("alert notify method"), ASSETSTATECONF("asset state conf"),

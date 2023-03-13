@@ -6,7 +6,7 @@
 
 delete from sys_menu;
 
-INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (1, 'dashboard', 'dashboard', 'dashboard.title', 0, '', 1, '/panel', 1, 'nz-icon nz-icon-menu-dashboard', '', 1);
+INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (1, 'dashboard', 'dashboard', 'dashboard.title', 0, '', 1, '/dashboard', 1, 'nz-icon nz-icon-menu-dashboard', '', 1);
 INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (4, 'explore', 'explore', 'dashboard.metricPreview.title', 6, '', 1, '/explore', 1, '', '', 1);
 INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (5, 'asset', 'asset', 'overall.assetList', 2147, '', 1, '/asset', 1, '', '', 1);
 INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (6, 'monitor', 'monitor', 'overall.monitor', 0, '', 1, '', 3, 'nz-icon nz-icon-menu-project', '', 1);
@@ -25,10 +25,10 @@ INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type
 INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (19, 'operationLog', 'operationLog', 'config.operationlog.operationlog', 2229, '', 1, '/operationLog', 9, '', '', 1);
 INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (20, 'about', 'about', 'overall.about', 0, '', 1, '/about', 99, 'nz-icon nz-icon-about', '', 1);
 INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (21, 'Backup', 'backup', 'Backup', 2149, '', 1, '/backup', 7, '', '', 0);
-INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (301, 'Main Add ', 'main_add', 'buttons.add', 1, 'visual:panel:save,visual:chart:save', 2, '', 10, '', '', 1);
-INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (302, 'Main Edit ', 'main_edit', 'buttons.edit', 1, 'visual:panel:update,visual:chart:update', 2, '', 15, '', '', 1);
-INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (303, 'Main Delete', 'main_delete', 'buttons.delete', 1, 'visual:panel:delete,visual:chart:delete', 2, '', 20, '', '', 1);
-INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (312, 'Main View', 'panel_view', 'buttons.view', 1, '', 2, '', 5, '', '', 1);
+INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (301, 'Main Add ', 'main_add', 'buttons.add', 1, 'visual:dashboard:save,visual:chart:save', 2, '', 10, '', '', 1);
+INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (302, 'Main Edit ', 'main_edit', 'buttons.edit', 1, 'visual:dashboard:update,visual:chart:update', 2, '', 15, '', '', 1);
+INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (303, 'Main Delete', 'main_delete', 'buttons.delete', 1, 'visual:dashboard:delete,visual:chart:delete', 2, '', 20, '', '', 1);
+INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (312, 'Main View', 'dashboard_view', 'buttons.view', 1, '', 2, '', 5, '', '', 1);
 INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (501, 'Add asset', 'asset_add', 'buttons.add', 5, 'asset:save', 2, '', 10, '', '', 1);
 INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (502, 'Edit asset', 'asset_edit', 'buttons.edit', 5, 'asset:update', 2, '', 15, '', '', 1);
 INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (504, 'asset_delete', 'asset_delete', 'buttons.delete', 5, 'asset:delete', 2, '', 25, '', '', 1);

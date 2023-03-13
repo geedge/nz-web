@@ -18,9 +18,9 @@ import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.asset.service.DcService;
-import com.nis.modules.panel.dao.VisualPanelDao;
-import com.nis.modules.panel.entity.VisualPanel;
-import com.nis.modules.panel.service.VisualPanelService;
+import com.nis.modules.dashboard.dao.VisualDashboardDao;
+import com.nis.modules.dashboard.entity.VisualDashboard;
+import com.nis.modules.dashboard.service.VisualDashboardService;
 import com.nis.modules.sys.dao.SysRoleDao;
 import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.entity.SysApiKey;
@@ -84,10 +84,10 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 	private AlertRuleDao alertRuleDao;
 
 	@Autowired
-	private VisualPanelDao visualPanelDao;
+	private VisualDashboardDao dashboardDao;
 
 	@Autowired
-	private VisualPanelService visualPanelService;
+	private VisualDashboardService dashboardService;
 
 	@Autowired
 	private DcService dcService;
@@ -351,19 +351,19 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		dcService.update(new LambdaUpdateWrapper<Dc>().in(Dc::getPrincipal, idList).set(Dc::getPrincipal, null));
 		// 删除相关 sys_api_key
 		sysApiKeyService.remove(new LambdaUpdateWrapper<SysApiKey>().in(SysApiKey::getCreateBy, idList));
-		// 删除 panel 引用
-		visualPanelDao.delReceivers(idList);
-		// 关闭 panel 接收人为空的报表
-		List<VisualPanel> visualPanelList = visualPanelDao.queryReportOfEmptyReceivers();
-		for (VisualPanel panel : visualPanelList) {
-			Map newParamMap = JSONObject.parseObject(panel.getParam().toString(), LinkedHashMap.class);
+		// 删除 dashboard 引用
+		dashboardDao.delReceivers(idList);
+		// 关闭 dashboard 接收人为空的报表
+		List<VisualDashboard> visualDashboardList = dashboardDao.queryReportOfEmptyReceivers();
+		for (VisualDashboard dashboard : visualDashboardList) {
+			Map newParamMap = JSONObject.parseObject(dashboard.getParam().toString(), LinkedHashMap.class);
 			Map publishMap = new HashMap(4);
-			publishMap.put("panelId", panel.getId());
+			publishMap.put("dashboardId", dashboard.getId());
 			publishMap.putAll(newParamMap);
 
 			redisTemplate.convertAndSend(Constant.REPORT_TOPIC_NAME, JSONObject.toJSONString(publishMap));
 		}
-		if(Tool.CollUtil.isNotEmpty(visualPanelList)) visualPanelService.updateBatchById(visualPanelList);
+		if(Tool.CollUtil.isNotEmpty(visualDashboardList)) dashboardService.updateBatchById(visualDashboardList);
 
 		// 删除 redis 中 用户token 信息
 		List<String> removeKeys = new ArrayList<>();

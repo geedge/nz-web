@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nis.modules.dashboard.dao.VisualDashboardDao">
+    
+    <resultMap id="dashboardResult" type="com.nis.modules.dashboard.entity.VisualDashboard">
+        <result property="id" column="id"></result>
+        <result property="name" column="name"></result>
+        <result property="type" column="type"></result>
+        <result property="varType" column="var_type"></result>
+        <result property="tmplId" column="tmpl_id"></result>
+        <result property="link" column="link"></result>
+        <result property="buildIn" column="build_in"></result>
+        <result property="createBy" column="create_by"></result>
+        <result property="pid" column="pid"></result>
+        <result property="weight" column="weight"></result>
+        <result property="seq" column="seq"></result>
+        <result property="param" column="param"></result>
+        <result property="remark" column="remark"></result>
+        <result property="uts" column="uts"></result>
+        <result property="chartNum" column="chart_num"></result>
+        <result property="starred" column="starred"></result>
+        <association property="parent" columnPrefix="parent_" javaType="com.nis.modules.dashboard.entity.VisualDashboard">
+            <result property="id" column="id" />
+            <result property="name" column="name"></result>
+        </association>
+    </resultMap>
+
+    <select id="queryInfo" resultMap="dashboardResult">
+		SELECT
+			childDashboard.*,
+			fatherDashboard.id AS parent_id,
+			fatherDashboard.NAME AS parent_name,
+			IFNULL( chart.chartNum, 0 ) AS chart_num 
+		FROM
+			visual_dashboard childDashboard
+			LEFT JOIN visual_dashboard fatherDashboard ON childDashboard.pid = fatherDashboard.id
+			LEFT JOIN ( SELECT dashboard_id, count( 1 ) AS chartNum FROM visual_chart GROUP BY dashboard_id ) chart ON childDashboard.id = chart.dashboard_id
+		WHERE
+			childDashboard.id = #{id}
+    </select>
+    
+    <select id="queryList" resultMap="dashboardResult">
+		SELECT
+			pan.*,
+			fatherDashboard.id AS parent_id,
+			fatherDashboard.NAME AS parent_name,
+			IFNULL( chart.chartNum, 0 ) AS chart_num ,
+            IFNULL( sta.starred, 0 ) AS starred,
+		    pan.var_type as varType
+		FROM
+			visual_dashboard pan
+			LEFT JOIN visual_dashboard fatherDashboard ON pan.pid = fatherDashboard.id
+			LEFT JOIN ( SELECT dashboard_id, count( 1 ) AS chartNum FROM visual_chart GROUP BY dashboard_id ) chart ON pan.id = chart.dashboard_id
+            LEFT JOIN ( SELECT IF(COUNT(1) > 0, 1, 0) AS starred,tid FROM sys_user_starred WHERE TYPE = "dashboard" AND uid = #{params.currentLoginUserID} GROUP BY tid) sta ON pan.id = sta.tid
+        <where>
+            <if test="params.ids != null">
+                and pan.id in 
+                <foreach item="id" collection="params.ids" separator="," open="(" close=")" index="">
+		       		#{id}
+			     </foreach>
+            </if>
+
+            <if test="params.type != null and params.type != ''">
+                and pan.type=#{params.type}
+            </if>
+
+            <if test="params.name != null and params.name != ''">
+                AND locate(#{params.name} , pan.name)
+            </if>
+
+            <if test="params.createBy != null and params.createBy != ''">
+                and pan.create_by=#{params.createBy}
+            </if>
+
+            <if test="params.pid != null and params.pid != ''">
+                and pan.pid=#{params.pid}
+            </if>
+
+            <if test="params.link != null and params.link != ''">
+                and pan.link=#{params.link}
+            </if>
+
+            <if test="params.varType != null and params.varType != ''">
+                and pan.var_type=#{params.varType}
+            </if>
+            <if test="params.starred != null and params.starred != ''">
+                AND
+                <if test=' params.starred eq 1 '>
+                    starred = #{params.starred}
+                </if>
+                <if test=' params.starred eq 0 '>
+                    starred IS NULL
+                </if>
+            </if>
+        </where>
+        <if test="params.orderBy == null or params.orderBy == ''">
+            <choose>
+                <when test="params.type == 'template'">
+                    ORDER BY pan.id
+                </when>
+                <otherwise>
+                    ORDER BY pan.weight,pan.id
+                </otherwise>
+            </choose>
+        </if>
+    </select>
+
+
+    <select id="queryListByType" resultMap="dashboardResult">
+        SELECT
+        pan.*,
+        su.id AS su_userId,
+        su.username AS su_username
+        FROM
+        visual_dashboard pan
+        LEFT JOIN sys_user su ON pan.create_by = su.id
+        where pan.type = #{type}
+    </select>
+
+    <update id="updateWeightBatch">
+        <foreach item="dashboard" collection="dashboards" separator=";">
+            UPDATE visual_dashboard
+            <set>
+                weight = #{dashboard.weight},
+                pid = #{dashboard.pid}
+            </set>
+            WHERE
+            id = #{dashboard.id}
+        </foreach>
+    </update>
+
+    <update id="delReceivers">
+        <foreach item="item" collection="list" separator=";">
+            UPDATE
+            visual_dashboard
+            <set>
+                param = JSON_REMOVE(param, JSON_UNQUOTE(JSON_SEARCH( param, 'one', #{item} )))
+            </set>
+            WHERE
+                JSON_CONTAINS(param, #{item}, "$.report.receivers")
+        </foreach>
+    </update>
+
+    <select id="queryReportOfEmptyReceivers" resultMap="dashboardResult">
+        SELECT
+            id,
+            name,
+            JSON_SET(param, '$.report.enable', false) param
+        FROM
+             visual_dashboard
+        WHERE
+            JSON_EXTRACT(param, '$.report.receivers') = '[]'
+            AND JSON_EXTRACT(param, '$.report.enable')= 'true'
+    </select>
+</mapper>

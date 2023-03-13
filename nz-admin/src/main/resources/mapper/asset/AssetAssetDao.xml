@@ -76,7 +76,7 @@
     </resultMap>
 
 
-    <resultMap type="com.nis.modules.panel.entity.VisualChart" id="chartIdWithAssetEntity">
+    <resultMap type="com.nis.modules.dashboard.entity.VisualChart" id="chartIdWithAssetEntity">
         <id property="id" column="chartId"/>
 
         <association property="asset" javaType="com.nis.modules.asset.entity.AssetAsset">

@@ -95,21 +95,21 @@ public class RedisCacheSubscribe  implements MessageListener{
 			log.info("Report consumer message, report begin ...");
 			log.info("consumer message :{}", value);
 			String reportEnable = JSONPath.read(value, "report.enable").toString();
-			String panelId = JSONPath.read(value, "panelId").toString();
+			String dashboardId = JSONPath.read(value, "dashboardId").toString();
 
 			if (Tool.StrUtil.equalsIgnoreCase("true", StrUtil.nullToDefault(reportEnable, "false"))) {
 				try {
-					reportJobManager.delJobByName(panelId);
-					reportJobManager.createReportJob(value, panelId);
+					reportJobManager.delJobByName(dashboardId);
+					reportJobManager.createReportJob(value, dashboardId);
 					log.info("createReportJob success.");
 				} catch (SchedulerException e) {
-					log.error("report job create or update error,panelId:{}", e, panelId);
+					log.error("report job create or update error,dashboardId:{}", e, dashboardId);
 				}
 			} else {
 				try {
-					reportJobManager.delJobByName(panelId);
+					reportJobManager.delJobByName(dashboardId);
 				} catch (SchedulerException e) {
-					log.error("delete report job error, panelId:{}", panelId, e);
+					log.error("delete report job error, dashboardId:{}", dashboardId, e);
 				}
 			}
 			log.info("Report consumer message, report finished");

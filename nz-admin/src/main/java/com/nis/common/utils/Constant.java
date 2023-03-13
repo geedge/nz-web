@@ -884,8 +884,8 @@ public class Constant {
 	// alert rule 导入表头
 	public static final String SYSCONFIG_KEY_ALERTRULE_EXPORT_HEADER = "rule_export_header";
 
-	// panel 类型导入表头
-	public static final String SYSCONFIG_KEY_PANEL_EXPORT_HEADER = "panel_export_header";
+	// dashboard 类型导入表头
+	public static final String SYSCONFIG_KEY_DASHBOARD_EXPORT_HEADER = "dashboard_export_header";
 	public static final String SYSCONFIG_KEY_CHART_EXPORT_HEADER = "chart_export_header";
 
 	// asset 类型导入表头
@@ -975,11 +975,8 @@ public class Constant {
 	// 资产服务器类型
 	public static final String ASSET_SERVER_TYPE = "server";
 
-	// panel chart link 链表结构 首位 prev 值
-	public static final Integer START_PREV_VALUE = 0;
 
-	// panel chart link 链表结构 末尾 next 值
-	public static final Integer END_NEXT_VALUE = -1;
+
 
 	// 连接smtp邮箱服务器超时时间 10秒
 	public static final String CONNECTION_SMTP_TIMEOUT = "10000";
@@ -1176,7 +1173,7 @@ public class Constant {
 	 * 全局搜索范围
 	 */
 	public static final List<String> SEARCH_SCOPE = Tool.ListUtil.of("asset", "datacenter", "project", "module",
-			"endpoint", "panel", "alertrule", "model", "user");
+			"endpoint", "dashboard", "alertrule", "model", "user");
 
 	public static final List<String> MESSAGE_SCOPE = Tool.ListUtil.of("asset", "datacenter", "project", "module",
 			"endpoint", "alertrule", "hash");

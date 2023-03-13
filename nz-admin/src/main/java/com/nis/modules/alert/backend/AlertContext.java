@@ -1,11 +1,10 @@
 package com.nis.modules.alert.backend;
 
-import java.util.Map;
-
+import cn.hutool.log.Log;
 import com.nis.common.utils.Tool;
 import com.nis.modules.alert.entity.AlertRuleEntity;
 
-import cn.hutool.log.Log;
+import java.util.Map;
 
 public class AlertContext {
 	private static final Log log = Log.get();

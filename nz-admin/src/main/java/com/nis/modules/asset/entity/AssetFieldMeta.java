@@ -1,11 +1,10 @@
 package com.nis.modules.asset.entity;
 
-import java.util.List;
-
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
-
 import lombok.Data;
+
+import java.util.List;
 
 @Data
 @TableName("asset_field_meta")

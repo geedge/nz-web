@@ -1,18 +1,8 @@
 package com.nis.modules.alert.backend;
 
-import java.util.List;
-import java.util.Map;
-
-import org.quartz.DisallowConcurrentExecution;
-import org.quartz.JobDataMap;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.quartz.QuartzJobBean;
-import org.springframework.stereotype.Component;
-
+import cn.hutool.core.date.StopWatch;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.nis.common.exception.NZException;
@@ -31,10 +21,18 @@ import com.nis.modules.alert.entity.RecordRuleEntity;
 import com.nis.modules.alert.entity.RecordRuleEvalLog;
 import com.nis.modules.alert.service.RecordRuleEvalLogService;
 import com.nis.modules.alert.service.RecordRuleService;
+import org.quartz.DisallowConcurrentExecution;
+import org.quartz.JobDataMap;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.quartz.QuartzJobBean;
+import org.springframework.stereotype.Component;
 
-import cn.hutool.core.date.StopWatch;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import java.util.List;
+import java.util.Map;
 
 @Component
 @DisallowConcurrentExecution
