@@ -37,6 +37,7 @@ public class ExcelUtils {
 
     static {
         numberFormat.setGroupingUsed(false);
+        numberFormat.setMaximumFractionDigits(7);
     }
 
     /**
