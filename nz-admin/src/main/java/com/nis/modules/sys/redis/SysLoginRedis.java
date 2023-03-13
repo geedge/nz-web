@@ -4,13 +4,12 @@ package com.nis.modules.sys.redis;
 import com.alibaba.fastjson.JSON;
 import com.nis.common.utils.RedisKeys;
 import com.nis.modules.sys.entity.AuthTokenEntity;
-
-import java.util.concurrent.TimeUnit;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Component;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * authToken  Redis

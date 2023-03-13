@@ -1,11 +1,5 @@
 package com.nis.modules.sys.service.impl;
 
-import java.util.regex.Pattern;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.Constant;
@@ -13,6 +7,11 @@ import com.nis.common.utils.Tool;
 import com.nis.modules.sys.dao.SysComponentDao;
 import com.nis.modules.sys.entity.SysComponent;
 import com.nis.modules.sys.service.SysComponentService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.regex.Pattern;
 
 @Service
 public class SysComponentServiceImpl extends ServiceImpl<SysComponentDao, SysComponent> implements SysComponentService {

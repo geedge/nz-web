@@ -27,18 +27,18 @@ import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.dao.AssetAssetDao;
 import com.nis.modules.asset.entity.*;
 import com.nis.modules.asset.service.*;
+import com.nis.modules.dashboard.entity.VisualChart;
+import com.nis.modules.dashboard.entity.VisualDashboard;
+import com.nis.modules.dashboard.service.VisualChartService;
+import com.nis.modules.dashboard.service.VisualDashboardService;
+import com.nis.modules.dashboard.service.VisualService;
+import com.nis.modules.dashboard.utils.DashboardConstant;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.entity.MonitorEndpointState;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.endpoint.service.MonitorEndpointStateService;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
-import com.nis.modules.panel.entity.VisualChart;
-import com.nis.modules.panel.entity.VisualPanel;
-import com.nis.modules.panel.service.VisualChartService;
-import com.nis.modules.panel.service.VisualPanelService;
-import com.nis.modules.panel.service.VisualService;
-import com.nis.modules.panel.utils.DashboardConstant;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.stat.service.StatService;
@@ -135,7 +135,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     private SnmpCredentialService snmpCredentialService;
 
     @Autowired
-    private VisualPanelService panelService;
+    private VisualDashboardService dashboardService;
 
     @Autowired
     private VisualChartService chartService;
@@ -837,8 +837,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // 保存 asset 关联数据
         this.saveAssetRelData(asset);
 
-        // asset panel & info chart
-        this.saveAssetInfoPanel(asset);
+        // asset dashboard & info chart
+        this.saveAssetInfoDashboard(asset);
 
         // sync Asset Dashboard Via Model
         this.syncAssetDashboardViaModel(asset.getId(), asset.getModelId());
@@ -890,17 +890,17 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
      *
      * @param asset
      */
-    private void saveAssetInfoPanel(AssetAsset asset) {
+    private void saveAssetInfoDashboard(AssetAsset asset) {
         // get model template id
         AssetModel model = modelService.getById(asset.getModelId());
-        Integer templateId = model.getPanelId();
+        Integer templateId = model.getDashboardId();
 
         Integer linkId = asset.getId();
         String name = asset.getName();
         String seq = asset.getSeq();
 
-        // save Rel Panel And Chart
-        chartService.saveRelPanelAndChart(DashboardConstant.Type.ASSET.getValue(), linkId, name, templateId, seq);
+        // save Rel Dashboard And Chart
+        chartService.saveRelDashboardAndChart(DashboardConstant.Type.ASSET.getValue(), linkId, name, templateId, seq);
     }
 
     /**
@@ -911,7 +911,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
      */
     private void syncAssetDashboardViaModel(Integer assetId, Integer modelId) {
         AssetModel model = modelService.getById(modelId);
-        Integer modelDashboardTmplId = model.getPanelId();
+        Integer modelDashboardTmplId = model.getDashboardId();
         if (ObjectUtil.isNull(modelDashboardTmplId)) {
             log.warn("[syncAssetDashboardViaModel] [asset model not config dashboard template. no sync asset dashboard] [assetId: {}] [modelId: {}]", assetId, modelId);
             return;
@@ -919,10 +919,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         log.info("[syncAssetDashboardViaModel] [sync asset dashboard begin.] [assetId: {}] [modelId: {}]", assetId, modelId);
         // sync dashboard
-        VisualPanel assetPanel = panelService.getOne(new LambdaQueryWrapper<VisualPanel>()
-                .eq(VisualPanel::getType, DashboardConstant.Type.ASSET.getValue())
-                .eq(VisualPanel::getLink, assetId));
-        visualService.syncTemplateDashboard(assetPanel.getId(), null, null, null);
+        VisualDashboard assetDashboard = dashboardService.getOne(new LambdaQueryWrapper<VisualDashboard>()
+                .eq(VisualDashboard::getType, DashboardConstant.Type.ASSET.getValue())
+                .eq(VisualDashboard::getLink, assetId));
+        visualService.syncTemplateDashboard(assetDashboard.getId(), null, null, null);
         log.info("[syncAssetDashboardViaModel] [sync asset dashboard finshed.] [assetId: {}] [modelId: {}]", assetId, modelId);
     }
 
@@ -978,22 +978,22 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         if (ObjectUtil.notEqual(oldAsset.getModelId(), asset.getModelId())) {
             // update asset dashboard tmpl_id
             AssetModel model = modelService.getById(asset.getModelId());
-            Integer modelDashboardTmplId = model.getPanelId();
-            panelService.update(new LambdaUpdateWrapper<VisualPanel>()
-                    .set(VisualPanel::getTmplId, ObjectUtil.defaultIfNull(modelDashboardTmplId, -1))
-                    .eq(VisualPanel::getLink, asset.getId())
-                    .eq(VisualPanel::getType, DashboardConstant.Type.ASSET.getValue())
+            Integer modelDashboardTmplId = model.getDashboardId();
+            dashboardService.update(new LambdaUpdateWrapper<VisualDashboard>()
+                    .set(VisualDashboard::getTmplId, ObjectUtil.defaultIfNull(modelDashboardTmplId, -1))
+                    .eq(VisualDashboard::getLink, asset.getId())
+                    .eq(VisualDashboard::getType, DashboardConstant.Type.ASSET.getValue())
             );
             // sync dashboard
             this.syncAssetDashboardViaModel(asset.getId(), asset.getModelId());
         }
 
-        // If the asset name is modified, the asset panel name is also modified
+        // If the asset name is modified, the asset dashboard name is also modified
         if (ObjectUtil.notEqual(oldAsset.getName(), asset.getName())) {
-            panelService.update(new LambdaUpdateWrapper<VisualPanel>()
-                    .set(VisualPanel::getName, asset.getName())
-                    .eq(VisualPanel::getLink, asset.getId())
-                    .eq(VisualPanel::getType, DashboardConstant.Type.ASSET.getValue()));
+            dashboardService.update(new LambdaUpdateWrapper<VisualDashboard>()
+                    .set(VisualDashboard::getName, asset.getName())
+                    .eq(VisualDashboard::getLink, asset.getId())
+                    .eq(VisualDashboard::getType, DashboardConstant.Type.ASSET.getValue()));
         }
 
         // 如果没有指定 meta, 则视为删除 asset之前关联的 meta 信息
@@ -1097,13 +1097,13 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             monitorEndpointService.deleteEndpointByIds(endpointIds);
         }
 
-        // panel chart chartElement
-        List<VisualPanel> panelList = panelService.list(new LambdaQueryWrapper<VisualPanel>()
-                .eq(VisualPanel::getType, DashboardConstant.Type.ASSET.getValue())
-                .in(VisualPanel::getLink, removeAssetIdList));
-        if (Tool.CollUtil.isNotEmpty(panelList)) {
-            Set<Integer> panelIds = panelList.stream().map(VisualPanel::getId).collect(Collectors.toSet());
-            panelService.delPanelsAndChartInfoByPanelIds(panelIds);
+        // dashboard chart chartElement
+        List<VisualDashboard> dashboardList = dashboardService.list(new LambdaQueryWrapper<VisualDashboard>()
+                .eq(VisualDashboard::getType, DashboardConstant.Type.ASSET.getValue())
+                .in(VisualDashboard::getLink, removeAssetIdList));
+        if (Tool.CollUtil.isNotEmpty(dashboardList)) {
+            Set<Integer> dashboardIds = dashboardList.stream().map(VisualDashboard::getId).collect(Collectors.toSet());
+            dashboardService.delDashboardsAndChartInfoByDashboardIds(dashboardIds);
         }
 
         // chart : create by asset chart tmplate
@@ -1695,11 +1695,11 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             // model
             modelService.remove(new LambdaQueryWrapper<AssetModel>().eq(AssetModel::getSeq, seq));
 
-            // 删除关联的 panel chart  chartElement信息
-            List<VisualPanel> panels = panelService.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, DashboardConstant.Type.ASSET.getValue()).in(VisualPanel::getLink, assetIds));
-            if (CollectionUtils.isNotEmpty(panels)) {
-                Set<Integer> panelIds = panels.stream().map(VisualPanel::getId).collect(Collectors.toSet());
-                panelService.delPanelsAndChartInfoByPanelIds(panelIds);
+            // 删除关联的 dashboard chart  chartElement信息
+            List<VisualDashboard> dashboards = dashboardService.list(new LambdaQueryWrapper<VisualDashboard>().eq(VisualDashboard::getType, DashboardConstant.Type.ASSET.getValue()).in(VisualDashboard::getLink, assetIds));
+            if (CollectionUtils.isNotEmpty(dashboards)) {
+                Set<Integer> dashboardIds = dashboards.stream().map(VisualDashboard::getId).collect(Collectors.toSet());
+                dashboardService.delDashboardsAndChartInfoByDashboardIds(dashboardIds);
             }
 
             // 删除 field meta/value
@@ -2248,10 +2248,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             String syncDashboard = Tool.ObjectUtil.defaultIfEmpty((String) params.get("syncDashboard"), "1");
             if (StrUtil.equals("1", syncDashboard)) {
                 // sync dashboard
-                VisualPanel assetPanel = panelService.getOne(new LambdaQueryWrapper<VisualPanel>()
-                        .eq(VisualPanel::getType, DashboardConstant.Type.ASSET.getValue())
-                        .eq(VisualPanel::getLink, asset.getId()));
-                visualService.syncTemplateDashboard(assetPanel.getId(), null, null, null);
+                VisualDashboard assetDashboard = dashboardService.getOne(new LambdaQueryWrapper<VisualDashboard>()
+                        .eq(VisualDashboard::getType, DashboardConstant.Type.ASSET.getValue())
+                        .eq(VisualDashboard::getLink, asset.getId()));
+                visualService.syncTemplateDashboard(assetDashboard.getId(), null, null, null);
             }
             // 是否同步更新关联的endpoint，可选值：  0：不同步  1：同步  默认值：1
             String syncEndpoint = Tool.ObjectUtil.defaultIfEmpty((String) params.get("syncEndpoint"), "1");
@@ -2264,8 +2264,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         } else {
             params.put("save", true);
             this.save(asset);
-            // asset panel & info chart
-            this.saveAssetInfoPanel(asset);
+            // asset dashboard & info chart
+            this.saveAssetInfoDashboard(asset);
             // sync Asset Dashboard Via Model
             this.syncAssetDashboardViaModel(asset.getId(), asset.getModelId());
         }

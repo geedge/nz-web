@@ -10,9 +10,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
-import com.nis.modules.panel.entity.VisualPanel;
-import com.nis.modules.panel.service.VisualPanelService;
-import com.nis.modules.panel.utils.DashboardConstant;
+import com.nis.modules.dashboard.entity.VisualDashboard;
+import com.nis.modules.dashboard.service.VisualDashboardService;
+import com.nis.modules.dashboard.utils.DashboardConstant;
 import com.nis.modules.report.job.ReportJobManager;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.job.SysBackJobManager;
@@ -69,7 +69,7 @@ public class SetupRunner implements CommandLineRunner{
 	SysBackJobManager sysBackJobManager;
 
     @Autowired
-	VisualPanelService visualPanelService;
+    VisualDashboardService dashboardService;
 
 	@Autowired
 	private VsysTaskConfigThread vsysTaskConfigThread;
@@ -86,15 +86,15 @@ public class SetupRunner implements CommandLineRunner{
 		}
 		log.info("Setup inited {}", inited);
 
-		// 加载已有 panel report job type = DASHBOARD
+		// 加载已有 dashboard report job type = DASHBOARD
 		log.info("Setup dashboard report job begin...");
-		List<VisualPanel> panelList = visualPanelService.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, DashboardConstant.Type.DASHBOARD.getValue()));
-		for (VisualPanel panel : panelList) {
-			Map paramMap = JSONObject.parseObject(panel.getParam().toString(), Map.class);
+		List<VisualDashboard> dashboardList = dashboardService.list(new LambdaQueryWrapper<VisualDashboard>().eq(VisualDashboard::getType, DashboardConstant.Type.DASHBOARD.getValue()));
+		for (VisualDashboard dashboard : dashboardList) {
+			Map paramMap = JSONObject.parseObject(dashboard.getParam().toString(), Map.class);
 			if (Tool.MapUtil.isNotEmpty(paramMap)) {
-				String reportEnable = JSONPath.read(panel.getParam().toString(), "report.enable").toString();
+				String reportEnable = JSONPath.read(dashboard.getParam().toString(), "report.enable").toString();
 				if (Tool.StrUtil.equalsIgnoreCase("true", StrUtil.nullToDefault(reportEnable, "false"))) {
-					reportJobManager.createReportJob(panel.getParam().toString(), panel.getId().toString());
+					reportJobManager.createReportJob(dashboard.getParam().toString(), dashboard.getId().toString());
 				}
 			}
 		}

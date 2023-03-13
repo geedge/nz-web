@@ -1,10 +1,10 @@
 package com.nis.modules.stat.service;
 
-import java.util.List;
-import java.util.Map;
-
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.stat.entity.StatAnalysis;
+
+import java.util.List;
+import java.util.Map;
 
 public interface StatService{
 

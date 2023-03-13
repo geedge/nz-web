@@ -1,12 +1,9 @@
 package com.nis.modules.sys.shiro;
 
-import com.alibaba.fastjson.JSON;
+import cn.hutool.log.Log;
 import com.nis.common.utils.SpringContextUtils;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.sys.entity.SysUserEntity;
-
-import cn.hutool.log.Log;
-
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.crypto.hash.SimpleHash;
 import org.apache.shiro.session.Session;

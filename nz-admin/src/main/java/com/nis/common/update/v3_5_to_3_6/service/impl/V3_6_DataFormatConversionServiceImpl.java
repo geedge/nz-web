@@ -13,13 +13,13 @@ import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetModel;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetModelService;
-import com.nis.modules.panel.entity.VisualChart;
-import com.nis.modules.panel.entity.VisualChartElement;
-import com.nis.modules.panel.entity.VisualPanel;
-import com.nis.modules.panel.service.VisualChartElementService;
-import com.nis.modules.panel.service.VisualChartService;
-import com.nis.modules.panel.service.VisualPanelService;
-import com.nis.modules.panel.utils.DashboardConstant;
+import com.nis.modules.dashboard.entity.VisualChart;
+import com.nis.modules.dashboard.entity.VisualChartElement;
+import com.nis.modules.dashboard.entity.VisualDashboard;
+import com.nis.modules.dashboard.service.VisualChartElementService;
+import com.nis.modules.dashboard.service.VisualChartService;
+import com.nis.modules.dashboard.service.VisualDashboardService;
+import com.nis.modules.dashboard.utils.DashboardConstant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,7 +39,7 @@ public class V3_6_DataFormatConversionServiceImpl implements V3_6_DataFormatConv
     private static final String BACK_UP_TABLE_NAME = "asset_model_V3_6";
 
     @Autowired
-    private VisualPanelService panelService;
+    private VisualDashboardService dashboardService;
 
     @Autowired
     private VisualChartService chartService;
@@ -92,7 +92,7 @@ public class V3_6_DataFormatConversionServiceImpl implements V3_6_DataFormatConv
 
         // remove old chart template
         log.info("[dataFormatConversion] [remove old chart template]");
-        chartService.delVisualChartsByPanelId(0);
+        chartService.delVisualChartsByDashboardId(0);
 
         // remove back up table
         log.info("[dataFormatConversion] [remove back up table]");
@@ -121,19 +121,19 @@ public class V3_6_DataFormatConversionServiceImpl implements V3_6_DataFormatConv
                 log.warn("[conversionAssetModelChartData] [no config chart. no conversion]");
             } else {
                 // add dashboard template
-                VisualPanel templateTypeDashboard = this.addTemplateTypeDashboard(backUpAssetModel);
-                Integer panelId = templateTypeDashboard.getId();
+                VisualDashboard templateTypeDashboard = this.addTemplateTypeDashboard(backUpAssetModel);
+                Integer dashboardId = templateTypeDashboard.getId();
 
                 List<VisualChart> chartList = chartService.list(new LambdaQueryWrapper<VisualChart>()
-                        .eq(VisualChart::getPanelId, 0)
+                        .eq(VisualChart::getDashboardId, 0)
                         .and(wrapper -> wrapper.in(VisualChart::getId, chartIdList)
                                 .or()
                                 .in(VisualChart::getGroupId, chartIdList))
                 );
                 log.info("[conversionAssetModelChartData] [conversion data] [model: {}] [chart size: {}]", backUpAssetModel.getName(), chartList.size());
 
-                // assets panel id list
-                List<Integer> assetPanelIdListByTheModel = this.getAssetPanelListByTheModel(modelId);
+                // assets dashboard id list
+                List<Integer> assetDashboardIdListByTheModel = this.getAssetDashboardListByTheModel(modelId);
                 // group chart
                 List<VisualChart> groupChartList = chartList.stream().filter(chart -> Tool.StrUtil.equals(Constant.CHART_GROUP_TYPE, chart.getType())).collect(Collectors.toList());
                 Map<Integer, Integer> groupChartIdMapping = Tool.MapUtil.newHashMap();
@@ -142,14 +142,14 @@ public class V3_6_DataFormatConversionServiceImpl implements V3_6_DataFormatConv
                     tempGroupChart = ObjectUtil.clone(groupChart);
 
                     tempGroupChart.setId(null);
-                    tempGroupChart.setPanelId(panelId);
+                    tempGroupChart.setDashboardId(dashboardId);
 
                     // save group chart
                     chartService.save(tempGroupChart);
                     // save mapping
                     groupChartIdMapping.put(groupChart.getId(), tempGroupChart.getId());
                     // update chart pid val.  only handle asset chart
-                    this.updateAssetChartTemplateLinkValByTheModel(tempGroupChart.getId(), assetPanelIdListByTheModel, groupChart.getId());
+                    this.updateAssetChartTemplateLinkValByTheModel(tempGroupChart.getId(), assetDashboardIdListByTheModel, groupChart.getId());
                 }
 
                 // other chart
@@ -159,7 +159,7 @@ public class V3_6_DataFormatConversionServiceImpl implements V3_6_DataFormatConv
                     tempChart = ObjectUtil.clone(chart);
 
                     tempChart.setId(null);
-                    tempChart.setPanelId(panelId);
+                    tempChart.setDashboardId(dashboardId);
                     // new group id
                     Integer groupId = groupChartIdMapping.get(tempChart.getGroupId());
                     tempChart.setGroupId(ObjectUtil.defaultIfNull(groupId, 0));
@@ -173,12 +173,12 @@ public class V3_6_DataFormatConversionServiceImpl implements V3_6_DataFormatConv
                     }
                     saveBatchChartElementList.addAll(elementList);
                     // update chart pid val.  only handle asset chart
-                    this.updateAssetChartTemplateLinkValByTheModel(tempChart.getId(), assetPanelIdListByTheModel, chart.getId());
+                    this.updateAssetChartTemplateLinkValByTheModel(tempChart.getId(), assetDashboardIdListByTheModel, chart.getId());
                 }
-                // set panel id
-                backUpAssetModel.setPanelId(panelId);
+                // set dashboard id
+                backUpAssetModel.setDashboardId(dashboardId);
                 // update asset dashboard temp_id
-                this.updateAssetDashboardTempIdByTheModel(backUpAssetModel, assetPanelIdListByTheModel, panelId);
+                this.updateAssetDashboardTempIdByTheModel(backUpAssetModel, assetDashboardIdListByTheModel, dashboardId);
             }
             // save model
             assetModelService.save(backUpAssetModel);
@@ -194,59 +194,59 @@ public class V3_6_DataFormatConversionServiceImpl implements V3_6_DataFormatConv
      * @param backUpAssetModel
      * @return
      */
-    private VisualPanel addTemplateTypeDashboard(AssetModel backUpAssetModel) {
-        // panel name
-        String panelName = Tool.StrUtil.concat(true, backUpAssetModel.getName(), Tool.StrUtil.SPACE, "template");
-        List<VisualPanel> panelListByTempName = panelService.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getName, panelName));
-        if (Tool.CollUtil.isNotEmpty(panelListByTempName)) {
+    private VisualDashboard addTemplateTypeDashboard(AssetModel backUpAssetModel) {
+        // dashboard name
+        String dashboardName = Tool.StrUtil.concat(true, backUpAssetModel.getName(), Tool.StrUtil.SPACE, "template");
+        List<VisualDashboard> dashboardListByTempName = dashboardService.list(new LambdaQueryWrapper<VisualDashboard>().eq(VisualDashboard::getName, dashboardName));
+        if (Tool.CollUtil.isNotEmpty(dashboardListByTempName)) {
             // 重复就拼上 4位 随机字符
-            panelName = Tool.StrUtil.concat(true, panelName, "-", Tool.RandomUtil.randomString(4));
+            dashboardName = Tool.StrUtil.concat(true, dashboardName, "-", Tool.RandomUtil.randomString(4));
         }
 
-        VisualPanel panel = new VisualPanel();
-        panel.setName(panelName);
-        panel.setType(DashboardConstant.Type.TEMPLATE.getValue());
-        panel.setPid(0);
-        panel.setWeight(0);
-        panel.setBuildIn(0);
+        VisualDashboard dashboard = new VisualDashboard();
+        dashboard.setName(dashboardName);
+        dashboard.setType(DashboardConstant.Type.TEMPLATE.getValue());
+        dashboard.setPid(0);
+        dashboard.setWeight(0);
+        dashboard.setBuildIn(0);
 
         String initParamStr = "{\"chartShare\":\"none\",\"variables\":[],\"report\":{\"schedule\":{\"repeat\":1,\"etime\":\"\",\"stime\":\"\",\"type\":2,\"nums\":[]},\"receivers\":[],\"enable\":false,\"range\":{\"unit\":\"day\",\"interval\":1,\"type\":\"previous\"}}}";
-        panel.setParam(initParamStr);
+        dashboard.setParam(initParamStr);
 
-        panel.setVarType(Constant.ChartVariableType.ASSET.getValue());
-        panel.setTmplId(-1);
+        dashboard.setVarType(Constant.ChartVariableType.ASSET.getValue());
+        dashboard.setTmplId(-1);
 
-        panel.setCreateBy(-1);
-        panel.setUts(System.currentTimeMillis());
+        dashboard.setCreateBy(-1);
+        dashboard.setUts(System.currentTimeMillis());
 
         // save
-        panelService.save(panel);
+        dashboardService.save(dashboard);
 
         // add Link Object Info Chart
-        panelService.addLinkObjectInfoChart(panel);
-        return panel;
+        dashboardService.addLinkObjectInfoChart(dashboard);
+        return dashboard;
     }
 
 
     /**
-     * get Asset Panel ID List By The Model
+     * get Asset Dashboard ID List By The Model
      *
      * @param modelId
      * @return
      */
-    private List<Integer> getAssetPanelListByTheModel(Integer modelId) {
+    private List<Integer> getAssetDashboardListByTheModel(Integer modelId) {
         List<AssetAsset> assetList = assetService.list(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getModelId, modelId));
         if (Tool.CollUtil.isEmpty(assetList)) {
             return Tool.ListUtil.empty();
         }
 
         List<Integer> assetIdList = assetList.stream().map(AssetAsset::getId).collect(Collectors.toList());
-        List<VisualPanel> panelList = panelService.list(new LambdaQueryWrapper<VisualPanel>()
-                .eq(VisualPanel::getType, DashboardConstant.Type.ASSET.getValue())
-                .in(VisualPanel::getLink, assetIdList));
+        List<VisualDashboard> dashboardList = dashboardService.list(new LambdaQueryWrapper<VisualDashboard>()
+                .eq(VisualDashboard::getType, DashboardConstant.Type.ASSET.getValue())
+                .in(VisualDashboard::getLink, assetIdList));
 
-        List<Integer> panelIdList = panelList.stream().map(VisualPanel::getId).collect(Collectors.toList());
-        return panelIdList;
+        List<Integer> dashboardIdList = dashboardList.stream().map(VisualDashboard::getId).collect(Collectors.toList());
+        return dashboardIdList;
     }
 
 
@@ -254,17 +254,17 @@ public class V3_6_DataFormatConversionServiceImpl implements V3_6_DataFormatConv
      * update Asset Chart Template Link Val By The Model
      *
      * @param newChartPid
-     * @param assetPanelIdList
+     * @param assetDashboardIdList
      * @param oldChartPid
      */
-    private void updateAssetChartTemplateLinkValByTheModel(Integer newChartPid, List<Integer> assetPanelIdList, Integer oldChartPid) {
-        if (Tool.CollUtil.isNotEmpty(assetPanelIdList)) {
+    private void updateAssetChartTemplateLinkValByTheModel(Integer newChartPid, List<Integer> assetDashboardIdList, Integer oldChartPid) {
+        if (Tool.CollUtil.isNotEmpty(assetDashboardIdList)) {
             LambdaUpdateWrapper<VisualChart> wrapper = new LambdaUpdateWrapper();
             // new pid
             wrapper.set(VisualChart::getPid, newChartPid);
             // old pid
             wrapper.eq(VisualChart::getPid, oldChartPid)
-                    .in(VisualChart::getPanelId, assetPanelIdList);
+                    .in(VisualChart::getDashboardId, assetDashboardIdList);
             chartService.update(wrapper);
         }
     }
@@ -274,18 +274,18 @@ public class V3_6_DataFormatConversionServiceImpl implements V3_6_DataFormatConv
      * update Asset Dashboard Temp Id By The Model
      *
      * @param model
-     * @param assetPanelIdList
+     * @param assetDashboardIdList
      * @param templateDashboardId
      */
-    private void updateAssetDashboardTempIdByTheModel(AssetModel model, List<Integer> assetPanelIdList, Integer templateDashboardId) {
-        if (Tool.CollUtil.isEmpty(assetPanelIdList)) {
+    private void updateAssetDashboardTempIdByTheModel(AssetModel model, List<Integer> assetDashboardIdList, Integer templateDashboardId) {
+        if (Tool.CollUtil.isEmpty(assetDashboardIdList)) {
             log.warn("[updateAssetDashboardTempIdByTheModel] [no reference asset dashboard in this model. not update temp_id] [model info: {}]", model.getId() + "-" + model.getName());
         } else {
             log.info("[updateAssetDashboardTempIdByTheModel] [model info: {}] [tempId: {}]", model.getId() + "-" + model.getName(), templateDashboardId);
-            LambdaUpdateWrapper<VisualPanel> wrapper = new LambdaUpdateWrapper();
-            wrapper.set(VisualPanel::getTmplId, templateDashboardId);
-            wrapper.in(VisualPanel::getId, assetPanelIdList);
-            panelService.update(wrapper);
+            LambdaUpdateWrapper<VisualDashboard> wrapper = new LambdaUpdateWrapper();
+            wrapper.set(VisualDashboard::getTmplId, templateDashboardId);
+            wrapper.in(VisualDashboard::getId, assetDashboardIdList);
+            dashboardService.update(wrapper);
         }
     }
 

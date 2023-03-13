@@ -1,16 +1,13 @@
 package com.nis.modules.alert.entity;
 
-import java.io.Serializable;
-
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.common.utils.Tool;
 import com.nis.modules.sys.entity.SysUserEntity;
-
 import lombok.Data;
+
+import java.io.Serializable;
 
 @Data
 @TableName("record_rule")

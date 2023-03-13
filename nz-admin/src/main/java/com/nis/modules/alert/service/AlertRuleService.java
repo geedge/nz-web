@@ -3,7 +3,6 @@ package com.nis.modules.alert.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.alert.entity.AlertRuleEntity;
-import inet.ipaddr.format.validate.MACAddressProvider;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;

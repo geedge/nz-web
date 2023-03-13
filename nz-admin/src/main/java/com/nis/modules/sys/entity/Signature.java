@@ -1,11 +1,10 @@
 package com.nis.modules.sys.entity;
 
-import java.io.Serializable;
+import lombok.Data;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlTransient;
-
-import lombok.Data;
+import java.io.Serializable;
 
 @Data
 public class Signature implements Serializable{

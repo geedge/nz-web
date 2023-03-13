@@ -1,12 +1,11 @@
 package com.nis.modules.alert.entity;
 
+import com.nis.common.utils.Tool;
+import lombok.Data;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import com.nis.common.utils.Tool;
-
-import lombok.Data;
 
 @Data
 public class Snmptrap{

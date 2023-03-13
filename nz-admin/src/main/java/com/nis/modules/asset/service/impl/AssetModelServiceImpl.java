@@ -21,12 +21,12 @@ import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetBrandService;
 import com.nis.modules.asset.service.AssetModelService;
 import com.nis.modules.asset.service.AssetTypeConfService;
+import com.nis.modules.dashboard.entity.VisualDashboard;
+import com.nis.modules.dashboard.service.VisualDashboardService;
+import com.nis.modules.dashboard.service.VisualService;
+import com.nis.modules.dashboard.utils.DashboardConstant;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
-import com.nis.modules.panel.entity.VisualPanel;
-import com.nis.modules.panel.service.VisualPanelService;
-import com.nis.modules.panel.service.VisualService;
-import com.nis.modules.panel.utils.DashboardConstant;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
@@ -89,7 +89,7 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
     private VisualService visualService;
 
     @Autowired
-    private VisualPanelService visualPanelService;
+    private VisualDashboardService dashboardService;
 
     @Override
     public AssetModel queryModelInfo(Integer id) {
@@ -98,10 +98,10 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
             throw new NZException(RCode.ASSET_MODEL_NOTFOUND);
         }
         AssetBrand brand = brandService.getById(model.getBrandId());
-        Integer panelId = model.getPanelId();
-    	if(ToolUtil.isNotEmpty(panelId)) {
-            VisualPanel visualPanel = visualPanelService.getById(panelId);
-            model.setPanel(visualPanel);
+        Integer dashboardId = model.getDashboardId();
+    	if(ToolUtil.isNotEmpty(dashboardId)) {
+            VisualDashboard dashboard = dashboardService.getById(dashboardId);
+            model.setDashboard(dashboard);
     	}
         AssetTypeConf typeConf = typeConfService.getById(model.getTypeId());
         //获取资产数量
@@ -145,10 +145,10 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
 
         List<AssetModel> modelList = this.getBaseMapper().queryList(page, params);
         for(AssetModel model : modelList) {
-            Integer panelId = model.getPanelId();
-            if(ToolUtil.isNotEmpty(panelId)) {
-                VisualPanel visualPanel = visualPanelService.getById(panelId);
-                model.setPanel(visualPanel);
+            Integer dashboardId = model.getDashboardId();
+            if(ToolUtil.isNotEmpty(dashboardId)) {
+                VisualDashboard dashboard = dashboardService.getById(dashboardId);
+                model.setDashboard(dashboard);
             }
         }
         page.setRecords(modelList);
@@ -174,14 +174,14 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
             throw new NZException(RCode.ASSET_MODELNAME_DUPLICATE);
         }
 
-        // asset model panel, type = template & varType = asset
-        Integer panelId = model.getPanelId();
-        if (ToolUtil.isNotEmpty(panelId)) {
-            VisualPanel panel = visualPanelService.getOne(new LambdaQueryWrapper<VisualPanel>()
-                    .eq(VisualPanel::getId, panelId)
-                    .eq(VisualPanel::getType, DashboardConstant.Type.TEMPLATE.getValue())
-                    .eq(VisualPanel::getVarType, DashboardConstant.VariableType.ASSET.getValue()));
-            ValidateUtils.is(panel).notNull(RCode.ASSET_MODEL_PANEL_ERROR);
+        // asset model dashboard, type = template & varType = asset
+        Integer dashboardId = model.getDashboardId();
+        if (ToolUtil.isNotEmpty(dashboardId)) {
+            VisualDashboard dashboard = dashboardService.getOne(new LambdaQueryWrapper<VisualDashboard>()
+                    .eq(VisualDashboard::getId, dashboardId)
+                    .eq(VisualDashboard::getType, DashboardConstant.Type.TEMPLATE.getValue())
+                    .eq(VisualDashboard::getVarType, DashboardConstant.VariableType.ASSET.getValue()));
+            ValidateUtils.is(dashboard).notNull(RCode.DASHBOARD_NOT_EXIST);
         }
 
         // 4. type 是否存在
@@ -253,15 +253,15 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
                     .eq(AssetAsset::getModelId, model.getId()));
         }
 
-        // If the panel template is modified, the asset panel template ID will also be modified
-        if (ObjectUtil.notEqual(oldModel.getPanelId(), model.getPanelId())) {
+        // If the dashboard template is modified, the asset dashboard template ID will also be modified
+        if (ObjectUtil.notEqual(oldModel.getDashboardId(), model.getDashboardId())) {
             List<AssetAsset> assetList = assetAssetService.list(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getModelId, model.getId()));
             if (CollUtil.isNotEmpty(assetList)) {
                 List<Integer> assetIdList = assetList.stream().map(AssetAsset::getId).collect(Collectors.toList());
-                visualPanelService.update(new LambdaUpdateWrapper<VisualPanel>()
-                        .set(VisualPanel::getTmplId, ObjectUtil.defaultIfNull(model.getPanelId(), -1))
-                        .in(VisualPanel::getLink, assetIdList)
-                        .eq(VisualPanel::getType, DashboardConstant.Type.ASSET.getValue()));
+                dashboardService.update(new LambdaUpdateWrapper<VisualDashboard>()
+                        .set(VisualDashboard::getTmplId, ObjectUtil.defaultIfNull(model.getDashboardId(), -1))
+                        .in(VisualDashboard::getLink, assetIdList)
+                        .eq(VisualDashboard::getType, DashboardConstant.Type.ASSET.getValue()));
             }
         }
         return model.getId();
@@ -438,10 +438,10 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
             Integer dashboardTemplateId = null;
             if (StrUtil.isNotEmpty(dashboardTemplateName)) {
                 // dashboard template, type = template  varType = asset
-                VisualPanel dashboardTemplate = visualPanelService.getOne(new LambdaQueryWrapper<VisualPanel>()
-                        .eq(VisualPanel::getName, dashboardTemplateName)
-                        .eq(VisualPanel::getType, DashboardConstant.Type.TEMPLATE.getValue())
-                        .eq(VisualPanel::getVarType, DashboardConstant.VariableType.ASSET.getValue()));
+                VisualDashboard dashboardTemplate = dashboardService.getOne(new LambdaQueryWrapper<VisualDashboard>()
+                        .eq(VisualDashboard::getName, dashboardTemplateName)
+                        .eq(VisualDashboard::getType, DashboardConstant.Type.TEMPLATE.getValue())
+                        .eq(VisualDashboard::getVarType, DashboardConstant.VariableType.ASSET.getValue()));
                 if (ObjectUtil.isNull(dashboardTemplate)) {
                     validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_RELATED_OBJ_NOT_EXIST.setParam(AssetModelImportEnum.DASHBOARD_TEMPLATE.getIndex()));
                 } else {
@@ -480,7 +480,7 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
                 model.setName(modelName);
                 model.setSysObjectId(oid);
                 model.setTypeId(typeConf.getId());
-                model.setPanelId(dashboardTemplateId);
+                model.setDashboardId(dashboardTemplateId);
                 if (saveEntitys.get("brand") == null) {
                     AssetBrand brand = brandService.getOne(new LambdaQueryWrapper<AssetBrand>().eq(AssetBrand::getName, brandName));
                     model.setBrandId(brand.getId());
@@ -554,7 +554,7 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
 
             // 是否同步更新关联的 dashboard，可选值： 0：不同步  1：同步  默认值：1
             String syncDashboard = Tool.ObjectUtil.defaultIfEmpty((String) params.get("syncDashboard"), "1");
-            if (StrUtil.equals("1", syncDashboard) && ObjectUtil.isNotNull(model.getPanelId())) {
+            if (StrUtil.equals("1", syncDashboard) && ObjectUtil.isNotNull(model.getDashboardId())) {
                 visualService.syncTemplateDashboard(null, null, model.getId(), null);
             }
         } else {
@@ -597,8 +597,8 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
             List<String> tempList = new ArrayList<>();
             tempList.add(model.getName());
             tempList.add(model.getBrand().getName());
-            VisualPanel panel = model.getPanel();
-            tempList.add(ObjectUtil.isNotNull(panel) ? panel.getName() : StrUtil.EMPTY);
+            VisualDashboard dashboard = model.getDashboard();
+            tempList.add(ObjectUtil.isNotNull(dashboard) ? dashboard.getName() : StrUtil.EMPTY);
             tempList.add(ObjectUtil.defaultIfNull(model.getRemark(), ""));
             AssetTypeConf typeConf = typeConfService.getById(model.getTypeId());
             tempList.add(typeConf.getName());

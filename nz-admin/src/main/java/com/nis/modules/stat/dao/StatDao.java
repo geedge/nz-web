@@ -1,13 +1,12 @@
 package com.nis.modules.stat.dao;
 
-import java.util.List;
-import java.util.Map;
-
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.nis.modules.stat.entity.StatAnalysis;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.nis.modules.stat.entity.StatAnalysis;
+import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface StatDao {

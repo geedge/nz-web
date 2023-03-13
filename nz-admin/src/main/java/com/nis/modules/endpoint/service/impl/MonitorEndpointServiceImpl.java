@@ -29,6 +29,12 @@ import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetTalonStatus;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetTalonStatusService;
+import com.nis.modules.dashboard.entity.VisualChart;
+import com.nis.modules.dashboard.entity.VisualDashboard;
+import com.nis.modules.dashboard.service.VisualChartService;
+import com.nis.modules.dashboard.service.VisualDashboardService;
+import com.nis.modules.dashboard.service.VisualService;
+import com.nis.modules.dashboard.utils.DashboardConstant;
 import com.nis.modules.endpoint.dao.MonitorEndpointDao;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.entity.MonitorEndpointConfig;
@@ -39,12 +45,6 @@ import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.endpoint.service.MonitorEndpointStateService;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
-import com.nis.modules.panel.entity.VisualChart;
-import com.nis.modules.panel.entity.VisualPanel;
-import com.nis.modules.panel.service.VisualChartService;
-import com.nis.modules.panel.service.VisualPanelService;
-import com.nis.modules.panel.service.VisualService;
-import com.nis.modules.panel.utils.DashboardConstant;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.stat.service.StatService;
@@ -137,7 +137,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     private VisualService visualService;
 
     @Autowired
-    private VisualPanelService visualPanelService;
+    private VisualDashboardService dashboardService;
 
     @Autowired
     private VisualChartService visualChartService;
@@ -833,11 +833,11 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         // 删除 alert
         alertMessageService.removeByEndpointIds(ids);
 
-        // 删除关联的 panel chart  chartElement信息
-        List<VisualPanel> panels = visualPanelService.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, DashboardConstant.Type.ENDPOINT.getValue()).in(VisualPanel::getLink, ids));
-        if (CollectionUtils.isNotEmpty(panels)) {
-            Set<Integer> panelIds = panels.stream().map(VisualPanel::getId).collect(Collectors.toSet());
-            visualPanelService.delPanelsAndChartInfoByPanelIds(panelIds);
+        // 删除关联的 dashboard chart  chartElement信息
+        List<VisualDashboard> dashboards = dashboardService.list(new LambdaQueryWrapper<VisualDashboard>().eq(VisualDashboard::getType, DashboardConstant.Type.ENDPOINT.getValue()).in(VisualDashboard::getLink, ids));
+        if (CollectionUtils.isNotEmpty(dashboards)) {
+            Set<Integer> dashboardIds = dashboards.stream().map(VisualDashboard::getId).collect(Collectors.toSet());
+            dashboardService.delDashboardsAndChartInfoByDashboardIds(dashboardIds);
         }
 
         // 删除 关联通过 chart temp 创建的 charts
@@ -863,11 +863,11 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             // 撤销导入
             this.remove(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getSeq, seq));
 
-            // 删除关联的 panel chart  chartElement信息
-            List<VisualPanel> panels = visualPanelService.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, DashboardConstant.Type.ENDPOINT.getValue()).in(VisualPanel::getLink, endpointIds));
-            if (CollectionUtils.isNotEmpty(panels)) {
-                Set<Integer> panelIds = panels.stream().map(VisualPanel::getId).collect(Collectors.toSet());
-                visualPanelService.delPanelsAndChartInfoByPanelIds(panelIds);
+            // 删除关联的 dashboard chart  chartElement信息
+            List<VisualDashboard> dashboards = dashboardService.list(new LambdaQueryWrapper<VisualDashboard>().eq(VisualDashboard::getType, DashboardConstant.Type.ENDPOINT.getValue()).in(VisualDashboard::getLink, endpointIds));
+            if (CollectionUtils.isNotEmpty(dashboards)) {
+                Set<Integer> dashboardIds = dashboards.stream().map(VisualDashboard::getId).collect(Collectors.toSet());
+                dashboardService.delDashboardsAndChartInfoByDashboardIds(dashboardIds);
             }
 
             // configs
@@ -1238,17 +1238,17 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             String syncDashboard = Tool.ObjectUtil.defaultIfEmpty((String) params.get("syncDashboard"), "1");
             if (StrUtil.equals("1", syncDashboard)) {
                 // sync dashboard
-                VisualPanel endpointPanel = visualPanelService.getOne(new LambdaQueryWrapper<VisualPanel>()
-                        .eq(VisualPanel::getType, DashboardConstant.Type.ENDPOINT.getValue())
-                        .eq(VisualPanel::getLink, endpoint.getId()));
-                visualService.syncTemplateDashboard(endpointPanel.getId(), null, null, null);
+                VisualDashboard endpointDashboard = dashboardService.getOne(new LambdaQueryWrapper<VisualDashboard>()
+                        .eq(VisualDashboard::getType, DashboardConstant.Type.ENDPOINT.getValue())
+                        .eq(VisualDashboard::getLink, endpoint.getId()));
+                visualService.syncTemplateDashboard(endpointDashboard.getId(), null, null, null);
             }
         } else {
             params.put("save", true);
             // endpoint
             this.save(endpoint);
-            // endpoint panel & info chart
-            this.saveEndpointInfoPanel(endpoint);
+            // endpoint dashboard & info chart
+            this.saveEndpointInfoDashboard(endpoint);
             // sync Endpoint Dashboard Via Module
             this.syncEndpointDashboardViaModule(endpoint.getId(), endpoint.getModuleId());
         }
@@ -1277,17 +1277,17 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
      *
      * @param endpoint
      */
-    private void saveEndpointInfoPanel(MonitorEndpoint endpoint) {
+    private void saveEndpointInfoDashboard(MonitorEndpoint endpoint) {
         // get module template id
         MonitorModule module = monitorModuleService.getById(endpoint.getModuleId());
-        Integer templateId = module.getPanelId();
+        Integer templateId = module.getDashboardId();
 
         Integer linkId = endpoint.getId();
         String name = endpoint.getName();
         String seq = endpoint.getSeq();
 
-        // save Rel Panel And Chart
-        visualChartService.saveRelPanelAndChart(DashboardConstant.Type.ENDPOINT.getValue(), linkId, name, templateId, seq);
+        // save Rel Dashboard And Chart
+        visualChartService.saveRelDashboardAndChart(DashboardConstant.Type.ENDPOINT.getValue(), linkId, name, templateId, seq);
     }
 
     private void validateEndpointInfo(MonitorEndpoint endpoint) {
@@ -1482,8 +1482,8 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         // 保存配置信息
         this.saveOrUpdateEndpointConfigs(endpoint, module);
 
-        // endpoint panel & info chart
-        this.saveEndpointInfoPanel(endpoint);
+        // endpoint Dashboard & info chart
+        this.saveEndpointInfoDashboard(endpoint);
 
         // sync Endpoint Dashboard Via Module
         this.syncEndpointDashboardViaModule(endpoint.getId(), endpoint.getModuleId());
@@ -1498,7 +1498,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
      */
     private void syncEndpointDashboardViaModule(Integer endpointId, Integer moduleId) {
         MonitorModule module = monitorModuleService.getById(moduleId);
-        Integer moduleDashboardTmplId = module.getPanelId();
+        Integer moduleDashboardTmplId = module.getDashboardId();
         if (ObjectUtil.isNull(moduleDashboardTmplId)) {
             log.warn("[syncEndpointDashboardViaModule] [module not config dashboard template. no sync endpoint dashboard] [endpointId: {}] [moduleId: {}]", endpointId, moduleId);
             return;
@@ -1506,10 +1506,10 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
         log.info("[syncEndpointDashboardViaModule] [sync endpoint dashboard begin.] [endpointId: {}] [moduleId: {}]", endpointId, moduleId);
         // sync dashboard
-        VisualPanel endpointPanel = visualPanelService.getOne(new LambdaQueryWrapper<VisualPanel>()
-                .eq(VisualPanel::getType, DashboardConstant.Type.ENDPOINT.getValue())
-                .eq(VisualPanel::getLink, endpointId));
-        visualService.syncTemplateDashboard(endpointPanel.getId(), null, null, null);
+        VisualDashboard endpointDashboard = dashboardService.getOne(new LambdaQueryWrapper<VisualDashboard>()
+                .eq(VisualDashboard::getType, DashboardConstant.Type.ENDPOINT.getValue())
+                .eq(VisualDashboard::getLink, endpointId));
+        visualService.syncTemplateDashboard(endpointDashboard.getId(), null, null, null);
         log.info("[syncEndpointDashboardViaModule] [sync endpoint dashboard finshed.] [endpointId: {}] [moduleId: {}]", endpointId, moduleId);
     }
 
@@ -1627,12 +1627,12 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         // 保存
         this.updateById(endpoint);
 
-        // If the endpoint name is modified, the endpoint panel name is also modified
+        // If the endpoint name is modified, the endpoint Dashboard name is also modified
         if (ObjectUtil.notEqual(oldEndpoint.getName(), endpoint.getName())) {
-            visualPanelService.update(new LambdaUpdateWrapper<VisualPanel>()
-                    .set(VisualPanel::getName, endpoint.getName())
-                    .eq(VisualPanel::getLink, endpoint.getId())
-                    .eq(VisualPanel::getType, DashboardConstant.Type.ENDPOINT.getValue()));
+            dashboardService.update(new LambdaUpdateWrapper<VisualDashboard>()
+                    .set(VisualDashboard::getName, endpoint.getName())
+                    .eq(VisualDashboard::getLink, endpoint.getId())
+                    .eq(VisualDashboard::getType, DashboardConstant.Type.ENDPOINT.getValue()));
         }
 
         // 保存配置信息

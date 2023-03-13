@@ -48,7 +48,7 @@ public class ReportJobManager {
         // job 已结束，不再创建
         Date now = new Date();
         if (endAt != null && !now.before(endAt)) {
-            log.info("Report endtime is before current time,job is over. panelId:{}", jobName);
+            log.info("Report endtime is before current time,job is over. dashboardId:{}", jobName);
             return;
         }
 
@@ -83,11 +83,11 @@ public class ReportJobManager {
 
     /**
      * 根据 jobkey 查询 JOB 是否存在，存在则删除
-     * @param panelId
+     * @param dashboardId
      * @throws SchedulerException
      */
-    public void delJobByName(String panelId) throws SchedulerException {
-        JobKey jobKey = this.getJobKey(panelId, Constant.REPORT_JOB_GROUP);
+    public void delJobByName(String dashboardId) throws SchedulerException {
+        JobKey jobKey = this.getJobKey(dashboardId, Constant.REPORT_JOB_GROUP);
         boolean b = scheduler.checkExists(jobKey);
         if (b) scheduler.deleteJob(jobKey);
     }

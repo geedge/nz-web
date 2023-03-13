@@ -1,7 +1,6 @@
 package com.nis.modules.alert.controller;
 
 import cn.hutool.log.Log;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.entity.AlertSeverityConf;

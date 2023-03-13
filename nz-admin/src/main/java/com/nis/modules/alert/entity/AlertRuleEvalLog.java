@@ -1,12 +1,11 @@
 package com.nis.modules.alert.entity;
 
-import java.io.Serializable;
-import java.util.List;
-
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
-
 import lombok.Data;
+
+import java.io.Serializable;
+import java.util.List;
 
 @Data
 @TableName("alert_rule_eval_log")

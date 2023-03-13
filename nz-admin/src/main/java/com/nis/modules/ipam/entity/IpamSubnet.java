@@ -1,15 +1,13 @@
 package com.nis.modules.ipam.entity;
 
-import java.io.Serializable;
-import java.math.BigInteger;
-
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.asset.entity.Dc;
-
 import lombok.Data;
+
+import java.io.Serializable;
 
 @Data
 @TableName("ipam_subnet")

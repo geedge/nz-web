@@ -1,10 +1,9 @@
 package com.nis.modules.alert.entity;
 
-import java.io.Serializable;
-
 import com.baomidou.mybatisplus.annotation.TableName;
-
 import lombok.Data;
+
+import java.io.Serializable;
 
 @Data
 @TableName("alert_rule_sched_log")

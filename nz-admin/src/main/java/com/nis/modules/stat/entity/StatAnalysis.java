@@ -1,7 +1,6 @@
 package com.nis.modules.stat.entity;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-
 import lombok.Data;
 
 @Data

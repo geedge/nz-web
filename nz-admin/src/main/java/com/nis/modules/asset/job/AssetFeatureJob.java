@@ -1,20 +1,18 @@
 package com.nis.modules.asset.job;
 
-import java.util.List;
-
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSON;
+import com.nis.common.utils.Constant;
+import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.asset.service.AssetAssetService;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
-import com.alibaba.fastjson.JSON;
-import com.nis.common.utils.Constant;
-import com.nis.modules.asset.entity.AssetAsset;
-import com.nis.modules.asset.service.AssetAssetService;
-
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import java.util.List;
 
 @DisallowConcurrentExecution
 public class AssetFeatureJob extends QuartzJobBean {

@@ -1,16 +1,5 @@
 package com.nis.modules.alert.service.impl;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.ListOperations;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Service;
-
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.Tool;
@@ -18,6 +7,16 @@ import com.nis.common.utils.ToolUtil;
 import com.nis.modules.alert.dao.ReocrdRuleEvalLogDao;
 import com.nis.modules.alert.entity.RecordRuleEvalLog;
 import com.nis.modules.alert.service.RecordRuleEvalLogService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.ListOperations;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service("recordRuleEvalLogService")
 public class RecordRuleEvalLogServiceImpl extends ServiceImpl<ReocrdRuleEvalLogDao,RecordRuleEvalLog> implements RecordRuleEvalLogService{

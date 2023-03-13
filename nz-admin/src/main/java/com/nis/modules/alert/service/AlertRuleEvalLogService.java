@@ -1,10 +1,10 @@
 package com.nis.modules.alert.service;
 
 
-import java.util.List;
-
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.modules.alert.entity.AlertRuleEvalLog;
+
+import java.util.List;
 
 public interface AlertRuleEvalLogService extends IService<AlertRuleEvalLog>{
 	

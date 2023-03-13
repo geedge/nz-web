@@ -10,9 +10,9 @@ import com.nis.common.utils.Constant;
 import com.nis.common.utils.MailUtil;
 import com.nis.common.utils.TemplateUtil;
 import com.nis.common.utils.Tool;
-import com.nis.modules.panel.entity.VisualPanel;
-import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.agent.service.PromApiService;
+import com.nis.modules.dashboard.entity.VisualDashboard;
+import com.nis.modules.dashboard.service.VisualDashboardService;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysUserService;
@@ -68,7 +68,7 @@ public class ReportJob extends QuartzJobBean {
     private SysConfService sysConfService;
 
     @Autowired
-    private VisualPanelService visualPanelService;
+    private VisualDashboardService dashboardService;
 
     @Autowired
     private PromApiService promApiService;
@@ -82,15 +82,15 @@ public class ReportJob extends QuartzJobBean {
         JobKey key = context.getJobDetail().getKey();
         log.info(String.format("Job name: %s, Job group: %s", key.getName(), key.getGroup()));
 
-        String panelId = key.getName();
-        VisualPanel visualPanel = visualPanelService.getById(panelId);
-        if (visualPanel == null) {
-            log.error("dashboard report panel not found, panelId:{}", panelId);
+        String dashboardId = key.getName();
+        VisualDashboard visualDashboard = dashboardService.getById(dashboardId);
+        if (visualDashboard == null) {
+            log.error("dashboard report dashboard not found, dashboardId:{}", dashboardId);
             return;
         }
 
         // JOB 每天都执行，根据匹配规则，检查本次是否执行
-        String configJsonStr = visualPanel.getParam().toString();
+        String configJsonStr = visualDashboard.getParam().toString();
         String scheduleType = JSONPath.read(configJsonStr, "report.schedule.type").toString();
         String stime = JSONPath.read(configJsonStr, "report.schedule.stime").toString();
         String repeatStr = JSONPath.read(configJsonStr, "report.schedule.repeat").toString();
@@ -102,14 +102,14 @@ public class ReportJob extends QuartzJobBean {
                 log.info("dashboard report notific begin ...");
                 String receiversStr = JSONPath.read(configJsonStr, "report.receivers").toString();
                 if (StrUtil.isEmpty(receiversStr)) {
-                    log.error("dashboard report receiver user is empty, panelId:{}", panelId);
+                    log.error("dashboard report receiver user is empty, dashboardId:{}", dashboardId);
                     return;
                 }
 
                 List<String> receiverIds = JSONObject.parseArray(receiversStr, String.class);
                 List<SysUserEntity> userList = sysUserService.list(new LambdaQueryWrapper<SysUserEntity>().in(SysUserEntity::getId, receiverIds));
                 if (receiverIds.size() != userList.size()) {
-                    log.error("dashboard report receiver user not found, panelId:{}", panelId);
+                    log.error("dashboard report receiver user not found, dashboardId:{}", dashboardId);
                     return;
                 }
 
@@ -117,14 +117,14 @@ public class ReportJob extends QuartzJobBean {
                 String timezone = sysConfService.getValue("timezone");
                 timezone = StrUtil.emptyToDefault(timezone, TimeZone.getDefault().getID());
                 Map<String, Long> queryRangeStartAndEndTime = this.getQueryRangeStartAndEndTime(configJsonStr, timezone.trim());
-                log.info("dashboard report range data, panelId:{}, query_range start&end {}", panelId, JSONObject.toJSONString(queryRangeStartAndEndTime));
+                log.info("dashboard report range data, dashboardId:{}, query_range start&end {}", dashboardId, JSONObject.toJSONString(queryRangeStartAndEndTime));
 
                 try {
                     Template template = getEmailTemplate();
-                    String content = this.genMailContent(visualPanel, template);
+                    String content = this.genMailContent(visualDashboard, template);
 
                     String format = "html";
-                    String fileName = String.format("%s.%s", visualPanel.getName(), format);
+                    String fileName = String.format("%s.%s", visualDashboard.getName(), format);
 
                     Long start = queryRangeStartAndEndTime.get("start");
                     Long end = queryRangeStartAndEndTime.get("end");
@@ -136,7 +136,7 @@ public class ReportJob extends QuartzJobBean {
                     for (SysUserEntity user : userList) {
                         // 以用户默认语言生成 快照文件
                         String lang = user.getLang();
-                        String snapshotStr = visualPanelService.genSnapshotByTemplate(Integer.valueOf(panelId), start, end, lang, JSONObject.toJSONString(snapshotVars));
+                        String snapshotStr = dashboardService.genSnapshotByTemplate(Integer.valueOf(dashboardId), start, end, lang, JSONObject.toJSONString(snapshotVars));
 
                         File file = null;
                         try {
@@ -164,15 +164,15 @@ public class ReportJob extends QuartzJobBean {
     /**
      * mail content
      *
-     * @param visualPanel
+     * @param visualDashboard
      * @param template
      * @return
      * @throws IOException
      * @throws TemplateException
      */
-    private String genMailContent(VisualPanel visualPanel, Template template) throws IOException, TemplateException {
+    private String genMailContent(VisualDashboard visualDashboard, Template template) throws IOException, TemplateException {
         Map<String, Object> modelMap = new HashMap<>();
-        modelMap.put("panel", visualPanel);
+        modelMap.put("dashboard", visualDashboard);
         String content = FreeMarkerTemplateUtils.processTemplateIntoString(template, modelMap);
         return content;
     }
