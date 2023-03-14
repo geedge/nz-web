@@ -46,12 +46,31 @@ UPDATE `sys_user_starred` SET type = "dashboard" WHERE type = "panel";
 
 
 -- visual_chart_v3_2
-ALTER TABLE IF EXISTS visual_chart_v3_2
-CHANGE IF EXISTS  `panel_id` `dashboard_id` int(10) NOT NULL COMMENT '图表 id，关联 dashboard 表 当 dashboard_id = 0 代表为模板';
-
-ALTER TABLE IF EXISTS visual_chart_v3_2
-ADD COLUMN IF NOT EXISTS `datasource` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '数据源 1：metrics\r\n2：logs\r\n3：system\r\n4：misc' ;
+DROP PROCEDURE IF EXISTS change_visual_chart_v3_2_table_col;
+DELIMITER //
+CREATE PROCEDURE change_visual_chart_v3_2_table_col()
+BEGIN
+    DECLARE table_count INT;
+    SELECT COUNT(*) INTO table_count FROM information_schema.tables WHERE table_name = 'visual_chart_v3_2' AND table_schema = DATABASE();
+    IF table_count > 0 THEN
+        ALTER TABLE visual_chart_v3_2
+            CHANGE IF EXISTS  `panel_id` `dashboard_id` int(10) NOT NULL COMMENT '图表 id，关联 dashboard 表 当 dashboard_id = 0 代表为模板',
+            ADD COLUMN IF NOT EXISTS `datasource` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '数据源 1：metrics\r\n2：logs\r\n3：system\r\n4：misc';
+    END IF;
+END //
+DELIMITER ;
+CALL change_visual_chart_v3_2_table_col();
 
 -- asset_model_V3_6
-ALTER TABLE IF EXISTS asset_model_V3_6
-CHANGE IF EXISTS `panel_id` `dashboard_id` INT(10) COMMENT 'dashboard 模板id';
+DROP PROCEDURE IF EXISTS change_asset_model_v3_6_table_col;
+DELIMITER //
+CREATE PROCEDURE change_asset_model_v3_6_table_col()
+BEGIN
+    DECLARE table_count INT;
+    SELECT COUNT(*) INTO table_count FROM information_schema.tables WHERE table_name = 'asset_model_V3_6' AND table_schema = DATABASE();
+    IF table_count > 0 THEN
+        ALTER TABLE asset_model_V3_6 CHANGE IF EXISTS `panel_id` `dashboard_id` INT(10) COMMENT 'dashboard 模板id';
+    END IF;
+END //
+DELIMITER ;
+CALL change_asset_model_v3_6_table_col();
