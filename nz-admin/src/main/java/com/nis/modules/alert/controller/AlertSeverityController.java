@@ -70,7 +70,7 @@ public class AlertSeverityController {
     @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ALERTSEVERITY)
     @RequiresPermissions({"alert:severity:delete"})
     public R delete(@RequestParam(value = "ids",required = true)String ids){
-        alertSeverityService.removeByIds(Arrays.asList(Tool.StrUtil.split(ids, ",")));
+        alertSeverityService.removeByIds(Tool.StrUtil.split(ids, ","));
         return R.ok();
     }
 

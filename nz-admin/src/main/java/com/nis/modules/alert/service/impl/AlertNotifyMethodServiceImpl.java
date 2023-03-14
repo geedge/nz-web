@@ -39,7 +39,7 @@ public class AlertNotifyMethodServiceImpl extends ServiceImpl<AlertNotifyMethodD
         if(Tool.StrUtil.isEmpty(ids)){
             return false;
         }
-        List<String> methodIds = Arrays.asList(Tool.StrUtil.split(ids,","));
+        List<String> methodIds = Tool.StrUtil.split(ids,",");
         Collection<AlertNotifyMethod> methods = this.listByIds(methodIds);
         return methods != null && methods.size() == methodIds.size();
     }

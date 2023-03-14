@@ -2032,8 +2032,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                     asset.setBrandId(parentAsset.getBrandId());
                     asset.setModelId(parentAsset.getModelId());
                 }
-                asset.setClientUser(ObjectUtil.defaultIfEmpty(clientUser, null));
-                asset.setClientPin(ObjectUtil.defaultIfEmpty(clientPin, null));
+                asset.setClientUser(StrUtil.emptyToDefault(clientUser, null));
+                asset.setClientPin(StrUtil.emptyToDefault(clientPin, null));
                 asset.setClientAddress(asset.getManageIp());
                 asset.setClientPort(StringUtils.isNotEmpty(clientPort) ? Integer.valueOf(clientPort) : null);
                 asset.setClientToken(clientToken);

@@ -682,7 +682,7 @@ public class Tool {
 	 * @author xiaoleilu
 	 * @deprecated 使用TemplateUtil替代
 	 */
-	public static class VelocityUtil extends cn.hutool.extra.template.engine.velocity.VelocityUtil {
+	public static class VelocityEngine extends cn.hutool.extra.template.engine.velocity.VelocityEngine {
 	}
 
 	/**
