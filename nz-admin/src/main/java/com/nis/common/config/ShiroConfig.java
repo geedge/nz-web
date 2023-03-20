@@ -121,6 +121,7 @@ public class ShiroConfig {
 		filterMap.put("/terminal.ws", "anon"); //terminal websocket 接口
 		filterMap.put("/terminal/monitor.ws", "anon"); //terminal/monitor websocket 接口
 		filterMap.put("/sys/license/**", "anon");// license 相关接口
+		filterMap.put("/monitor/project/topo/icon/**", "anon"); // topo icon 相关接口
 		filterMap.put("/setup/**", "anon");// 程序配置 相关接口
 		filterMap.put("/sys/appearance","anon"); //系统外观配置查询接口
 		filterMap.put("/ctl/**","anon"); //管理员账号密码重置接口
