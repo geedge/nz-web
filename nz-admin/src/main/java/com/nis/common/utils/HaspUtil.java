@@ -164,7 +164,7 @@ public class HaspUtil {
 		}else {
 			hasp = new Hasp(featureId);
 			//先通过 feature id 尝试获取，包含 hasp id
-			String infos = hasp.getInfo(String.format(KEY_FEATURE_ID_SCOPE,featureId), KEY_C2V_FORMAT, vendorCode);
+			String infos = hasp.getInfo(KEY_SCOPE, KEY_C2V_FORMAT, vendorCode);
 			status = hasp.getLastError();
 			if(status != HaspStatus.HASP_STATUS_OK || Tool.StrUtil.isBlank(infos)) {
 				// feature 获取失败，只获取机器指纹
