@@ -132,7 +132,7 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
             }
         }
         if (!inRange){
-            throw new NZException(RCode.IPAM_IP_SUBNET_ISNULL);
+            throw new NZException(RCode.IPAM_IP_SUBNET_NOT_EXISTS);
         }
         if (Tool.ObjectUtil.isEmpty(ipamIp.getState())){
             ipamIp.setState(1);
@@ -210,7 +210,7 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
             validateUtil.validateRequired(addr, lineNum, IpamIpEum.ADDR.getIndex());
             validateUtil.validateIp(addr, lineNum , IpamIpEum.ADDR.getIndex(), "");
             if (ipamSubnet == null){
-                validateUtil.recordImportAttrErr(lineNum, RCode.IPAM_IP_SUBNET_ISNULL);
+                validateUtil.recordImportAttrErr(lineNum, RCode.IPAM_IP_SUBNET_NOT_EXISTS);
             }else {
                 validateUtil.validateIpInScope(addr, ipamSubnet.getAddr(),ipamSubnet.getMask().toString(), lineNum, IpamIpEum.ADDR.getIndex());
             }
