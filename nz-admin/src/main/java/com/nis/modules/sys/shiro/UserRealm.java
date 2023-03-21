@@ -266,49 +266,51 @@ public class UserRealm extends AuthorizingRealm {
 			queryFilter.append(new HardcodedFilter(ldapUserFilter));
 		}
 		// 支持配置多个 ou 搜索用户
-		List<String> baseList = StrUtil.splitTrim(ldapOu, "|");
 		SysUserEntity entity = null;
-		for (String base : baseList) {
-			LdapQuery query = LdapQueryBuilder.query().base(base).timeLimit(20000).countLimit(1000).filter(queryFilter);
-			try {
-				// 开始认证
-				entity = ldapTemplate.authenticate(query, pin,new AuthenticatedLdapEntryContextMapper<SysUserEntity>() {
-							@Override
-							public SysUserEntity mapWithContext(DirContext ctx,LdapEntryIdentification ldapEntryIdentification) {
-								LdapName ldapName = ldapEntryIdentification.getAbsoluteName();
-								Attributes attributes;
-								SysUserEntity user = null;
-								try {
-									attributes = ctx.getAttributes(ldapName);
-									Map<String, String> attrMap = new HashMap<String, String>();
-									// 获取用户属性导入 系统
-									for (Entry<String, String> entry : defaultMapping.entrySet()) {
-										String key = entry.getKey();
-										String attrKey = StrUtil.isNotBlank(configMapping.get(key)) ? configMapping.get(key) : entry.getValue();
-										List<String> attrKeyList = StrUtil.splitTrim(attrKey, "|");
-										for (String ak : attrKeyList) {
-											Object obj = attributes.get(ak) != null ? attributes.get(ak).get() : null;
-											if (obj != null) {
-												attrMap.put(key, obj.toString());
-												break;
-											}
+		if(StrUtil.isNotEmpty(ldapOu)){
+			List<String> baseList = StrUtil.splitTrim(ldapOu, "|");
+			for (String base : baseList) {
+				LdapQuery query = LdapQueryBuilder.query().base(base).timeLimit(20000).countLimit(1000).filter(queryFilter);
+				try {
+					// 开始认证
+					entity = ldapTemplate.authenticate(query, pin,new AuthenticatedLdapEntryContextMapper<SysUserEntity>() {
+						@Override
+						public SysUserEntity mapWithContext(DirContext ctx,LdapEntryIdentification ldapEntryIdentification) {
+							LdapName ldapName = ldapEntryIdentification.getAbsoluteName();
+							Attributes attributes;
+							SysUserEntity user = null;
+							try {
+								attributes = ctx.getAttributes(ldapName);
+								Map<String, String> attrMap = new HashMap<String, String>();
+								// 获取用户属性导入 系统
+								for (Entry<String, String> entry : defaultMapping.entrySet()) {
+									String key = entry.getKey();
+									String attrKey = StrUtil.isNotBlank(configMapping.get(key)) ? configMapping.get(key) : entry.getValue();
+									List<String> attrKeyList = StrUtil.splitTrim(attrKey, "|");
+									for (String ak : attrKeyList) {
+										Object obj = attributes.get(ak) != null ? attributes.get(ak).get() : null;
+										if (obj != null) {
+											attrMap.put(key, obj.toString());
+											break;
 										}
 									}
-									// 赋值 sysuser
-									user = new SysUserEntity();
-									BeanUtil.fillBeanWithMap(attrMap, user, true);
-								} catch (NamingException e) {
-									log.debug(e);
 								}
-								LdapUtils.closeContext(ctx);
-								return user;
+								// 赋值 sysuser
+								user = new SysUserEntity();
+								BeanUtil.fillBeanWithMap(attrMap, user, true);
+							} catch (NamingException e) {
+								log.debug(e);
 							}
-						});
-			} catch (RuntimeException e) {
-				log.warn(e,"ldap Authentication failed,base: {}",base);
-			}
-			if (entity != null) {
-				break;
+							LdapUtils.closeContext(ctx);
+							return user;
+						}
+					});
+				} catch (RuntimeException e) {
+					log.warn(e,"ldap Authentication failed,base: {}",base);
+				}
+				if (entity != null) {
+					break;
+				}
 			}
 		}
 		return entity;

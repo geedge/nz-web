@@ -21,7 +21,7 @@ public class ResponseUtil {
 	 */
 	public static void downloadFile(HttpServletResponse response, File file) throws IORuntimeException, IOException {
 		response.setContentType(ResponseUtil.getDownloadContentType(file.getName()));
-		String fileName = Tool.URLUtil.encode(file.getName(), Tool.CharsetUtil.UTF_8);
+		String fileName = Tool.URLUtil.encode(file.getName(), Tool.CharsetUtil.CHARSET_UTF_8);
 //		response.addHeader("Content-Disposition", "attachment; filename=" + fileName);
 //		response.addHeader("Content-Length", "" + file.length());
 //		response.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
@@ -42,7 +42,7 @@ public class ResponseUtil {
 	public static void downloadFile(HttpServletResponse response, String filename, byte[] data)
 			throws IORuntimeException, IOException {
 		response.setContentType(ResponseUtil.getDownloadContentType(filename));
-		String fileName = Tool.URLUtil.encode(filename, Tool.CharsetUtil.UTF_8);
+		String fileName = Tool.URLUtil.encode(filename, Tool.CharsetUtil.CHARSET_UTF_8);
 //		response.addHeader("Content-Disposition", "attachment; filename=" + fileName);
 //		response.addHeader("Content-Length", "" + data.length);
 //		response.setHeader("Access-Control-Expose-Headers", "Content-Disposition");

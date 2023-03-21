@@ -59,7 +59,7 @@ public class AlertNotifyMethodController {
     @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ALERTNOTIFYMETHOD)
     @RequiresPermissions({"alert:notify:delete"})
     public R delete(@RequestParam(value = "ids",required = true)String ids){
-        alertNotifyMethodService.deleteByIds(Arrays.asList(Tool.StrUtil.split(ids, ",")));
+        alertNotifyMethodService.deleteByIds(Tool.StrUtil.split(ids, ","));
         return R.ok();
     }
 }

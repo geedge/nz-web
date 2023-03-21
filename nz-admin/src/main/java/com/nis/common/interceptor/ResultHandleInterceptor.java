@@ -74,14 +74,16 @@ public class ResultHandleInterceptor implements ResponseBodyAdvice {
 
     public Map<String,List<String>> contentFieldHandle(String param){
     	Map<String,List<String>> result = new HashMap<String,List<String>>();
-    	String[] split = StrUtil.split(param, ";");
-    	for(String s : split) {
-    		String[] split2 = StrUtil.split(s, "=");
-    		String fields = split2[1];
-    		List<String> filedList = StrUtil.split(fields, StrUtil.C_COMMA);
-    		result.put(split2[0],filedList);
-    	}
-    	// include优先级高于exclude 去除exclude中间无用数值
+	    if (StrUtil.isNotEmpty(param)) {
+		    List<String> split = StrUtil.split(param, ";");
+		    for (String s : split) {
+			    List<String> split2 = StrUtil.split(s, "=");
+			    String fields = split2.get(1);
+			    List<String> filedList = StrUtil.split(fields, StrUtil.C_COMMA);
+			    result.put(split2.get(0), filedList);
+		    }
+	    }
+	    // include优先级高于exclude 去除exclude中间无用数值
     	if(ToolUtil.equals(result.size(), 2)) {
 			/*List<String> includeFields = (List<String>) result.get(INCLUDE);
 			List<String> excludeFields = (List<String>) result.get(EXCLUDE);
@@ -146,20 +148,20 @@ public class ResultHandleInterceptor implements ResponseBodyAdvice {
     	}
     	for(String field : fields) {
     		if(field.contains(StrUtil.DOT)) {
-    			String[] split = StrUtil.split(field, StrUtil.DOT);
-    			String attributeName = split[0];
+    			List<String> split = StrUtil.split(field, StrUtil.DOT);
+    			String attributeName = split.get(0);
     			Field declaredField = clazz.getDeclaredField(attributeName);
     			Class<?> attributeType = declaredField.getType();
     			List<String> list = filterMap.get(attributeType);
     			if(!isExclude) {
-    				filterMap.get(clazz).add(split[0]);
+    				filterMap.get(clazz).add(split.get(0));
     			}
     			if(ToolUtil.isEmpty(list)) {
     				List<String> s = new ArrayList<String>();
-        			s.add(split[1]);
+        			s.add(split.get(1));
         			filterMap.put(attributeType, s);
     			}else {
-    				list.add(split[1]);
+    				list.add(split.get(1));
     			}
     		}else {
     			filterMap.get(clazz).add(field);

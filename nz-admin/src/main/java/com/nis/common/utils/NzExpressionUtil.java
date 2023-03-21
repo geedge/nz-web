@@ -77,7 +77,8 @@ public class NzExpressionUtil {
 						Map<String, List<String>> map = fields.stream().collect(Collectors.toMap(AssetFieldMeta::getMetaKey, AssetFieldMeta::getValue));
 						Map<String, String> keyTypeMap = fields.stream().collect(Collectors.toMap(AssetFieldMeta::getMetaKey, AssetFieldMeta::getType));
 						if(expre.contains(StrUtil.DOT)) {
-							expre = StrUtil.split(expre, StrUtil.DOT)[1];
+							List<String> split = StrUtil.split(expre, StrUtil.DOT);
+							expre = split.get(1);
 						}
 						try {
 							Pattern pattern = Pattern.compile("(\\[)(.+?)(\\])");
@@ -129,7 +130,8 @@ public class NzExpressionUtil {
 						Map<String, List<String>> map = fields.stream().collect(Collectors.toMap(AssetFieldMeta::getMetaKey, AssetFieldMeta::getValue));
 						Map<String, String> keyTypeMap = fields.stream().collect(Collectors.toMap(AssetFieldMeta::getMetaKey, AssetFieldMeta::getType));
 						if(expre.contains(StrUtil.DOT)) {
-							expre = StrUtil.split(expre, StrUtil.DOT)[1];
+							List<String> split = StrUtil.split(expre, StrUtil.DOT);
+							expre = split.get(1);
 						}
 						try {
 							Pattern pattern = Pattern.compile("(\\[)(.+?)(\\])");

@@ -22,7 +22,11 @@ public class HaspUtil {
 			+ "<haspscope>\n"
 			+ "<hasp id=\"%s\" />\n"
 			+ "</haspscope>\n";;
-	
+	protected final static String KEY_FEATURE_ID_SCOPE = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
+			+ "<haspscope>\n"
+			+ "<feature id=\"%s\" />\n"
+			+ "</haspscope>\n";
+
 	/** Runtime query view */
 	protected final static String KEY_VIEW = "<haspformat format=\"host_fingerprint\"/>";
 
@@ -160,12 +164,18 @@ public class HaspUtil {
 			return licenseInfo;
 		}else {
 			hasp = new Hasp(featureId);
-			String infos = hasp.getInfo(KEY_SCOPE, KEY_VIEW, vendorCode);
+			//先通过 feature id 尝试获取，包含 hasp id
+			String infos = hasp.getInfo(KEY_SCOPE, KEY_C2V_FORMAT, vendorCode);
 			status = hasp.getLastError();
-			log.info("license status: {}", status);
-			if(status != HaspStatus.HASP_STATUS_OK) {
-				log.error("Error: getLicense c2v Fails with status code :{}", StrUtil.toString(HaspStatusEnum.getHaspStatusByStatus(status)));
-				throw new NZException(RCode.LICENSE_ERROR_CODE.setParam(status));	
+			if(status != HaspStatus.HASP_STATUS_OK || Tool.StrUtil.isBlank(infos)) {
+				// feature 获取失败，只获取机器指纹
+				infos = hasp.getInfo(KEY_SCOPE, KEY_VIEW, vendorCode);
+				status = hasp.getLastError();
+				log.info("license status: {}", status);
+				if(status != HaspStatus.HASP_STATUS_OK) {
+                    log.error("Error: getLicense c2v Fails with status code :{}", StrUtil.toString(HaspStatusEnum.getHaspStatusByStatus(status)));
+					throw new NZException(RCode.LICENSE_ERROR_CODE.setParam(status));
+				}
 			}
 			return infos;
 		}

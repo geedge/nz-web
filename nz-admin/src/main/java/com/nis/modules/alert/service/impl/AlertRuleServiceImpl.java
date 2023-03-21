@@ -367,7 +367,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             if (StrUtil.isNotEmpty(receiver)) {
                 validateUtil.validateRequired(method, lineNum, AlertRuleImportEnum.NOTICES_METHOD.getIndex());
 
-                List<String> list = Arrays.stream(StrUtil.split(receiver, ",")).distinct().collect(Collectors.toList());
+                List<String> list = StrUtil.split(receiver, ",").stream().distinct().collect(Collectors.toList());
                 List<String> receiverUserNameList = userList.stream().map(SysUserEntity::getName).distinct().filter(list::contains).collect(Collectors.toList());
 
                 if (ObjectUtil.notEqual(list.size(), receiverUserNameList.size()))
@@ -376,7 +376,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             }
 
             if (StrUtil.isNotEmpty(method)) {
-                List<String> list = Arrays.stream(StrUtil.split(method, ",")).distinct().collect(Collectors.toList());
+                List<String> list = StrUtil.split(method, ",").stream().distinct().collect(Collectors.toList());
                 List<String> receiverMethodNameList = methodList.stream().map(AlertNotifyMethod::getName).distinct().filter(list::contains).collect(Collectors.toList());
 
                 if (ObjectUtil.notEqual(list.size(), receiverMethodNameList.size()))
@@ -414,7 +414,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             if(schedStime.length() < 5) schedStime = "0" + schedStime;
             if(schedEtime.length() < 5) schedEtime = "0" + schedEtime;
 
-            Arrays.stream(StrUtil.split(schedDays, ",")).distinct().forEach(s -> {
+            StrUtil.split(schedDays, ",").stream().distinct().forEach(s -> {
                 validateUtil.validateRegex(s, "^[1-7]$", lineNum, AlertRuleImportEnum.SCHED_DAYS.getIndex());
             });
 

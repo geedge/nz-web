@@ -191,10 +191,11 @@
 			<artifactId>mibble</artifactId>
 			<version>${mibble.version}</version>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/cn.hutool/hutool-all -->
 		<dependency>
 			<groupId>cn.hutool</groupId>
 			<artifactId>hutool-all</artifactId>
-			<version>5.5.2</version>
+			<version>5.8.15</version>
 		</dependency>
 		<dependency>
 			<groupId>org.bouncycastle</groupId>

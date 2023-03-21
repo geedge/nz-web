@@ -395,12 +395,12 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
         if(dependKeys!=null && dependKeys.length>0){
             for (String[] depend : dependKeys){
                 String key = depend[0];
-                String[] dependKey = Tool.StrUtil.split(depend[1],","); //多个依赖用逗号隔开
-                String[] values = Tool.StrUtil.split(depend[2],",");//多个value用逗号隔开
+                List<String> dependKey = Tool.StrUtil.split(depend[1],","); //多个依赖用逗号隔开
+                List<String> values = Tool.StrUtil.split(depend[2],",");//多个value用逗号隔开
                 boolean isDepend = true;
-                for (int i = 0; i < dependKey.length; i++) {
-                    String dk = dependKey[i]; //
-                    String value = values[i];
+                for (int i = 0; i < dependKey.size(); i++) {
+                    String dk = dependKey.get(i);
+                    String value = values.get(i);
                     if(!(params.containsKey(dk) && Tool.StrUtil.equals(params.get(dk),value))){ //如果不存在依赖的key 或者依赖的key对应的value 不符合，说明不需要依赖
                         isDepend = false;
                         break;

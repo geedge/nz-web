@@ -763,7 +763,7 @@ public class JSONUtil {
 	 * @since 3.1.2
 	 */
 	public static String formatJsonStr(String jsonStr) {
-		return JSONStrFormater.format(jsonStr);
+		return JSONStrFormatter.format(jsonStr);
 	}
 
 	/**
