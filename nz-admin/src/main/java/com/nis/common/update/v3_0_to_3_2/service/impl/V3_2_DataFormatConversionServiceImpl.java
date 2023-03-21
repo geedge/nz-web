@@ -1,123 +1,183 @@
 package com.nis.common.update.v3_0_to_3_2.service.impl;
 
-import cn.hutool.core.map.MapUtil;
+import cn.hutool.db.Entity;
+import cn.hutool.db.SqlConnRunner;
+import cn.hutool.db.handler.EntityListHandler;
+import cn.hutool.db.handler.StringHandler;
+import cn.hutool.db.sql.SqlExecutor;
 import cn.hutool.log.Log;
+import com.alibaba.druid.DbType;
+import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.fastjson.JSONObject;
-import com.nis.common.update.v3_0_to_3_2.dao.V3_0VisualChartDao;
-import com.nis.common.update.v3_0_to_3_2.service.DataFormatConversionService;
+import com.nis.common.exception.NZException;
+import com.nis.common.update.v3_0_to_3_2.service.V3_2_DataFormatConversionService;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.JSONUtil;
+import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
-import com.nis.modules.dashboard.dao.VisualChartDao;
-import com.nis.modules.dashboard.dao.VisualChartElementDao;
-import com.nis.modules.dashboard.entity.VisualChart;
-import com.nis.modules.dashboard.entity.VisualChartElement;
-import org.apache.commons.lang3.time.StopWatch;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * V3_2_DataFormatConversionServiceImpl
+ *
+ * @author shizhendong
+ * @date 2023/03/15
+ */
 @Service
-public class DataFormatConversionServiceImpl implements DataFormatConversionService {
+public class V3_2_DataFormatConversionServiceImpl implements V3_2_DataFormatConversionService {
 
-    private static cn.hutool.log.Log logger = Log.get();
+    private static final Log log = Log.get();
 
-    @Autowired
-    private V3_0VisualChartDao v3_0VisualChartDao;
+    /**
+     * back up table name
+     */
+    private static final String BACK_UP_TABLE_NAME = "visual_chart_v3_2";
 
-    @Autowired
-    private VisualChartDao visualChartDao;
+    private Connection connection;
 
-    @Autowired
-    private VisualChartElementDao visualChartElementDao;
+    private SqlConnRunner sqlRunner;
 
-    static String[] LETTERS = new String[]{
+    private static final String[] LETTERS = new String[]{
             "A", "B", "C", "D", "E", "F", "G",
             "H", "I", "J", "K", "L", "M", "N",
             "O", "P", "Q", "R", "S", "T",
             "U", "V", "W", "X", "Y", "Z"};
 
+    /**
+     * before Data Format Conversion
+     * check backup table is exists
+     *
+     * @return
+     */
+    private boolean beforeDataFormatConversion() throws SQLException {
+        String tableName = SqlExecutor.query(this.connection, "SHOW TABLES LIKE ?", new StringHandler(), BACK_UP_TABLE_NAME);
+        log.info("[beforeDataFormatConversion] [check the backup table exists] [query result: {}]", tableName);
+
+        if (Tool.StrUtil.isEmpty(tableName)) {
+            log.warn("[beforeDataFormatConversion] [The backup table does not exist. Do not perform data conversion] [table: {}]", BACK_UP_TABLE_NAME);
+            return true;
+        }
+
+        log.info("[beforeDataFormatConversion] [The backup table exists, execute data conversion] [table: {}]", BACK_UP_TABLE_NAME);
+        return true;
+    }
+
+
     @Override
-    public void visualChartDataFormatConversion() throws Exception {
-        // 1. 检查 visual_chart_V3_2 是否存在
-        Map checkTableExists = v3_0VisualChartDao.checkTableExists("visual_chart_v3_2");
-        if (Tool.CollectionUtil.isEmpty(checkTableExists)) {
-            logger.info("Table visual_chart_v3_2 does not exist. The chart data format processing will not be executed");
+    public void dataFormatConversion(Connection connection) throws Exception {
+        // init sql conn runner
+        this.connection = connection;
+        sqlRunner = this.initSqlRunner(connection);
+
+        boolean isConversion = this.beforeDataFormatConversion();
+        if (!isConversion) {
             return;
         }
-        logger.info("Table visual_chart_v3_2 exists, execute chart data format processing");
 
-        StopWatch sw = new StopWatch();
-        sw.start();
-        try {
-            logger.info("Start processing visual_chart_element data and supplement the element name value.");
-            // 2. handle visual_chart_element name value (先处理 element name ,table chart handle 需要使用)
-            this.handleElementName();
-            logger.info("The visual_chart_element name processing done.");
+        log.info("[dataFormatConversion] [conversion V3_0 to V3_2 Chart Data]");
 
-            // 3. 处理数据变化
-            List<VisualChart> oldChartList = v3_0VisualChartDao.queryList();
+        // handle visual_chart_element name
+        this.handleElementName();
 
-            // 再查询 element 内容，此时 name 已处理完成
-            List<VisualChartElement> visualChartElements = visualChartElementDao.selectList(null);
-            Map<Integer, List<VisualChartElement>> chartIdAndElementListMap = visualChartElements.stream().collect(Collectors.groupingBy(VisualChartElement::getChartId));
+        // conversion Visual Chart Data
+        this.conversionVisualChartData();
 
-            logger.info("Start processing visual_chart data format changes.");
-            // 排除 alertList ,alertList drop
-            Map<Integer, List<VisualChart>> oldChartListGroupByDashboardId = oldChartList.stream().filter(visualChart -> !Tool.StrUtil.equals(visualChart.getType(), "alertList")).collect(Collectors.groupingBy(VisualChart::getDashboardId));
-            for (Map.Entry<Integer, List<VisualChart>> entry : oldChartListGroupByDashboardId.entrySet()) {
-                Integer dashboardId = entry.getKey();
-                List<VisualChart> oldChartListByDashboardId = entry.getValue();
-
-                // 处理 chart param/datasource
-                this.handleChartParamFormat(oldChartListByDashboardId, chartIdAndElementListMap);
-
-                // 处理 xy 值
-                this.handlePosition(dashboardId, oldChartListByDashboardId);
-
-                // 入库 visual_chart (新表)
-                visualChartDao.insertBatchChart(oldChartListByDashboardId);
-            }
-            logger.info("The visual_chart data format change processing done.");
-            // 4. 删除 visual_chart_v3_2 表
-            v3_0VisualChartDao.dropTable("visual_chart_v3_2");
-        } finally {
-            sw.stop();
-        }
-        logger.info("visual_chart data format conversion done Run Time: {}", sw.toString());
+        // remove back up table
+        log.info("[dataFormatConversion] [remove back up table] [table_name: {}]", BACK_UP_TABLE_NAME);
+        SqlExecutor.execute(this.connection, Tool.StrUtil.concat(true, "DROP TABLE ", BACK_UP_TABLE_NAME));
     }
 
     /**
-     * chart element name 处理 初始化按照 每个chart数据  A-Z AA-AZ BA-BZ AAA-AAZ 顺序添加
+     * chart element name 处理
+     * 初始化规则： A-Z AA-AZ BA-BZ AAA-AAZ 顺序添加
      */
-    public void handleElementName() {
-        List<VisualChartElement> visualChartElements = visualChartElementDao.selectList(null);
-        Map<Integer, List<VisualChartElement>> collect = visualChartElements.stream().collect(Collectors.groupingBy(VisualChartElement::getChartId));
-        for (Map.Entry<Integer, List<VisualChartElement>> entry : collect.entrySet()) {
-            List<VisualChartElement> elementList = entry.getValue();
-            for (int i = 0; i < elementList.size(); i++) {
+    private void handleElementName() throws SQLException {
+        log.info("[handleElementName] [insert chart element name auto] [begin]");
+        log.info("[handleElementName] [insert chart element name auto] [rule: {}]", "A-Z AA-AZ BA-BZ AAA-AAZ...");
+
+        List<Entity> chartElementList = sqlRunner.findAll(this.connection, Entity.create("visual_chart_element"));
+        Map<Object, List<Entity>> elementGroupingByChartIdMap = chartElementList.stream().collect(Collectors.groupingBy(entity -> entity.get("chart_id")));
+        for (Map.Entry<Object, List<Entity>> entry : elementGroupingByChartIdMap.entrySet()) {
+            List<Entity> elementListForChart = entry.getValue();
+            for (int i = 0; i < elementListForChart.size(); i++) {
                 String letter = this.transformNumToLetter(i);
-                VisualChartElement visualChartElement = elementList.get(i);
-                visualChartElement.setName(letter);
+                Entity chartElement = elementListForChart.get(i);
+                chartElement.set("name", letter);
             }
         }
-        List<VisualChartElement> allElementList = collect.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
-        // visualChartElementService.saveOrUpdateBatch(allElementList);
-        if (Tool.CollectionUtil.isNotEmpty(allElementList)) {
-            // visualChartElementDao xml sql 为 updaet xx set name case when ...  where id in xxx. 组合，防止 sql 过长，分割后拼接 sql 修改
+        List<Entity> allElementList = elementGroupingByChartIdMap.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
+        log.info("[handleElementName] [update element size: {}]", allElementList.size());
+        if (Tool.CollUtil.isNotEmpty(allElementList)) {
+            // 防止 sql 过长，分割后拼接 sql 修改
             Integer batchSize = 1000;
             Integer limit = (allElementList.size() + batchSize - 1) / batchSize;
-            List<List<VisualChartElement>> splitVisualChartElementList = Stream.iterate(0, n -> n + 1).limit(limit).parallel().map(a -> allElementList.stream().skip(a * batchSize).limit(batchSize).parallel().collect(Collectors.toList())).collect(Collectors.toList());
-            for (List<VisualChartElement> elements : splitVisualChartElementList) {
-                visualChartElementDao.updateNameBatch(elements);
+            List<List<Entity>> splitVisualChartElementList = Stream.iterate(0, n -> n + 1).limit(limit).parallel().map(a -> allElementList.stream().skip(a * batchSize).limit(batchSize).parallel().collect(Collectors.toList())).collect(Collectors.toList());
+
+            SQLUtils.FormatOption formatOption = new SQLUtils.FormatOption(false, false);
+            for (List<Entity> batchUpdateElementList : splitVisualChartElementList) {
+                List<String> list = Tool.ListUtil.list(true);
+                for (Entity entity : batchUpdateElementList) {
+                    String sql = SQLUtils.format("update visual_chart_element set name = ? where id = ?", DbType.mariadb, Tool.ListUtil.of(entity.getStr("name"), entity.get("id")), formatOption);
+                    list.add(sql);
+                }
+                // execute Batch
+                SqlExecutor.executeBatch(this.connection, list);
             }
         }
+        log.info("[handleElementName] [insert chart element name auto] [finshed]");
     }
 
     /**
-     * 根据下标 获取对应 26 字母，如果超过 26 字母，按照  A-Z AA-AZ BA-BZ AAA-AAZ 顺序排
+     * conversion Visual Chart Data
+     *
+     * @throws SQLException
+     */
+    private void conversionVisualChartData() throws SQLException {
+        log.info("[conversionVisualChartData] [begin]");
+
+        List<Entity> backUpChartList = SqlExecutor.query(this.connection, "SELECT * FROM visual_chart_v3_2 ORDER BY panel_id, group_id, weight", new EntityListHandler());
+        log.info("[conversionVisualChartData] [conversion size: {}]", backUpChartList.size());
+
+        // query element list.  name has been processed
+        List<Entity> chartElementList = sqlRunner.findAll(this.connection, Entity.create("visual_chart_element"));
+        Map<String, List<Entity>> elementGroupingByChartIdMap = chartElementList.stream().collect(Collectors.groupingBy(entity -> entity.getStr("chart_id")));
+
+        // drop alertList type chart
+        // grouping by panel_id
+        Map<String, List<Entity>> chartGaroupingByPanelIdMap = backUpChartList.stream()
+                .filter(entity -> Tool.ObjectUtil.notEqual("alertList", entity.getStr("type")))
+                .collect(Collectors.groupingBy(entity -> entity.getStr("panel_id")));
+
+        for (Map.Entry<String, List<Entity>> entry : chartGaroupingByPanelIdMap.entrySet()) {
+            String panelId = entry.getKey();
+            List<Entity> chartListForPanel = entry.getValue();
+
+            // handle chart param/datasource
+            this.handleChartParamFormat(chartListForPanel, elementGroupingByChartIdMap);
+
+            // handle Position chart.x y
+            this.handlePosition(panelId, chartListForPanel);
+
+            // insert batch
+            if (Tool.CollUtil.isNotEmpty(chartListForPanel)) {
+                for (Entity entity : chartListForPanel) {
+                    // reset table name
+                    entity.setTableName("visual_chart");
+                }
+                sqlRunner.insert(this.connection,chartListForPanel);
+            }
+        }
+        log.info("[conversionVisualChartData] [finshed]");
+    }
+
+    /**
+     * 根据下标 获取对应 26 字母，如果超过 26 字母，按照  A-Z AA-AZ BA -BZ AAA-AAZ 顺序排
      *
      * @param num
      * @return
@@ -135,25 +195,30 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
     /**
      * 处理位置信息 x/y
      *
-     * @param dashboardId
+     * @param panelId
      * @param chartList
      */
-    private void handlePosition(Integer dashboardId, List<VisualChart> chartList) {
-        chartList = chartList.stream().sorted(Comparator.comparing(VisualChart::getWeight)).collect(Collectors.toList());
+    private void handlePosition(String panelId, List<Entity> chartList) {
+        chartList = chartList.stream().sorted(
+                Comparator.comparing(entity -> {
+                    String weightStr = Tool.StrUtil.emptyToDefault(entity.getStr("weight"), "0");
+                    return Integer.valueOf(weightStr);
+                })
+        ).collect(Collectors.toList());
 
-        if (dashboardId == 0) {
+        if (Tool.StrUtil.equals("0", panelId)) {
             // chart template 列表数据不需要处理 只需处理 group 内的 chart ,其他 chart 都设置为 0，0
-            Map<Integer, List<VisualChart>> chartListGroupByGroupId = chartList.stream().collect(Collectors.groupingBy(VisualChart::getGroupId));
-            for (Map.Entry<Integer, List<VisualChart>> entry : chartListGroupByGroupId.entrySet()) {
-                Integer groupId = entry.getKey();
-                List<VisualChart> visualChartList = entry.getValue();
-                if (groupId == 0) {
-                    for (VisualChart visualChart : visualChartList) {
-                        if (Tool.StrUtil.equals(visualChart.getType(), "group")) {
-                            visualChart.setHeight(3d);
+            Map<String, List<Entity>> chartListGroupByGroupId = chartList.stream().collect(Collectors.groupingBy(entity -> entity.getStr("group_id")));
+            for (Map.Entry<String, List<Entity>> entry : chartListGroupByGroupId.entrySet()) {
+                String groupId = entry.getKey();
+                List<Entity> visualChartList = entry.getValue();
+                if (Tool.StrUtil.equals("0", groupId)) {
+                    for (Entity visualChart : visualChartList) {
+                        if (Tool.StrUtil.equals(visualChart.getStr("type"), "group")) {
+                            visualChart.set("height", 3);
                         }
-                        visualChart.setX(0d);
-                        visualChart.setY(0d);
+                        visualChart.set("x", 0);
+                        visualChart.set("y", 0);
                     }
                 } else {
                     // 根据 span and height 计算 XY
@@ -162,12 +227,13 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
             }
         } else {
             // 排序 ，按照 chart - group  - chart 顺序排 （group inner chart） 排除在外
-            List<VisualChart> list = new ArrayList<>(chartList.size());
-            for (VisualChart visualChart : chartList) {
-                if (Tool.StrUtil.equals(visualChart.getType(), "group")) {
+            List<Entity> list = new ArrayList<>(chartList.size());
+            for (Entity visualChart : chartList) {
+                if (Tool.StrUtil.equals(visualChart.getStr("type"), "group")) {
                     // 添加 group
                     list.add(visualChart);
-                } else if (!Tool.StrUtil.equals(visualChart.getType(), "group") && visualChart.getGroupId() == 0) {
+                } else if (!Tool.StrUtil.equals(visualChart.getStr("type"), "group")
+                        && Tool.StrUtil.equals(visualChart.getStr("group_id"), "0")) {
                     // 非 group & 非 group inner chart
                     list.add(visualChart);
                 }
@@ -175,8 +241,11 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
             // 根据 span and height 计算 XY
             this.calculateXYAccordingToSpanAndHeight(list);
 
-            Map<Integer, List<VisualChart>> chartListGroupByGroupId = chartList.stream().filter(visualChart -> visualChart.getGroupId() != 0).collect(Collectors.groupingBy(VisualChart::getGroupId));
-            for (Map.Entry<Integer, List<VisualChart>> entry : chartListGroupByGroupId.entrySet()) {
+            Map<String, List<Entity>> chartListGroupByGroupId = chartList.stream()
+                    .filter(entity -> Tool.ObjectUtil.notEqual("0", entity.getStr("group_id")))
+                    .collect(Collectors.groupingBy(entity -> entity.getStr("group_id")));
+
+            for (Map.Entry<String, List<Entity>> entry : chartListGroupByGroupId.entrySet()) {
                 // 根据 span and height 计算 XY
                 this.calculateXYAccordingToSpanAndHeight(entry.getValue());
             }
@@ -188,7 +257,7 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
      *
      * @param list
      */
-    private void calculateXYAccordingToSpanAndHeight(List<VisualChart> list) {
+    private void calculateXYAccordingToSpanAndHeight(List<Entity> list) {
         // 每行 x 计数
         Integer colX = 0;
         // 每行 y 计数
@@ -196,11 +265,11 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
         // 行内最高值
         Integer highestValueInLine = 0;
         for (int i = 0; i < list.size(); i++) {
-            VisualChart chart = list.get(i);
-            Integer span = chart.getSpan().intValue();
+            Entity chart = list.get(i);
+            Integer span = Integer.valueOf(chart.getStr("span"));
             // group 默认给 3 就 ok ，前端会根据 组内 chart 自动调整高度
-            Integer height = Tool.StrUtil.equals(chart.getType(), "group") ? 3 : chart.getHeight().intValue();
-            chart.setHeight(height.doubleValue());
+            Integer height = Tool.StrUtil.equals(chart.getStr("type"), "group") ? 3 : Integer.valueOf(chart.getStr("height"));
+            chart.set("height", height);
             colX += span;
             // 一行结束
             if (colX > 12) {
@@ -208,18 +277,18 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
                 // 下一行第一个 Y 就是上一行 height 最大值
                 colY += highestValueInLine;
                 Integer colXValue = colX - span.intValue();
-                chart.setX(colXValue.doubleValue());
-                chart.setY(colY.doubleValue());
+                chart.set("x", colXValue);
+                chart.set("y", colY);
                 highestValueInLine = 0;
             } else {
                 // group
-                if (Tool.StrUtil.equals(chart.getType(), "group")) {
-                    chart.setX(0d);
+                if (Tool.StrUtil.equals(chart.getStr("type"), "group")) {
+                    chart.set("x", 0);
                 } else {
                     Integer colXValue = colX - span.intValue();
-                    chart.setX(colXValue.doubleValue());
+                    chart.set("x", colXValue);
                 }
-                chart.setY(colY.doubleValue());
+                chart.set("y", colY);
             }
             // 行内最高值
             highestValueInLine = highestValueInLine < height ? height : highestValueInLine;
@@ -240,30 +309,30 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
      * logs
      * group
      *
-     * @param chartList
-     * @param chartIdAndElementListMap
+     * @param chartListForPanel
+     * @param elementGroupingByChartIdMap
      */
-    private void handleChartParamFormat(List<VisualChart> chartList, Map<Integer, List<VisualChartElement>> chartIdAndElementListMap) {
-        Map<String, Object> enableMap = new HashMap();
+    private void handleChartParamFormat(List<Entity> chartListForPanel, Map<String, List<Entity>> elementGroupingByChartIdMap) {
+        Map<String, Object> enableMap = Tool.MapUtil.newHashMap();
         enableMap.put("thresholds", true);
         enableMap.put("valueMapping", true);
         enableMap.put("legend", true);
 
-        for (VisualChart visualChart : chartList) {
+        for (Entity visualChart : chartListForPanel) {
             try {
-                String type = visualChart.getType();
-                if (visualChart.getParam() == null) {
-                    visualChart.setParam(JSONObject.toJSONString(MapUtil.empty()));
-                }
-                if (Tool.StrUtil.isEmpty(visualChart.getParam().toString())) {
-                    visualChart.setParam(JSONObject.toJSONString(MapUtil.empty()));
-                }
-                Map oldParamMap = JSONObject.parseObject(visualChart.getParam().toString(), Map.class);
+                // type
+                String type = visualChart.getStr("type");
+
+                String paramStr = visualChart.getStr("param");
+                paramStr = Tool.StrUtil.emptyToDefault(paramStr, Tool.StrUtil.EMPTY_JSON);
+                visualChart.set("param", paramStr);
+
+                Map oldParamMap = JSONObject.parseObject(paramStr, Map.class);
 
                 String thresholdStrVal = Tool.ObjectUtil.defaultIfNull(oldParamMap.get("threshold"), "").toString();
                 String statisticsStrVal = Tool.ObjectUtil.defaultIfNull(oldParamMap.get("statistics"), "").toString();
 
-                Map<String, Object> params = new HashMap<>();
+                Map<String, Object> params = Tool.MapUtil.newHashMap();
                 // thresholds
                 List<Map> thresholds = new ArrayList<>();
                 // valueMapping
@@ -274,7 +343,7 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
                     case "stackArea": {
                         // type value 变更
                         if (Tool.StrUtil.equalsIgnoreCase(type, "stackArea")) {
-                            visualChart.setType("area");
+                            visualChart.set("type", "area");
                             // area 类型图表 stack 默认值 为 true
                             params.put("stack", true);
                         } else {
@@ -289,15 +358,15 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
                             legendOnValueList = legendValueMap.entrySet().stream().filter(entry -> Tool.StrUtil.equals(entry.getValue(), "on")).map(entry -> entry.getKey()).collect(Collectors.toList());
                         }
 
-                        params.put("style", visualChart.getType());
+                        params.put("style", visualChart.getStr("type"));
                         // legend
-                        Map legend = new HashMap<>();
+                        Map legend = Tool.MapUtil.newHashMap();
                         legend.put("placement", "bottom");
                         legend.put("values", legendOnValueList);
                         params.put("legend", legend);
 
                         if (Tool.StrUtil.isNotBlank(thresholdStrVal)) {
-                            Map tempThresholdFirstMap = new HashMap();
+                            Map tempThresholdFirstMap = Tool.MapUtil.newHashMap();
                             tempThresholdFirstMap.put("color", "#d64f40");
                             tempThresholdFirstMap.put("value", thresholdStrVal);
                             thresholds.add(tempThresholdFirstMap);
@@ -305,7 +374,7 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
                         params.put("thresholds", thresholds);
                         params.put("nullType", oldParamMap.get("nullType"));
                         params.put("enable", enableMap);
-                        visualChart.setDatasource(Constant.ChartDatasourceType.METRICS.getValue());
+                        visualChart.set("datasource", Constant.ChartDatasourceType.METRICS.getValue());
                         break;
                     }
                     // chart-bar bar
@@ -323,17 +392,17 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
                             legendOnValueList = legendValueMap.entrySet().stream().filter(entry -> Tool.StrUtil.equals(entry.getValue(), "on")).map(entry -> entry.getKey()).collect(Collectors.toList());
                         }
                         // legend
-                        Map legend = new HashMap<>();
+                        Map legend = Tool.MapUtil.newHashMap();
                         legend.put("placement", "bottom");
                         legend.put("values", legendOnValueList);
                         params.put("legend", legend);
                         params.put("enable", enableMap);
-                        visualChart.setDatasource(Constant.ChartDatasourceType.METRICS.getValue());
+                        visualChart.set("datasource", Constant.ChartDatasourceType.METRICS.getValue());
                         break;
                     }
                     // chart-value stat
                     case "singleStat": {
-                        visualChart.setType("stat");
+                        visualChart.set("type", "stat");
                         // none/null 赋默认值 last
                         params.put("statistics", Tool.StrUtil.equals(statisticsStrVal, "null") || Tool.StrUtil.equals(statisticsStrVal, "") ? "last" : statisticsStrVal);
                         params.put("nullType", oldParamMap.get("nullType"));
@@ -343,7 +412,7 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
                                 String valueMappingMapType = Tool.ObjectUtil.defaultIfNull(valueMappingMap.get("type"), "").toString();
                                 List<Map> mappingList = JSONObject.parseArray(valueMappingMap.get("mapping").toString(), Map.class);
                                 for (Map map : mappingList) {
-                                    Map tempValueMappingMap = new HashMap();
+                                    Map tempValueMappingMap = Tool.MapUtil.newHashMap();
                                     tempValueMappingMap.put("type", valueMappingMapType);
                                     tempValueMappingMap.putAll(map);
                                     valueMappingList.add(tempValueMappingMap);
@@ -352,7 +421,7 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
                         }
                         params.put("valueMapping", valueMappingList);
                         params.put("enable", enableMap);
-                        visualChart.setDatasource(Constant.ChartDatasourceType.METRICS.getValue());
+                        visualChart.set("datasource", Constant.ChartDatasourceType.METRICS.getValue());
                         break;
                     }
                     // chart-pie pie
@@ -363,10 +432,10 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
                         params.put("display", "value");
                         params.put("valueMapping", valueMappingList);
                         params.put("enable", enableMap);
-                        visualChart.setDatasource(Constant.ChartDatasourceType.METRICS.getValue());
+                        visualChart.set("datasource", Constant.ChartDatasourceType.METRICS.getValue());
                         break;
                     }
-                    // chart-table table  TODO
+                    // chart-table table
                     case "table": {
                         // none/null 赋默认值 last
                         params.put("statistics", Tool.StrUtil.equals(statisticsStrVal, "null") || Tool.StrUtil.equals(statisticsStrVal, "") ? "last" : statisticsStrVal);
@@ -374,22 +443,22 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
                         params.put("enable", enableMap);
                         params.put("indexs", "");
 
-                        List<VisualChartElement> visualChartElements = chartIdAndElementListMap.get(visualChart.getId());
+                        List<Entity> visualChartElements = elementGroupingByChartIdMap.get(visualChart.getStr("id"));
                         String elementDisplay = "", valueDisplay = "";
-                        for (VisualChartElement element : visualChartElements) {
-                            elementDisplay += "{{" + element.getName() + ".$legend}}";
-                            valueDisplay += "{{" + element.getName() + ".$value}}";
+                        for (Entity element : visualChartElements) {
+                            elementDisplay += "{{" + element.getStr("name") + ".$legend}}";
+                            valueDisplay += "{{" + element.getStr("name") + ".$value}}";
                         }
 
                         // columns
                         List<Map> columns = new ArrayList<>();
-                        Map elementMap = new HashMap();
+                        Map elementMap = Tool.MapUtil.newHashMap();
                         elementMap.put("title", "Element");
                         elementMap.put("show", true);
                         elementMap.put("unit", 2);
                         elementMap.put("display", elementDisplay);
                         columns.add(elementMap);
-                        Map valueMap = new HashMap();
+                        Map valueMap = Tool.MapUtil.newHashMap();
                         valueMap.put("title", "Value");
                         valueMap.put("show", true);
                         valueMap.put("unit", 2);
@@ -405,7 +474,7 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
                                 String valueMappingMapType = Tool.ObjectUtil.defaultIfNull(valueMappingMap.get("type"), "").toString();
                                 List<Map> mappingList = JSONObject.parseArray(valueMappingMap.get("mapping").toString(), Map.class);
                                 for (Map map : mappingList) {
-                                    Map tempValueMappingMap = new HashMap();
+                                    Map tempValueMappingMap = Tool.MapUtil.newHashMap();
                                     tempValueMappingMap.put("type", valueMappingMapType);
                                     tempValueMappingMap.put("columns", "Value");
                                     tempValueMappingMap.putAll(map);
@@ -414,29 +483,29 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
                             }
                         }
                         params.put("valueMapping", valueMappingList);
-                        visualChart.setDatasource(Constant.ChartDatasourceType.METRICS.getValue());
+                        visualChart.set("datasource", Constant.ChartDatasourceType.METRICS.getValue());
                         break;
                     }
                     case "group": {
                         String collapseStr = Tool.ObjectUtil.defaultIfNull(oldParamMap.get("collapse"), "false").toString();
                         params.put("collapse", Tool.StrUtil.equals(collapseStr, "true") ? true : false);
-                        visualChart.setDatasource(Constant.ChartDatasourceType.MISC.getValue());
+                        visualChart.set("datasource", Constant.ChartDatasourceType.MISC.getValue());
                         break;
                     }
                     case "text":
                     case "url":
                     case "diagram": {
-                        visualChart.setDatasource(Constant.ChartDatasourceType.MISC.getValue());
+                        visualChart.set("datasource", Constant.ChartDatasourceType.MISC.getValue());
                         break;
                     }
                     case "logs": {
-                        visualChart.setType("log");
-                        visualChart.setDatasource(Constant.ChartDatasourceType.LOGS.getValue());
+                        visualChart.set("type", "log");
+                        visualChart.set("datasource", Constant.ChartDatasourceType.LOGS.getValue());
                         break;
                     }
                     case "assetInfo":
                     case "endpointInfo": {
-                        visualChart.setDatasource(Constant.ChartDatasourceType.SYSTEM.getValue());
+                        visualChart.set("datasource", Constant.ChartDatasourceType.SYSTEM.getValue());
                         break;
                     }
                     default: {
@@ -445,11 +514,11 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
                 }
                 // params 处理过 重新赋值
                 if (Tool.CollectionUtil.isNotEmpty(params)) {
-                    visualChart.setParam(JSONObject.toJSONString(params));
+                    visualChart.set("param", JSONObject.toJSONString(params));
                 }
             } catch (Exception e) {
-                logger.error("Chart数据格式处理有误，原始数据：" + JSONObject.toJSONString(visualChart));
-                logger.error(e);
+                log.error(e, "[handleChartParamFormat] [Data format processing error] [backUp data: {}]", JSONUtil.toJsonStr(visualChart));
+                throw new NZException(RCode.ERROR);
             }
         }
     }

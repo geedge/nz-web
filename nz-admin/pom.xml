@@ -253,10 +253,16 @@
 <!--			&lt;!&ndash; <scope>test</scope> &ndash;&gt;-->
 <!--		</dependency>-->
 
+		<!-- https://mvnrepository.com/artifact/org.flywaydb/flyway-core -->
 		<dependency>
 			<groupId>org.flywaydb</groupId>
 			<artifactId>flyway-core</artifactId>
-			<version>5.2.4</version>
+			<version>9.16.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-mysql</artifactId>
+			<version>9.16.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.oshi</groupId>

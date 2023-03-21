@@ -74,14 +74,16 @@ public class ResultHandleInterceptor implements ResponseBodyAdvice {
 
     public Map<String,List<String>> contentFieldHandle(String param){
     	Map<String,List<String>> result = new HashMap<String,List<String>>();
-    	List<String> split = StrUtil.split(param, ";");
-    	for(String s : split) {
-		    List<String> split2 = StrUtil.split(s, "=");
-    		String fields = split2.get(1);
-    		List<String> filedList = StrUtil.split(fields, StrUtil.C_COMMA);
-    		result.put(split2.get(0),filedList);
-    	}
-    	// include优先级高于exclude 去除exclude中间无用数值
+	    if (StrUtil.isNotEmpty(param)) {
+		    List<String> split = StrUtil.split(param, ";");
+		    for (String s : split) {
+			    List<String> split2 = StrUtil.split(s, "=");
+			    String fields = split2.get(1);
+			    List<String> filedList = StrUtil.split(fields, StrUtil.C_COMMA);
+			    result.put(split2.get(0), filedList);
+		    }
+	    }
+	    // include优先级高于exclude 去除exclude中间无用数值
     	if(ToolUtil.equals(result.size(), 2)) {
 			/*List<String> includeFields = (List<String>) result.get(INCLUDE);
 			List<String> excludeFields = (List<String>) result.get(EXCLUDE);
