@@ -190,7 +190,7 @@ public class IpamIpTest extends BaseTest<IpamIp> {
         IpamIp ipamIp = jsonToInParameter(testName.getMethodName(), IpamIp.class);
         MvcResult result = UTUtil.performPost("/ipam/ip", ipamIp);
 
-        UTUtil.assertEqualsRCode(result, RCode.IPAM_IP_SUBNET_ISNULL);
+        UTUtil.assertEqualsRCode(result, RCode.IPAM_IP_SUBNET_NOT_EXISTS);
     }
 
 

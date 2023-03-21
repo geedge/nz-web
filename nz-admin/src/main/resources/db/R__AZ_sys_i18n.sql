@@ -4002,8 +4002,8 @@ INSERT INTO `sys_i18n` VALUES (6230, '731006', 'en', 'IPAM_IP_INTERVAL_ERROR', '
 INSERT INTO `sys_i18n` VALUES (6231, '731006', 'zh', 'IPAM_IP_INTERVAL_ERROR', 'ip地址已存在', '响应消息->ipam新增/修改/导入接口', '2022-06-20 15:54:48', 1);
 INSERT INTO `sys_i18n` VALUES (6232, '731007', 'en', 'IPAM_IP_ASSET_ISNULL', 'Ipamip asset can not be null', '响应消息->ipam导入接口', '2022-06-20 15:54:48', 1);
 INSERT INTO `sys_i18n` VALUES (6233, '731007', 'zh', 'IPAM_IP_ASSET_ISNULL', 'ip资产不存在', '响应消息->ipam导入接口', '2022-06-20 15:54:48', 1);
-INSERT INTO `sys_i18n` VALUES (6234, '731008', 'en', 'IPAM_IP_SUBNET_ISNULL', 'Ipamip subnet can not be null', '响应消息->ipam新增/修改/导入接口', '2022-06-20 15:54:48', 1);
-INSERT INTO `sys_i18n` VALUES (6235, '731008', 'zh', 'IPAM_IP_SUBNET_ISNULL', 'ip子网不存在', '响应消息->ipam新增/修改/导入接口', '2022-06-20 15:54:48', 1);
+INSERT INTO `sys_i18n` VALUES (6234, '731008', 'en', 'IPAM_IP_SUBNET_NOT_EXISTS', 'Ipamip subnet not exists', '响应消息->ipam新增/修改/导入接口', '2022-06-20 15:54:48', 1);
+INSERT INTO `sys_i18n` VALUES (6235, '731008', 'zh', 'IPAM_IP_SUBNET_NOT_EXISTS', 'ip子网不存在', '响应消息->ipam新增/修改/导入接口', '2022-06-20 15:54:48', 1);
 INSERT INTO `sys_i18n` VALUES (6236, '731009', 'en', 'IPAM_IP_MAC_ERROR', 'Ipamip mac error, mac repeat', '响应消息->ipam导入接口', '2022-06-20 15:54:48', 1);
 INSERT INTO `sys_i18n` VALUES (6237, '731009', 'zh', 'IPAM_IP_MAC_ERROR', 'ip mac地址重复', '响应消息->ipam导入接口', '2022-06-20 15:54:48', 1);
 INSERT INTO `sys_i18n` VALUES (6238, '731010', 'en', 'IPAM_IP_SUBNET_ADDR_ERROR', 'Ipamip addr error, ip addr different subnet addr', '响应消息->ipam导入接口', '2022-06-20 15:54:48', 1);

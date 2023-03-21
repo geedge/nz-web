@@ -991,7 +991,7 @@ public enum RCode {
     IPAM_IP_ADDR_ERROR(731005,"Ipamip addr format error,please check ip format for ipv4/6"),
     IPAM_IP_INTERVAL_ERROR(731006,"Ipamip interval already exists"),
     IPAM_IP_ASSET_ISNULL(731007,"Ipamip asset can not be null"),
-    IPAM_IP_SUBNET_ISNULL(731008,"Ipamip subnet can not be null"),
+    IPAM_IP_SUBNET_NOT_EXISTS(731008,"Ipamip subnet not exists"),
     IPAM_IP_MAC_ERROR(731009,"Ipamip mac error, mac repeat"),
     IPAM_IP_SUBNET_ADDR_ERROR(731010,"Ipamip addr error, ip addr different subnet addr "),
     IPAM_IP_MAC_ADDR_ERROR(731011,"Ipamip mac and addr exist"),
