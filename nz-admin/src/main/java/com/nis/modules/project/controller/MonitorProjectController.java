@@ -115,7 +115,7 @@ public class MonitorProjectController extends AbstractController {
     @GetMapping("/project/topo/iconUnit")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.TOPO)
     public R queryTopoUnit(String name) {
-        List<String> result = topoIconService.queryTopoIconUnitName(name);
+        List<String> result = topoIconService.queryUnitList(name);
         return R.ok(result);
     }
 
@@ -131,7 +131,7 @@ public class MonitorProjectController extends AbstractController {
     public R deleteTopoUnit(String unit) {
         ValidateUtils.is(unit).notNull(RCode.PROJECT_TOPOICON_UNIT_ISNULL);
 
-        topoIconService.deleteTopoIconByUnit(unit);
+        topoIconService.deleteIconByUnit(unit);
         return R.ok();
     }
 
@@ -166,16 +166,10 @@ public class MonitorProjectController extends AbstractController {
                 .and(icon.getUnit()).notNull(RCode.PROJECT_TOPOICON_UNIT_ISNULL).maxLength(64)
                 .and(file).notNull(RCode.PROJECT_TOPOICON_FILE_ISNULL);
 
-
-        try {
-            Integer iconId = topoIconService.saveTopoIcon(icon, file);
-            Map result = new HashMap(2);
-            result.put("id", iconId);
-            return R.ok(result);
-        } catch (IOException e) {
-            logger.error("拓朴图图标保存失败，错误信息是：" + e);
-            return R.error(RCode.ERROR);
-        }
+        Integer iconId = topoIconService.saveTopoIcon(icon, file);
+        Map result = new HashMap(2);
+        result.put("id", iconId);
+        return R.ok(result);
     }
 
 

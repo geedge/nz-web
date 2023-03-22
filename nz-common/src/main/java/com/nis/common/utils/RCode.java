@@ -155,6 +155,7 @@ public enum RCode {
     PROJECT_ICON_BASE64_VALUEERROR(214016, "The base64 value must be 0 and 1"),
     PROJECT_ICON_BIG_ERROR(214017,"Topo icon file is too big ,Please contact your administrator to modify the database configuration : max_allowed_packet"),
     PROJECT_RELOBJ_CAN_NOT_REMOVE(217018, "Project have associated data and cannot be deleted"),
+    PROJECT_ICON_NAME_DUPLICATE(212019, "Topology icon name cannot be duplicate under the same unit"),
 
 
     /**
