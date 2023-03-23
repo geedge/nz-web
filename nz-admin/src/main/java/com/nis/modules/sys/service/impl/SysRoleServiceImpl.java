@@ -1,5 +1,6 @@
 package com.nis.modules.sys.service.impl;
 
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -53,22 +54,18 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
                 new Query(SysRoleEntity.class).getPage(params),
                 new LambdaUpdateWrapper<SysRoleEntity>()
                         .eq(ToolUtil.isNotEmpty(params.get("id")), SysRoleEntity::getId, params.get("id"))
-                        .like(ToolUtil.isNotEmpty(params.get("name")), SysRoleEntity::getName, Tool.StrUtil.likeEscape(Tool.MapUtil.getStr(params,"name")))
+                        .like(ToolUtil.isNotEmpty(params.get("name")), SysRoleEntity::getName, Tool.StrUtil.likeEscape(Tool.MapUtil.getStr(params, "name")))
         );
 
+        List<SysRoleEntity> records = page.getRecords();
+        for (SysRoleEntity role : records) {
+            Integer buildIn = role.getBuildIn();
+            // 非内置角色不返回 i18n_code
+            if (ObjectUtil.equal(0, buildIn)) {
+                role.setI18n(null);
+            }
+        }
         return new PageUtils(page);
-    }
-
-    /**
-     * 校验 role 是否存在
-     *
-     * @param roleId
-     */
-    private void validateRoleExist(Integer roleId) {
-        SysRoleEntity role = this.getById(roleId);
-
-        if (role == null)
-            throw new NZException(RCode.SYS_ROLE_ISNULL);
     }
 
     /**
@@ -120,20 +117,21 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void update(SysRoleEntity role) {
+        SysRoleEntity oldRole = this.getById(role.getId());
+        ValidateUtils.is(oldRole).notNull(RCode.SYS_ROLE_ISNULL);
+
+        // 内置角色不允许修改
+        Integer buildIn = oldRole.getBuildIn();
+        buildIn = ObjectUtil.defaultIfNull(buildIn, 0);
+        if (ObjectUtil.equal(buildIn, 1)) {
+            throw new NZException(RCode.SYS_ROLE_NOT_SUPPORT_MODIFY);
+        }
+
         // 校验 角色 相关信息
         role.setName(StrUtil.trim(role.getName()));
         this.validateRoleInfo(role);
 
-        SysRoleEntity oldRole = this.getById(role.getId());
-        if (oldRole == null)
-            throw new NZException(RCode.SYS_ROLE_ISNULL);
-
-        // 内置角色 name 不允许修改
-        if (oldRole.getBuildIn() == 1) {
-            if(!StrUtil.equals(oldRole.getName(),role.getName()))
-                throw new NZException(RCode.SYS_ROLE_NAME_CANNOT_MODIFY);
-        }
-
+        // update
         this.updateById(role);
 
         // 处理角色菜单关系
@@ -187,15 +185,12 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
     @Override
     public Map getMenuListByRoleId(Integer roleId) {
         // 校验 role 是否存在
-        this.validateRoleExist(roleId);
+        SysRoleEntity role = this.getById(roleId);
+        ValidateUtils.is(role).notNull(RCode.SYS_ROLE_ISNULL);
 
         Map resultData = new HashMap(4);
         List<SysMenuEntity> menuList = sysMenuService.getMenuList(null);
 
-       /* List<SysMenuEntity> roleMenuList = sysMenuService.getRoleMenuList(roleId);
-        List<Integer> selectedIds = Collections.emptyList();
-        if(CollectionUtils.isNotEmpty(roleMenuList))
-            selectedIds = sysMenuService.getSelectedMenuIds(roleMenuList);*/
         List<SysMenuEntity> roleMenuList = sysMenuDao.getRoleMenuList(roleId);
         Set<Integer> selectedIds = roleMenuList.stream().filter(Objects::nonNull).map(SysMenuEntity::getId).collect(Collectors.toSet());
 

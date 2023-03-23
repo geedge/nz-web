@@ -775,6 +775,7 @@ public enum RCode {
     SYS_ROLE_CANNOT_DELETE(587007, "Built-in roles cannot be deleted"),
     SYS_ROLE_REMOVE_ERROR(587008,"These roles contains user can't remove roles"),
     SYS_ROLE_RELOBJ_CAN_NOT_REMOVE(587009, "Role have associated data and cannot be deleted"),
+    SYS_ROLE_NOT_SUPPORT_MODIFY(587010, "The built-in role does not support modification"),
 
 
     /**
