@@ -84,7 +84,7 @@ public class AgentUtil {
 				: (String.format("%s/%s", agentPath, path));
 		String urlString = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
 				.setPort(server.getPort()).setPath(UrlPath.of(path, Charset.forName("UTF-8")))
-				.setQuery(UrlQuery.of(queryString, Charset.forName("UTF-8"))).toString();
+				.setQuery(UrlQuery.of(queryString, Charset.forName("UTF-8"), false, true)).toString();
 		HttpHeaders headers = new HttpHeaders();
 		headers.add(HttpHeaders.AUTHORIZATION, server.getToken());
 		HttpEntity httpEntity = body == null ? new HttpEntity(headers) : new HttpEntity(body, headers);
@@ -195,7 +195,7 @@ public class AgentUtil {
 		UrlBuilder urlBuilder = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
 				.setPort(server.getPort()).setPath(UrlPath.of(url, Charset.forName("UTF-8")));
 
-		UrlQuery urlQuery = new UrlQuery();
+		UrlQuery urlQuery = new UrlQuery(true);
 		Iterator<Map.Entry<String, Object>> iterator = ((Map<String, Object>) requestParam).entrySet().iterator();
 		while (iterator.hasNext()) {
 			Map.Entry<String, Object> entry = iterator.next();
@@ -350,7 +350,7 @@ public class AgentUtil {
 
 			String urlStr = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
 					.setPort(server.getPort()).setPath(UrlPath.of(url, Charset.forName("UTF-8")))
-					.setQuery(UrlQuery.of(queryString, Charset.forName("UTF-8"))).toString();
+					.setQuery(UrlQuery.of(queryString, Charset.forName("UTF-8"), false, true)).toString();
 
 			String method = request.getMethod();
 			ResponseEntity<byte[]> exchange = restTemplate.exchange(new URI(urlStr), HttpMethod.resolve(method),

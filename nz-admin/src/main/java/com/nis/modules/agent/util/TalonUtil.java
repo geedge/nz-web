@@ -39,7 +39,7 @@ public class TalonUtil {
      * 构建  UrlQuery
      */
     private static UrlQuery buildUrlQuery(Map requestParam) {
-        UrlQuery urlQuery = new UrlQuery();
+        UrlQuery urlQuery = new UrlQuery(true);
         Iterator<Map.Entry<String, Object>> iterator = ((Map<String, Object>) requestParam).entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<String, Object> entry = iterator.next();
