@@ -182,7 +182,7 @@ public class SysRoleTest extends BaseTest<SysRoleEntity> {
         SysRoleEntity role = jsonToInParameter(testName.getMethodName(), SysRoleEntity.class);
         MvcResult result = UTUtil.performPut("/sys/role", role);
 
-        UTUtil.assertEqualsRCode(result, RCode.SYS_ROLE_NAME_CANNOT_MODIFY);
+        UTUtil.assertEqualsRCode(result, RCode.SYS_ROLE_NOT_SUPPORT_MODIFY);
     }
 
     /**
