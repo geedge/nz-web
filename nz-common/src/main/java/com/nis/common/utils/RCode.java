@@ -133,6 +133,17 @@ public enum RCode {
     EXPRETMPL_NOT_FOUND(136008,"Expression template not found"),
     EXPRETMPL_RENDER_DATA_ISNULL(131009,"Expression template render data is null"),
 
+
+    /**
+     * dashboard playlist
+     */
+    PLAYLIST_NOT_EXIST(146001, "The playlist configuration does not exist"),
+    PLAYLIST_ID_ISNULL(141002, "ID cannot be empty"),
+    PLAYLIST_NAME_ISNULL(141003, "Name cannot be empty"),
+    PLAYLIST_INTVL_ISNULL(141004, "Interval cannot be empty"),
+    PLAYLIST_DASHBOARD_IDS_ISNULL(141005, "Dashboard id collection cannot be empty"),
+    PLAYLIST_NAME_DUPLICATE(142006, "Name duplicate"),
+
     /**
      * project菜单项相关
      */

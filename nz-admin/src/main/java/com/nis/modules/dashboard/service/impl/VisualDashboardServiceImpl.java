@@ -34,10 +34,7 @@ import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetModelService;
 import com.nis.modules.dashboard.dao.VisualDashboardDao;
 import com.nis.modules.dashboard.entity.*;
-import com.nis.modules.dashboard.service.VisualChartElementService;
-import com.nis.modules.dashboard.service.VisualChartService;
-import com.nis.modules.dashboard.service.VisualDashboardService;
-import com.nis.modules.dashboard.service.VisualService;
+import com.nis.modules.dashboard.service.*;
 import com.nis.modules.dashboard.utils.DashboardConstant;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
@@ -102,6 +99,9 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 
 	@Autowired
 	private VisualChartElementService chartElementService;
+
+	@Autowired
+	private VisualPlaylistService playlistService;
 
 	@Autowired
 	private DataSourceTransactionManager dataSourceTransactionManager;
@@ -268,6 +268,21 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 		monitorModuleService.update(new LambdaUpdateWrapper<MonitorModule>()
 				.set(MonitorModule::getDashboardId, null)
 				.in(MonitorModule::getDashboardId, allDashboardIds));
+
+		// Playlist
+		List<VisualPlaylist> playlistList = playlistService.list();
+		for (VisualPlaylist playlist : playlistList) {
+			String dashboardIdsJsonArrStr = Tool.StrUtil.toString(playlist.getDashboardIds());
+			List<Integer> dashboardIdList = JSONObject.parseArray(dashboardIdsJsonArrStr, Integer.class);
+			Collection<Integer> intersection = Tool.CollUtil.intersection(dashboardIdList, allDashboardIds);
+			if (Tool.CollUtil.isNotEmpty(intersection)) {
+				dashboardIdList.removeAll(allDashboardIds);
+				playlist.setDashboardIds(StrUtil.toString(dashboardIdList));
+				playlist.setUts(System.currentTimeMillis());
+				playlistService.updateById(playlist);
+			}
+		}
+
 		try {
 			// 删除 Report job
 			for (Integer dashboardId : allDashboardIds) {
