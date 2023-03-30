@@ -1,10 +1,12 @@
 package com.nis.common.job;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.nis.common.utils.Tool;
 import com.nis.modules.agent.job.AgentHealthCheckJob;
 import com.nis.modules.agent.job.AutoConfigAgentJob;
 import com.nis.modules.agent.job.CortexHistoryDataDelJob;
+import com.nis.modules.agent.job.LokiHistoryDataDelJob;
 import com.nis.modules.alert.backend.AlertMessageExpiredJob;
 import com.nis.modules.alert.backend.AlertRuleManagerJob;
 import com.nis.modules.alert.backend.AlertSilenceStatusJob;
@@ -47,13 +49,13 @@ public class JobConfig {
 
     @Value("${nezha.alertSilenceJobCron:0/10 * * * * ?}")
     private String alertSilenceJobCron;
-
+    
     @Value("${nezha.alertMessageExpiredJobCron:0/10 * * * * ?}")
     private String alertMessageExpiredJobCron;
-
+    
     @Value("${nezha.alertRuleManagerJobCron:0/10 * * * * ?}")
     private String alertRuleManagerJobCron;
-
+    
     @Value("${nezha.assetPingJobCron:0 0/1 * * * ? *}")
     private String assetPingJobCron;
 
@@ -80,6 +82,9 @@ public class JobConfig {
 
     @Value("${nezha.cortexHistoryDataDelJobCron:0 0 0/2 * * ?}")
     private String cortexHistoryDataDelJobCron;
+
+    @Value("${nezha.lokiHistoryDataDelJobCron:0 0 0/2 * * ?}")
+    private String lokiHistoryDataDelJobCron;
 
     @Value("${nezha.alertMessageHistoryPartManJobCron:0 0 0 1/1 * ?}")
     private String alertMessageHistoryPartManJobCron;
@@ -112,6 +117,7 @@ public class JobConfig {
     private String cleanJobCronName = "CLEAN_JOB";
     private String sysComponentJobName = "SYSCOMPONENT_JOB";
     private String cortexHistoryDataDelJobName = "CORTEXHISTORYDATADEL_JOB";
+    private String lokiHistoryDataDelJobName = "LOKIHISTORYDATADELJOB_JOB";
     private String alertMessageHistoryPartManJobName = "ALERTMESSAGEHISTORYPARTMAN_JOB";
     private String recordtRuleManagerJobName = "RECORDTRULEMANAGER_JOB";
     private String cleanNoRealUseTerminalConnJobName = "CLEANNOREALUSETERMINALCONN_JOB";
@@ -188,6 +194,11 @@ public class JobConfig {
     }
 
     @Bean
+    public JobDetail lokiHistoryDataDelJobDetail() {
+        return JobBuilder.newJob(LokiHistoryDataDelJob.class).withIdentity(JOB_NAME + lokiHistoryDataDelJobName).storeDurably().build();
+    }
+
+    @Bean
     public JobDetail alertMessageHistoryPartManJobDetail() {
         return JobBuilder.newJob(AlertMessageHistoryPartitionManagementJob.class).withIdentity(JOB_NAME + alertMessageHistoryPartManJobName).storeDurably().build();
     }
@@ -245,16 +256,19 @@ public class JobConfig {
 
         // terminal clean job 如果配置文件没有配置定时周期  每天凌晨1点执行一次
         createCronScheduleJob(cleanJobCronName, cleanJobDetail(), StringUtils.isEmpty(terminalCleanJobCron) ? "0 0 1 * * ?" : terminalCleanJobCron);
-
+        
         //sys component 状态更新线程
         createCronScheduleJob(sysComponentJobName, sysComponentJobDetail(), StringUtils.isEmpty(sysComponentJobCron) ? "0/30 * * * * ?" : sysComponentJobCron);
 
         // cortex metrics 历史数据删除
         createCronScheduleJob(cortexHistoryDataDelJobName, cortexHistoryDataDelJobDetail(), StringUtils.isEmpty(cortexHistoryDataDelJobCron) ? "0 0 0/2 * * ?" : cortexHistoryDataDelJobCron);
 
+        // loki logs 历史数据删除
+        createCronScheduleJob(lokiHistoryDataDelJobName, lokiHistoryDataDelJobDetail(), StrUtil.emptyToDefault(lokiHistoryDataDelJobCron, "0 0 0/2 * * ?"));
+
         // alert message History Partition Management 分区管理
         createCronScheduleJob(alertMessageHistoryPartManJobName, alertMessageHistoryPartManJobDetail(), StringUtils.isEmpty(alertMessageHistoryPartManJobCron) ? "0 0 0 1/1 * ?" : alertMessageHistoryPartManJobCron);
-
+        
         // record rule 配置管理任务
         createCronScheduleJob(recordtRuleManagerJobName, recordtRuleManagerJobDetail(), StringUtils.isEmpty(recordtRuleManagerJobCron) ? "0/10 * * * * ?" : recordtRuleManagerJobCron);
 
@@ -264,7 +278,7 @@ public class JobConfig {
         // terminal record expired data clean job
         createCronScheduleJob(cleanExpiredTerminalRecordDataJob, cleanExpiredTerminalRecordDataJobDetail(), Tool.StrUtil.emptyToDefault(cleanExpiredTerminalRecordDataJobCron, "0 0 1 * * ?"));
     }
-
+    
     /**
      * 根据 jobName jobDetail jobCronExpression  创建任务，如果存在则删除再创建
      * @param jobName
