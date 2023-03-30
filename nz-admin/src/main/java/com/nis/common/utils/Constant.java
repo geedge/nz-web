@@ -836,6 +836,7 @@ public class Constant {
 	public static final String SYSCONFIG_KEY_LOGS_STORAGE_S3_ACCESS_KEY = "logs_storage_s3_access_key";
 	public static final String SYSCONFIG_KEY_LOGS_STORAGE_S3_SECRET_ACCESS_KEY = "logs_storage_s3_secret_access_key";
 	public static final String SYSCONFIG_KEY_LOGS_STORAGE_S3_INSECURE = "logs_storage_s3_insecure";
+	public static final String SYSCONFIG_KEY_LOGS_STORAGE_S3_REGION = "logs_storage_s3_region";
 
 	/**
 	 * agent 配置下发 cortex / loki 重启超时时间设置 （在多少 秒 内返回 503 仍视为可用）

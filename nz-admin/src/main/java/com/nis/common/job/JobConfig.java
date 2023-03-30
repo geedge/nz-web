@@ -1,9 +1,11 @@
 package com.nis.common.job;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.nis.modules.agent.job.AgentHealthCheckJob;
 import com.nis.modules.agent.job.AutoConfigAgentJob;
 import com.nis.modules.agent.job.CortexHistoryDataDelJob;
+import com.nis.modules.agent.job.LokiHistoryDataDelJob;
 import com.nis.modules.alert.backend.AlertMessageExpiredJob;
 import com.nis.modules.alert.backend.AlertRuleManagerJob;
 import com.nis.modules.alert.backend.AlertSilenceStatusJob;
@@ -16,7 +18,6 @@ import com.nis.modules.endpoint.job.EndpointStateJob;
 import com.nis.modules.sys.job.CleanJob;
 import com.nis.modules.sys.job.SessionTimeOutJob;
 import com.nis.modules.sys.job.SysComponentJob;
-
 import org.apache.commons.lang.StringUtils;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,6 +80,9 @@ public class JobConfig {
     @Value("${nezha.cortexHistoryDataDelJobCron:0 0 0/2 * * ?}")
     private String cortexHistoryDataDelJobCron;
 
+    @Value("${nezha.lokiHistoryDataDelJobCron:0 0 0/2 * * ?}")
+    private String lokiHistoryDataDelJobCron;
+
     @Value("${nezha.alertMessageHistoryPartManJobCron:0 0 0 1/1 * ?}")
     private String alertMessageHistoryPartManJobCron;
 
@@ -104,6 +108,7 @@ public class JobConfig {
     private String cleanJobCronName = "CLEAN_JOB";
     private String sysComponentJobName = "SYSCOMPONENT_JOB";
     private String cortexHistoryDataDelJobName = "CORTEXHISTORYDATADEL_JOB";
+    private String lokiHistoryDataDelJobName = "LOKIHISTORYDATADELJOB_JOB";
     private String alertMessageHistoryPartManJobName = "ALERTMESSAGEHISTORYPARTMAN_JOB";
     private String recordtRuleManagerJobName = "RECORDTRULEMANAGER_JOB";
     
@@ -178,6 +183,11 @@ public class JobConfig {
     }
 
     @Bean
+    public JobDetail lokiHistoryDataDelJobDetail() {
+        return JobBuilder.newJob(LokiHistoryDataDelJob.class).withIdentity(JOB_NAME + lokiHistoryDataDelJobName).storeDurably().build();
+    }
+
+    @Bean
     public JobDetail alertMessageHistoryPartManJobDetail() {
         return JobBuilder.newJob(AlertMessageHistoryPartitionManagementJob.class).withIdentity(JOB_NAME + alertMessageHistoryPartManJobName).storeDurably().build();
     }
@@ -231,6 +241,9 @@ public class JobConfig {
 
         // cortex metrics 历史数据删除
         createCronScheduleJob(cortexHistoryDataDelJobName, cortexHistoryDataDelJobDetail(), StringUtils.isEmpty(cortexHistoryDataDelJobCron) ? "0 0 0/2 * * ?" : cortexHistoryDataDelJobCron);
+
+        // loki logs 历史数据删除
+        createCronScheduleJob(lokiHistoryDataDelJobName, lokiHistoryDataDelJobDetail(), StrUtil.emptyToDefault(lokiHistoryDataDelJobCron, "0 0 0/2 * * ?"));
 
         // alert message History Partition Management 分区管理
         createCronScheduleJob(alertMessageHistoryPartManJobName, alertMessageHistoryPartManJobDetail(), StringUtils.isEmpty(alertMessageHistoryPartManJobCron) ? "0 0 0 1/1 * ?" : alertMessageHistoryPartManJobCron);
