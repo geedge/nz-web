@@ -143,6 +143,8 @@ public enum RCode {
     PLAYLIST_INTVL_ISNULL(141004, "Interval cannot be empty"),
     PLAYLIST_DASHBOARD_IDS_ISNULL(141005, "Dashboard id collection cannot be empty"),
     PLAYLIST_NAME_DUPLICATE(142006, "Name duplicate"),
+    PLAYLIST_MODE_ERROR(149007, "Mode must be normal, tv and se"),
+    PLAYLIST_MODE_ISNULL(141008, "Mode cannot be empty"),
 
     /**
      * project菜单项相关
