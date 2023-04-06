@@ -49,7 +49,8 @@ public class VisualPlaylistController {
     public R savePlaylist(@RequestBody VisualPlaylist playlist) {
         ValidateUtils.is(playlist.getName()).notNull(RCode.PLAYLIST_NAME_ISNULL).maxLength(64)
                 .and(playlist.getIntvl()).notNull(RCode.PLAYLIST_INTVL_ISNULL)
-                .and(playlist.getDashboardIds()).notNull(RCode.PLAYLIST_DASHBOARD_IDS_ISNULL);
+                .and(playlist.getDashboardIds()).notNull(RCode.PLAYLIST_DASHBOARD_IDS_ISNULL)
+                .and(playlist.getMode()).notNull(RCode.PLAYLIST_MODE_ISNULL);
 
         return R.ok().putData("id", playlistService.savePlaylist(playlist));
     }
@@ -63,7 +64,8 @@ public class VisualPlaylistController {
         ValidateUtils.is(playlist.getId()).notNull(RCode.PLAYLIST_ID_ISNULL)
                 .and(playlist.getName()).notNull(RCode.PLAYLIST_NAME_ISNULL).maxLength(64)
                 .and(playlist.getIntvl()).notNull(RCode.PLAYLIST_INTVL_ISNULL)
-                .and(playlist.getDashboardIds()).notNull(RCode.PLAYLIST_DASHBOARD_IDS_ISNULL);
+                .and(playlist.getDashboardIds()).notNull(RCode.PLAYLIST_DASHBOARD_IDS_ISNULL)
+                .and(playlist.getMode()).notNull(RCode.PLAYLIST_MODE_ISNULL);;
 
         return R.ok().putData("id", playlistService.updatePlaylist(playlist));
     }

@@ -33,6 +33,14 @@ public class VisualPlaylist implements Serializable {
     private Integer intvl;
 
     /**
+     * 模式
+     * 可选：normal、tv、se
+     * 默认：normal
+     */
+    @TableField(value = "`mode`")
+    private String mode;
+
+    /**
      * dashboard id list
      * json 数组，例：[1,2]
      */

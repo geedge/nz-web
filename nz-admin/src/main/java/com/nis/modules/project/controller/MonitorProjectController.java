@@ -1,6 +1,9 @@
 package com.nis.modules.project.controller;
 
+import cn.hutool.core.util.StrUtil;
+import com.alibaba.fastjson.JSONObject;
 import com.nis.common.annotation.SysLog;
+import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.project.entity.MonitorProject;
@@ -15,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -237,6 +239,52 @@ public class MonitorProjectController extends AbstractController {
 
         topoService.updateProjectTopo(projectId, topoConfig);
         return R.ok();
+    }
+
+
+    @PostMapping("/project/topo/{projectId}/import")
+    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.TOPO)
+    @RequiresPermissions({"project:topo:update"})
+    public R topoImport(@PathVariable(required = false) Integer projectId,
+                        @RequestBody(required = false) Map<String, Object> requestBody) {
+        requestBody = Tool.MapUtil.defaultIfEmpty(requestBody, Tool.MapUtil.empty());
+
+        Map topo = (Map) requestBody.getOrDefault("topo", Tool.MapUtil.empty());
+
+        List icons = (List) requestBody.getOrDefault("icons", Tool.ListUtil.empty());
+        List<TopoIcon> topoIcons = JSONObject.parseArray(JSONUtil.toJsonStr(icons), TopoIcon.class);
+
+        // validate param
+        ValidateUtils.is(projectId).notNull(RCode.PROJECT_ID_ISNULL)
+                .and(topo).notNull(RCode.PROJECT_TOPO_CONF_ISNULL)
+                .and(topoIcons).notNull(RCode.PROJECT_ICON_ISNULL);
+
+        MonitorProject project = monitorProjectService.getById(projectId);
+        ValidateUtils.is(project).notNull(RCode.PROJECT_NOTFOUND);
+
+        for (TopoIcon icon : topoIcons) {
+            String type = icon.getType();
+            ValidateUtils.is(icon.getName()).notNull(RCode.PROJECT_TOPOICON_NAME_ISNULL).maxLength(64)
+                    .and(icon.getUnit()).notNull(RCode.PROJECT_TOPOICON_UNIT_ISNULL).maxLength(64)
+                    .and(icon.getBytes()).notNull(RCode.PROJECT_TOPOICON_FILE_ISNULL)
+                    .and(type).notNull(RCode.PROJECT_ICON_TYPE_ISNULL);
+
+            if (Tool.BooleanUtil.negate(StrUtil.equalsAnyIgnoreCase(type, "jpg", "jpeg", "png", "gif", "svg"))) {
+                throw new NZException(RCode.PROJECT_TOPOICON_FILETYPE_ERROR);
+            }
+        }
+
+        topoService.topoImport(projectId, topo, topoIcons);
+        return R.ok();
+    }
+
+    @GetMapping("/project/topo/{projectId}/export")
+    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.TOPO)
+    public void topoExport(@PathVariable(required = false) Integer projectId,
+                           HttpServletResponse response) {
+        ValidateUtils.is(projectId).notNull(RCode.PROJECT_ID_ISNULL);
+
+        topoService.topoExport(projectId, response);
     }
 
 }

@@ -98,6 +98,11 @@ public class VisualPlaylistServiceImpl extends ServiceImpl<VisualPlaylistDao, Vi
         if (ToolUtil.isNotEmpty(tVisualPlaylist)) {
             throw new NZException(RCode.PLAYLIST_NAME_DUPLICATE);
         }
+
+        // mode
+        if (Tool.BooleanUtil.negate(StrUtil.equalsAnyIgnoreCase(playlist.getMode(), "normal", "tv", "se"))) {
+            throw new NZException(RCode.PLAYLIST_MODE_ERROR);
+        }
     }
 
     @Override

@@ -14,6 +14,7 @@ CREATE TABLE `visual_playlist`  (
   `id` int(10) NOT NULL AUTO_INCREMENT,
   `name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `intvl` int(10) NOT NULL DEFAULT 300 COMMENT '间隔; 单位： s; 默认：300',
+  `mode` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '模式：可选值：normal、tv、se',
   `dashboard_ids` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'json 数组，例：[1,2]',
   `uid` int(10) NOT NULL COMMENT '更新人 id',
   `uts` bigint(20) NOT NULL COMMENT '更新时间戳',
