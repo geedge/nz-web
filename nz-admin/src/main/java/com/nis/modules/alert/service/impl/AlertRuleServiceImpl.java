@@ -1,13 +1,27 @@
 package com.nis.modules.alert.service.impl;
 
-import cn.hutool.core.collection.ListUtil;
-import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.map.MapUtil;
-import cn.hutool.core.util.BooleanUtil;
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
-import com.alibaba.fastjson.JSONObject;
+import java.io.IOException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -15,9 +29,21 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.smartvalidate.utils.RegexUtil;
-import com.nis.common.utils.*;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.ImportValidateUtil;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.Query;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.StringUtils;
+import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
+import com.nis.common.utils.YamlUtil;
 import com.nis.modules.alert.dao.AlertRuleDao;
-import com.nis.modules.alert.entity.*;
+import com.nis.modules.alert.entity.AlertMessageEntity;
+import com.nis.modules.alert.entity.AlertNotifyMethod;
+import com.nis.modules.alert.entity.AlertRuleEntity;
+import com.nis.modules.alert.entity.AlertRuleImportEnum;
+import com.nis.modules.alert.entity.AlertSeverityConf;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertNotifyMethodService;
 import com.nis.modules.alert.service.AlertRuleService;
@@ -30,21 +56,14 @@ import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.io.FilenameUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import cn.hutool.core.collection.ListUtil;
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 
 @Service("alertRuleService")
 public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEntity> implements AlertRuleService {
@@ -81,6 +100,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     @Autowired
     private BasicImportAndExportServices basicImportAndExportServices;
 
+    
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         String receiverStr = (String) params.get("receiver");
@@ -192,19 +212,19 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
 
         // 仅metrics类型需要校验rule表达式  logs和snmp trap暂不支持
-        if (1 == alertRule.getType()) {
-            // 校验expr
-            boolean checkRule = false;
-            try {
-                checkRule = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(alertRule));
-            } catch (IOException e) {
-                log.error(String.format("expr校验失败,rule信息是：%s,错误信息是：%s", alertRule.toString(), e));
-            }
-
-            if (!checkRule) {
-                throw new NZException(RCode.ALERTRULE_EXPR_ERROR);
-            }
-        }
+//        if (1 == alertRule.getType()) {
+//            // 校验expr
+//            boolean checkRule = false;
+//            try {
+//                checkRule = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(alertRule));
+//            } catch (IOException e) {
+//                log.error(String.format("expr校验失败,rule信息是：%s,错误信息是：%s", alertRule.toString(), e));
+//            }
+//
+//            if (!checkRule) {
+//                throw new NZException(RCode.ALERTRULE_EXPR_ERROR);
+//            }
+//        }
 
         // 校验关联用户
         String receiver = alertRule.getReceiver();
@@ -435,11 +455,8 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             AlertRuleEntity ruleEntity = new AlertRuleEntity();
             ruleEntity.setName(name);
             ruleEntity.setExpr(expr);
-            ruleEntity.setOperator(operator);
-            ruleEntity.setThreshold(StrUtil.isNotEmpty(threshold) ? Double.valueOf(threshold) : null);
             ruleEntity.setUnit(Constant.ALERT_RULE_UNIT_MAP.get(StrUtil.emptyToDefault(unit, "none")));
             ruleEntity.setLast(StrUtil.isNotEmpty(last) ? Double.valueOf(last).intValue() : null);
-            ruleEntity.setSeverityId(ToolUtil.isEmpty(alertSeverityConf)?null:alertSeverityConf.getId());
             ruleEntity.setSummary(summary);
             ruleEntity.setDescription(description);
             ruleEntity.setReceiver(receiver);
@@ -457,17 +474,17 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             ruleEntity.setInr(intervalIntVal);
             ruleEntity.setTimeout(timeoutIntVal);
             // 仅metrics类型需要校验rule表达式  logs和snmp trap暂不支持
-            if (StrUtil.equals("1", type)) {
-                try {
-                    boolean checkRule = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(ruleEntity));
-                    if (!checkRule) {
-                        validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(AlertRuleImportEnum.EXPR.getIndex()));
-                    }
-                } catch (Exception e) {
-                    log.error(e, "expr validate error,rule info: {}", JSONObject.toJSONString(ruleEntity));
-                    validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(AlertRuleImportEnum.EXPR.getIndex()));
-                }
-            }
+//            if (StrUtil.equals("1", type)) {
+//                try {
+//                    boolean checkRule = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(ruleEntity));
+//                    if (!checkRule) {
+//                        validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(AlertRuleImportEnum.EXPR.getIndex()));
+//                    }
+//                } catch (Exception e) {
+//                    log.error(e, "expr validate error,rule info: {}", JSONObject.toJSONString(ruleEntity));
+//                    validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(AlertRuleImportEnum.EXPR.getIndex()));
+//                }
+//            }
 
             List<Map<String, String>> errMsgForThisLine = validateUtil.getImportErrMsgForThisLine(lineNum);
             if (BooleanUtil.and(Tool.StrUtil.equals("0", ignoreError), Tool.CollUtil.isNotEmpty(errMsgForThisLine))) {
@@ -600,11 +617,8 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             tempList.add(ObjectUtil.defaultIfNull(rule.getInr(), "").toString());
             tempList.add(ObjectUtil.defaultIfNull(rule.getTimeout(), "").toString());
             tempList.add(rule.getExpr());
-            tempList.add(rule.getOperator());
-            tempList.add(rule.getThreshold() == null ? "" : rule.getThreshold() + "");
             tempList.add(getUnitDescrByVal(rule.getUnit()));
             tempList.add(ObjectUtil.defaultIfNull(rule.getLast(),"").toString());
-            tempList.add(rule.getSeverity().getName());
             tempList.add(rule.getSummary());
             tempList.add(rule.getDescription());
             receiveIds = rule.getReceiver();
@@ -660,12 +674,10 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     }
 
     private void validateParam(AlertRuleEntity alertRule) {
-        String operator = alertRule.getOperator();
         Integer unit = alertRule.getUnit();
         ValidateUtils.is(alertRule.getName()).notNull(RCode.ALERTRULE_NAME_ISNULL).maxLength(64)
                 .and(alertRule.getExpr()).notNull(RCode.ALERTRULE_EXPR_ISNULL).maxLength(512)
                 .and(alertRule.getLast()).notNull(RCode.ALERTRULE_LAST_ISNULL).min(1, RCode.ALERTRULE_LAST_ISNOTPOSITIVE)
-                .and(alertRule.getSeverityId()).notNull(RCode.ALERTRULE_SEVERITY_ISNULL)
                 .and(alertRule.getSummary()).notNull(RCode.ALERTRULE_SUMMARY_ISNULL).maxLength(512)
                 .and(alertRule.getDescription()).maxLength(512)
                 .and(alertRule.getType()).notNull(RCode.ALERTRULE_TYPE_ISNULL);
@@ -683,20 +695,11 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             }
         } else {
             // 除 snmp trap 类型外，threshold unit 必填
-            ValidateUtils.is(alertRule.getThreshold()).notNull(RCode.ALERTRULE_THRESHOLD_ISNULL).maxLength(20)
-                    .and(unit).notNull(RCode.ALERTRULE_UNIT_ISNULL)
-                    .and(operator).notNull(RCode.ALERTRULE_OPERATOR_ISNULL);
+            ValidateUtils.is(unit).notNull(RCode.ALERTRULE_UNIT_ISNULL);
 
             List<Integer> unitList = new ArrayList(Constant.ALERT_RULE_UNIT_MAP.values());
             if (unit < Collections.min(unitList) || unit > Collections.max(unitList)) {
                 throw new NZException(RCode.ALERTRULE_UNIT_INVALIDE);
-            }
-
-            operator = operator.replaceAll(" ", "");
-            alertRule.setOperator(operator);
-
-            if (!Constant.RULE_OPERATORS.contains(operator)) {
-                throw new NZException(RCode.ALERTRULE_OPERATOR_INVALIDE);
             }
         }
 
@@ -787,12 +790,10 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 	@Override
 	public AlertRuleEntity queryAlertRule(Integer id) {
 		AlertRuleEntity alertRule = alertRuleDao.selectById(id);
-
+		
         List<AlertMessageEntity> alertMessageList = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getRuleId, id));
         alertRule.setAlertNum(alertMessageList.size());
-
-        Map<Integer, Long> ruleIdAndAlertCountMap = alertMessageList.parallelStream().collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
-        List<Map<String, Object>> alert = statService.getSeverityStatByRuleMsgCount(Tool.MapUtil.empty(), ruleIdAndAlertCountMap);
+        List<Map<String, Object>> alert = alertMessageService.getAlertsStatBySeverity("rule",id);
         alertRule.setAlert(alert);
 
 		if(ObjectUtil.isNotEmpty(alertRule)) {
@@ -833,22 +834,22 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
      * @param ids
      * @return
      */
-    @Override
-    public Map<String, List<Integer>> getSeverityNameAndRuleIdsMap(Integer... ids) {
-        List<AlertSeverityConf> severityConfList = alertSeverityService.list();
-        Map<Integer, String> severityIdAndNameMap = severityConfList.stream().collect(Collectors.toMap(AlertSeverityConf::getId, AlertSeverityConf::getName));
-
-        List<AlertRuleEntity> ruleList = this.list(new LambdaQueryWrapper<AlertRuleEntity>().in(AlertRuleEntity::getId, Arrays.asList(ids)));
-        Map<Integer, List<AlertRuleEntity>> severityIdAndRules = ruleList.stream().collect(Collectors.groupingBy(AlertRuleEntity::getSeverityId));
-
-        Map<String, List<Integer>> severityNameAndRuleIdsMap = new HashMap<>(8);
-        for (Map.Entry<Integer, String> entry : severityIdAndNameMap.entrySet()) {
-            Integer severityId = entry.getKey();
-            String severityName = entry.getValue();
-            List<AlertRuleEntity> rules = Tool.ObjectUtil.isNull(severityIdAndRules.get(severityId)) ? new ArrayList<>() : severityIdAndRules.get(severityId);
-            List<Integer> ruleIds = rules.stream().map(AlertRuleEntity::getId).collect(Collectors.toList());
-            severityNameAndRuleIdsMap.put(severityName, ruleIds);
-        }
-        return severityNameAndRuleIdsMap;
-    }
+//    @Override
+//    public Map<String, List<Integer>> getSeverityNameAndRuleIdsMap(Integer... ids) {
+//        List<AlertSeverityConf> severityConfList = alertSeverityService.list();
+//        Map<Integer, String> severityIdAndNameMap = severityConfList.stream().collect(Collectors.toMap(AlertSeverityConf::getId, AlertSeverityConf::getName));
+//
+//        List<AlertRuleEntity> ruleList = this.list(new LambdaQueryWrapper<AlertRuleEntity>().in(AlertRuleEntity::getId, Arrays.asList(ids)));
+//        Map<Integer, List<AlertRuleEntity>> severityIdAndRules = ruleList.stream().collect(Collectors.groupingBy(AlertRuleEntity::getSeverityId));
+//
+//        Map<String, List<Integer>> severityNameAndRuleIdsMap = new HashMap<>(8);
+//        for (Map.Entry<Integer, String> entry : severityIdAndNameMap.entrySet()) {
+//            Integer severityId = entry.getKey();
+//            String severityName = entry.getValue();
+//            List<AlertRuleEntity> rules = Tool.ObjectUtil.isNull(severityIdAndRules.get(severityId)) ? new ArrayList<>() : severityIdAndRules.get(severityId);
+//            List<Integer> ruleIds = rules.stream().map(AlertRuleEntity::getId).collect(Collectors.toList());
+//            severityNameAndRuleIdsMap.put(severityName, ruleIds);
+//        }
+//        return severityNameAndRuleIdsMap;
+//    }
 }

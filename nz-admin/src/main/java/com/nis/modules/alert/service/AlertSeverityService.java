@@ -10,7 +10,13 @@ import java.util.Map;
 public interface AlertSeverityService extends IService<AlertSeverityConf> {
 
     List<AlertSeverityConf> queryList(Map<String, Object> params);
-
+    /**
+     * 根据条件查询 severityConf
+     * @param params
+     * @return {severityId:severityConf, ...}
+     */
+    Map<Integer,AlertSeverityConf> queryMap(Map<String, Object> params);
+    
     void validateSeverity(AlertSeverityConf alertSeverityConf, boolean isModify);
 
     void setWeight(AlertSeverityConf alertSeverityConf);

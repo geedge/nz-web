@@ -161,60 +161,60 @@ public class AgentConfigUtil {
 	 *
 	 * @return
 	 */
-	public Map generateRuleYml() {
-		log.debug("rule.yml 开始生成");
-		// sys_config 配置表信息
-		List<SysConfigEntity> configEntityList = sysConfigService.list();
-		Map<String, String> configMap = configEntityList.stream()
-				.collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
-
-		List<AlertRuleEntity> alertRuleEntities = ruleService.list(new LambdaQueryWrapper<AlertRuleEntity>()
-				.ne(AlertRuleEntity::getBuildIn, 1).eq(AlertRuleEntity::getState, 1));
-		List<AlertSeverityConf> severityConfs = alertSeverityService.list();
-		Map<Integer, String> alertSeverityIdAndNameMap = severityConfs.stream()
-				.collect(Collectors.toMap(AlertSeverityConf::getId, AlertSeverityConf::getName));
-
-		List<Map> ruleList = new ArrayList<>();
-		for (AlertRuleEntity entity : alertRuleEntities) {
-			Map map = new LinkedHashMap(16);
-			map.put("id", entity.getId());
-			map.put("expr", ToolUtil.string2Json(entity.getExpr()));
-			map.put("operator", entity.getOperator());
-			// 以字符串方式替换 double 类型，保证不丢失精度
-			map.put("threshold", entity.getThreshold() + "");
-			map.put("last", entity.getLast());
-
-			String severityName = alertSeverityIdAndNameMap.get(entity.getSeverityId());
-			map.put("severity_name", ToolUtil.string2Json(severityName));
-			map.put("severity_id", entity.getSeverityId());
-			map.put("summary", ToolUtil.string2Json(entity.getSummary()));
-			map.put("description", ToolUtil.string2Json(entity.getDescription()));
-			ruleList.add(map);
-		}
-
-		Map params = new LinkedHashMap(4);
-		// alert 方式实现 endpoint state -- 该方案不再使用，兼容未删除
-		String endpointAlertPush = configMap.get(Constant.ENDPOINT_ALERT_PUSH);
-		if (StrUtil.equals(endpointAlertPush, "1")) {
-			params.put("endpointAlert", true);
-		} else {
-			params.put("endpointAlert", false);
-		}
-		params.put("ruleList", ruleList);
-
-		Map map = new HashMap();
-		String content = "";
-		try {
-			Template template = TemplateUtil.stringToTemplate(configMap.get(Constant.SYSCONFIG_KEY_PROM_RULE_TMPL),
-					Constant.SYSCONFIG_KEY_PROM_RULE_TMPL);
-			content = FreeMarkerTemplateUtils.processTemplateIntoString(template, params);
-			map = JSONObject.parseObject(content, LinkedHashMap.class, Feature.OrderedField);
-		} catch (IOException | TemplateException | RuntimeException e) {
-			log.error("rule 模板生成失败，模板内容:" + JSONObject.toJSONString(content), e);
-		}
-		log.debug("rule.yml 生成结束");
-		return map;
-	}
+//	public Map generateRuleYml() {
+//		log.debug("rule.yml 开始生成");
+//		// sys_config 配置表信息
+//		List<SysConfigEntity> configEntityList = sysConfigService.list();
+//		Map<String, String> configMap = configEntityList.stream()
+//				.collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
+//
+//		List<AlertRuleEntity> alertRuleEntities = ruleService.list(new LambdaQueryWrapper<AlertRuleEntity>()
+//				.ne(AlertRuleEntity::getBuildIn, 1).eq(AlertRuleEntity::getState, 1));
+//		List<AlertSeverityConf> severityConfs = alertSeverityService.list();
+//		Map<Integer, String> alertSeverityIdAndNameMap = severityConfs.stream()
+//				.collect(Collectors.toMap(AlertSeverityConf::getId, AlertSeverityConf::getName));
+//
+//		List<Map> ruleList = new ArrayList<>();
+//		for (AlertRuleEntity entity : alertRuleEntities) {
+//			Map map = new LinkedHashMap(16);
+//			map.put("id", entity.getId());
+//			map.put("expr", ToolUtil.string2Json(entity.getExpr()));
+//			map.put("operator", entity.getOperator());
+//			// 以字符串方式替换 double 类型，保证不丢失精度
+//			map.put("threshold", entity.getThreshold() + "");
+//			map.put("last", entity.getLast());
+//
+//			String severityName = alertSeverityIdAndNameMap.get(entity.getSeverityId());
+//			map.put("severity_name", ToolUtil.string2Json(severityName));
+//			map.put("severity_id", entity.getSeverityId());
+//			map.put("summary", ToolUtil.string2Json(entity.getSummary()));
+//			map.put("description", ToolUtil.string2Json(entity.getDescription()));
+//			ruleList.add(map);
+//		}
+//
+//		Map params = new LinkedHashMap(4);
+//		// alert 方式实现 endpoint state -- 该方案不再使用，兼容未删除
+//		String endpointAlertPush = configMap.get(Constant.ENDPOINT_ALERT_PUSH);
+//		if (StrUtil.equals(endpointAlertPush, "1")) {
+//			params.put("endpointAlert", true);
+//		} else {
+//			params.put("endpointAlert", false);
+//		}
+//		params.put("ruleList", ruleList);
+//
+//		Map map = new HashMap();
+//		String content = "";
+//		try {
+//			Template template = TemplateUtil.stringToTemplate(configMap.get(Constant.SYSCONFIG_KEY_PROM_RULE_TMPL),
+//					Constant.SYSCONFIG_KEY_PROM_RULE_TMPL);
+//			content = FreeMarkerTemplateUtils.processTemplateIntoString(template, params);
+//			map = JSONObject.parseObject(content, LinkedHashMap.class, Feature.OrderedField);
+//		} catch (IOException | TemplateException | RuntimeException e) {
+//			log.error("rule 模板生成失败，模板内容:" + JSONObject.toJSONString(content), e);
+//		}
+//		log.debug("rule.yml 生成结束");
+//		return map;
+//	}
 
 	/**
 	 * 生成 cortex.yml

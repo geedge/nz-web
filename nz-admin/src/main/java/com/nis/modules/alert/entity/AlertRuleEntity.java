@@ -1,21 +1,22 @@
 package com.nis.modules.alert.entity;
 
+import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
+
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.common.utils.Tool;
 import com.nis.modules.sys.entity.SysUserEntity;
+
+import cn.hutool.core.lang.TypeReference;
 import lombok.Data;
 
-import java.io.Serializable;
-import java.util.List;
-
 /**
- *
- *
- * @author song
- * @email
- * @date 2019-11-25 10:11:01
+ * @author fang
+ * 
  */
 @Data
 @TableName("alert_rule")
@@ -40,12 +41,12 @@ public class AlertRuleEntity implements Serializable {
 	/**
 	 * 比较符号
 	 */
-	private String operator;
+//	private String operator;
 
 	/**
 	 * 阈值
 	 */
-	private Double threshold;
+//	private Double threshold;
 
 	/**
 	 * 单位
@@ -58,7 +59,7 @@ public class AlertRuleEntity implements Serializable {
 	/**
 	 * 告警级别
 	 */
-	private Integer severityId;
+//	private Integer severityId;
 	/**
 	 * 告警摘要
 	 */
@@ -148,7 +149,11 @@ public class AlertRuleEntity implements Serializable {
 	private Integer timeout;
 
 	/**
-	 * 收藏标识： 1：收藏  0：未收藏
+	 * 自定义标签，格式: [{name:"abc",value:"value1"}]
+	 */
+	private String extLabels;
+	/**
+	 * 收藏标识： 1：收藏 0：未收藏
 	 */
 	@TableField(exist = false)
 	private Integer starred;
@@ -170,11 +175,17 @@ public class AlertRuleEntity implements Serializable {
 	@TableField(exist = false)
 	private List<AlertNotifyMethod> methods;
 
-	@TableField(exist = false)
-	private AlertSeverityConf severity;
+	/**
+	 * 多阈值告警条件
+	 */
+	private String condition;
+	
+//	@TableField(exist = false)
+//	private AlertSeverityConf severity;
 
 	@TableField(exist = false)
 	private List alert;
+
 	/**
 	 * 计算 alert rule hash id
 	 *
@@ -184,20 +195,26 @@ public class AlertRuleEntity implements Serializable {
 
 	public String getAlertRuleHashId() {
 		String content = new StringBuilder(AlertRuleEntity.class.getName()).append(id).append(name).append(expr)
-				.append(operator).append(threshold).append(unit).append(last).append(severityId).append(summary)
-				.append(description).append(autoExpired).append(schedEnable).append(schedDays).append(schedStime)
-				.append(schedEtime).append(notifyActive).append(notifyExpired).append(receiver).append(method)
-				.append(buildIn).append(seq).append(state).append(type).append(inr).append(timeout).toString();
+				.append(unit).append(last).append(summary).append(description).append(autoExpired).append(schedEnable)
+				.append(schedDays).append(schedStime).append(schedEtime).append(notifyActive).append(notifyExpired)
+				.append(receiver).append(method).append(buildIn).append(seq).append(state).append(type).append(inr)
+				.append(extLabels).append(timeout).append(Tool.JSONUtil.toJsonStr(condition)).toString();
 		return Tool.DigestUtil.sha1Hex(content);
 	}
 
 	/**
 	 * 获取 完整表达式 内容
-	 *
+	 * 1、当只有配置了一个告警阈值，返回  [expr] [operator] [value] 
+	 * 2、当配置多个告警阈值，返回 [expr]
 	 * @return
 	 */
 	public String getExpression() {
-		return String.format("%s %s %s", this.getExpr(), this.getOperator(), this.getThreshold());
+		List<ConditionItem> items = this.getConditionItems();
+		if (items.size() == 1) {
+			ConditionItem item = items.get(0);
+			return String.format("%s %s %s", this.getExpr(), item.getOperator(), item.getValue());
+		}
+		return this.getExpr();
 	}
 
 	public int getExpiredTimeout() {
@@ -208,5 +225,66 @@ public class AlertRuleEntity implements Serializable {
 		return timeout;
 	}
 
+	public List<Map<String,String>> getExtLabelList(){
+		if(Tool.StrUtil.isBlank(this.extLabels)) {
+			return Tool.ListUtil.empty();
+		}
+		TypeReference<List<Map<String, String>>> tr = new TypeReference<List<Map<String,String>>>() {};
+		return Tool.JSONUtil.toBean(this.extLabels, tr.getType(), true);
+	}
+	
+	/**
+	 * 获取告警阈值条件
+	 * @return
+	 */
+	public List<ConditionItem> getConditionItems() {
+		//1、string to bean
+		TypeReference<List<ConditionItem>> tr = new TypeReference<List<ConditionItem>>() {};
+		List<ConditionItem> items = Tool.JSONUtil.toBean(this.condition, tr.getType(), true);
+		//2、根据 告警优先级 排序
+		items.sort( (i1,i2) -> {
+			return i1.getWeight() - i2.getWeight();
+		});
+		return items;
+	}
+
+	@Data
+	public static class ConditionItem {
+		private Integer id;
+		private Integer weight;
+		private String operator;
+		private String value;
+
+		public boolean validate(String val) {
+			boolean result = false;
+			switch (operator) {
+			case "==":
+				result = (Tool.NumberUtil.parseDouble(value) == Tool.NumberUtil.parseDouble(val));
+				break;
+			case "!=":
+				result = (Tool.NumberUtil.parseDouble(value) == Tool.NumberUtil.parseDouble(val));;
+				break;
+			case ">":
+				result = (Tool.NumberUtil.parseDouble(value) == Tool.NumberUtil.parseDouble(val));;
+				break;
+			case "<":
+				result = (Tool.NumberUtil.parseDouble(value) == Tool.NumberUtil.parseDouble(val));;
+				break;
+			case ">=":
+				result = (Tool.NumberUtil.parseDouble(value) == Tool.NumberUtil.parseDouble(val));;
+				break;
+			case "<=":
+				result = (Tool.NumberUtil.parseDouble(value) == Tool.NumberUtil.parseDouble(val));;
+				break;
+			case "~=":
+				result = Pattern.matches(operator, val.toString());
+				break;
+			default:
+				
+				break;
+			}
+			return result;
+		}
+	}
 
 }

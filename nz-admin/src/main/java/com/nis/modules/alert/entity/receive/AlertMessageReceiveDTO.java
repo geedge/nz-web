@@ -1,13 +1,14 @@
 package com.nis.modules.alert.entity.receive;
 
-import cn.hutool.crypto.SecureUtil;
-import com.nis.common.utils.Tool;
-import lombok.Data;
-
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import com.nis.common.utils.Tool;
+
+import cn.hutool.crypto.SecureUtil;
+import lombok.Data;
 
 /**
  * 用来接收告警信息的DTO类
@@ -37,10 +38,21 @@ public class AlertMessageReceiveDTO implements Serializable {
     
     private String value;
     
+    /**
+     * 获取 标签中 severity_id 的值
+     * @return
+     */
+    public Integer getSeverityId() {
+    	return Tool.MapUtil.getInt(labels, "severity_id");
+    }
+    
 //    private Boolean snmptrap;
 
     public String genHashKey() {
-    	
-    	return SecureUtil.md5(Tool.JSONUtil.toJsonStr(labels));
+    	// 排除 severity_id，不同告警级别认定为同一告警
+    	Map<Object,Object> newHashMap = Tool.MapUtil.newHashMap(true);
+    	newHashMap.putAll(labels);
+    	newHashMap.remove("severity_id");
+    	return SecureUtil.md5(Tool.JSONUtil.toJsonStr(newHashMap));
     }
 }

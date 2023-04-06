@@ -21,7 +21,9 @@ import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.entity.AlertMessageEntity;
+import com.nis.modules.alert.entity.AlertSeverityConf;
 import com.nis.modules.alert.service.AlertMessageService;
+import com.nis.modules.alert.service.AlertSeverityService;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetModelImportEnum;
 import com.nis.modules.asset.entity.Dc;
@@ -109,7 +111,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
     @Autowired
     private SysUserStarredService starredService;
-
+    
     @Override
     public MonitorModule queryModuleInfo(Integer id) {
         MonitorModule module = this.getById(id);
@@ -128,9 +130,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
         List<AlertMessageEntity> alertMessageList = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getModuleId, module.getId()));
         module.setAlertNum(alertMessageList.size());
-
-        Map<Integer, Long> ruleIdAndAlertCountMap = alertMessageList.parallelStream().collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
-        List<Map<String, Object>> alert = statService.getSeverityStatByRuleMsgCount(Tool.MapUtil.empty(), ruleIdAndAlertCountMap);
+        List<Map<String, Object>> alert = alertMessageService.getAlertsStatBySeverity("rule",id);
         module.setAlert(alert);
 
         Integer dashboardId = module.getDashboardId();

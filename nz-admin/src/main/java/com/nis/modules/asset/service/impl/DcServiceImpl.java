@@ -18,7 +18,9 @@ import com.nis.common.utils.*;
 import com.nis.modules.agent.dao.AgentDao;
 import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.alert.entity.AlertMessageEntity;
+import com.nis.modules.alert.entity.AlertSeverityConf;
 import com.nis.modules.alert.service.AlertMessageService;
+import com.nis.modules.alert.service.AlertSeverityService;
 import com.nis.modules.asset.dao.CabinetDao;
 import com.nis.modules.asset.dao.DcDao;
 import com.nis.modules.asset.entity.AssetAsset;
@@ -111,7 +113,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
 
     @Autowired
     private IpamIpService ipamIpService;
-
+    
     @Override
     public Dc queryDcDetails(Integer id) {
         Dc dc = this.getById(id);
@@ -129,9 +131,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
 
         List<AlertMessageEntity> alertMessageList = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getDcId, dc.getId()));
         dc.setAlertNum(alertMessageList.size());
-
-        Map<Integer, Long> ruleIdAndAlertCountMap = alertMessageList.parallelStream().collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
-        List<Map<String, Object>> alert = statService.getSeverityStatByRuleMsgCount(Tool.MapUtil.empty(), ruleIdAndAlertCountMap);
+        List<Map<String, Object>> alert = alertMessageService.getAlertsStatBySeverity("rule",id);
         dc.setAlert(alert);
 
         Integer assetNum = assetService.count(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getDcId, dc.getId()));

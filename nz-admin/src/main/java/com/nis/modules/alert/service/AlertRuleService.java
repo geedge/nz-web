@@ -38,6 +38,6 @@ public interface AlertRuleService extends IService<AlertRuleEntity> {
 	
 	AlertRuleEntity queryAlertRule(Integer id);
 
-	Map<String, List<Integer>> getSeverityNameAndRuleIdsMap(Integer... ruleIds);
+//	Map<String, List<Integer>> getSeverityNameAndRuleIdsMap(Integer... ruleIds);
 }
 

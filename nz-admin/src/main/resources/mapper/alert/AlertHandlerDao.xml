@@ -81,7 +81,11 @@
 	
 	<!-- 更新 alert message endat时间 -->
 	<update id="updateMessageEndAt" >
-		update ${tableName} set end_at = #{endAt} ,last_at = #{lastAt} where id = #{id}
+		update ${tableName} set end_at = #{endAt} ,last_at = #{lastAt}
+		<if test="severityId != null">
+			,severity_id = #{severityId}
+		</if>
+		  where id = #{id}
 	</update>
 	
 	<!-- 更新 关闭 auto expired 功能的 告警消息 结束时间 -->

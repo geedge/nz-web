@@ -216,16 +216,16 @@ public class AutoConfigAgentJob extends QuartzJobBean {
 
             // 是否更新 rule.yml 配置
             String alertConfUpdate = sysConfigMap.get("nz_alert_rule_eval_enable");
-            Map alertYmlMap = configUtil.generateRuleYml();
-            if (ruleChangeFlag && StrUtil.equals("0", StrUtil.emptyToDefault(alertConfUpdate, "1"))) {
-                // 生成 alert.yml
-                // 如果 cortex 没有变更 就只更新 rule
-                if (!cortexChangeFlag) {
-                    this.justUpdateRuleConf(alertYmlMap, healthyPromServers);
-                }
-            }
+//            Map alertYmlMap = configUtil.generateRuleYml();
+//            if (ruleChangeFlag && StrUtil.equals("0", StrUtil.emptyToDefault(alertConfUpdate, "1"))) {
+//                // 生成 alert.yml
+//                // 如果 cortex 没有变更 就只更新 rule
+//                if (!cortexChangeFlag) {
+//                    this.justUpdateRuleConf(alertYmlMap, healthyPromServers);
+//                }
+//            }
             if (cortexChangeFlag) {
-                this.updateCortexConf(alertYmlMap, healthyPromServers);
+                this.updateCortexConf(healthyPromServers);
             }
         });
     }
@@ -734,7 +734,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
      * @param alertYmlMap
      * @param healthyAgents
      */
-    private void updateCortexConf(Map alertYmlMap, List<Agent> healthyAgents) {
+    private void updateCortexConf(List<Agent> healthyAgents) {
         // try Set Up Config To Down Agent Of Cortex
         ThreadUtil.execAsync(() -> {
             // get Cortex Component Down Agent List
@@ -758,9 +758,9 @@ public class AutoConfigAgentJob extends QuartzJobBean {
 
                 Map<String, Object> cortexConfigBody = new HashMap<>(4);
                 cortexConfigBody.put("config", cortexYml);
-                if ((supportAlertPromId == null || agent.getId().equals(supportAlertPromId)) && MapUtil.isNotEmpty(alertYmlMap)) {
-                    cortexConfigBody.put("rule", alertYmlMap);
-                }
+//                if ((supportAlertPromId == null || agent.getId().equals(supportAlertPromId)) && MapUtil.isNotEmpty(alertYmlMap)) {
+//                    cortexConfigBody.put("rule", alertYmlMap);
+//                }
                 String result = null;
                 String path = "/cortex/config";
                 try {

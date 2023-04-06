@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 @Service("alertSeverityService")
@@ -97,5 +98,16 @@ public class AlertSeverityServiceImpl extends ServiceImpl<AlertSeverityDao, Aler
     public void updateSeverity(AlertSeverityConf alertSeverityConf) {
         this.updateById(alertSeverityConf);
     }
+
+	@Override
+	public Map<Integer, AlertSeverityConf> queryMap(Map<String, Object> params) {
+		List<AlertSeverityConf> severityList = this.queryList(params);
+		if( Tool.CollUtil.isEmpty(severityList) ) {
+			return Tool.MapUtil.empty();
+		}
+		Map<Integer, AlertSeverityConf> severityIdMap = severityList.stream()
+				.collect(Collectors.toMap(AlertSeverityConf::getId, a -> a, (k1, k2) -> k1));
+		return severityIdMap;
+	}
 
 }

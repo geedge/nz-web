@@ -1,6 +1,7 @@
 package com.nis.modules.stat.service;
 
 import com.nis.common.utils.PageUtils;
+import com.nis.modules.alert.entity.AlertSeverityConf;
 import com.nis.modules.stat.entity.StatAnalysis;
 
 import java.util.List;
@@ -100,6 +101,6 @@ public interface StatService{
 	 * @param ruleIdAndAlertCountMap    key = ruleId , value = msgCount                example: 1:10  2:5 ...
 	 * @return List<Map < String, Object>> example: [{p1:55},{p2:22}...]
 	 */
-	List<Map<String, Object>> getSeverityStatByRuleMsgCount(Map<String, List<Integer>> severityNameAndRuleIdsMap, Map<Integer, Long> ruleIdAndAlertCountMap);
-
+//	List<Map<String, Object>> getSeverityStatByRuleMsgCount(Map<String, List<Integer>> severityNameAndRuleIdsMap, Map<Integer, Long> ruleIdAndAlertCountMap);
+//	List<Map<String, Object>> getSeverityStatByMsgCount(Map<Integer, Long> severityCountMap, Map<Integer, AlertSeverityConf> severityIdMap);
 }
