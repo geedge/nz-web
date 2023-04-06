@@ -2,6 +2,7 @@ package com.nis.modules.project.entity;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.nis.common.utils.Tool;
 import lombok.Data;
 
 /**
@@ -27,4 +28,9 @@ public class TopoIcon {
 	private Integer width;
 
 	private Integer height;
+
+	public void setName(String name) {
+		this.name = Tool.StrUtil.trim(name);
+	}
+
 }

@@ -83,7 +83,7 @@ public class TopoIconServiceImpl extends ServiceImpl<TopoIconDao, TopoIcon> impl
         String filename = file.getOriginalFilename();
         String fileType = FilenameUtils.getExtension(filename);
         // validate file type
-        if (Tool.BooleanUtil.negate(StrUtil.equalsAnyIgnoreCase(fileType, "jpg", "jpeg", "png", "gif"))) {
+        if (Tool.BooleanUtil.negate(StrUtil.equalsAnyIgnoreCase(fileType, "jpg", "jpeg", "png", "gif", "svg"))) {
             throw new NZException(RCode.PROJECT_TOPOICON_FILETYPE_ERROR);
         }
 

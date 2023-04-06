@@ -158,7 +158,7 @@ public enum RCode {
     PROJECT_REMOVE_ERROR(213006,"These projects contains module can't remove projects"),
     PROJECT_TOPOICON_FILE_ISNULL(211007,"Topo icon file is null"),
     PROJECT_TOPOICON_NAME_ISNULL(211008,"Topo icon name is null"),
-    PROJECT_TOPOICON_FILETYPE_ERROR(219009,"Topo icon file type must be jpg, jpeg, png and gif"),
+    PROJECT_TOPOICON_FILETYPE_ERROR(219009, "Topo icon file type must be jpg, jpeg, png, svg and gif"),
     PROJECT_ICONID_ISNULL(211010, "Topo icon id can not be empty"),
     PROJECT_ICON_NOTFOUND(216011, "Topo icon not found"),
     PROJECT_TOPOCONFIG_ISNULL(211012, "Project topo is null"),
@@ -169,6 +169,9 @@ public enum RCode {
     PROJECT_ICON_BIG_ERROR(214017,"Topo icon file is too big ,Please contact your administrator to modify the database configuration : max_allowed_packet"),
     PROJECT_RELOBJ_CAN_NOT_REMOVE(217018, "Project have associated data and cannot be deleted"),
     PROJECT_ICON_NAME_DUPLICATE(212019, "Topology icon name cannot be duplicate under the same unit"),
+    PROJECT_ICON_ISNULL(211020, "Icon cannot be empty"),
+    PROJECT_TOPO_CONF_ISNULL(211021, "Topology configuration cannot be empty"),
+    PROJECT_ICON_TYPE_ISNULL(211022, "Topology icon type cannot be empty"),
 
 
     /**
