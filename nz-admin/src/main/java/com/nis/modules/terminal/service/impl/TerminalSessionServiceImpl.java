@@ -166,7 +166,7 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
         } else {
             try {
                 TerminalClient terminalClient = TerminalSession.TERMINAL_SESSION.get(session);
-                log.info("[killSession] [get connected session] [terminal session: {}]", JSONUtil.toJsonStr(terminalClient));
+                log.info("[killSession] [get connected session] [terminal session: {}]", JSONUtil.toJsonStr(terminalClient.getWebSocketSession()));
                 String clientId = terminalClient.getClientId();
                 TerminalSessionEntity sessionEntity = this.getOne(new LambdaQueryWrapper<TerminalSessionEntity>().eq(TerminalSessionEntity::getUuid, clientId));
 
