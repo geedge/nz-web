@@ -6,7 +6,6 @@ import com.nis.common.utils.*;
 import com.nis.modules.project.entity.TopoIcon;
 import com.nis.modules.project.service.TopoIconService;
 import com.nis.modules.sys.controller.AbstractController;
-import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,7 +36,6 @@ public class TopologyController extends AbstractController {
      * unit 修改
      */
     @PutMapping("/topology/unit")
-    @RequiresPermissions({"project:topo:icon:save"})
     @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.TOPO)
     public R updateUnit(@RequestBody(required = false) Map<String, String> requestBody) {
         // validate param
@@ -59,7 +57,6 @@ public class TopologyController extends AbstractController {
      */
     @DeleteMapping("/topology/unit")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.TOPO)
-    @RequiresPermissions({"project:topo:icon:delete"})
     public R deleteUnit(String unit) {
         ValidateUtils.is(unit).notNull(RCode.PROJECT_TOPOICON_UNIT_ISNULL);
 
@@ -85,7 +82,6 @@ public class TopologyController extends AbstractController {
      */
     @PostMapping("/topology/icon")
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.TOPO)
-    @RequiresPermissions({"project:topo:icon:save"})
     public R saveIcon(TopoIcon icon, @RequestParam(value = "file", required = false) MultipartFile file) {
         ValidateUtils.is(icon.getName()).notNull(RCode.PROJECT_TOPOICON_NAME_ISNULL).maxLength(64)
                 .and(icon.getUnit()).notNull(RCode.PROJECT_TOPOICON_UNIT_ISNULL).maxLength(64)
@@ -100,7 +96,6 @@ public class TopologyController extends AbstractController {
      */
     @DeleteMapping("/topology/icon")
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.TOPO)
-    @RequiresPermissions({"project:topo:icon:delete"})
     public R removeIcon(@RequestParam Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.PROJECT_ID_ISNULL);
 

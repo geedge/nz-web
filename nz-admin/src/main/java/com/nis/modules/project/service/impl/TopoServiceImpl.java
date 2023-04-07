@@ -1,6 +1,7 @@
 package com.nis.modules.project.service.impl;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.lang.PatternPool;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
@@ -35,6 +36,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 
@@ -139,29 +141,7 @@ public class TopoServiceImpl extends ServiceImpl<TopoDao, Topo> implements TopoS
     @Transactional(rollbackFor = Exception.class)
     public void topoImport(Integer projectId, Map topoConfigMap, List<TopoIcon> icons) {
         // save Icons For Topo Import
-        List<TopoIcon> topoIcons = this.saveIconsForTopoImport(icons);
-
-        // pens
-        List<Map> pens = (List) topoConfigMap.getOrDefault("pens", Tool.ListUtil.list(true));
-        for (Map<String, Object> pen : pens) {
-            Object imageObj = pen.get("image");
-            String imageStr = StrUtil.toStringOrNull(imageObj);
-            if (Tool.ObjectUtil.isNull(imageStr)) {
-                continue;
-            }
-
-            // get iconName by file path. example: /png/2.5D-智慧城市/马路1.svg
-            String iconName = FilenameUtils.getBaseName(imageStr);
-            TopoIcon icon = topoIcons.stream().filter(topoIcon -> StrUtil.equals(topoIcon.getName(), iconName)).findFirst().orElse(null);
-            if (Tool.ObjectUtil.isNotNull(icon)) {
-                Integer iconId = icon.getId();
-
-                pen.put("imageId", iconId);
-                pen.put("image", StrUtil.concat(true, "/monitor/project/topo/icon/", iconId.toString(), "/0"));
-            }
-        }
-        // set pens
-        topoConfigMap.put("pens", pens);
+        this.saveIconsForTopoImport(icons);
 
         Topo topology = this.getOne(new LambdaQueryWrapper<Topo>().eq(Topo::getProjectId, projectId));
         if (Tool.ObjectUtil.isNull(topology)) {
@@ -189,9 +169,7 @@ public class TopoServiceImpl extends ServiceImpl<TopoDao, Topo> implements TopoS
      * @param icons
      * @return
      */
-    private List<TopoIcon> saveIconsForTopoImport(List<TopoIcon> icons) {
-        List<TopoIcon> topoImagesSource = Tool.ListUtil.list(true);
-
+    private void saveIconsForTopoImport(List<TopoIcon> icons) {
         // distinct
         icons = icons.stream().distinct().collect(Collectors.toList());
         for (TopoIcon icon : icons) {
@@ -201,13 +179,10 @@ public class TopoServiceImpl extends ServiceImpl<TopoDao, Topo> implements TopoS
                     .eq(TopoIcon::getName, icon.getName()));
 
             TopoIcon iconInDb = queryIconsByName.stream().filter(topoIconInDb -> StrUtil.equals(topoIconInDb.getBytes(), icon.getBytes())).findFirst().orElse(null);
-            if (iconInDb != null) {
-                // 能在数据库中找到相同的 icon （unit,name,bytes），则引用数据库中的 icon 即可
-                topoImagesSource.add(iconInDb);
-            } else {
+            // 在数据库中找不到相同的 icon （unit,name,bytes），新增
+            if (Tool.ObjectUtil.isNull(iconInDb)) {
                 // validate name
-                List<TopoIcon> list = iconService.list(new LambdaUpdateWrapper<TopoIcon>().eq(TopoIcon::getUnit, icon.getUnit()).eq(TopoIcon::getName, icon.getName()));
-                if (Tool.CollUtil.isNotEmpty(list)) {
+                if (Tool.CollUtil.isNotEmpty(queryIconsByName)) {
                     log.error("[saveIconsForTopoImport] [name duplicate] [icon: {}]", Tool.JSONUtil.toJsonStr(icon));
                     throw new NZException(RCode.PROJECT_ICON_NAME_DUPLICATE);
                 }
@@ -228,11 +203,8 @@ public class TopoServiceImpl extends ServiceImpl<TopoDao, Topo> implements TopoS
 
                 // save
                 iconService.save(icon);
-
-                topoImagesSource.add(icon);
             }
         }
-        return topoImagesSource;
     }
 
     @Override
@@ -252,23 +224,30 @@ public class TopoServiceImpl extends ServiceImpl<TopoDao, Topo> implements TopoS
             JSONObject jsonObject = JSONObject.parseObject(topoConfJsonStr);
             List<Map> pens = (List) jsonObject.getOrDefault("pens", Tool.ListUtil.list(true));
 
-            List<String> iconIdListUsedInTopo = Tool.ListUtil.list(true);
-            for (Map<String, Object> pen : pens) {
-                Object imageObj = pen.get("image");
-                String imageStr = StrUtil.toStringOrNull(imageObj);
-                if (Tool.ObjectUtil.isNull(imageStr)) {
-                    continue;
-                }
+            List<String> pensImageUrlList = pens.stream().filter(pen -> {
+                String imageStr = StrUtil.toStringOrNull(pen.get("image"));
+                return Tool.ObjectUtil.isNotNull(imageStr);
+            }).map(pen -> StrUtil.toStringOrNull(pen.get("image"))).distinct().collect(Collectors.toList());
 
-                String iconId = Tool.ReUtil.getGroup1("/monitor/project/topo/icon/(\\d+)/0", imageStr);
-                if (Tool.ObjectUtil.isNotEmpty(iconId)) {
-                    iconIdListUsedInTopo.add(iconId);
+            List<TopoIcon> iconListUsedInTopo = Tool.ListUtil.list(true);
+
+            // pen.image 数据格式  /topology/icon/{base64}/{unit}/{name}
+            Pattern pattern = PatternPool.get("/topology/icon/(0|1)/(.+)/(.+)");
+            for (String iconUrl : pensImageUrlList) {
+                boolean match = Tool.ReUtil.isMatch(pattern, iconUrl);
+                if (match) {
+                    String iconUnit = Tool.ReUtil.get(pattern, iconUrl, 2);
+                    String iconName = Tool.ReUtil.get(pattern, iconUrl, 3);
+                    List<TopoIcon> list = iconService.list(new LambdaUpdateWrapper<TopoIcon>().eq(TopoIcon::getUnit, iconUnit).eq(TopoIcon::getName, iconName));
+                    TopoIcon icon = list.stream().findFirst().orElse(null);
+                    if(Tool.ObjectUtil.isNotNull(icon)){
+                        icon.setId(null);
+                        iconListUsedInTopo.add(icon);
+                    }
                 }
             }
-            if (Tool.CollUtil.isNotEmpty(iconIdListUsedInTopo)) {
-                List<TopoIcon> iconList = iconService.list(new LambdaUpdateWrapper<TopoIcon>().in(TopoIcon::getId, iconIdListUsedInTopo));
-                resultJsonObject.put("icons", iconList);
-            }
+            iconListUsedInTopo = iconListUsedInTopo.stream().filter(Objects::nonNull).distinct().collect(Collectors.toList());
+            resultJsonObject.put("icons", iconListUsedInTopo);
         }
 
         File tmplFile = null;
