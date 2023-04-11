@@ -96,6 +96,7 @@ public class AlertHanlderThread implements Runnable {
 						// 3、判断是否为已经失效的告警消息
 						String endsAt = dto.getEndsAt();
 						DateTime nowDate = Tool.DateUtil.date();
+						Integer severityId = dto.getSeverityId(); //告警级别
 						//计算 expired 时间，参照 alert manager实现，当之后一直未收到alert message 时，根据此字段判断alert message 是否已经 expired
 						DateTime endTime = null;
 						if(Tool.StrUtil.isBlank(endsAt)) {
@@ -104,7 +105,7 @@ public class AlertHanlderThread implements Runnable {
 						} else {
 							endTime = Tool.DateUtil.parseUTC(endsAt);//Tool.DateUtil.parse(endsAt,Constant.ALERT_MESSAGE_DATE_FORMAT);
 						}
-						String hash = dto.genHashKey();// 计算hash 值
+						String hash = dto.genHashKey();// 计算hash 值，不包含 severity_id
 						//查找 redis 是否存在,value 为id
 						String activeRk = (String)operations.get(Tool.StrUtil.concat(true, Constant.ALERT_MESSAGE_ACTIVE_PRIX, hash));
 						String silenceRk = (String)operations.get(Tool.StrUtil.concat(true, Constant.ALERT_MESSAGE_SILENCE_PRIX, hash));
@@ -116,6 +117,9 @@ public class AlertHanlderThread implements Runnable {
 						message.setEndAt(endTime);
 						message.setHashKey(hash);
 						message.setLastAt(nowDate);//设置当前时间为 最近一次 告警接收时间
+						if( Tool.ObjectUtil.isNotNull(severityId) ) {
+							message.setSeverityId(severityId);
+						}
 						/**
 						 * endtime < now 超时过期 alert message 处理
 						 * redis key 存在说明首次处理

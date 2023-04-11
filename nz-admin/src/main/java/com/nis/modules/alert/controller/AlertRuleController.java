@@ -71,6 +71,12 @@ public class AlertRuleController {
 	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.ALERTRULE)
     @RequiresPermissions({"alert:rule:save"})
     public R save(@RequestBody AlertRuleEntity alertRule) {
+        ValidateUtils.is(alertRule.getName()).notNull(RCode.ALERTRULE_NAME_ISNULL).maxLength(64)
+                .and(alertRule.getExpr()).notNull(RCode.ALERTRULE_EXPR_ISNULL).maxLength(512)
+                .and(alertRule.getLast()).notNull(RCode.ALERTRULE_LAST_ISNULL).min(1, RCode.ALERTRULE_LAST_ISNOTPOSITIVE)
+                .and(alertRule.getSummary()).notNull(RCode.ALERTRULE_SUMMARY_ISNULL).maxLength(512)
+                .and(alertRule.getDescription()).maxLength(512)
+                .and(alertRule.getType()).notNull(RCode.ALERTRULE_TYPE_ISNULL);
 
         return R.ok().putData("id", alertRuleService.saveOrUpdateAlertRule(alertRule));
     }
@@ -82,7 +88,13 @@ public class AlertRuleController {
 	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERTRULE)
     @RequiresPermissions({"alert:rule:update"})
     public R update(@RequestBody AlertRuleEntity alertRule){
-        ValidateUtils.is(alertRule.getId()).notNull(RCode.ALERTRULE_ID_ISNULL);
+        ValidateUtils.is(alertRule.getId()).notNull(RCode.ALERTRULE_ID_ISNULL)
+                .and(alertRule.getName()).notNull(RCode.ALERTRULE_NAME_ISNULL).maxLength(64)
+                .and(alertRule.getExpr()).notNull(RCode.ALERTRULE_EXPR_ISNULL).maxLength(512)
+                .and(alertRule.getLast()).notNull(RCode.ALERTRULE_LAST_ISNULL).min(1, RCode.ALERTRULE_LAST_ISNOTPOSITIVE)
+                .and(alertRule.getSummary()).notNull(RCode.ALERTRULE_SUMMARY_ISNULL).maxLength(512)
+                .and(alertRule.getDescription()).maxLength(512)
+                .and(alertRule.getType()).notNull(RCode.ALERTRULE_TYPE_ISNULL);
 
         return R.ok().putData("id", alertRuleService.saveOrUpdateAlertRule(alertRule));
     }

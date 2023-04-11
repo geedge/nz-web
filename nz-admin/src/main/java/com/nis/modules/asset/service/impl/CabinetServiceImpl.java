@@ -168,17 +168,8 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
         Dc dc = dcService.getById(cabinet.getDcId());
         cabinet.setDc(dc);
 
-        List<AssetAsset> assetList = assetAssetService.list(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getCabinetId, cabinet.getId()));
-        cabinet.setAssetNum(assetList.size());
-        if(CollectionUtils.isNotEmpty(assetList)){
-            // 包含 asset 则统计 alert
-            List<Integer> cabinetAssetIdList = assetList.stream().map(AssetAsset::getId).collect(Collectors.toList());
-            List<AlertMessageEntity> alertList = alertMessageDao.getAlertsStatColumn();
-            long alertNum = alertList.stream().filter(alert -> cabinetAssetIdList.contains(alert.getAssetId())).count();
-            cabinet.setAlertNum((int) alertNum);
-        }else{
-            cabinet.setAlertNum(0);
-        }
+        Integer num = alertMessageDao.getAlertNumByCabinetId(id);
+        cabinet.setAlertNum(num);
         //收藏判断
         int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
                 .eq(SysUserStarredEntity::getTid,cabinet.getId())

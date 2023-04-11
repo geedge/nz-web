@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 
 @Service("alertMessageService")
@@ -137,4 +138,16 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
     public void cleanExpiredDataByTime(DateTime startCleanAlertMessageTime) {
         alertMessageDao.cleanExpiredDataByTime(startCleanAlertMessageTime);
     }
+    
+    /**
+     * 根据告警级别统计符合条件的激活状态告警数量
+     * @param type 可选值：asset, datacenter, project, module, endpoint, rule
+     * @param id
+     * @return List<Map<String,Long>>
+     */
+    @Override
+    public List<Map<String,Object>> getAlertsStatBySeverity(String type,Integer id) {
+    	return alertMessageDao.getAlertsStatBySeverity(type, id);
+    }
+    
 }

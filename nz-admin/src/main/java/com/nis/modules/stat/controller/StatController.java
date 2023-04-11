@@ -1,24 +1,19 @@
 package com.nis.modules.stat.controller;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
+import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.*;
+import com.nis.modules.stat.entity.StatAnalysis;
+import com.nis.modules.stat.service.StatService;
+import com.nis.modules.sys.controller.AbstractController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
-import com.nis.modules.stat.entity.StatAnalysis;
-import com.nis.modules.stat.service.StatService;
-import com.nis.modules.sys.controller.AbstractController;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/stat")

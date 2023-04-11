@@ -93,23 +93,52 @@
 		</foreach>;
 	</delete>
 
-	<select id="getAlertsStatColumn" resultType="com.nis.modules.alert.entity.AlertMessageEntity">
-		SELECT
-			rule_id,
-			project_id,
-			module_id,
-			asset_id,
-			endpoint_id,
-			dc_id
-		FROM
-			alert_message_active
+	<select id="getAlertNumByCabinetId" resultType="java.lang.Long">
+		select count(1) c from alert_message_active ama right join (
+			select id from asset_asset aa where cabinet_id = #{id}
+		) aac on ama.asset_id = aac.id
 	</select>
 	
-	<select id="removeAllData">
+	
+	<select id="getAlertsStatBySeverity" resultType="java.util.Map">
+	
+		select conf.name as priority, IFNULL(cnt.c,0) as num from alert_severity_conf conf 
+		left join (
+			SELECT
+				severity_id,
+				count(1) c
+			FROM
+				alert_message_active
+			WHERE 
+				<choose>
+				    <when test="type == 'asset'">
+				        asset_id = #{id}
+				    </when>
+				    <when test="type == 'rule'">
+				        rule_id = #{id}
+				    </when>
+				    <when test="type == 'project'">
+				        project_id = #{id}
+				    </when>
+				    <when test="type == 'module'">
+				        module_id = #{id}
+				    </when>
+				    <when test="type == 'endpoint'">
+				        endpoint_id = #{id}
+				    </when>
+				    <when test="type == 'datacenter'">
+				        dc_id = #{id}
+				    </when>
+				</choose>
+		) cnt on conf.id = cnt.severity_id
+		order by conf.weight
+	</select>
+	
+	<delete id="removeAllData">
 		delete from alert_message_active;
 		delete from alert_message_history;
 		delete from alert_message_silence;
-	</select>
+	</delete>
 
 	<delete id="cleanExpiredDataByTime">
 		delete from alert_message_history where start_at &lt;= #{startCleanAlertMessageTime}

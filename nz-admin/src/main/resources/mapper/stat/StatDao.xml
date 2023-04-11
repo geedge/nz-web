@@ -403,7 +403,7 @@
     	</if>
     	group by ar.severity_id
     </select>
-    
+
     <select id="selectAlertMessageTotal" resultMap="statAnalysis">
     	select count(*) as num
     	from alert_message_active am
@@ -868,9 +868,9 @@
 	        	</if>
 	        	<if test="params.scopeList.contains(&quot;alertrule&quot;)">
 					select 
-						'alertrule' as type, ar.id ,ar.name, CONCAT( ac.name,' / ' ,( CASE ar.type WHEN 1 THEN 'Metrics' WHEN 2 THEN 'Logs' WHEN 3 THEN 'SNMPTRAP' ELSE 'Unkown' END )) as sub 
+						'alertrule' as type, ar.id ,ar.name, CONCAT(( CASE ar.type WHEN 1 THEN 'Metrics' WHEN 2 THEN 'Logs' WHEN 3 THEN 'SNMPTRAP' ELSE 'Unkown' END ),' / ', ar.expr) as sub
 					from 
-						alert_rule ar  LEFT JOIN alert_severity_conf ac on ar.severity_id = ac.id
+						alert_rule ar
 					<if test="params.q != null and params.q != ''">
 					where
 						locate(#{params.q},ar.name)
@@ -956,9 +956,9 @@
 	        	</if>
 	        	<if test="params.scopeList.contains(&quot;alertrule&quot;)">
 					select 
-						'alertrule' as type, ar.id ,ar.name, CONCAT( ac.name,' / ' ,( CASE ar.type WHEN 1 THEN 'Metrics' WHEN 2 THEN 'Logs' WHEN 3 THEN 'SNMPTRAP' ELSE 'Unkown' END )) as sub 
+						'alertrule' as type, ar.id ,ar.name, CONCAT(( CASE ar.type WHEN 1 THEN 'Metrics' WHEN 2 THEN 'Logs' WHEN 3 THEN 'SNMPTRAP' ELSE 'Unkown' END ),' / ', ar.expr) as sub
 					from 
-						alert_rule ar  LEFT JOIN alert_severity_conf ac on ar.severity_id = ac.id
+						alert_rule ar
 					<if test="params.q != null and params.q != ''">
 					where
 						locate(#{params.q},ar.name)

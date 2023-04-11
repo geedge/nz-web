@@ -17,6 +17,7 @@ import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.service.LokiApiService;
 import com.nis.modules.agent.service.PromApiService;
 import com.nis.modules.alert.entity.AlertRuleEntity;
+import com.nis.modules.alert.entity.AlertRuleEntity.ConditionItem;
 import com.nis.modules.alert.entity.AlertRuleEvalLog;
 import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
 import com.nis.modules.alert.service.AlertMessageService;
@@ -128,12 +129,27 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 					JSONArray values = r.getJSONArray("value");
 					// 时间戳，单位 ms
 					Long timestamp = (long) (values.getDoubleValue(0) * 1000L);
+					// 当前值，用于告警级别判断
+					String curVal = values.getString(1);
+					/*1、首先判断是否符合告警条件*/
+					List<ConditionItem> condition = alertRuleEntity.getConditionItems();
+					Integer severityId = null; // 记录最高告警级别
+					for(ConditionItem item : condition) {
+						if(item.validate(curVal)) {
+							severityId = item.getId();
+							break;
+						}
+					}
+					
 					String hash = metric.toJSONString();
-					newAlertHash.add(hash);// 下一步 判断 expired 的告警消息
-					if (!entries.containsKey(hash)) {// 第一次达到告警阈值
+					if (severityId != null) {
+						newAlertHash.add(hash);// 下一步 判断 expired 的告警消息
+					}
+					Long firstTime = Tool.MapUtil.getLong(entries, hash);// 根据 firstTime 是否为null 判断是否第一次符合条件
+					if (severityId != null && firstTime == null) {// 符合告警条件，且第一次达到告警阈值
 						// 将第一次 触发的时间 作为 value 保存，后续根据此计算 达到 for 的条件
 						hashOperations.put(ruleCacheKey, hash, timestamp.toString());
-						AlertMessageReceiveDTO message = this.genAlertMessageFromVector(alertRuleEntity, metric, values.getString(1),
+						AlertMessageReceiveDTO message = this.genAlertMessageFromVector(alertRuleEntity, severityId, metric, values.getString(1),
 								null, null);
 						message.setActs((long) (values.getDoubleValue(0) * 1000L));
 						message.setState(Constant.AlertMessageStatus.PENDING.getValue());
@@ -144,11 +160,11 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 					/*
 					 * 以下为不是第一次达到阈值的处理 1、判断是否达到 for 的时间 2、超过 for 时间 发送 告警消息
 					 */
-					Long firstTime = Tool.NumberUtil.parseLong(hashOperations.get(ruleCacheKey, hash));
-					if (timestamp - firstTime > alertRuleEntity.getLast() * 1000) {
+					
+					if (severityId != null && firstTime != null && (timestamp - firstTime > alertRuleEntity.getLast() * 1000)) {
 						// 用户设置了 开启了自动失效，且 设置了 timeout
 						String et = (timeout > 0) ? Tool.AlertUtil.formatMessageDate(timestamp + timeout * 1000) : null;
-						AlertMessageReceiveDTO message = this.genAlertMessageFromVector(alertRuleEntity, metric,
+						AlertMessageReceiveDTO message = this.genAlertMessageFromVector(alertRuleEntity, severityId, metric,
 								values.getString(1), Tool.AlertUtil.formatMessageDate(firstTime), et);
 						message.setActs((long) (values.getDoubleValue(0) * 1000L));
 						message.setState(Constant.AlertMessageStatus.FIRING.getValue());
@@ -175,7 +191,7 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 					Long firstTime = Tool.NumberUtil.parseLong(entries.get(activeHash));
 					if (nowTs - firstTime > alertRuleEntity.getLast() * 1000) {
 						// 说明之前发送过 告警消息，需要发送已经失效的告警消息，endAt < now
-						AlertMessageReceiveDTO message = this.genAlertMessageFromVector(alertRuleEntity,
+						AlertMessageReceiveDTO message = this.genAlertMessageFromVector(alertRuleEntity, null,
 								Tool.JSONUtil.parseObj(activeHash), Tool.StrUtil.EMPTY,
 								Tool.AlertUtil.formatMessageDate(firstTime), Tool.AlertUtil.formatMessageDate(nowTs));
 						message.setActs(nowTs);
@@ -278,7 +294,7 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 	 * @return
 	 */
 	@SuppressWarnings("all")
-	private AlertMessageReceiveDTO genAlertMessageFromVector(AlertRuleEntity alertRuleEntity, Map labels, String value,
+	private AlertMessageReceiveDTO genAlertMessageFromVector(AlertRuleEntity alertRuleEntity,Integer severityId, Map labels, String value,
 			String startAt, String endAt) {
 		AlertMessageReceiveDTO dto = new AlertMessageReceiveDTO();
 		LinkedHashMap alertLabels = new LinkedHashMap(labels);
@@ -288,11 +304,15 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 		// 添加label
 		String ruleType = alertRuleEntity.getType() == 1 ? "metrics" : "logs";
 		alertLabels.put("rule_type", ruleType);
-		if (alertRuleEntity.getSeverity() != null) {
-			alertLabels.put("severity", alertRuleEntity.getSeverity().getName());
+		if (severityId != null) {
+			alertLabels.put("severity_id", severityId.toString());
 		}
-		alertLabels.put("severity_id", alertRuleEntity.getSeverityId().toString());
 		alertLabels.remove("__name__");
+		// 添加自定义标签
+		List<Map<String, String>> extLabelList = alertRuleEntity.getExtLabelList();
+		extLabelList.forEach(map -> {
+			alertLabels.put(map.get("name"), map.get("value"));
+		});
 		dto.setLabels(alertLabels);
 		dto.setStartsAt(startAt);
 		dto.setEndsAt(endAt);

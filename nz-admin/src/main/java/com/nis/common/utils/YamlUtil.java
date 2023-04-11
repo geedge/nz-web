@@ -76,36 +76,36 @@ public class YamlUtil {
 	 * @param alertRule
 	 * @return
 	 */
-	public static Map alertRuleEntityToYamlMap(AlertRuleEntity alertRule) {
-		Map toCheck = new HashMap();
-		
-		List groups = new ArrayList();
-		toCheck.put("groups", groups);
-		
-		Map group = new HashMap();
-		groups.add(group);
-		
-		List rules = new ArrayList();
-		group.put("name", "check" + System.currentTimeMillis());
-		group.put("rules", rules);
-		
-		Map rule = new HashMap();
-		rules.add(rule);
-		
-		Map labels = new HashMap();
-		labels.put("severity", alertRule.getSeverityId());
-		Map annotations = new HashMap();
-		annotations.put("summary", alertRule.getSummary());
-		annotations.put("description", alertRule.getDescription());
-		
-		rule.put("alert", alertRule.getName());
-        rule.put("expr", "(" + alertRule.getExpr() + ")" + alertRule.getOperator() + alertRule.getThreshold());
-		rule.put("for", alertRule.getLast() + "s");
-		rule.put("labels", labels);
-		rule.put("annotations", annotations);
-		
-		return toCheck;
-	}
+//	public static Map alertRuleEntityToYamlMap(AlertRuleEntity alertRule) {
+//		Map toCheck = new HashMap();
+//		
+//		List groups = new ArrayList();
+//		toCheck.put("groups", groups);
+//		
+//		Map group = new HashMap();
+//		groups.add(group);
+//		
+//		List rules = new ArrayList();
+//		group.put("name", "check" + System.currentTimeMillis());
+//		group.put("rules", rules);
+//		
+//		Map rule = new HashMap();
+//		rules.add(rule);
+//		
+//		Map labels = new HashMap();
+//		labels.put("severity", alertRule.getSeverityId());
+//		Map annotations = new HashMap();
+//		annotations.put("summary", alertRule.getSummary());
+//		annotations.put("description", alertRule.getDescription());
+//		
+//		rule.put("alert", alertRule.getName());
+//        rule.put("expr", "(" + alertRule.getExpr() + ")" + alertRule.getOperator() + alertRule.getThreshold());
+//		rule.put("for", alertRule.getLast() + "s");
+//		rule.put("labels", labels);
+//		rule.put("annotations", annotations);
+//		
+//		return toCheck;
+//	}
 
     /**
      * 读取 yaml 生成 json 并返回

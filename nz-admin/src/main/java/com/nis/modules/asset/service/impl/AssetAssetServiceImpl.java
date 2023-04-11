@@ -1,13 +1,38 @@
 package com.nis.modules.asset.service.impl;
 
-import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.collection.ListUtil;
-import cn.hutool.core.map.MapUtil;
-import cn.hutool.core.util.BooleanUtil;
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONArray;
-import cn.hutool.log.Log;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.shiro.ShiroException;
+import org.snmp4j.smi.TimeTicks;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
@@ -21,12 +46,49 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.*;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.DateUtil;
+import com.nis.common.utils.ImportValidateUtil;
+import com.nis.common.utils.JSONUtil;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.Query;
+import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.RuntimeUtil;
+import com.nis.common.utils.SnmpUtil;
+import com.nis.common.utils.SshUtil;
+import com.nis.common.utils.StringUtils;
+import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.dao.AssetAssetDao;
-import com.nis.modules.asset.entity.*;
-import com.nis.modules.asset.service.*;
+import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.asset.entity.AssetBrand;
+import com.nis.modules.asset.entity.AssetComment;
+import com.nis.modules.asset.entity.AssetFeature;
+import com.nis.modules.asset.entity.AssetFieldMeta;
+import com.nis.modules.asset.entity.AssetFieldValue;
+import com.nis.modules.asset.entity.AssetImportEnum;
+import com.nis.modules.asset.entity.AssetModel;
+import com.nis.modules.asset.entity.AssetPing;
+import com.nis.modules.asset.entity.AssetStateConf;
+import com.nis.modules.asset.entity.AssetTypeConf;
+import com.nis.modules.asset.entity.Cabinet;
+import com.nis.modules.asset.entity.Dc;
+import com.nis.modules.asset.service.AssetAssetService;
+import com.nis.modules.asset.service.AssetBrandService;
+import com.nis.modules.asset.service.AssetCommentService;
+import com.nis.modules.asset.service.AssetFeatureService;
+import com.nis.modules.asset.service.AssetFieldMetaService;
+import com.nis.modules.asset.service.AssetFieldValueService;
+import com.nis.modules.asset.service.AssetModelService;
+import com.nis.modules.asset.service.AssetPingService;
+import com.nis.modules.asset.service.AssetStateConfService;
+import com.nis.modules.asset.service.AssetTalonStatusService;
+import com.nis.modules.asset.service.AssetTypeConfService;
+import com.nis.modules.asset.service.CabinetService;
+import com.nis.modules.asset.service.DcService;
 import com.nis.modules.dashboard.entity.VisualChart;
 import com.nis.modules.dashboard.entity.VisualDashboard;
 import com.nis.modules.dashboard.service.VisualChartService;
@@ -53,24 +115,15 @@ import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.modules.vsys.entity.VsysAssetRel;
 import com.nis.modules.vsys.service.VsysAssetRelService;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.shiro.ShiroException;
-import org.snmp4j.smi.TimeTicks;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.DefaultTransactionDefinition;
-import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.collection.ListUtil;
+import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONArray;
+import cn.hutool.log.Log;
 
 /**
  * 资产    serviceImpl
@@ -240,9 +293,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         List<AlertMessageEntity> alertMessageList = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getAssetId, asset.getId()));
         asset.setAlertNum(alertMessageList.size());
-
-        Map<Integer, Long> ruleIdAndAlertCountMap = alertMessageList.parallelStream().collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
-        List<Map<String, Object>> alert = statService.getSeverityStatByRuleMsgCount(Tool.MapUtil.empty(), ruleIdAndAlertCountMap);
+        List<Map<String, Object>> alert = alertMessageService.getAlertsStatBySeverity("asset",id);
         asset.setAlert(alert);
 
         // 不返回 密码 / 密钥信息

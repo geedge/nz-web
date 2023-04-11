@@ -6,8 +6,8 @@ import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
-import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -16,13 +16,15 @@ import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.smartvalidate.utils.RegexUtil;
 import com.nis.common.utils.*;
+import com.nis.common.utils.Constant.AlertRuleType;
 import com.nis.modules.alert.dao.AlertRuleDao;
-import com.nis.modules.alert.entity.*;
+import com.nis.modules.alert.entity.AlertMessageEntity;
+import com.nis.modules.alert.entity.AlertNotifyMethod;
+import com.nis.modules.alert.entity.AlertRuleEntity;
+import com.nis.modules.alert.entity.AlertRuleImportEnum;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertNotifyMethodService;
 import com.nis.modules.alert.service.AlertRuleService;
-import com.nis.modules.alert.service.AlertSeverityService;
-import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
@@ -49,7 +51,7 @@ import java.util.stream.Collectors;
 @Service("alertRuleService")
 public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEntity> implements AlertRuleService {
 
-    private static Log log = Log.get();
+    private static final Log log = Log.get();
 
     @Autowired
     private AlertRuleDao alertRuleDao;
@@ -58,29 +60,20 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     private SysUserService sysUserService;
 
     @Autowired
-    private YamlUtil yamlUtil;
-
-    @Autowired
     private AlertNotifyMethodService methodService;
 
     @Autowired
     private SysConfigService sysConfigService;
 
     @Autowired
-    private AlertSeverityService alertSeverityService;
-
-    @Autowired
     private AlertMessageService alertMessageService;
-
-    @Autowired
-    private StatService statService;
 
     @Autowired
     private SysUserStarredService sysUserStarredService;
 
     @Autowired
     private BasicImportAndExportServices basicImportAndExportServices;
-
+    
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         String receiverStr = (String) params.get("receiver");
@@ -182,28 +175,11 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     @Override
     public Integer saveOrUpdateAlertRule(AlertRuleEntity alertRule) {
         // 校验参数
-        alertRule.setName(StrUtil.trim(alertRule.getName()));
         this.validateParam(alertRule);
 
         // 校验名称重复
         if (!this.checkName(alertRule)) {
             throw new NZException(RCode.ALERTRULE_NAME_DUPLICATE);
-        }
-
-
-        // 仅metrics类型需要校验rule表达式  logs和snmp trap暂不支持
-        if (1 == alertRule.getType()) {
-            // 校验expr
-            boolean checkRule = false;
-            try {
-                checkRule = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(alertRule));
-            } catch (IOException e) {
-                log.error(String.format("expr校验失败,rule信息是：%s,错误信息是：%s", alertRule.toString(), e));
-            }
-
-            if (!checkRule) {
-                throw new NZException(RCode.ALERTRULE_EXPR_ERROR);
-            }
         }
 
         // 校验关联用户
@@ -333,31 +309,26 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             String expr = dataMap.get(AlertRuleImportEnum.EXPR.getIndex());
             validateUtil.validateRequired(expr, lineNum, AlertRuleImportEnum.EXPR.getIndex());
 
-            String operator = dataMap.get(AlertRuleImportEnum.OPERATOR.getIndex());
-            operator = operator.replaceAll(" ", "");
-            String threshold = dataMap.get(AlertRuleImportEnum.THRESHOLD.getIndex());
             String unit = dataMap.get(AlertRuleImportEnum.UNIT.getIndex());
             String last = dataMap.get(AlertRuleImportEnum.LAST.getIndex());
+            String condition = dataMap.get(AlertRuleImportEnum.CONDITION.getIndex());
             if (StrUtil.equals("3", type)) {
                 validateUtil.validateRegex(expr, "^(\\d{1,9}\\.){0,}[\\d]+$", lineNum, AlertRuleImportEnum.EXPR.getIndex());
             } else {
-                validateUtil.validateRequired(threshold, lineNum, AlertRuleImportEnum.THRESHOLD.getIndex());
-                validateUtil.validateDouble(threshold, lineNum, AlertRuleImportEnum.THRESHOLD.getIndex());
-
                 List<String> unitEnumList = Tool.ListUtil.toList(Constant.ALERT_RULE_UNIT_MAP.keySet());
                 validateUtil.validateRequired(unit, lineNum, AlertRuleImportEnum.UNIT.getIndex());
                 validateUtil.validateEnumValArr(unit, unitEnumList, lineNum, AlertRuleImportEnum.UNIT.getIndex());
-
-                validateUtil.validateRequired(operator, lineNum, AlertRuleImportEnum.OPERATOR.getIndex());
-                validateUtil.validateEnumValArr(operator, Constant.RULE_OPERATORS, lineNum, AlertRuleImportEnum.OPERATOR.getIndex());
 
                 validateUtil.validateRequired(last, lineNum, AlertRuleImportEnum.LAST.getIndex());
                 validateUtil.validateDouble(last, lineNum, AlertRuleImportEnum.LAST.getIndex());
             }
 
-            String severity = dataMap.get(AlertRuleImportEnum.SEVERITY.getIndex());
-            validateUtil.validateRequired(severity, lineNum, AlertRuleImportEnum.SEVERITY.getIndex());
-            validateUtil.validateRelObjExits("alert_severity_conf", "name", severity, false, lineNum, AlertRuleImportEnum.SEVERITY.getIndex());
+            // condition 必填 & jsonArr 格式
+            validateUtil.validateRequired(condition, lineNum, AlertRuleImportEnum.CONDITION.getIndex());
+            validateUtil.validateJsonArray(condition, lineNum, AlertRuleImportEnum.CONDITION.getIndex());
+
+            String extLabels = dataMap.get(AlertRuleImportEnum.EXT_LABELS.getIndex());
+            validateUtil.validateJsonArray(extLabels, lineNum, AlertRuleImportEnum.EXT_LABELS.getIndex());
 
             String summary = dataMap.get(AlertRuleImportEnum.SUMMARY.getIndex());
             validateUtil.validateRequired(summary, lineNum, AlertRuleImportEnum.SUMMARY.getIndex());
@@ -428,47 +399,6 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                     validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(AlertRuleImportEnum.SCHED_ETIME.getIndex()));
             }
 
-            AlertSeverityConf alertSeverityConf = alertSeverityService.getOne(new LambdaQueryWrapper<AlertSeverityConf>().eq(AlertSeverityConf::getName, severity));
-
-            String description = dataMap.get(AlertRuleImportEnum.DESCRIPTION.getIndex());
-            String trbShotStr = dataMap.get(AlertRuleImportEnum.TROUBLE_SHOOTING.getIndex());
-            AlertRuleEntity ruleEntity = new AlertRuleEntity();
-            ruleEntity.setName(name);
-            ruleEntity.setExpr(expr);
-            ruleEntity.setOperator(operator);
-            ruleEntity.setThreshold(StrUtil.isNotEmpty(threshold) ? Double.valueOf(threshold) : null);
-            ruleEntity.setUnit(Constant.ALERT_RULE_UNIT_MAP.get(StrUtil.emptyToDefault(unit, "none")));
-            ruleEntity.setLast(StrUtil.isNotEmpty(last) ? Double.valueOf(last).intValue() : null);
-            ruleEntity.setSeverityId(ToolUtil.isEmpty(alertSeverityConf)?null:alertSeverityConf.getId());
-            ruleEntity.setSummary(summary);
-            ruleEntity.setDescription(description);
-            ruleEntity.setReceiver(receiver);
-            ruleEntity.setMethod(method);
-            ruleEntity.setState(Integer.valueOf(state));
-            ruleEntity.setAutoExpired(Integer.valueOf(autoExpired));
-            ruleEntity.setSchedEnable(Integer.valueOf(schedEnable));
-            ruleEntity.setSchedDays(schedDays);
-            ruleEntity.setSchedStime(schedStime);
-            ruleEntity.setSchedEtime(schedEtime);
-            ruleEntity.setNotifyActive(Integer.valueOf(notifyActive));
-            ruleEntity.setNotifyExpired(Integer.valueOf(notifyExpired));
-            ruleEntity.setTrbShot(trbShotStr);
-            ruleEntity.setType(Integer.valueOf(type));
-            ruleEntity.setInr(intervalIntVal);
-            ruleEntity.setTimeout(timeoutIntVal);
-            // 仅metrics类型需要校验rule表达式  logs和snmp trap暂不支持
-            if (StrUtil.equals("1", type)) {
-                try {
-                    boolean checkRule = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(ruleEntity));
-                    if (!checkRule) {
-                        validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(AlertRuleImportEnum.EXPR.getIndex()));
-                    }
-                } catch (Exception e) {
-                    log.error(e, "expr validate error,rule info: {}", JSONObject.toJSONString(ruleEntity));
-                    validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(AlertRuleImportEnum.EXPR.getIndex()));
-                }
-            }
-
             List<Map<String, String>> errMsgForThisLine = validateUtil.getImportErrMsgForThisLine(lineNum);
             if (BooleanUtil.and(Tool.StrUtil.equals("0", ignoreError), Tool.CollUtil.isNotEmpty(errMsgForThisLine))) {
                 // 结束本次导入，自导入行开始 到结尾数据行，提示错误信息
@@ -479,8 +409,34 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 break;
             }
 
+            String description = dataMap.get(AlertRuleImportEnum.DESCRIPTION.getIndex());
+            String trbShotStr = dataMap.get(AlertRuleImportEnum.TROUBLE_SHOOTING.getIndex());
             if (Tool.CollUtil.isEmpty(errMsgForThisLine)) {
                 try {
+                    AlertRuleEntity ruleEntity = new AlertRuleEntity();
+                    ruleEntity.setName(name);
+                    ruleEntity.setExpr(expr);
+                    ruleEntity.setUnit(Constant.ALERT_RULE_UNIT_MAP.get(StrUtil.emptyToDefault(unit, "none")));
+                    ruleEntity.setLast(StrUtil.isNotEmpty(last) ? Double.valueOf(last).intValue() : null);
+                    ruleEntity.setCondition(condition);
+                    ruleEntity.setExtLabels(extLabels);
+                    ruleEntity.setSummary(summary);
+                    ruleEntity.setDescription(description);
+                    ruleEntity.setReceiver(receiver);
+                    ruleEntity.setMethod(method);
+                    ruleEntity.setState(Integer.valueOf(state));
+                    ruleEntity.setAutoExpired(Integer.valueOf(autoExpired));
+                    ruleEntity.setSchedEnable(Integer.valueOf(schedEnable));
+                    ruleEntity.setSchedDays(schedDays);
+                    ruleEntity.setSchedStime(schedStime);
+                    ruleEntity.setSchedEtime(schedEtime);
+                    ruleEntity.setNotifyActive(Integer.valueOf(notifyActive));
+                    ruleEntity.setNotifyExpired(Integer.valueOf(notifyExpired));
+                    ruleEntity.setTrbShot(trbShotStr);
+                    ruleEntity.setType(Integer.valueOf(type));
+                    ruleEntity.setInr(intervalIntVal);
+                    ruleEntity.setTimeout(timeoutIntVal);
+
                     this.saveOrUpdateRowData(ruleEntity, params);
                     // save or update
                     Object saveFlag = params.get("save");
@@ -590,7 +546,6 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         Map<Long, String> userIdAndNameMap = sysUserList.stream().collect(Collectors.toMap(SysUserEntity::getId, SysUserEntity::getName));
         List<AlertNotifyMethod> methodList = methodService.list();
         Map<Integer, String> methodIdAndNameMap = methodList.stream().collect(Collectors.toMap(AlertNotifyMethod::getId, AlertNotifyMethod::getName));
-        String receiveIds, receiveNames;
         for (AlertRuleEntity rule : list) {
             // 内置告警不导出
             if (rule.getBuildIn() != null && rule.getBuildIn().equals(1)) continue;
@@ -600,16 +555,15 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             tempList.add(ObjectUtil.defaultIfNull(rule.getInr(), "").toString());
             tempList.add(ObjectUtil.defaultIfNull(rule.getTimeout(), "").toString());
             tempList.add(rule.getExpr());
-            tempList.add(rule.getOperator());
-            tempList.add(rule.getThreshold() == null ? "" : rule.getThreshold() + "");
+            tempList.add(rule.getCondition());
+            tempList.add(StrUtil.nullToDefault(rule.getExtLabels(), ""));
             tempList.add(getUnitDescrByVal(rule.getUnit()));
             tempList.add(ObjectUtil.defaultIfNull(rule.getLast(),"").toString());
-            tempList.add(rule.getSeverity().getName());
             tempList.add(rule.getSummary());
             tempList.add(rule.getDescription());
-            receiveIds = rule.getReceiver();
+            String receiveIds = rule.getReceiver();
             if (StringUtils.isNotEmpty(receiveIds)) {
-                receiveNames = "";
+                String receiveNames = "";
                 for (String id : Arrays.asList(receiveIds.split(","))) {
                     receiveNames += userIdAndNameMap.get(Long.valueOf(id)) + ",";
                 }
@@ -660,49 +614,36 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     }
 
     private void validateParam(AlertRuleEntity alertRule) {
-        String operator = alertRule.getOperator();
-        Integer unit = alertRule.getUnit();
-        ValidateUtils.is(alertRule.getName()).notNull(RCode.ALERTRULE_NAME_ISNULL).maxLength(64)
-                .and(alertRule.getExpr()).notNull(RCode.ALERTRULE_EXPR_ISNULL).maxLength(512)
-                .and(alertRule.getLast()).notNull(RCode.ALERTRULE_LAST_ISNULL).min(1, RCode.ALERTRULE_LAST_ISNOTPOSITIVE)
-                .and(alertRule.getSeverityId()).notNull(RCode.ALERTRULE_SEVERITY_ISNULL)
-                .and(alertRule.getSummary()).notNull(RCode.ALERTRULE_SUMMARY_ISNULL).maxLength(512)
-                .and(alertRule.getDescription()).maxLength(512)
-                .and(alertRule.getType()).notNull(RCode.ALERTRULE_TYPE_ISNULL);
-
-        List<Integer> typeList = Arrays.asList(new Integer[]{1, 2, 3});
-        if (!typeList.contains(alertRule.getType())) {
+        Integer type = alertRule.getType();
+        List<Integer> typeEnumList = Arrays.asList(AlertRuleType.values()).stream().map(AlertRuleType::getValue).collect(Collectors.toList());
+        if (!typeEnumList.contains(type)) {
             throw new NZException(RCode.ALERTRULE_TYPE_INCORRECT);
         }
 
-        // snmp trap type
-        if (3 == alertRule.getType()) {
-            String oid = alertRule.getExpr();
-            if (!RegexUtil.test("^(\\d{1,9}\\.){0,}[\\d]+$", oid)) {
-                throw new NZException(RCode.ALERTRULE_OIDFORMAT_ERROR);
+        switch (AlertRuleType.getRuleType(type)) {
+            case METRICS:
+            case LOGS: {
+                Integer unit = alertRule.getUnit();
+                ValidateUtils.is(unit).notNull(RCode.ALERTRULE_UNIT_ISNULL);
+                List<Integer> unitList = new ArrayList(Constant.ALERT_RULE_UNIT_MAP.values());
+                if (unit < Collections.min(unitList) || unit > Collections.max(unitList)) {
+                    throw new NZException(RCode.ALERTRULE_UNIT_INVALIDE);
+                }
+                break;
             }
-        } else {
-            // 除 snmp trap 类型外，threshold unit 必填
-            ValidateUtils.is(alertRule.getThreshold()).notNull(RCode.ALERTRULE_THRESHOLD_ISNULL).maxLength(20)
-                    .and(unit).notNull(RCode.ALERTRULE_UNIT_ISNULL)
-                    .and(operator).notNull(RCode.ALERTRULE_OPERATOR_ISNULL);
-
-            List<Integer> unitList = new ArrayList(Constant.ALERT_RULE_UNIT_MAP.values());
-            if (unit < Collections.min(unitList) || unit > Collections.max(unitList)) {
-                throw new NZException(RCode.ALERTRULE_UNIT_INVALIDE);
+            case SNMP_TRAP: {
+                String oid = alertRule.getExpr();
+                if (!RegexUtil.test("^(\\d{1,9}\\.){0,}[\\d]+$", oid)) {
+                    throw new NZException(RCode.ALERTRULE_OIDFORMAT_ERROR);
+                }
+                break;
             }
-
-            operator = operator.replaceAll(" ", "");
-            alertRule.setOperator(operator);
-
-            if (!Constant.RULE_OPERATORS.contains(operator)) {
-                throw new NZException(RCode.ALERTRULE_OPERATOR_INVALIDE);
-            }
+            default:
+                break;
         }
 
         // 校验 method 是否存在
         String method = alertRule.getMethod();
-
         if (StringUtils.isNotEmpty(method)) {
             List<AlertNotifyMethod> methodList = methodService.list();
             List<Integer> methodIdList = methodList.stream().map(AlertNotifyMethod::getId).collect(Collectors.toList());
@@ -782,73 +723,75 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 }
             }
         }
+
+        // condition
+        String condition = alertRule.getCondition();
+        boolean isConditionJsonArray = JSONUtil.isTypeJSONArray(condition);
+        if (BooleanUtil.negate(isConditionJsonArray)) {
+            throw new NZException(RCode.ALERTRULE_CONDITION_FORMAT);
+        }
+        List<AlertRuleEntity.ConditionItem> conditionItems = alertRule.getConditionItems();
+        ValidateUtils.is(conditionItems).notNull(RCode.ALERTRULE_CONDITION_ISNULL);
+
+        for (AlertRuleEntity.ConditionItem item : conditionItems) {
+            ValidateUtils.is(item.getId()).notNull(RCode.ALERTSEVERITY_ID_ISNULL)
+                    .and(item.getWeight()).notNull(RCode.ALERTRULE_CONDITION_ID_ISNULL)
+                    .and(item.getOperator()).notNull(RCode.ALERTRULE_CONDITION_OPERATOR_ISNULL)
+                    .and(item.getValue()).notNull(RCode.ALERTRULE_CONDITION_VALUE_ISNULL);
+            if (ObjectUtil.equal(type, AlertRuleType.SNMP_TRAP.getValue())) {
+                ValidateUtils.is(item.getOperator()).equalsIgnoreCase("~=", RCode.ALERTRULE_SNMPTRAP_OPERATOR_ERROR);
+            } else {
+                List<String> operatorEnumList = Arrays.asList(new String[]{"==", "!=", ">", "<", ">=", "<="});
+                if (!operatorEnumList.contains(item.getOperator())) {
+                    throw new NZException(RCode.ALERTRULE_OPERATOR_INVALIDE);
+                }
+            }
+        }
+
+        // extLabels
+        String extLabels = alertRule.getExtLabels();
+        if (StrUtil.isNotEmpty(extLabels)) {
+            boolean isExtLabelsJsonArray = JSONUtil.isTypeJSONArray(condition);
+            if (BooleanUtil.negate(isExtLabelsJsonArray)) {
+                throw new NZException(RCode.ALERTRULE_EXTLABELS_FORMAT);
+            }
+        }
     }
 
 	@Override
 	public AlertRuleEntity queryAlertRule(Integer id) {
 		AlertRuleEntity alertRule = alertRuleDao.selectById(id);
-
+        ValidateUtils.is(alertRule).notNull(RCode.ALERTRULE_NOT_EXIST);
+		
         List<AlertMessageEntity> alertMessageList = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getRuleId, id));
         alertRule.setAlertNum(alertMessageList.size());
-
-        Map<Integer, Long> ruleIdAndAlertCountMap = alertMessageList.parallelStream().collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
-        List<Map<String, Object>> alert = statService.getSeverityStatByRuleMsgCount(Tool.MapUtil.empty(), ruleIdAndAlertCountMap);
+        List<Map<String, Object>> alert = alertMessageService.getAlertsStatBySeverity("rule",id);
         alertRule.setAlert(alert);
 
-		if(ObjectUtil.isNotEmpty(alertRule)) {
-			// 获取所有用户
-	        List<SysUserEntity> userList = sysUserService.list();
-	        Map<Long, String> userIdAndName = userList.stream().collect(Collectors.toMap(SysUserEntity::getId, SysUserEntity::getName));
+        // 获取所有用户
+        List<SysUserEntity> userList = sysUserService.list();
+        Map<Long, String> userIdAndName = userList.stream().collect(Collectors.toMap(SysUserEntity::getId, SysUserEntity::getName));
 
-	        String receiver = alertRule.getReceiver();
-	        if (StringUtils.isNotEmpty(receiver)) {
-	            List<SysUserEntity> list = new ArrayList<>();
-	            Arrays.asList(receiver.split(",")).stream().forEach(userId -> {
-	                SysUserEntity userEntity = new SysUserEntity();
-	                userEntity.setId(Long.valueOf(userId));
-	                userEntity.setName(userIdAndName.get(Long.valueOf(userId)));
-	                list.add(userEntity);
-	            });
-	            alertRule.setReceivers(list);
-	        }
-
-            // 当前用户收藏状态  1：收藏  0：未收藏
-            int ruleStarredCount = sysUserStarredService.count(
-                    new LambdaQueryWrapper<SysUserStarredEntity>()
-                            .eq(SysUserStarredEntity::getType, "alertRule")
-                            .eq(SysUserStarredEntity::getTid, alertRule.getId())
-                            .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId().intValue()));
-
-            alertRule.setStarred(ruleStarredCount == 0 ? 0 : 1);
+        String receiver = alertRule.getReceiver();
+        if (StringUtils.isNotEmpty(receiver)) {
+            List<SysUserEntity> list = new ArrayList<>();
+            Arrays.asList(receiver.split(",")).stream().forEach(userId -> {
+                SysUserEntity userEntity = new SysUserEntity();
+                userEntity.setId(Long.valueOf(userId));
+                userEntity.setName(userIdAndName.get(Long.valueOf(userId)));
+                list.add(userEntity);
+            });
+            alertRule.setReceivers(list);
         }
 
+        // 当前用户收藏状态  1：收藏  0：未收藏
+        int ruleStarredCount = sysUserStarredService.count(
+                new LambdaQueryWrapper<SysUserStarredEntity>()
+                        .eq(SysUserStarredEntity::getType, "alertRule")
+                        .eq(SysUserStarredEntity::getTid, alertRule.getId())
+                        .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId().intValue()));
+
+        alertRule.setStarred(ruleStarredCount == 0 ? 0 : 1);
 		return alertRule;
 	}
-
-    /**
-     * 通过 ruleIds 返回  告警级别  对应 ruleId map
-     * k: severityName
-     * v: ruleIds
-     *
-     * @param ids
-     * @return
-     */
-    @Override
-    public Map<String, List<Integer>> getSeverityNameAndRuleIdsMap(Integer... ids) {
-        List<AlertSeverityConf> severityConfList = alertSeverityService.list();
-        Map<Integer, String> severityIdAndNameMap = severityConfList.stream().collect(Collectors.toMap(AlertSeverityConf::getId, AlertSeverityConf::getName));
-
-        List<AlertRuleEntity> ruleList = this.list(new LambdaQueryWrapper<AlertRuleEntity>().in(AlertRuleEntity::getId, Arrays.asList(ids)));
-        Map<Integer, List<AlertRuleEntity>> severityIdAndRules = ruleList.stream().collect(Collectors.groupingBy(AlertRuleEntity::getSeverityId));
-
-        Map<String, List<Integer>> severityNameAndRuleIdsMap = new HashMap<>(8);
-        for (Map.Entry<Integer, String> entry : severityIdAndNameMap.entrySet()) {
-            Integer severityId = entry.getKey();
-            String severityName = entry.getValue();
-            List<AlertRuleEntity> rules = Tool.ObjectUtil.isNull(severityIdAndRules.get(severityId)) ? new ArrayList<>() : severityIdAndRules.get(severityId);
-            List<Integer> ruleIds = rules.stream().map(AlertRuleEntity::getId).collect(Collectors.toList());
-            severityNameAndRuleIdsMap.put(severityName, ruleIds);
-        }
-        return severityNameAndRuleIdsMap;
-    }
 }

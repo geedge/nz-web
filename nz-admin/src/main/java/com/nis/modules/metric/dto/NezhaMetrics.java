@@ -60,7 +60,7 @@ public class NezhaMetrics implements MeterBinder {
         for (int i = 0; i < nzAlertMumsMetrics.size(); i++) {
             MetricsDto dto = nzAlertMumsMetrics.get(i);
             Gauge.builder("nz_alert_nums", dto, value -> dto.getTotal())
-                    .tags("id", dto.getId() + "", "name", dto.getName(), "severity", dto.getSeverity())
+                    .tags("id", dto.getId() + "", "name", dto.getName(), "severity", Tool.StrUtil.nullToEmpty(dto.getSeverity()))
                     .description("Alert statistics info")
                     .register(meterRegistry);
         }

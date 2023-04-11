@@ -8,7 +8,9 @@ import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.entity.AlertMessageEntity;
+import com.nis.modules.alert.entity.AlertSeverityConf;
 import com.nis.modules.alert.service.AlertMessageService;
+import com.nis.modules.alert.service.AlertSeverityService;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
@@ -52,7 +54,7 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
 
     @Autowired
     private SysUserStarredService starredService;
-
+    
     @Override
     public MonitorProject queryProjectEntity(Integer id) {
         MonitorProject project = this.getById(id);
@@ -73,9 +75,7 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
 
         List<AlertMessageEntity> alertMessageList = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getProjectId, project.getId()));
         project.setAlertNum(alertMessageList.size());
-
-        Map<Integer, Long> ruleIdAndAlertCountMap = alertMessageList.parallelStream().collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
-        List<Map<String, Object>> alert = statService.getSeverityStatByRuleMsgCount(Tool.MapUtil.empty(), ruleIdAndAlertCountMap);
+        List<Map<String, Object>> alert = alertMessageService.getAlertsStatBySeverity("project",id);
         project.setAlert(alert);
 
         // 当前用户收藏状态  1：收藏  0：未收藏
