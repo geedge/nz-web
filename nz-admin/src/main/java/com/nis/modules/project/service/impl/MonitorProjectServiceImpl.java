@@ -75,7 +75,7 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
 
         List<AlertMessageEntity> alertMessageList = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getProjectId, project.getId()));
         project.setAlertNum(alertMessageList.size());
-        List<Map<String, Object>> alert = alertMessageService.getAlertsStatBySeverity("rule",id);
+        List<Map<String, Object>> alert = alertMessageService.getAlertsStatBySeverity("project",id);
         project.setAlert(alert);
 
         // 当前用户收藏状态  1：收藏  0：未收藏

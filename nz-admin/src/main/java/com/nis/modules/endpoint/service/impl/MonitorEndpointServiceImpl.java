@@ -159,7 +159,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
         List<AlertMessageEntity> alertMessageList = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getEndpointId, endpoint.getId()));
         endpoint.setAlertNum(alertMessageList.size());
-        List<Map<String, Object>> alert = alertMessageService.getAlertsStatBySeverity("rule",id);
+        List<Map<String, Object>> alert = alertMessageService.getAlertsStatBySeverity("endpoint",id);
         endpoint.setAlert(alert);
 
         endpoint.setConfigs(this.getEndpointConfigs(endpoint));

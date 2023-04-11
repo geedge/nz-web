@@ -93,18 +93,6 @@
 		</foreach>;
 	</delete>
 
-	<select id="getAlertsStatColumn" resultType="com.nis.modules.alert.entity.AlertMessageEntity">
-		SELECT
-			rule_id,
-			project_id,
-			module_id,
-			asset_id,
-			endpoint_id,
-			dc_id
-		FROM
-			alert_message_active
-	</select>
-	
 	<select id="getAlertNumByCabinetId" resultType="java.lang.Long">
 		select count(1) c from alert_message_active ama right join (
 			select id from asset_asset aa where cabinet_id = #{id}
@@ -123,23 +111,23 @@
 				alert_message_active
 			WHERE 
 				<choose>
-				    <when test="type == asset">
-				        and asset_id = #{id}
+				    <when test="type == 'asset'">
+				        asset_id = #{id}
 				    </when>
-				    <when test="type == rule">
-				        and rule_id = #{id}
+				    <when test="type == 'rule'">
+				        rule_id = #{id}
 				    </when>
-				    <when test="type == project">
-				        and project_id = #{id}
+				    <when test="type == 'project'">
+				        project_id = #{id}
 				    </when>
-				    <when test="type == module">
-				        and module_id = #{id}
+				    <when test="type == 'module'">
+				        module_id = #{id}
 				    </when>
-				    <when test="type == endpoint">
-				        and endpoint_id = #{id}
+				    <when test="type == 'endpoint'">
+				        endpoint_id = #{id}
 				    </when>
-				    <when test="type == datacenter">
-				        and dc_id = #{id}
+				    <when test="type == 'datacenter'">
+				        dc_id = #{id}
 				    </when>
 				</choose>
 		) cnt on conf.id = cnt.severity_id

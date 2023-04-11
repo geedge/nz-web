@@ -27,7 +27,6 @@ public interface AlertRuleService extends IService<AlertRuleEntity> {
 
 	void delete(Integer[] ids);
 
-
 	void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException;
 
 	Map importAlertRuleData(MultipartFile excelFile, Map<String, Object> params) throws IOException;
@@ -38,6 +37,5 @@ public interface AlertRuleService extends IService<AlertRuleEntity> {
 	
 	AlertRuleEntity queryAlertRule(Integer id);
 
-//	Map<String, List<Integer>> getSeverityNameAndRuleIdsMap(Integer... ruleIds);
 }
 

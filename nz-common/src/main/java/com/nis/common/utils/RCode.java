@@ -476,6 +476,15 @@ public enum RCode {
     ALERTRULE_UNIT_FORMAT(423038,"Alert unit format should be a integer"),
     ALERTRULE_UNIT_INVALIDE(423039,"Alert unit is invalide"),
     ALERTRULE_UNIT_ISNULL(421040,"Alert unit can not be empty"),
+    ALERTRULE_NOT_EXIST(426041, "Alert rule does not exist"),
+    ALERTRULE_CONDITION_ISNULL(421042, "Alert rule condition cannot be empty"),
+    ALERTRULE_CONDITION_FORMAT(423043, "Alert rule condition format error"),
+    ALERTRULE_CONDITION_ID_ISNULL(421044, "Alert rule condition id attribute cannot be empty"),
+    ALERTRULE_CONDITION_WEIGHT_ISNULL(421045, "Alert rule condition weight attribute cannot be empty"),
+    ALERTRULE_CONDITION_OPERATOR_ISNULL(421046, "Alert rule condition operator attribute cannot be empty"),
+    ALERTRULE_CONDITION_VALUE_ISNULL(421047, "Alert rule condition value attribute cannot be empty"),
+    ALERTRULE_EXTLABELS_FORMAT(423048, "Alert rule extLabels format error"),
+    ALERTRULE_SNMPTRAP_OPERATOR_ERROR(423049, "The SNMP trap type operator only supports regex"),
 
 
 

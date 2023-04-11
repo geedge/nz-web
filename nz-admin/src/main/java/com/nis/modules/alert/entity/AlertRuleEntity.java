@@ -1,18 +1,17 @@
 package com.nis.modules.alert.entity;
 
-import java.io.Serializable;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
-
+import cn.hutool.core.lang.TypeReference;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.common.utils.Tool;
 import com.nis.modules.sys.entity.SysUserEntity;
-
-import cn.hutool.core.lang.TypeReference;
 import lombok.Data;
+
+import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * @author fang
@@ -37,17 +36,6 @@ public class AlertRuleEntity implements Serializable {
 	 * 运算表达式
 	 */
 	private String expr;
-
-	/**
-	 * 比较符号
-	 */
-//	private String operator;
-
-	/**
-	 * 阈值
-	 */
-//	private Double threshold;
-
 	/**
 	 * 单位
 	 */
@@ -56,10 +44,6 @@ public class AlertRuleEntity implements Serializable {
 	 * 持续时间,单位s
 	 */
 	private Integer last;
-	/**
-	 * 告警级别
-	 */
-//	private Integer severityId;
 	/**
 	 * 告警摘要
 	 */
@@ -178,21 +162,21 @@ public class AlertRuleEntity implements Serializable {
 	/**
 	 * 多阈值告警条件
 	 */
+	@TableField("`condition`")
 	private String condition;
 	
-//	@TableField(exist = false)
-//	private AlertSeverityConf severity;
-
 	@TableField(exist = false)
 	private List alert;
+
+	public void setName(String name) {
+		this.name = Tool.StrUtil.trim(name);
+	}
 
 	/**
 	 * 计算 alert rule hash id
 	 *
-	 * @param entity
 	 * @return
 	 */
-
 	public String getAlertRuleHashId() {
 		String content = new StringBuilder(AlertRuleEntity.class.getName()).append(id).append(name).append(expr)
 				.append(unit).append(last).append(summary).append(description).append(autoExpired).append(schedEnable)
@@ -240,6 +224,7 @@ public class AlertRuleEntity implements Serializable {
 	public List<ConditionItem> getConditionItems() {
 		//1、string to bean
 		TypeReference<List<ConditionItem>> tr = new TypeReference<List<ConditionItem>>() {};
+		this.condition = Tool.StrUtil.emptyToDefault(this.condition, "[]");
 		List<ConditionItem> items = Tool.JSONUtil.toBean(this.condition, tr.getType(), true);
 		//2、根据 告警优先级 排序
 		items.sort( (i1,i2) -> {
@@ -258,30 +243,29 @@ public class AlertRuleEntity implements Serializable {
 		public boolean validate(String val) {
 			boolean result = false;
 			switch (operator) {
-			case "==":
-				result = (Tool.NumberUtil.parseDouble(value) == Tool.NumberUtil.parseDouble(val));
-				break;
-			case "!=":
-				result = (Tool.NumberUtil.parseDouble(value) == Tool.NumberUtil.parseDouble(val));;
-				break;
-			case ">":
-				result = (Tool.NumberUtil.parseDouble(value) == Tool.NumberUtil.parseDouble(val));;
-				break;
-			case "<":
-				result = (Tool.NumberUtil.parseDouble(value) == Tool.NumberUtil.parseDouble(val));;
-				break;
-			case ">=":
-				result = (Tool.NumberUtil.parseDouble(value) == Tool.NumberUtil.parseDouble(val));;
-				break;
-			case "<=":
-				result = (Tool.NumberUtil.parseDouble(value) == Tool.NumberUtil.parseDouble(val));;
-				break;
-			case "~=":
-				result = Pattern.matches(operator, val.toString());
-				break;
-			default:
-				
-				break;
+				case "==":
+					result = (Tool.NumberUtil.parseDouble(val) == Tool.NumberUtil.parseDouble(value));
+					break;
+				case "!=":
+					result = (Tool.NumberUtil.parseDouble(val) != Tool.NumberUtil.parseDouble(value));
+					break;
+				case ">":
+					result = (Tool.NumberUtil.parseDouble(val) > Tool.NumberUtil.parseDouble(value));
+					break;
+				case "<":
+					result = (Tool.NumberUtil.parseDouble(val) < Tool.NumberUtil.parseDouble(value));
+					break;
+				case ">=":
+					result = (Tool.NumberUtil.parseDouble(val) >= Tool.NumberUtil.parseDouble(value));
+					break;
+				case "<=":
+					result = (Tool.NumberUtil.parseDouble(val) <= Tool.NumberUtil.parseDouble(value));
+					break;
+				case "~=":
+					result = Pattern.matches(operator, val.toString());
+					break;
+				default:
+					break;
 			}
 			return result;
 		}

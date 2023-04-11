@@ -293,7 +293,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         List<AlertMessageEntity> alertMessageList = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getAssetId, asset.getId()));
         asset.setAlertNum(alertMessageList.size());
-        List<Map<String, Object>> alert = alertMessageService.getAlertsStatBySeverity("rule",id);
+        List<Map<String, Object>> alert = alertMessageService.getAlertsStatBySeverity("asset",id);
         asset.setAlert(alert);
 
         // 不返回 密码 / 密钥信息

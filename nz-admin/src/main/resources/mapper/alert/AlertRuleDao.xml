@@ -11,18 +11,18 @@
         <result property="inr" column="inr"/>
         <result property="timeout" column="timeout"/>
         <result property="expr" column="expr"/>
-        <result property="operator" column="operator"/>
-        <result property="threshold" column="threshold"/>
         <result property="unit" column="unit"/>
         <result property="method" column="method"/>
         <result property="last" column="last"/>
-        <result property="severityId" column="severity_id"/>
         <result property="summary" column="summary"/>
         <result property="description" column="description"/>
         <result property="receiver" column="receiver"/>
         <result property="buildIn" column="build_in"/>
         <result property="state" column="state"/>
         <result property="starred" column="starred"/>
+
+        <result property="condition" column="condition"/>
+        <result property="extLabels" column="ext_labels"/>
 
         <result property="autoExpired" column="auto_expired"/>
         <result property="schedEnable" column="sched_enable"/>
@@ -34,27 +34,16 @@
         <result property="trbShot" column="trb_shot"/>
 
         <result property="alertNum" column="alertNum"/>
-        <association property="severity" javaType="com.nis.modules.alert.entity.AlertSeverityConf" columnPrefix="alsc_">
-            <result property="id" column="id"/>
-            <result property="name" column="name"/>
-            <result property="color" column="color"/>
-            <result property="remark" column="remark"/>
-        </association>
     </resultMap>
 
     <select id="queryList" resultMap="alertRuleMap">
 		SELECT
 			ar.*,
-			alsc.id AS alsc_id,
-			alsc.NAME AS alsc_name,
-			alsc.color AS alsc_color,
-			alsc.remark AS alsc_remark,
 			IFNULL( am.alertNum, 0 ) AS alertNum,
             IFNULL( sta.starred, 0 ) AS starred
 		FROM
 			alert_rule ar
 			LEFT JOIN ( SELECT rule_id, count( 1 ) AS alertNum FROM alert_message_active GROUP BY rule_id ) am ON ar.id = am.rule_id
-			LEFT JOIN alert_severity_conf alsc ON ar.severity_id = alsc.id
             LEFT JOIN ( SELECT IF(COUNT(1) > 0, 1, 0) AS starred,tid FROM sys_user_starred WHERE TYPE = "alertRule" AND uid = #{params.currentLoginUserID} GROUP BY tid) sta ON ar.id = sta.tid
         <where>
 
@@ -79,13 +68,6 @@
 
             <if test="params.last != null and params.last != ''">
                 AND ar.last = #{params.last}
-            </if>
-
-            <if test="params.severityIds != null and params.severityIds != ''">
-                AND ar.severity_id in
-                <foreach collection="params.severityIds.split(',')" item="id" open="(" separator="," close=")">
-                    #{id}
-                </foreach>
             </if>
 
             <if test="params.summary != null and params.summary != ''">
@@ -142,8 +124,8 @@
             count( DISTINCT am.id ) as total
         FROM
             alert_rule ar
-            LEFT JOIN alert_severity_conf sc ON ar.severity_id = sc.id
             LEFT JOIN alert_message_active am ON ar.id = am.rule_id
+            LEFT JOIN alert_severity_conf sc ON sc.id = am.severity_id
         GROUP BY
             ar.id
     </select>

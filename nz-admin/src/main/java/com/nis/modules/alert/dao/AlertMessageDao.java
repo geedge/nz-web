@@ -30,8 +30,6 @@ public interface AlertMessageDao extends BaseMapper<AlertMessageEntity> {
 
     void deleteByRuleIds(@Param("ids") List ruleIds);
 
-    // 只返回用于统计的列  severity rule_id  project_id module_id asset_id dc_id
-    //List<AlertMessageEntity> getAlertsStatColumn();
     /**
      * 根据告警级别统计符合条件的激活状态告警数量
      * @param type 可选值：asset, dc, project, module, endpoint, rule

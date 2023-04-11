@@ -38,8 +38,15 @@ public interface StatService{
 	List<StatAnalysis> queryEndpointType(Map<String,Object> params);
 	
 	List<StatAnalysis> queryEndpointState(Map<String,Object> params);
-	
-	List<StatAnalysis> queryAlertRuleTotal(Map<String,Object> params);
+
+	/**
+	 * 告警规则总数统计接口
+	 * 统计各个告警级别下告警规则总数
+	 *
+	 * @param params
+	 * @return
+	 */
+	List<StatAnalysis> queryAlertRuleTotal(Map<String, Object> params);
 	
 	StatAnalysis queryAlertMessageTotal(Map<String,Object> params);
 	

@@ -130,7 +130,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
         List<AlertMessageEntity> alertMessageList = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getModuleId, module.getId()));
         module.setAlertNum(alertMessageList.size());
-        List<Map<String, Object>> alert = alertMessageService.getAlertsStatBySeverity("rule",id);
+        List<Map<String, Object>> alert = alertMessageService.getAlertsStatBySeverity("module",id);
         module.setAlert(alert);
 
         Integer dashboardId = module.getDashboardId();

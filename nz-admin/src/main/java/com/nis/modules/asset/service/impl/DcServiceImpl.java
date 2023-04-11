@@ -131,7 +131,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
 
         List<AlertMessageEntity> alertMessageList = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getDcId, dc.getId()));
         dc.setAlertNum(alertMessageList.size());
-        List<Map<String, Object>> alert = alertMessageService.getAlertsStatBySeverity("rule",id);
+        List<Map<String, Object>> alert = alertMessageService.getAlertsStatBySeverity("datacenter",id);
         dc.setAlert(alert);
 
         Integer assetNum = assetService.count(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getDcId, dc.getId()));

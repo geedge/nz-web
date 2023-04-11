@@ -638,6 +638,38 @@ public class Constant {
 		}
 	}
 
+	/**
+	 * Alert Rule Type
+	 */
+	public enum AlertRuleType {
+		METRICS(1),
+		LOGS(2),
+		SNMP_TRAP(3);
+
+		private Integer value;
+
+		AlertRuleType(Integer value) {
+			this.value = value;
+		}
+
+		public Integer getValue() {
+			return value;
+		}
+
+		public void setValue(Integer value) {
+			this.value = value;
+		}
+
+		public static AlertRuleType getRuleType(Integer value) {
+			for (AlertRuleType type : AlertRuleType.values()) {
+				if (type.getValue().equals(value)) {
+					return type;
+				}
+			}
+			return null;
+		}
+	}
+
 	public enum AgentType {
 		GLOBAL("global", 1), PER_DATACENTER("per_datacenter", 2), THANOS_QUERY("thanos_query", 3),
 		THANOS_RULE("thanos_rule", 4), THANOS_SIDECAR("thanos_sidecar", 5), THANOS_STORE("thanos_store", 6),
