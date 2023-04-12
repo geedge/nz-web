@@ -3,6 +3,7 @@ package com.nis.modules.dashboard.service.impl;
 import cn.hutool.cache.impl.TimedCache;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.thread.NamedThreadFactory;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.*;
@@ -820,10 +821,24 @@ public class VisualServiceImpl implements VisualService {
                 if (StrUtil.equals(Constant.ChartDatasourceType.SYSTEM.getValue(), datasource)) {
                     VisualDashboard visualDashboard = chart.getDashboard();
                     R r = R.ok();
+                    Map<String, Object> queryParams = MapUtil.newHashMap();
+                    queryParams.put("type", "total");
+                    queryParams.put("dimension", "priority");
+                    queryParams.put("step", "d");
                     if (StrUtil.equals(Constant.CHART_ASSETINFO_TYPE, chart.getType())) {
-                        r.put("data", assetAssetService.queryAssetInfo(visualDashboard.getLink()));
+                        queryParams.put("assetId", visualDashboard.getLink());
+                        Map<String, Object> alertMessageTrend = statServiceImpl.queryAlertMessageTrend(queryParams);
+                        AssetAsset asset = assetAssetService.queryAssetInfo(visualDashboard.getLink());
+                        Map<String, Object> assetDataMap = BeanUtil.beanToMap(asset);
+                        assetDataMap.put("alertMessageTrend", alertMessageTrend);
+                        r.put("data", assetDataMap);
                     } else if (StrUtil.equals(Constant.CHART_ENDPOINTINFO_TYPE, chart.getType())) {
-                        r.put("data", monitorEndpointService.queryEndpointEntity(visualDashboard.getLink()));
+                        queryParams.put("endpointId", visualDashboard.getLink());
+                        Map<String, Object> alertMessageTrend = statServiceImpl.queryAlertMessageTrend(queryParams);
+                        MonitorEndpoint endpoint = monitorEndpointService.queryEndpointEntity(visualDashboard.getLink());
+                        Map<String, Object> endpointDataMap = BeanUtil.beanToMap(endpoint);
+                        endpointDataMap.put("alertMessageTrend", alertMessageTrend);
+                        r.put("data", endpointDataMap);
                     } else {
                         cn.hutool.json.JSONObject dataSource = JSONUtil.parseArray(chartParam.get("datasource")).getJSONObject(0);
                         dataSource.set("select", JSONUtil.createArray().put(dataSource.get("select")));
