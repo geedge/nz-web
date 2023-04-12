@@ -225,6 +225,16 @@
 			<url>http://192.168.40.153:8099/content/groups/public/</url>
 		</repository>
 		<repository>
+			<id>nexus-releases</id>
+			<name>Team Nexus Repository</name>
+			<url>http://192.168.40.153:8099/content/repositories/releases/</url>
+		</repository>
+		<repository>
+			<id>nexus-geedge</id>
+			<name>Team Nexus Repository</name>
+			<url>http://192.168.40.153:8099/content/repositories/geedge/</url>
+		</repository>
+		<repository>
 			<id>public</id>
 			<name>aliyun nexus</name>
 			<url>http://maven.aliyun.com/nexus/content/groups/public/</url>
@@ -253,6 +263,16 @@
 			<id>nexus</id>
 			<name>Team Nexus Repository</name>
 			<url>http://192.168.40.153:8099/content/groups/public/</url>
+		</pluginRepository>
+		<pluginRepository>
+			<id>nexus-releases</id>
+			<name>Team Nexus Repository</name>
+			<url>http://192.168.40.153:8099/content/repositories/releases/</url>
+		</pluginRepository>
+		<pluginRepository>
+			<id>nexus-geedge</id>
+			<name>Team Nexus Repository</name>
+			<url>http://192.168.40.153:8099/content/repositories/geedge/</url>
 		</pluginRepository>
 		<pluginRepository>
 			<id>public</id>
