@@ -21,6 +21,10 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletResponse;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.map.MapUtil;
+import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import org.apache.commons.collections.CollectionUtils;
 import org.quartz.SchedulerException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -774,10 +778,24 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 				futureList.add(CompletableFuture.supplyAsync(() -> {
 					VisualPanel visualPanel = this.getById(chart.getPanelId());
 					R ok = R.ok();
+					Map<String, Object> queryParams = MapUtil.newHashMap();
+					queryParams.put("type", "total");
+					queryParams.put("dimension", "priority");
+					queryParams.put("step", "d");
 					if (StrUtil.equals("assetInfo", chart.getType())) {
-						ok.put("data", assetAssetService.queryAssetInfo(visualPanel.getLink()));
+						queryParams.put("assetId", visualPanel.getLink());
+						Map<String, Object> alertMessageTrend = statServiceImpl.queryAlertMessageTrend(queryParams);
+						AssetAsset asset = assetAssetService.queryAssetInfo(visualPanel.getLink());
+						Map<String, Object> assetDataMap = BeanUtil.beanToMap(asset);
+						assetDataMap.put("alertMessageTrend", alertMessageTrend);
+						ok.put("data", assetDataMap);
 					} else if (StrUtil.equals("endpointInfo", chart.getType())) {
-						ok.put("data", monitorEndpointService.queryEndpointEntity(visualPanel.getLink()));
+						queryParams.put("endpointId", visualPanel.getLink());
+						Map<String, Object> alertMessageTrend = statServiceImpl.queryAlertMessageTrend(queryParams);
+						MonitorEndpoint endpoint = monitorEndpointService.queryEndpointEntity(visualPanel.getLink());
+						Map<String, Object> endpointDataMap = BeanUtil.beanToMap(endpoint);
+						endpointDataMap.put("alertMessageTrend", alertMessageTrend);
+						ok.put("data", endpointDataMap);
 					} else {
 						cn.hutool.json.JSONObject dataSource = JSONUtil.parseArray(chartParam.get("datasource"))
 								.getJSONObject(0);
