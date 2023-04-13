@@ -324,8 +324,7 @@ public class VisualServiceImpl implements VisualService {
         List<Map> varConfigList = StrUtil.isNotEmpty(varsJsonStr) ? JSONObject.parseArray(varsJsonStr, Map.class) : Tool.ListUtil.empty();
         if (Tool.CollUtil.isEmpty(varConfigList)) {
             log.warn("[renderRepeatChartVariables] [no chart variable config] [vars size: {}]", varConfigList.size());
-            List<VisualChart> allChartList = visualChartService.getAllChartList(chartList);
-            return allChartList;
+            return chartList;
         }
 
         // multi variable
