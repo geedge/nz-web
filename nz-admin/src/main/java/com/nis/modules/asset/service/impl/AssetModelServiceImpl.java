@@ -110,14 +110,15 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
         model.setBrand(brand);
         model.setType(typeConf);
 
-        //收藏判断
-        int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
-                .eq(SysUserStarredEntity::getTid,model.getId())
-                .eq(SysUserStarredEntity::getType,"assetModel")
+        // 收藏标识 0：未收藏 1：已收藏
+        List<SysUserStarredEntity> tUserStatList = starredService.list(new LambdaQueryWrapper<SysUserStarredEntity>()
+                .select(SysUserStarredEntity::getId)
+                .eq(SysUserStarredEntity::getTid, model.getId())
+                .eq(SysUserStarredEntity::getType, "assetModel")
                 .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId())
+                .last("limit 1")
         );
-        model.setStarred(count == 0 ? 0 : 1);
-
+        model.setStarred(CollUtil.isEmpty(tUserStatList) ? 0 : 1);
         return model;
     }
 
@@ -237,8 +238,11 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
         AssetModel oldModel = this.getById(model.getId());
         //被引用的model 不允许修改type
         if(!ToolUtil.equals(oldModel.getTypeId(), model.getTypeId())){
-            int assetCount = assetAssetService.count(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getModelId, oldModel.getId()));
-            if(assetCount > 0){
+            List<AssetAsset> tAssetList = assetAssetService.list(new LambdaQueryWrapper<AssetAsset>()
+                    .select(AssetAsset::getId)
+                    .eq(AssetAsset::getModelId, oldModel.getId())
+                    .last("limit 1"));
+            if (CollUtil.isNotEmpty(tAssetList)) {
                 throw new NZException(RCode.ASSET_MODEL_CONTAINS_CAN_NOT_CHANGE);
             }
         }

@@ -1,5 +1,6 @@
 package com.nis.modules.alert.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.map.MapUtil;
@@ -741,7 +742,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             if (ObjectUtil.equal(type, AlertRuleType.SNMP_TRAP.getValue())) {
                 ValidateUtils.is(item.getOperator()).equalsIgnoreCase("~=", RCode.ALERTRULE_SNMPTRAP_OPERATOR_ERROR);
             } else {
-                List<String> operatorEnumList = Arrays.asList(new String[]{"==", "!=", ">", "<", ">=", "<="});
+                List<String> operatorEnumList = Arrays.asList(new String[]{"==", "!=", ">", "<", ">=", "<=", "~="});
                 if (!operatorEnumList.contains(item.getOperator())) {
                     throw new NZException(RCode.ALERTRULE_OPERATOR_INVALIDE);
                 }
@@ -784,14 +785,15 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             alertRule.setReceivers(list);
         }
 
-        // 当前用户收藏状态  1：收藏  0：未收藏
-        int ruleStarredCount = sysUserStarredService.count(
-                new LambdaQueryWrapper<SysUserStarredEntity>()
-                        .eq(SysUserStarredEntity::getType, "alertRule")
-                        .eq(SysUserStarredEntity::getTid, alertRule.getId())
-                        .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId().intValue()));
-
-        alertRule.setStarred(ruleStarredCount == 0 ? 0 : 1);
+        // 收藏标识 0：未收藏 1：已收藏
+        List<SysUserStarredEntity> tUserStatList = sysUserStarredService.list(new LambdaQueryWrapper<SysUserStarredEntity>()
+                .select(SysUserStarredEntity::getId)
+                .eq(SysUserStarredEntity::getTid, alertRule.getId())
+                .eq(SysUserStarredEntity::getType, "alertRule")
+                .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId())
+                .last("limit 1")
+        );
+        alertRule.setStarred(CollUtil.isEmpty(tUserStatList) ? 0 : 1);
 		return alertRule;
 	}
 }

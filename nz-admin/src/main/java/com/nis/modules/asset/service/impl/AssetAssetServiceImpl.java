@@ -302,13 +302,15 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         asset.setClientPin(null);
 
         try {
-            ///收藏标识 0：未收藏 1：已收藏
-            int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
+            // 收藏标识 0：未收藏 1：已收藏
+            List<SysUserStarredEntity> tUserStatList = starredService.list(new LambdaQueryWrapper<SysUserStarredEntity>()
+                    .select(SysUserStarredEntity::getId)
                     .eq(SysUserStarredEntity::getTid, asset.getId())
                     .eq(SysUserStarredEntity::getType, "asset")
                     .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId())
+                    .last("limit 1")
             );
-            asset.setStarred(count == 0 ? 0 : 1);
+            asset.setStarred(CollUtil.isEmpty(tUserStatList) ? 0 : 1);
         } catch (ShiroException e) {
             // 快照线程无法获取ShiroSession
         }

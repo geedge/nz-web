@@ -1,5 +1,6 @@
 package com.nis.modules.endpoint.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.lang.Pair;
 import cn.hutool.core.lang.hash.MurmurHash;
@@ -166,13 +167,15 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
 
         try{
-            // 当前用户收藏状态  1：收藏  0：未收藏
-            int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
+            // 收藏标识 0：未收藏 1：已收藏
+            List<SysUserStarredEntity> tUserStatList = starredService.list(new LambdaQueryWrapper<SysUserStarredEntity>()
+                    .select(SysUserStarredEntity::getId)
                     .eq(SysUserStarredEntity::getTid, endpoint.getId())
                     .eq(SysUserStarredEntity::getType, "endpoint")
-                    .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId().intValue())
+                    .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId())
+                    .last("limit 1")
             );
-            endpoint.setStarred(count == 0 ? 0 : 1);
+            endpoint.setStarred(CollUtil.isEmpty(tUserStatList) ? 0 : 1);
         }catch (ShiroException e){
             // 快照线程无法获取ShiroSession
         }

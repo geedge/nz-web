@@ -1,5 +1,6 @@
 package com.nis.modules.alert.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.BooleanUtil;
@@ -87,12 +88,15 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 			recordRuleEntity.setUpdateUser(userEntity);
 		}
 
-		/// 收藏标识 0：未收藏 1：已收藏
-		int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
+		// 收藏标识 0：未收藏 1：已收藏
+		List<SysUserStarredEntity> tUserStatList = starredService.list(new LambdaQueryWrapper<SysUserStarredEntity>()
+				.select(SysUserStarredEntity::getId)
 				.eq(SysUserStarredEntity::getTid, recordRuleEntity.getId())
 				.eq(SysUserStarredEntity::getType, "recordRule")
-				.eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId()));
-		recordRuleEntity.setStarred(count == 0 ? 0 : 1);
+				.eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId())
+				.last("limit 1")
+		);
+		recordRuleEntity.setStarred(CollUtil.isEmpty(tUserStatList) ? 0 : 1);
 		return recordRuleEntity;
 	}
 

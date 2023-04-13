@@ -1,5 +1,6 @@
 package com.nis.modules.asset.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -83,12 +84,14 @@ public class IssueRecordServiceImpl extends ServiceImpl<IssueRecordDao, IssueRec
         issueRecord.setAssetIds(issueAssetRelService.queryAssetsIds(id));
         issueRecord.setAssets(issueAssetRelService.queryAssetsByIssueId(id));
         // 收藏标识 0：未收藏 1：已收藏
-        int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
-                .eq(SysUserStarredEntity::getTid,id)
-                .eq(SysUserStarredEntity::getType,"issueRecord")
-                .eq(SysUserStarredEntity::getUid,ShiroUtils.getUserId())
+        List<SysUserStarredEntity> tUserStatList = starredService.list(new LambdaQueryWrapper<SysUserStarredEntity>()
+                .select(SysUserStarredEntity::getId)
+                .eq(SysUserStarredEntity::getTid, id)
+                .eq(SysUserStarredEntity::getType, "issueRecord")
+                .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId())
+                .last("limit 1")
         );
-        issueRecord.setStarred(count == 0 ? 0 : 1);
+        issueRecord.setStarred(CollUtil.isEmpty(tUserStatList) ? 0 : 1);
         return issueRecord;
     }
 

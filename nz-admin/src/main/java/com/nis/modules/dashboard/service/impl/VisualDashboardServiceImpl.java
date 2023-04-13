@@ -154,12 +154,15 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 		if (ToolUtil.isNotEmpty(dashboard.getParam()))
 			dashboard.setParam(JSONObject.parseObject(String.valueOf(dashboard.getParam()), Map.class));
 
-		// 当前用户收藏状态 1：收藏 0：未收藏
-		int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
-				.eq(SysUserStarredEntity::getTid, dashboard.getId()).eq(SysUserStarredEntity::getType, "dashboard")
-				.eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId().intValue()));
-
-		dashboard.setStarred(count == 0 ? 0 : 1);
+        // 收藏标识 0：未收藏 1：已收藏
+        List<SysUserStarredEntity> tUserStatList = starredService.list(new LambdaQueryWrapper<SysUserStarredEntity>()
+                .select(SysUserStarredEntity::getId)
+                .eq(SysUserStarredEntity::getTid, dashboard.getId())
+                .eq(SysUserStarredEntity::getType, "dashboard")
+                .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId())
+                .last("limit 1")
+        );
+        dashboard.setStarred(CollUtil.isEmpty(tUserStatList) ? 0 : 1);
 		return dashboard;
 	}
 
@@ -196,11 +199,15 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 						if (ToolUtil.isNotEmpty(childrenDashboard.getParam()))
 							childrenDashboard.setParam(JSONObject.parseObject(String.valueOf(childrenDashboard.getParam()), Map.class));
 
-						// 当前用户收藏状态 1：收藏 0：未收藏
-						int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
-								.eq(SysUserStarredEntity::getTid, childrenDashboard.getId()).eq(SysUserStarredEntity::getType, "dashboard")
-								.eq(SysUserStarredEntity::getUid, currentLoginUserID.intValue()));
-						childrenDashboard.setStarred(count == 0 ? 0 : 1);
+						// 收藏标识 0：未收藏 1：已收藏
+						List<SysUserStarredEntity> tUserStatList = starredService.list(new LambdaQueryWrapper<SysUserStarredEntity>()
+								.select(SysUserStarredEntity::getId)
+								.eq(SysUserStarredEntity::getTid, childrenDashboard.getId())
+								.eq(SysUserStarredEntity::getType, "dashboard")
+								.eq(SysUserStarredEntity::getUid, currentLoginUserID.intValue())
+								.last("limit 1")
+						);
+						childrenDashboard.setStarred(CollUtil.isEmpty(tUserStatList) ? 0 : 1);
 					}
 					visualDashboard.setChildren(childrenList);
 				}

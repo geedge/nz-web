@@ -1,5 +1,6 @@
 package com.nis.modules.asset.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.BooleanUtil;
@@ -170,13 +171,15 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
 
         Integer num = alertMessageDao.getAlertNumByCabinetId(id);
         cabinet.setAlertNum(num);
-        //收藏判断
-        int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
-                .eq(SysUserStarredEntity::getTid,cabinet.getId())
-                .eq(SysUserStarredEntity::getType,"cabinet")
+        // 收藏标识 0：未收藏 1：已收藏
+        List<SysUserStarredEntity> tUserStatList = starredService.list(new LambdaQueryWrapper<SysUserStarredEntity>()
+                .select(SysUserStarredEntity::getId)
+                .eq(SysUserStarredEntity::getTid, cabinet.getId())
+                .eq(SysUserStarredEntity::getType, "cabinet")
                 .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId())
+                .last("limit 1")
         );
-        cabinet.setStarred(count == 0 ? 0 : 1);
+        cabinet.setStarred(CollUtil.isEmpty(tUserStatList) ? 0 : 1);
         return cabinet;
     }
 

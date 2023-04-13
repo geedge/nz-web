@@ -139,14 +139,15 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
             module.setDashboard(dashboard);
         }
 
-        // 当前用户收藏状态  1：收藏  0：未收藏
-        int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
+        // 收藏标识 0：未收藏 1：已收藏
+        List<SysUserStarredEntity> tUserStatList = starredService.list(new LambdaQueryWrapper<SysUserStarredEntity>()
+                .select(SysUserStarredEntity::getId)
                 .eq(SysUserStarredEntity::getTid, module.getId())
                 .eq(SysUserStarredEntity::getType, "module")
-                .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId().intValue())
+                .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId())
+                .last("limit 1")
         );
-
-        module.setStarred(count == 0 ? 0 : 1);
+        module.setStarred(CollUtil.isEmpty(tUserStatList) ? 0 : 1);
         return module;
     }
 

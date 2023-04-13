@@ -1,5 +1,6 @@
 package com.nis.modules.asset.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.BooleanUtil;
@@ -94,9 +95,6 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
     private SysConfigService sysConfigService;
 
     @Autowired
-    private StatService statService;
-
-    @Autowired
     private BasicImportAndExportServices basicImportAndExportServices;
 
     @Autowired
@@ -137,14 +135,15 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
         Integer assetNum = assetService.count(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getDcId, dc.getId()));
         dc.setAssetNum(assetNum);
 
-        //收藏判断
-        int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
-                .eq(SysUserStarredEntity::getTid,dc.getId())
-                .eq(SysUserStarredEntity::getType,"datacenter")
+        // 收藏标识 0：未收藏 1：已收藏
+        List<SysUserStarredEntity> tUserStatList = starredService.list(new LambdaQueryWrapper<SysUserStarredEntity>()
+                .select(SysUserStarredEntity::getId)
+                .eq(SysUserStarredEntity::getTid, dc.getId())
+                .eq(SysUserStarredEntity::getType, "datacenter")
                 .eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId())
+                .last("limit 1")
         );
-        dc.setStarred(count == 0 ? 0 : 1);
-
+        dc.setStarred(CollUtil.isEmpty(tUserStatList) ? 0 : 1);
         return dc;
     }
 

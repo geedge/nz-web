@@ -1,5 +1,6 @@
 package com.nis.modules.ipam.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.BooleanUtil;
@@ -81,13 +82,15 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 		//查询使用数量
 		Integer used = ipamIpDao.selectCount(new LambdaQueryWrapper<IpamIp>().eq(IpamIp::getSubnetId, ipamSubnet.getId()));
 		ipamSubnet.setUsed(used);
-		//收藏判断
-		int count = starredService.count(new LambdaQueryWrapper<SysUserStarredEntity>()
-				.eq(SysUserStarredEntity::getTid,ipamSubnet.getId())
-				.eq(SysUserStarredEntity::getType,"ipamSubnet")
+		// 收藏标识 0：未收藏 1：已收藏
+		List<SysUserStarredEntity> tUserStatList = starredService.list(new LambdaQueryWrapper<SysUserStarredEntity>()
+				.select(SysUserStarredEntity::getId)
+				.eq(SysUserStarredEntity::getTid, ipamSubnet.getId())
+				.eq(SysUserStarredEntity::getType, "ipamSubnet")
 				.eq(SysUserStarredEntity::getUid, ShiroUtils.getUserId())
+				.last("limit 1")
 		);
-		ipamSubnet.setStarred(count == 0 ? 0 : 1);
+		ipamSubnet.setStarred(CollUtil.isEmpty(tUserStatList) ? 0 : 1);
 		return ipamSubnet;
 	}
 

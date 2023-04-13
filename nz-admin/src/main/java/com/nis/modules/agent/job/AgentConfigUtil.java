@@ -144,16 +144,14 @@ public class AgentConfigUtil {
 	 * @return
 	 */
 	public boolean comparePromtailVersionChanges() {
-		boolean flag = false;
 		MonitorEventLog monitorEventLog = confEventDao
 				.selectOne(new LambdaQueryWrapper<MonitorEventLog>().eq(MonitorEventLog::getEvent, "promtail"));
-		int count = endpointStateService.count(new LambdaQueryWrapper<MonitorEndpointState>()
+		List<MonitorEndpointState> tStateList = endpointStateService.list(new LambdaQueryWrapper<MonitorEndpointState>()
+				.select(MonitorEndpointState::getEndpointId)
 				.eq(MonitorEndpointState::getType, Constant.MonitorConfType.LOGS.getValue())
-                .eq(MonitorEndpointState::getState, 1).ne(MonitorEndpointState::getVer, monitorEventLog.getCounter()));
-		if (count > 0) {
-			flag = true;
-		}
-		return flag;
+				.eq(MonitorEndpointState::getState, 1).ne(MonitorEndpointState::getVer, monitorEventLog.getCounter())
+				.last("limit 1"));
+		return Tool.CollUtil.isNotEmpty(tStateList);
 	}
 
 	/**
