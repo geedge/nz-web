@@ -262,7 +262,7 @@ public class AlertRuleEntity implements Serializable {
 					result = (Tool.NumberUtil.parseDouble(val) <= Tool.NumberUtil.parseDouble(value));
 					break;
 				case "~=":
-					result = Pattern.matches(operator, val.toString());
+					result = Pattern.matches(value, val);
 					break;
 				default:
 					break;
