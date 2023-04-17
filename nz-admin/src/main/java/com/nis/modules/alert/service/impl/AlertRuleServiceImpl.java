@@ -740,7 +740,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                     .and(item.getOperator()).notNull(RCode.ALERTRULE_CONDITION_OPERATOR_ISNULL)
                     .and(item.getValue()).notNull(RCode.ALERTRULE_CONDITION_VALUE_ISNULL);
             if (ObjectUtil.equal(type, AlertRuleType.SNMP_TRAP.getValue())) {
-                ValidateUtils.is(item.getOperator()).equalsIgnoreCase("~=", RCode.ALERTRULE_SNMPTRAP_OPERATOR_ERROR);
+                ValidateUtils.is(item.getOperator()).equalsIgnoreCase("=~", RCode.ALERTRULE_SNMPTRAP_OPERATOR_ERROR);
             } else {
                 List<String> operatorEnumList = Arrays.asList(new String[]{"==", "!=", ">", "<", ">=", "<="});
                 if (!operatorEnumList.contains(item.getOperator())) {

@@ -97,7 +97,7 @@ public class V2023_04_10__SupportMultiThresholdAlertRules extends BaseJavaMigrat
                     break;
                 }
                 case SNMP_TRAP: {
-                    conditionItem.setOperator("~=");
+                    conditionItem.setOperator("=~");
                     conditionItem.setValue(".*");
                     break;
                 }

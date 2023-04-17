@@ -261,7 +261,7 @@ public class AlertRuleEntity implements Serializable {
 				case "<=":
 					result = (Tool.NumberUtil.parseDouble(val) <= Tool.NumberUtil.parseDouble(value));
 					break;
-				case "~=":
+				case "=~":
 					result = Pattern.matches(value, val);
 					break;
 				default:
