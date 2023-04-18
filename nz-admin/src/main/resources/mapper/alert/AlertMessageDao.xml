@@ -130,6 +130,7 @@
 				        dc_id = #{id}
 				    </when>
 				</choose>
+		    GROUP BY severity_id
 		) cnt on conf.id = cnt.severity_id
 		order by conf.weight
 	</select>
