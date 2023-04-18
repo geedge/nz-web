@@ -547,8 +547,7 @@
 		LEFT JOIN alert_severity_conf alsc on am.severity_id = alsc.id
 		<where>
 			<if test="params.id != null and params.id != ''">
-				(
-				<trim suffixOverrides="or">
+				<trim suffixOverrides="or" prefix="(" suffix=")">
 					<if test="params.scopeList.contains(&quot;asset&quot;)">
 						<if test="params.asset != null and params.asset != ''">
 							am.asset_id = #{params.asset}  or
@@ -585,7 +584,6 @@
 						</if>
 					</if>
 				</trim>
-				)
 			</if>
 			<if test="params.startAt != null">
 				AND am.start_at &gt;= #{params.startAt}
