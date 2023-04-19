@@ -118,6 +118,7 @@ public class TopoServiceImpl extends ServiceImpl<TopoDao, Topo> implements TopoS
 
     private JSONArray removeModuleEntity(JSONArray pens, List<Integer> moduleIds) {
         Iterator<Object> iterator = pens.iterator();
+        Integer moduleId;
         while (iterator.hasNext()) {
             Map<String, Object> node = (Map<String, Object>) iterator.next();
             Object type = node.getOrDefault("type", 0);
@@ -125,10 +126,11 @@ public class TopoServiceImpl extends ServiceImpl<TopoDao, Topo> implements TopoS
             if (Tool.BooleanUtil.negate(Tool.ObjectUtil.equals(type, 0))) {
                 continue;
             }
-
-            Integer moduleId = (Integer) node.get("moduleId");
-            if (moduleId != null && moduleIds.contains(moduleId)) {
-                iterator.remove();
+            if (Tool.ObjectUtil.isNotEmpty(node.get("moduleId"))){
+                moduleId = (Integer) node.get("moduleId");
+                if (moduleId != null && moduleIds.contains(moduleId)) {
+                    iterator.remove();
+                }
             }
         }
         return pens;
