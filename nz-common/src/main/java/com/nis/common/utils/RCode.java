@@ -485,6 +485,7 @@ public enum RCode {
     ALERTRULE_CONDITION_VALUE_ISNULL(421047, "Alert rule condition value attribute cannot be empty"),
     ALERTRULE_EXTLABELS_FORMAT(423048, "Alert rule extLabels format error"),
     ALERTRULE_SNMPTRAP_OPERATOR_ERROR(423049, "The SNMP trap type operator only supports regex"),
+    ALERTRULE_SELECT_DASHBOARD_TYPE_INCORRECT(424050,"Incorrect type selection, only `dashboard` type dashboard is supported"),
 
 
 

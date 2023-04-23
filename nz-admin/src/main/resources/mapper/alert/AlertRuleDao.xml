@@ -23,6 +23,7 @@
 
         <result property="condition" column="condition"/>
         <result property="extLabels" column="ext_labels"/>
+        <result property="dashboardId" column="dashboard_id"/>
 
         <result property="autoExpired" column="auto_expired"/>
         <result property="schedEnable" column="sched_enable"/>
