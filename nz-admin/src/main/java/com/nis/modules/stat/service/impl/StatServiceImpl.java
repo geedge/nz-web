@@ -503,7 +503,7 @@ public class StatServiceImpl implements StatService {
 		// 处理时区问题
 		Timezone sysTimezone = timezoneService.getOne(
 				new LambdaQueryWrapper<Timezone>().eq(Timezone::getName, sysConfigService.getValue("timezone")));
-		params.put("timezone", ToolUtil.isEmpty(sysTimezone) ? 0 : sysTimezone.getOffset());
+        params.put("timezone", ToolUtil.isEmpty(sysTimezone) ? 0 : sysTimezone.getOffset() / 1000);
 
 		if (ToolUtil.isEmpty(params.get("stime"))) {
 			params.put("stime", DateUtil.offsetDay(
@@ -954,7 +954,7 @@ public class StatServiceImpl implements StatService {
 		MonitorModule module = monitorModuleService.getById(id);
 		if (Tool.ObjectUtil.isNull(module))
 			throw new NZException(RCode.MODULE_NOTFOUND);
-		
+
 		List nodesList = new ArrayList();
 		for (String statRelObjectStr : Tool.StrUtil.split(statRelObjects, ',')) {
 			switch (statRelObjectStr) {

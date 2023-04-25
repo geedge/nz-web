@@ -652,11 +652,8 @@
     
     <sql id="selectAlertMessageColumn">
     	id,
-		summary,
-		description,
-		labels,
-		DATE_ADD(start_at,INTERVAL #{params.timezone}/1000 second) start_at,
-		DATE_ADD(end_at,INTERVAL #{params.timezone}/1000 second) end_at,
+		DATE_ADD(start_at,INTERVAL #{params.timezone} second) start_at,
+		DATE_ADD(end_at,INTERVAL #{params.timezone} second) end_at,
 		state,
 		rule_id,
 		project_id,
@@ -665,7 +662,6 @@
 		asset_id,
 		dc_id,
 		hash_key,
-		remark,
 		severity_id
     </sql>
     
