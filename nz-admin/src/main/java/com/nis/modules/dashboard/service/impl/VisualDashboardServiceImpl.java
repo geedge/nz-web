@@ -28,6 +28,8 @@ import com.nis.common.utils.*;
 import com.nis.common.utils.Constant.ChartDatasourceType;
 import com.nis.modules.agent.service.LokiApiService;
 import com.nis.modules.agent.service.PromApiService;
+import com.nis.modules.alert.entity.AlertRuleEntity;
+import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetModel;
 import com.nis.modules.asset.service.AssetAssetService;
@@ -147,6 +149,9 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 
 	@Autowired
 	private StatService statService;
+
+	@Autowired
+	private AlertRuleService alertRuleService;
 
 	@Override
 	public VisualDashboard queryInfo(Integer id) {
@@ -275,6 +280,10 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 		monitorModuleService.update(new LambdaUpdateWrapper<MonitorModule>()
 				.set(MonitorModule::getDashboardId, null)
 				.in(MonitorModule::getDashboardId, allDashboardIds));
+
+		alertRuleService.update(new LambdaUpdateWrapper<AlertRuleEntity>()
+				.set(AlertRuleEntity::getDashboardId, -1)
+				.in(AlertRuleEntity::getDashboardId, allDashboardIds));
 
 		// Playlist
 		List<VisualPlaylist> playlistList = playlistService.list();
