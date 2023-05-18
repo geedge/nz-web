@@ -1,6 +1,7 @@
 package com.nis.modules.diagnose.chain.asset;
 
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.nis.common.utils.Constant;
@@ -86,55 +87,86 @@ public class AgentStateCheckOfPingInterceptor implements DiagnoseInterceptor {
         String assetPingFromConf = sysConfService.getValueOrDefault(Constant.SYSCONFIG_KEY_ASSET_PING_FROM, Constant.AssetPingFrom.GLOBAL.getValue());
         log.info("[checkAgentStateOfPing] [asset_ping_from: {}]", assetPingFromConf);
 
-        List<Agent> totalAgentList = Tool.ListUtil.list(true);
-        List<Agent> downAgentList = Tool.ListUtil.list(true);
+        // federation enable
+        boolean federationEnabled = StrUtil.equals("1", sysConfService.getValueOrDefault(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED, "1"));
 
-        // ping source is global
-        if (Tool.StrUtil.equals(Constant.AssetPingFrom.GLOBAL.getValue(), assetPingFromConf)) {
-            totalAgentList = agentService.list(new LambdaUpdateWrapper<Agent>()
-                    .eq(Agent::getType, Constant.AgentType.GLOBAL.getValue()));
+        List<Agent> healthyDatacenterList = Tool.ListUtil.list(true);
 
-            downAgentList = totalAgentList.stream().filter(agent -> Tool.ObjectUtil.notEqual(1, agent.getStatus())).collect(Collectors.toList());
-            log.info("[checkAgentStateOfPing] [asset ping from global] [total agent size: {}] [down agent size: {}]", totalAgentList.size(), downAgentList.size());
-        }
+        // global agent list
+        // ping_from is global || federation is false  global scrape endpoint job
+        List<Agent> healthyGlobalList = agentService.list(new LambdaUpdateWrapper<Agent>()
+                .eq(Agent::getType, Constant.AgentType.GLOBAL.getValue())
+                .eq(Agent::getStatus, "1"));
 
-        // ping source is per-datacenter
-        if (Tool.StrUtil.equals(Constant.AssetPingFrom.PER_DATACENTER.getValue(), assetPingFromConf)) {
-            Integer dcId = asset.getDcId();
-            // per-datacenter agent list
-            totalAgentList = agentService.list(new LambdaUpdateWrapper<Agent>()
-                    .eq(Agent::getType, Constant.AgentType.PER_DATACENTER.getValue())
-                    .eq(Agent::getDcId, dcId));
+        log.info("[checkAgentStateOfPing] [total healthy global agent size: {}]", healthyGlobalList.size());
 
-            List<Agent> downPerDcAgents = totalAgentList.stream().filter(agent -> Tool.ObjectUtil.notEqual(1, agent.getStatus())).collect(Collectors.toList());
+        List<Agent> totalAgentLists = agentService.list();
 
-            // per-datacenter scrape asset_ping job, query prom_api by global agent, so down agent include global agent
-            List<Agent> downGlobalAgents = agentService.list(new LambdaUpdateWrapper<Agent>().eq(Agent::getType, Constant.AgentType.GLOBAL.getValue()).ne(Agent::getStatus, 1));
-            log.info("[checkAgentStateOfPing] [asset ping from per-datacenter] [total per-datacenter agent size: {}] [down per-datacenter agent size: {}] [down global agent size: {}]", totalAgentList.size(), downPerDcAgents.size(), downGlobalAgents.size());
-
-            // down agent list include per-datacenter and global agent
-            downAgentList.addAll(downPerDcAgents);
-            downAgentList.addAll(downGlobalAgents);
-        }
-
+        //result
         Map<Object, Object> resultMap = Tool.MapUtil.builder()
                 .put("item", "diagnose.asset.item.agent.status")
                 .put("resolution", Tool.StrUtil.EMPTY)
                 .map();
 
-        if (Tool.BooleanUtil.and(Tool.CollUtil.isNotEmpty(totalAgentList),
-                Tool.CollUtil.isNotEmpty(downAgentList))) {
-            // has down agent
-            resultMap.put("state", DiagnoseState.DID_NOT_PASS.getValue());
-            resultMap.put("resolution", "diagnose.asset.resolution.agent.status");
-        } else if (Tool.BooleanUtil.and(Tool.CollUtil.isNotEmpty(totalAgentList),
-                Tool.CollUtil.isEmpty(downAgentList))) {
-            // PASS
-            resultMap.put("state", DiagnoseState.PASS.getValue());
-        } else if (Tool.CollUtil.isEmpty(totalAgentList)) {
-            // 没有配置 Agent 信息
-            resultMap.put("state", DiagnoseState.DID_NOT_PASS.getValue());
-            resultMap.put("resolution", "diagnose.asset.resolution.agent.config");
+
+        if (federationEnabled) {
+            // federation 模式关闭  ，Global scrape endpoint jobs
+            log.info("[agentStateCheckOfMetrics] [federation is not enabled. get global agents]");
+
+            // ping source is per-datacenter
+            if (Tool.StrUtil.equals(Constant.AssetPingFrom.PER_DATACENTER.getValue(), assetPingFromConf)) {
+                Integer dcId = asset.getDcId();
+
+                // per-datacenter agent list
+                healthyDatacenterList = agentService.list(new LambdaUpdateWrapper<Agent>()
+                        .eq(Agent::getType, Constant.AgentType.PER_DATACENTER.getValue())
+                        .eq(Agent::getDcId, dcId)
+                        .eq(Agent::getStatus, "1")
+                        .last("limit 1"));
+
+                log.info("[checkAgentStateOfPing] [asset ping from per-datacenter] [healthy global agent size: {}] [healthy per-datacenter agent size: {}]", healthyGlobalList.size(), healthyDatacenterList.size());
+
+                if (Tool.BooleanUtil.and(Tool.CollUtil.isNotEmpty(healthyGlobalList), Tool.CollUtil.isNotEmpty(healthyDatacenterList))) {
+                    // PASS
+                    resultMap.put("state", DiagnoseState.PASS.getValue());
+                } else if (Tool.CollUtil.isNotEmpty(totalAgentLists) && (Tool.CollUtil.isEmpty(healthyGlobalList) || Tool.CollUtil.isEmpty(healthyDatacenterList))) {
+                    // has down agent
+                    resultMap.put("state", DiagnoseState.DID_NOT_PASS.getValue());
+                    resultMap.put("resolution", "diagnose.asset.resolution.agent.status");
+                } else if (Tool.CollUtil.isEmpty(totalAgentLists)) {
+                    // 没有配置 Agent 信息
+                    resultMap.put("state", DiagnoseState.DID_NOT_PASS.getValue());
+                    resultMap.put("resolution", "diagnose.asset.resolution.agent.config");
+                }
+            } else {
+                if (Tool.CollUtil.isNotEmpty(healthyGlobalList)) {
+                    // PASS
+                    resultMap.put("state", DiagnoseState.PASS.getValue());
+                } else if (Tool.CollUtil.isNotEmpty(totalAgentLists) && Tool.CollUtil.isEmpty(healthyGlobalList)) {
+                    // has down agent
+                    resultMap.put("state", DiagnoseState.DID_NOT_PASS.getValue());
+                    resultMap.put("resolution", "diagnose.asset.resolution.agent.status");
+                }
+                if (Tool.CollUtil.isEmpty(totalAgentLists)) {
+                    // 没有配置 Agent 信息
+                    resultMap.put("state", DiagnoseState.DID_NOT_PASS.getValue());
+                    resultMap.put("resolution", "diagnose.asset.resolution.agent.config");
+                }
+            }
+        } else {
+            if (Tool.CollUtil.isNotEmpty(healthyGlobalList)) {
+                // PASS
+                resultMap.put("state", DiagnoseState.PASS.getValue());
+            } else if (Tool.CollUtil.isNotEmpty(totalAgentLists) && Tool.CollUtil.isEmpty(healthyGlobalList)) {
+                // has down agent
+                resultMap.put("state", DiagnoseState.DID_NOT_PASS.getValue());
+                resultMap.put("resolution", "diagnose.asset.resolution.agent.status");
+            }
+            if (Tool.CollUtil.isEmpty(totalAgentLists)) {
+                // 没有配置 Agent 信息
+                resultMap.put("state", DiagnoseState.DID_NOT_PASS.getValue());
+                resultMap.put("resolution", "diagnose.asset.resolution.agent.config");
+            }
         }
         return resultMap;
     }

@@ -37,7 +37,7 @@
 				    </foreach>
             </if>
 			<if test="params.code != null and params.code != ''">
-				and si.code = #{params.code}
+				and locate(#{params.code},si.code)
 			</if>
 			<if test="params.lang != null and params.lang != ''">
 				and si.lang = #{params.lang}

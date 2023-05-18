@@ -1,6 +1,7 @@
 package com.nis.modules.diagnose.chain.endpoint.logs;
 
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -78,15 +79,37 @@ public class AgentStateCheckOfLogsEndpointInterceptor implements DiagnoseInterce
         String federationEnabled = sysConfService.getValueOrDefault(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED, "1");
         log.info("[agentStateCheckOfLogs] [prometheus_federation_enabled] [value: {}]", federationEnabled);
 
-        List<Agent> totalAgentList = Tool.ListUtil.list(true);
-        List<Agent> downAgentList = Tool.ListUtil.list(true);
+        List<Agent> healthyDatacenterList = Tool.ListUtil.list(true);
+
+        List<Agent> healthyClobalList = agentService.list(new LambdaUpdateWrapper<Agent>()
+                .eq(Agent::getType, Constant.AgentType.GLOBAL.getValue())
+                .eq(Agent::getStatus, "1"));
+        log.info("[agentStateCheckOfLogs] [global agent receive log data] [healthy global agent size: {}]", healthyClobalList.size());
+
+        List<Agent> totalAgentLists = agentService.list();
+
+        //result
+        Map<Object, Object> resultMap = Tool.MapUtil.builder()
+                .put("item", "logs.diagnose.endpoint.item.agent.status")
+                .put("resolution", Tool.StrUtil.EMPTY)
+                .map();
 
         if (StrUtil.equals("0", federationEnabled)) {
             // federation 模式关闭  ，Global scrape endpoint jobs
-            log.info("[agentStateCheckOfLogs] [federation is not enabled. get global agents]");
-            totalAgentList = agentService.list(new LambdaUpdateWrapper<Agent>().eq(Agent::getType, Constant.AgentType.GLOBAL.getValue()));
-            downAgentList = totalAgentList.stream().filter(agent -> Tool.ObjectUtil.notEqual(1, agent.getStatus())).collect(Collectors.toList());
-            log.info("[agentStateCheckOfLogs] [global agent receive log data] [total agent size: {}] [down agent size: {}]", totalAgentList.size(), downAgentList.size());
+            log.info("[agentStateCheckOfMetrics] [federation is not enabled. get global agents]");
+
+            if (Tool.CollUtil.isNotEmpty(totalAgentLists) && Tool.CollUtil.isEmpty(healthyClobalList)) {
+                // has down agent
+                resultMap.put("state", DiagnoseState.DID_NOT_PASS.getValue());
+                resultMap.put("resolution", "diagnose.endpoint.resolution.agent.status");
+            } else if (Tool.CollUtil.isNotEmpty(healthyClobalList)) {
+                // PASS
+                resultMap.put("state", DiagnoseState.PASS.getValue());
+            } else if (CollUtil.isEmpty(totalAgentLists)) {
+                // 没有配置 Agent 信息
+                resultMap.put("state", DiagnoseState.DID_NOT_PASS.getValue());
+                resultMap.put("resolution", "diagnose.endpoint.resolution.agent.config");
+            }
         }
 
         if (StrUtil.equals("1", federationEnabled)) {
@@ -95,40 +118,26 @@ public class AgentStateCheckOfLogsEndpointInterceptor implements DiagnoseInterce
             AssetAsset asset = assetService.getById(assetId);
 
             // per-datacenter agent list
-            totalAgentList = agentService.list(new LambdaUpdateWrapper<Agent>()
+            healthyDatacenterList = agentService.list(new LambdaUpdateWrapper<Agent>()
                     .eq(Agent::getType, Constant.AgentType.PER_DATACENTER.getValue())
-                    .eq(Agent::getDcId, asset.getDcId()));
+                    .eq(Agent::getDcId, asset.getDcId())
+                    .eq(Agent::getStatus, "1"));
 
-            List<Agent> downPerDcAgents = totalAgentList.stream().filter(agent -> Tool.ObjectUtil.notEqual(1, agent.getStatus())).collect(Collectors.toList());
+            log.info("[agentStateCheckOfLogs] [per-datacenter agent receive log data] [total healthy per-datacenter agent size: {}] [total healthy global agent size: {}]", healthyDatacenterList.size(), healthyClobalList.size());
 
-            // per-datacenter receive log data, query prom_api by global agent, so down agent include global agent
-            List<Agent> downGlobalAgents = agentService.list(new LambdaUpdateWrapper<Agent>().eq(Agent::getType, Constant.AgentType.GLOBAL.getValue()).ne(Agent::getStatus, 1));
-
-            // down agent list include per-datacenter and global agent
-            downAgentList.addAll(downPerDcAgents);
-            downAgentList.addAll(downGlobalAgents);
-
-            log.info("[agentStateCheckOfLogs] [per-datacenter agent receive log data] [total per-datacenter agent size: {}] [down per-datacenter agent size: {}] [down global agent size: {}]", totalAgentList.size(), downPerDcAgents.size(), downGlobalAgents.size());
-        }
-
-        Map<Object, Object> resultMap = Tool.MapUtil.builder()
-                .put("item", "logs.diagnose.endpoint.item.agent.status")
-                .put("resolution", Tool.StrUtil.EMPTY)
-                .map();
-
-        if (Tool.BooleanUtil.and(Tool.CollUtil.isNotEmpty(totalAgentList),
-                Tool.CollUtil.isNotEmpty(downAgentList))) {
-            // has down agent
-            resultMap.put("state", DiagnoseState.DID_NOT_PASS.getValue());
-            resultMap.put("resolution", "diagnose.endpoint.resolution.agent.status");
-        } else if (Tool.BooleanUtil.and(Tool.CollUtil.isNotEmpty(totalAgentList),
-                Tool.CollUtil.isEmpty(downAgentList))) {
-            // PASS
-            resultMap.put("state", DiagnoseState.PASS.getValue());
-        } else if (Tool.CollUtil.isEmpty(totalAgentList)) {
-            // 没有配置 Agent 信息
-            resultMap.put("state", DiagnoseState.DID_NOT_PASS.getValue());
-            resultMap.put("resolution", "diagnose.endpoint.resolution.agent.config");
+            if (Tool.CollUtil.isNotEmpty(totalAgentLists) && (Tool.CollUtil.isEmpty(healthyClobalList) || Tool.CollUtil.isEmpty(healthyDatacenterList))) {
+                // has down agent
+                resultMap.put("state", DiagnoseState.DID_NOT_PASS.getValue());
+                resultMap.put("resolution", "diagnose.endpoint.resolution.agent.status");
+            } else if (Tool.BooleanUtil.and(Tool.CollUtil.isNotEmpty(healthyClobalList),
+                    Tool.CollUtil.isNotEmpty(healthyDatacenterList))) {
+                // PASS
+                resultMap.put("state", DiagnoseState.PASS.getValue());
+            } else if (Tool.CollUtil.isEmpty(totalAgentLists)) {
+                // 没有配置 Agent 信息
+                resultMap.put("state", DiagnoseState.DID_NOT_PASS.getValue());
+                resultMap.put("resolution", "diagnose.endpoint.resolution.agent.config");
+            }
         }
         return resultMap;
     }
