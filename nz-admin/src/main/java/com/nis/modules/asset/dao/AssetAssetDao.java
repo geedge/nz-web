@@ -47,4 +47,8 @@ public interface AssetAssetDao extends BaseMapper<AssetAsset> {
      */
     List<AssetAsset> getTsgAssetListbyModel();
 
+    /**
+     * 已扫描资产详情（当前所有 asset）,用于 discovered  组织数据
+     */
+    List<AssetAsset> getDiscoveredAssetInfoList();
 }

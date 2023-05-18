@@ -106,4 +106,11 @@ public interface AssetAssetService extends IService<AssetAsset> {
      * @return
      */
     List<AssetAsset> getTsgAssetListbyModel();
+
+    /**
+     * 已扫描资产详情（当前所有 asset）,用于 discovered  组织数据
+     *
+     * @return
+     */
+    List<AssetAsset> getDiscoveredAssetInfoList();
 }

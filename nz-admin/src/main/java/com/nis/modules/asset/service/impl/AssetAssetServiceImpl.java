@@ -1,38 +1,13 @@
 package com.nis.modules.asset.service.impl;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.shiro.ShiroException;
-import org.snmp4j.smi.TimeTicks;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.DefaultTransactionDefinition;
-import org.springframework.web.multipart.MultipartFile;
-
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.collection.ListUtil;
+import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONArray;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
@@ -46,49 +21,12 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.DateUtil;
-import com.nis.common.utils.ImportValidateUtil;
-import com.nis.common.utils.JSONUtil;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.RuntimeUtil;
-import com.nis.common.utils.SnmpUtil;
-import com.nis.common.utils.SshUtil;
-import com.nis.common.utils.StringUtils;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
+import com.nis.common.utils.*;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.dao.AssetAssetDao;
-import com.nis.modules.asset.entity.AssetAsset;
-import com.nis.modules.asset.entity.AssetBrand;
-import com.nis.modules.asset.entity.AssetComment;
-import com.nis.modules.asset.entity.AssetFeature;
-import com.nis.modules.asset.entity.AssetFieldMeta;
-import com.nis.modules.asset.entity.AssetFieldValue;
-import com.nis.modules.asset.entity.AssetImportEnum;
-import com.nis.modules.asset.entity.AssetModel;
-import com.nis.modules.asset.entity.AssetPing;
-import com.nis.modules.asset.entity.AssetStateConf;
-import com.nis.modules.asset.entity.AssetTypeConf;
-import com.nis.modules.asset.entity.Cabinet;
-import com.nis.modules.asset.entity.Dc;
-import com.nis.modules.asset.service.AssetAssetService;
-import com.nis.modules.asset.service.AssetBrandService;
-import com.nis.modules.asset.service.AssetCommentService;
-import com.nis.modules.asset.service.AssetFeatureService;
-import com.nis.modules.asset.service.AssetFieldMetaService;
-import com.nis.modules.asset.service.AssetFieldValueService;
-import com.nis.modules.asset.service.AssetModelService;
-import com.nis.modules.asset.service.AssetPingService;
-import com.nis.modules.asset.service.AssetStateConfService;
-import com.nis.modules.asset.service.AssetTalonStatusService;
-import com.nis.modules.asset.service.AssetTypeConfService;
-import com.nis.modules.asset.service.CabinetService;
-import com.nis.modules.asset.service.DcService;
+import com.nis.modules.asset.entity.*;
+import com.nis.modules.asset.service.*;
 import com.nis.modules.dashboard.entity.VisualChart;
 import com.nis.modules.dashboard.entity.VisualDashboard;
 import com.nis.modules.dashboard.service.VisualChartService;
@@ -115,15 +53,24 @@ import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.modules.vsys.entity.VsysAssetRel;
 import com.nis.modules.vsys.service.VsysAssetRelService;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.shiro.ShiroException;
+import org.snmp4j.smi.TimeTicks;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
+import org.springframework.web.multipart.MultipartFile;
 
-import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.collection.ListUtil;
-import cn.hutool.core.map.MapUtil;
-import cn.hutool.core.util.BooleanUtil;
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONArray;
-import cn.hutool.log.Log;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * 资产    serviceImpl
@@ -1429,55 +1376,43 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     }
 
     public void getSystemInfoBySnmp(HashMap<String, AssetFeature> assetFeatureMap, List<AssetFeature> results, AssetAsset asset, SnmpCredential snmpCredential) throws IOException {
-        Map snmpInfos = JSONObject.parseObject((String) snmpCredential.getConfig(), Map.class);
         Set<String> keySet = Constant.SNMP_OID_MAP.keySet();
         for (String key : keySet) {
-            List<Map> snmpResults = SnmpUtil.snmpWalk(asset.getManageIp(), snmpCredential.getPort(), snmpCredential.getType(), (String) snmpInfos.get("readCommunity"), Constant.SNMP_OID_MAP.get(key), snmpInfos);
-            if ("ifEntry".equals(key)) {
-                List l = new LinkedList();
-                if (CollectionUtils.isNotEmpty(snmpResults)) {
-                    Map<String, LinkedHashMap> handleMap = new LinkedHashMap<String, LinkedHashMap>();
-                    String resultOid;
-                    String name;
-                    for (Map map : snmpResults) {
-                        //截取最后一位oid数
-                        resultOid = map.get("oid").toString();
-                        //去掉最后一位oid剩下值
-                        String first = resultOid.substring(0, resultOid.lastIndexOf("."));
-                        //最后一位oid数
-                        String last = resultOid.substring(resultOid.lastIndexOf(".") + 1, resultOid.length());
-                        name = Constant.SNMP_IFENTRY_MAP.get(first);
-                        if (ToolUtil.isEmpty(name)) {
-                            continue;
+            String oid = Constant.SNMP_OID_MAP.get(key);
+            SnmpUtil snmpUtil1 = new SnmpUtil(asset.getManageIp(), snmpCredential.getPort(), oid, snmpCredential);
+            try {
+                List<Map> snmpResults = snmpUtil1.snmpWalk();
+                if ("ifEntry".equals(key)) {
+                    List l = new LinkedList();
+                    if (CollectionUtils.isNotEmpty(snmpResults)) {
+                        Map<String, LinkedHashMap> handleMap = new LinkedHashMap<String, LinkedHashMap>();
+                        String resultOid;
+                        String name;
+                        for (Map map : snmpResults) {
+                            //截取最后一位oid数
+                            resultOid = map.get("oid").toString();
+                            //去掉最后一位oid剩下值
+                            String first = resultOid.substring(0, resultOid.lastIndexOf("."));
+                            //最后一位oid数
+                            String last = resultOid.substring(resultOid.lastIndexOf(".") + 1, resultOid.length());
+                            name = Constant.SNMP_IFENTRY_MAP.get(first);
+                            if (ToolUtil.isEmpty(name)) {
+                                continue;
+                            }
+                            Map map2 = handleMap.get(last);
+                            if (ToolUtil.isEmpty(map2)) {
+                                Map map3 = new LinkedHashMap();
+                                handleMap.put(last, (LinkedHashMap) map3);
+                                map3.put(name, map.get("value"));
+                            } else {
+                                map2.put(name, map.get("value"));
+                            }
                         }
-                        Map map2 = handleMap.get(last);
-                        if (ToolUtil.isEmpty(map2)) {
-                            Map map3 = new LinkedHashMap();
-                            handleMap.put(last, (LinkedHashMap) map3);
-                            map3.put(name, map.get("value"));
-                        } else {
-                            map2.put(name, map.get("value"));
-                        }
-                    }
 
-                    for (String k : handleMap.keySet()) {
-                        l.add(handleMap.get(k));
+                        for (String k : handleMap.keySet()) {
+                            l.add(handleMap.get(k));
+                        }
                     }
-                }
-                //查询数据库是否已经存在数据
-                AssetFeature result = assetFeatureMap.get(asset.getId() + key + Constant.ACCOUNT_SNMP_PROTOCOL);
-                if (ToolUtil.isEmpty(result)) {
-                    result = new AssetFeature();
-                }
-                result.setAssetId(asset.getId());
-                result.setItem(key);
-                result.setValue(JSON.toJSONString(l));
-                result.setSource(Constant.ACCOUNT_SNMP_PROTOCOL);
-                result.setUpdateAt(new Date());
-                results.add(result);
-            } else {
-                for (Map snmpResult : snmpResults) {
-                    String value = (String) snmpResult.get("value");
                     //查询数据库是否已经存在数据
                     AssetFeature result = assetFeatureMap.get(asset.getId() + key + Constant.ACCOUNT_SNMP_PROTOCOL);
                     if (ToolUtil.isEmpty(result)) {
@@ -1485,18 +1420,35 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                     }
                     result.setAssetId(asset.getId());
                     result.setItem(key);
-                    if ("sysUpTime".equals(key)) {
-                        TimeTicks t = new TimeTicks();
-                        t.setValue(value);
-                        long milliseconds = t.toMilliseconds();
-                        result.setValue(DateUtil.getTime(new Date(new Date().getTime() - milliseconds)));
-                    } else {
-                        result.setValue(value);
-                    }
+                    result.setValue(JSON.toJSONString(l));
                     result.setSource(Constant.ACCOUNT_SNMP_PROTOCOL);
                     result.setUpdateAt(new Date());
                     results.add(result);
+                } else {
+                    for (Map snmpResult : snmpResults) {
+                        String value = (String) snmpResult.get("value");
+                        //查询数据库是否已经存在数据
+                        AssetFeature result = assetFeatureMap.get(asset.getId() + key + Constant.ACCOUNT_SNMP_PROTOCOL);
+                        if (ToolUtil.isEmpty(result)) {
+                            result = new AssetFeature();
+                        }
+                        result.setAssetId(asset.getId());
+                        result.setItem(key);
+                        if ("sysUpTime".equals(key)) {
+                            TimeTicks t = new TimeTicks();
+                            t.setValue(value);
+                            long milliseconds = t.toMilliseconds();
+                            result.setValue(DateUtil.getTime(new Date(new Date().getTime() - milliseconds)));
+                        } else {
+                            result.setValue(value);
+                        }
+                        result.setSource(Constant.ACCOUNT_SNMP_PROTOCOL);
+                        result.setUpdateAt(new Date());
+                        results.add(result);
+                    }
                 }
+            } finally {
+                snmpUtil1.close();
             }
         }
     }
@@ -2532,5 +2484,11 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     public List<AssetAsset> getTsgAssetListbyModel() {
         List<AssetAsset> tsgAssetList = this.baseMapper.getTsgAssetListbyModel();
         return tsgAssetList;
+    }
+
+    @Override
+    public List<AssetAsset> getDiscoveredAssetInfoList() {
+        List<AssetAsset> discoveredAssetInfoList = this.getBaseMapper().getDiscoveredAssetInfoList();
+        return discoveredAssetInfoList;
     }
 }

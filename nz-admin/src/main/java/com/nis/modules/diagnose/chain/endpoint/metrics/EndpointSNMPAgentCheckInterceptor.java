@@ -2,7 +2,6 @@ package com.nis.modules.diagnose.chain.endpoint.metrics;
 
 
 import cn.hutool.log.Log;
-import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
 import com.nis.common.utils.SnmpUtil;
 import com.nis.common.utils.Tool;
@@ -15,7 +14,6 @@ import com.nis.modules.sys.service.SnmpCredentialService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -102,12 +100,14 @@ public class EndpointSNMPAgentCheckInterceptor implements DiagnoseInterceptor {
         log.info("[checkSnmpAgentStatus] [host: {}] [port: {}] [credentialsId: {}]", host, port, snmpCredentialsId);
 
         SnmpCredential snmpCredential = snmpCredentialService.getById(snmpCredentialsId);
-        Map snmpInfos = JSONObject.parseObject((String) snmpCredential.getConfig(), Map.class);
         List<Map> snmpResults = Tool.ListUtil.empty();
+        SnmpUtil snmpUtil1 = new SnmpUtil(host, Integer.valueOf(port), "", snmpCredential);
         try {
-            snmpResults = SnmpUtil.snmpWalk(host, Integer.valueOf(port), snmpCredential.getType(), (String) snmpInfos.get("readCommunity"), "", snmpInfos);
-        } catch (IOException e) {
+            snmpResults = snmpUtil1.snmpWalk();
+        } catch (Exception e) {
             log.error(e, "[checkSnmpAgentStatus] [snmp walk error.]");
+        } finally {
+            snmpUtil1.close();
         }
 
         log.info("[checkSnmpAgentStatus] [snmp walk reslut] [size: {}]", snmpResults.size());

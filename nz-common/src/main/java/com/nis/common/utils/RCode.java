@@ -1047,6 +1047,7 @@ public enum RCode {
      */
     TOOL_PING_IP_ISNULL(751000, "Ping ip can not be empty"),
     TOOL_TRACEROUTE_IP_ISNULL(751001, "Traceroute ip can not be empty"),
+    TOOL_NOT_SUPPORTED_IPV6SUBNET(753002, "IPV6 subnet asset scanning is not supported"),
 
     /**
      * integration 相关

@@ -1,7 +1,6 @@
 package com.nis.modules.sys.controller;
 
 import cn.hutool.core.util.StrUtil;
-import com.alibaba.fastjson.JSONObject;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
@@ -13,6 +12,7 @@ import com.nis.modules.sys.service.SnmpMibService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.snmp4j.mp.SnmpConstants;
 import org.snmp4j.util.SimpleOIDTextFormat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -224,36 +224,54 @@ public class SnmpMibController extends AbstractController {
         SnmpCredential snmpCredential = ToolUtil.isNotEmpty(snmpCredentialId) ? snmpCredentialService.getById(snmpCredentialId) : null;
         if(snmpCredential != null){
             port = snmpCredential.getPort();
-            authConfig = JSONObject.parseObject(snmpCredential.getConfig(), Map.class);
-            version = snmpCredential.getType();
-        }
-
-        // v3时需要的用户信息
-        if (Constant.SNMPV3.equals(version)) {
-            // 校验参数是否正确
-            if (ToolUtil.isEmpty(authConfig)) {
-                throw new NZException(RCode.SNMP_MIB_AUTH_ISNULL);
-            } else {
-                SnmpUtil.ValidateAuthForSnmpV3(authConfig);
+        } else {
+            // v3 时需要的用户信息
+            if (Constant.SNMPV3.equals(version)) {
+                // 校验参数是否正确
+                if (ToolUtil.isEmpty(authConfig)) {
+                    throw new NZException(RCode.SNMP_MIB_AUTH_ISNULL);
+                } else {
+                    SnmpUtil.ValidateAuthForSnmpV3(authConfig);
+                }
             }
+            snmpCredential = new SnmpCredential();
+            snmpCredential.setType(version);
+            snmpCredential.setConfig(JSONUtil.toJsonStr(authConfig));
         }
-
-        String community = authConfig.get("readCommunity");
 
         List<Map> resultData = null;
+        SnmpUtil snmpUtil1 = new SnmpUtil(host, port, oid, snmpCredential);
         try {
-            if(StrUtil.equals(Constant.SnmpOperationType.GET.getValue(),operation)) {
-                resultData = SnmpUtil.snmpGetOrGetNext(host, port, version, community, oid, authConfig, operation);
-            } else if(StrUtil.equals(Constant.SnmpOperationType.GETNEXT.getValue(),operation)) {
-                resultData = SnmpUtil.snmpGetOrGetNext(host, port, version, community, oid, authConfig, operation);
-            } else if(StrUtil.equals(Constant.SnmpOperationType.WALK.getValue(),operation)) {
-                resultData = SnmpUtil.snmpWalk(host, port, version, community, oid, authConfig);
-            } else if(StrUtil.equals(Constant.SnmpOperationType.SET.getValue(),operation)) {
-                R r = SnmpUtil.setPDU(host, port, version, community, oid, authConfig, value);
-                return r;
+            if (StrUtil.equals(Constant.SnmpOperationType.GET.getValue(), operation)) {
+                resultData = snmpUtil1.snmpGet();
+            } else if (StrUtil.equals(Constant.SnmpOperationType.GETNEXT.getValue(), operation)) {
+                resultData = snmpUtil1.snmpGetNext();
+            } else if (StrUtil.equals(Constant.SnmpOperationType.WALK.getValue(), operation)) {
+                resultData = snmpUtil1.snmpWalk();
+            } else if (StrUtil.equals(Constant.SnmpOperationType.SET.getValue(), operation)) {
+                int i = snmpUtil1.setPDU(value);
+                switch (i) {
+                    case SnmpConstants.SNMP_ERROR_SUCCESS:
+                        return R.ok();
+                    case SnmpConstants.SNMP_ERROR_TOO_BIG:
+                        return R.error(RCode.SNMP_MIB_TOOBIG);
+                    case SnmpConstants.SNMP_ERROR_NO_SUCH_NAME:
+                        return R.error(RCode.SNMP_MIB_NOSUCHNAME);
+                    case SnmpConstants.SNMP_ERROR_BAD_VALUE:
+                        return R.error(RCode.SNMP_MIB_BADVALUE);
+                    case SnmpConstants.SNMP_ERROR_READ_ONLY:
+                        return R.error(RCode.SNMP_MIB_READONLY);
+                    case SnmpConstants.SNMP_ERROR_NO_ACCESS:
+                        return R.error(RCode.SNMP_MIB_NOACCESS);
+                    case SnmpConstants.SNMP_ERROR_NOT_WRITEABLE:
+                        return R.error(RCode.SNMP_MIB_NOTWRITABLE);
+                }
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
+            logger.error(e, "[snmp browser] [error] [requestParams: {}]", JSONUtil.toJsonStr(params));
             R.error(RCode.SNMP_MIB_BROWSER_FAILED);
+        } finally {
+            snmpUtil1.close();
         }
 
         if (CollectionUtils.isEmpty(resultData)){

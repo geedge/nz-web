@@ -1,8 +1,10 @@
 package com.nis.common.utils;
 
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSONObject;
 import com.nis.common.exception.NZException;
+import com.nis.modules.sys.entity.SnmpCredential;
+import lombok.Data;
 import org.snmp4j.*;
 import org.snmp4j.event.ResponseEvent;
 import org.snmp4j.mp.MPv3;
@@ -12,323 +14,59 @@ import org.snmp4j.smi.*;
 import org.snmp4j.transport.DefaultUdpTransportMapping;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
+/**
+ * SnmpUtil
+ *
+ * @author shizhendong
+ */
+@Data
 public class SnmpUtil {
 
-    private static Log logger = Log.get();
+    private static final Log log = Log.get();
 
-    // 默认版本 v2
-    public static final String DEFAULT_PROTOCOL = "udp";
-    public static final long DEFAULT_TIMEOUT = 1000L;
-    public static final int DEFAULT_RETRY = 3;
+    private String ip;
+    private Integer port;
+    private String oid;
+    private List<String> oidList;
+    private SnmpCredential snmpCredential;
 
-    // 默认团体名
-    public static final String DEFAULT_COMMUNITY = "public";
+    private Snmp snmp;
 
-    /**
-     * 获取target
-     *
-     * @param version
-     * @param community
-     * @param auth
-     * @param ip
-     * @param port
-     * @param snmp
-     * @return
-     */
-    public static Target getTatget(Integer version, String community, Map<String, String> auth, String ip, Integer port, Snmp snmp) {
-        Target target = null;
+    private Integer timeout;
+    private Integer retries;
+
+    public static PDU createGetPDU(int version, int type, String... oids) {
+        PDU pdu = null;
         if (version == SnmpConstants.version3) {
-            // 添加用户
-            OID authProtocolOid = null;
-            String authProtocol = auth.get("authProtocol");
-            if ("MD5".equals(authProtocol)) {
-                authProtocolOid = AuthMD5.ID;
-            } else if ("SHA".equals(authProtocol)) {
-                authProtocolOid = AuthSHA.ID;
-            }
-
-            OID privProtocolOid = null;
-            String privProtocol = auth.get("privProtocol");
-            if ("DES".equals(privProtocol)) {
-                privProtocolOid = PrivDES.ID;
-            } else if ("AES-128".equals(privProtocol)) {
-                privProtocolOid = PrivAES128.ID;
-            } else if ("AES-192".equals(privProtocol)) {
-                privProtocolOid = PrivAES192.ID;
-            } else if ("AES-256".equals(privProtocol)) {
-                privProtocolOid = PrivAES256.ID;
-            }
-
-            String privPassword = auth.get("privPin");
-            OctetString octetPrivPassword = null;
-            if(StringUtils.isNotEmpty(privPassword)){
-                octetPrivPassword = new OctetString(privPassword);
-            }
-
-            String pin = auth.get("authPin");
-            OctetString octetpassword = null;
-            if(StringUtils.isNotEmpty(pin)){
-                octetpassword = new OctetString(pin);
-            }
-
-            OctetString username = new OctetString(auth.get("username"));
-            UsmUser user = new UsmUser(username, authProtocolOid, octetpassword, privProtocolOid, octetPrivPassword);
-            snmp.getUSM().addUser(username, user);
-//            snmp.getUSM().addUser(user);
-            target = new UserTarget();
-
-            String level = auth.get("securityLevel");
-            // 不为空时设置安全级别 如果为空则不处理 默认的安全级别为noAuthNoPriv 不认证不加密
-            if(StringUtils.isNotEmpty(level)){
-                // 设置安全级别
-                switch (level) {
-                    case "authPriv": {
-                        ((UserTarget) target).setSecurityLevel(SecurityLevel.AUTH_PRIV);
-                        break;
-                    }
-                    case "noAuthNoPriv": {
-                        ((UserTarget) target).setSecurityLevel(SecurityLevel.NOAUTH_NOPRIV);
-                        break;
-                    }
-                    case "authNoPriv": {
-                        ((UserTarget) target).setSecurityLevel(SecurityLevel.AUTH_NOPRIV);
-                        break;
-                    }
-                }
-            }
-            ((UserTarget) target).setSecurityName(username);
-            target.setVersion(SnmpConstants.version3);
+            pdu = new ScopedPDU();
         } else {
-            target = new CommunityTarget();
-            target.setVersion(SnmpConstants.version2c);
-            // 如果没有设置团体名 默认使用public
-            if (StringUtils.isEmpty(community)) {
-                community = DEFAULT_COMMUNITY;
-            }
-            ((CommunityTarget) target).setCommunity(new OctetString(community));
+            pdu = new PDU();
         }
-        // 超时时间
-        target.setTimeout(DEFAULT_TIMEOUT);
-        // 重试次数
-        target.setRetries(DEFAULT_RETRY);
-
-        Address address = GenericAddress.parse(DEFAULT_PROTOCOL + ":" + ip + "/" + port);
-        target.setAddress(address);
-
-        return target;
+        pdu.setType(type);
+        for (String s : oids) {
+            pdu.add(new VariableBinding(new OID(s)));
+        }
+        return pdu;
     }
 
-    /**
-     * snmpget or getnext
-     *
-     * @param ip
-     * @param port
-     * @param version
-     * @param community
-     * @param oid
-     * @param auth
-     * @param operation
-     * @return
-     * @throws IOException
-     */
-    public static List snmpGetOrGetNext(String ip, Integer port, Integer version, String community, String oid, Map<String, String> auth, String operation) throws IOException {
-        List<Map> list = new ArrayList<>();
-        Snmp snmp = null;
-        DefaultUdpTransportMapping transport = null;
-        try {
-            transport = new DefaultUdpTransportMapping();
-            snmp = new Snmp(transport);
-            // 如果是v3版本
-            if (version == SnmpConstants.version3) {
-                // 设置安全模式
-                USM usm = new USM(SecurityProtocols.getInstance(), new OctetString(MPv3.createLocalEngineID()), 0);
-                SecurityModels.getInstance().addSecurityModel(usm);
-            }
-
-            Target target = getTatget(version, community, auth, ip, port, snmp);
-            snmp.listen();
-
-            // 根据版本不同获取不同的pdu对象
-            PDU pdu = getPdu(version);
-            pdu.add(new VariableBinding(new OID(oid)));
-
-            if(StrUtil.equals(Constant.SnmpOperationType.GET.getValue(),operation.toLowerCase())) {
-                pdu.setType(PDU.GET);
-            } else if(StrUtil.equals(Constant.SnmpOperationType.GETNEXT.getValue(),operation.toLowerCase())) {
-                pdu.setType(PDU.GETNEXT);
-            }
-
-            ResponseEvent respEvent = snmp.send(pdu, target);
-            PDU response = respEvent.getResponse();
-            if (response == null) {
-                logger.error("response is null, request time out");
-                return null;
-            } else {
-                VariableBinding vb = null;
-                Map map;
-                for (int i = 0; i < response.size(); i++) {
-                    map = new HashMap();
-                    vb = response.get(i);
-                    map.put("oid", vb.getOid().toString());
-                    map.put("value", vb.getVariable().toString());
-                    map.put("type", vb.getVariable().getSyntaxString());
-                    map.put("ip", ip);
-                    map.put("port", port);
-                    list.add(map);
-                }
-            }
-            logger.info("SNMP GET one OID value finished !");
-            return list;
-        } finally {
-            if (snmp != null) {
-                try {
-                    snmp.close();
-                } catch (IOException e) {
-                    logger.error("关闭snmp失败",e);
-                }
-            }
-            if (transport != null) {
-                try {
-                    transport.close();
-                } catch (IOException e) {
-                    logger.error("关闭transport失败",e);
-                }
-            }
-        }
-    }
-
-    private static PDU getPdu(Integer version) {
+    public static PDU createSetPDU(int version, int type, String oid, String value) {
+        PDU pdu = null;
         if (version == SnmpConstants.version3) {
-            ScopedPDU pdu = new ScopedPDU();
-            // 如果agent上设定的contextEngineId和snmpEngineId不一致 这里需要设置引擎id
-            // pdu.setContextEngineID(new OctetString(""));
-            // 如果agent上设定了contextName 这里需要设置contextName
-            // pdu.setContextName(new OctetString(""));
-            return pdu;
+            pdu = new ScopedPDU();
         } else {
-            PDU pdu = new PDU();
-            return pdu;
+            pdu = new PDU();
         }
+        pdu.setType(type);
+        pdu.add(new VariableBinding(new OID(oid), new OctetString(value)));
+        return pdu;
     }
 
-    /**
-     * snmpwalk
-     *
-     * @param ip
-     * @param port
-     * @param version
-     * @param community
-     * @param oid
-     * @param auth
-     * @return
-     * @throws IOException
-     */
-    public static List<Map> snmpWalk(String ip, Integer port, Integer version, String community, String oid, Map<String, String> auth) throws IOException {
-        List<Map> resultData = new ArrayList<>();
-        Snmp snmp = null;
-        TransportMapping transport = null;
-        try {
-            transport = new DefaultUdpTransportMapping();
-            snmp = new Snmp(transport);
-
-            // 如果是v3版本
-            if (version == SnmpConstants.version3) {
-                // 设置安全模式
-                USM usm = new USM(SecurityProtocols.getInstance(), new OctetString(MPv3.createLocalEngineID()), 0);
-                SecurityModels.getInstance().addSecurityModel(usm);
-            }
-
-            Target target = getTatget(version, community, auth, ip, port, snmp);
-            snmp.listen();
-
-            PDU pdu = getPdu(version);
-
-            OID targetOID = new OID(oid);
-            pdu.add(new VariableBinding(targetOID));
-
-            // 结束标识
-            boolean finished = false;
-
-            Map map;
-            int i = 0;
-            while (!finished) {
-                i++;
-                VariableBinding vb = null;
-                ResponseEvent respEvent = snmp.getNext(pdu, target);
-
-                PDU response = respEvent.getResponse();
-
-                // 为空则直接结束
-                if (response == null) {
-                    finished = true;
-                    break;
-                } else {
-                    vb = response.get(0);
-                }
-
-                // 判断是否结束
-                finished = checkWalkFinished(targetOID, pdu, vb);
-                // 获取 table 类型某一个 标量时 ， 使用 getnext 会获取平行节点数据
-                if (i == 1 && finished) {
-                    ResponseEvent responseEvent = snmp.get(pdu, target);
-                    VariableBinding variableBinding = responseEvent.getResponse().get(0);
-                    map = new HashMap();
-                    map.put("oid", variableBinding.getOid().toString());
-                    map.put("value", variableBinding.getVariable().toString());
-                    map.put("type", variableBinding.getVariable().getSyntaxString());
-                    map.put("ip", ip);
-                    map.put("port", port);
-                    resultData.add(map);
-                    snmp.close();
-                    break;
-                } else {
-                    if (!finished) {
-                        pdu.setRequestID(new Integer32(0));
-                        pdu.set(0, vb);
-
-                        map = new HashMap();
-                        map.put("oid", vb.getOid().toString());
-                        map.put("value", vb.getVariable().toString());
-                        map.put("type", vb.getVariable().getSyntaxString());
-                        map.put("ip", ip);
-                        map.put("port", port);
-                        resultData.add(map);
-                    } else {
-                        // 获取结束
-                        snmp.close();
-                    }
-                }
-            }
-        } finally {
-            if (snmp != null) {
-                try {
-                    snmp.close();
-                } catch (IOException e) {
-                    logger.error("关闭snmp失败",e);
-                }
-            }
-            if (transport != null) {
-                try {
-                    transport.close();
-                } catch (IOException e) {
-                    logger.error("关闭transport失败",e);
-                }
-            }
-        }
-        return resultData;
-    }
-
-    /**
-     * 判断walk结束标识
-     *
-     * @param targetOID
-     * @param pdu
-     * @param vb
-     * @return
-     */
-    private static boolean checkWalkFinished(OID targetOID, PDU pdu, VariableBinding vb) {
+    public static boolean checkWalkFinished(String oid, PDU pdu, VariableBinding vb) {
+        OID targetOID = new OID(oid);
         boolean finished = false;
         if (pdu.getErrorStatus() != 0) {
             finished = true;
@@ -346,89 +84,362 @@ public class SnmpUtil {
         return finished;
     }
 
+    public SnmpUtil(String ip, SnmpCredential snmpCredential) {
+        this.ip = ip;
+        this.port = snmpCredential.getPort();
+        this.snmpCredential = snmpCredential;
+    }
 
-    /**
-     * snmpSet
-     *
-     * @param ip
-     * @param port
-     * @param version
-     * @param community
-     * @param oid
-     * @param auth
-     * @param value
-     * @return
-     * @throws IOException
-     */
-    public static R setPDU(String ip, Integer port, Integer version, String community, String oid, Map<String, String> auth, String value) throws IOException {
-        Snmp snmp = null;
-        DefaultUdpTransportMapping transport = null;
-        try {
-            PDU pdu = getPdu(version);
-            pdu.add(new VariableBinding(new OID(oid), new OctetString(value)));
-            pdu.setType(PDU.SET);
+    public SnmpUtil(String ip, Integer port, String oid, SnmpCredential snmpCredential) {
+        this.ip = ip;
+        this.port = port;
+        this.oid = oid;
+        this.snmpCredential = snmpCredential;
+    }
 
-            transport = new DefaultUdpTransportMapping();
-            snmp = new Snmp(transport);
+    private void initSnmp() throws IOException {
+        TransportMapping transport = new DefaultUdpTransportMapping();
+        snmp = new Snmp(transport);
 
-            // 如果是v3版本
-            if (version == SnmpConstants.version3) {
-                // 设置安全模式
-                USM usm = new USM(SecurityProtocols.getInstance(), new OctetString(MPv3.createLocalEngineID()), 0);
-                SecurityModels.getInstance().addSecurityModel(usm);
+        // 开启监听
+        snmp.listen();
+    }
+
+    private Target createTarget(int pduType) {
+        Target target = null;
+        Integer type = this.snmpCredential.getType();
+
+        Map<String, String> credentialConfig = JSONObject.parseObject(this.snmpCredential.getConfig(), Map.class);
+        if (Tool.ObjectUtil.equal(2, type)) {
+            target = new CommunityTarget();
+            target.setVersion(SnmpConstants.version2c);
+
+            if (PDU.SET == pduType) {
+                String community = credentialConfig.getOrDefault("writeCommunity", "public");
+                ((CommunityTarget) target).setCommunity(new OctetString(community));
+            } else {
+                String community = credentialConfig.getOrDefault("readcommunity", "public");
+                ((CommunityTarget) target).setCommunity(new OctetString(community));
+            }
+        }
+        if (Tool.ObjectUtil.equal(3, type)) {
+            // 设置安全模式
+            USM usm = new USM(SecurityProtocols.getInstance(), new OctetString(MPv3.createLocalEngineID()), 0);
+            SecurityModels.getInstance().addSecurityModel(usm);
+
+            // 添加用户
+            OID authProtocolOid = null;
+            String authProtocol = credentialConfig.get("authProtocol");
+            if (Tool.StrUtil.equals("MD5", authProtocol)) {
+                authProtocolOid = AuthMD5.ID;
+            } else if (Tool.StrUtil.equals("SHA", authProtocol)) {
+                authProtocolOid = AuthSHA.ID;
             }
 
-            Target target = getTatget(version, community, auth, ip, port, snmp);
-            snmp.listen();
+            OID privProtocolOid = null;
+            String privProtocol = credentialConfig.get("privProtocol");
+            if (Tool.StrUtil.equals("DES", privProtocol)) {
+                privProtocolOid = PrivDES.ID;
+            } else if (Tool.StrUtil.equals("AES-128", privProtocol)) {
+                privProtocolOid = PrivAES128.ID;
+            } else if (Tool.StrUtil.equals("AES-192", privProtocol)) {
+                privProtocolOid = PrivAES192.ID;
+            } else if (Tool.StrUtil.equals("AES-256", privProtocol)) {
+                privProtocolOid = PrivAES256.ID;
+            }
+
+            String privPassword = credentialConfig.get("privPin");
+            OctetString octetPrivPassword = null;
+            if (Tool.StrUtil.isNotEmpty(privPassword)) {
+                octetPrivPassword = new OctetString(privPassword);
+            }
+
+            String pin = credentialConfig.get("authPin");
+            OctetString octetpassword = null;
+            if (Tool.StrUtil.isNotEmpty(pin)) {
+                octetpassword = new OctetString(pin);
+            }
+
+            OctetString username = new OctetString(credentialConfig.get("username"));
+            UsmUser user = new UsmUser(username, authProtocolOid, octetpassword, privProtocolOid, octetPrivPassword);
+            snmp.getUSM().addUser(username, user);
+
+            target = new UserTarget();
+            target.setVersion(SnmpConstants.version3);
+
+            String level = credentialConfig.get("securityLevel");
+            // 不为空时设置安全级别 如果为空则不处理 默认的安全级别为noAuthNoPriv 不认证不加密
+            if (StringUtils.isNotEmpty(level)) {
+                // 设置安全级别
+                switch (level) {
+                    case "authPriv": {
+                        ((UserTarget) target).setSecurityLevel(SecurityLevel.AUTH_PRIV);
+                        break;
+                    }
+                    case "noAuthNoPriv": {
+                        ((UserTarget) target).setSecurityLevel(SecurityLevel.NOAUTH_NOPRIV);
+                        break;
+                    }
+                    case "authNoPriv": {
+                        ((UserTarget) target).setSecurityLevel(SecurityLevel.AUTH_NOPRIV);
+                        break;
+                    }
+                    default:
+                        break;
+                }
+            }
+            ((UserTarget) target).setSecurityName(username);
+        }
+
+        target.setTimeout(this.getTimeout());
+        target.setRetries(this.getRetries());
+
+        Address address = GenericAddress.parse("udp:" + this.ip + "/" + this.port);
+        target.setAddress(address);
+        return target;
+    }
+
+    public List<Map> snmpGet() {
+        List<Map> resultData = Tool.ListUtil.list(true);
+        try {
+            // initSnmp
+            this.initSnmp();
+
+            // createTarget
+            Target target = this.createTarget(PDU.GET);
+
+            // 根据版本不同获取不同的pdu对象
+            PDU pdu = createGetPDU(this.getSnmpCredential().getType(), PDU.GET, this.oid);
+
+            ResponseEvent respEvent = snmp.send(pdu, target);
+            PDU response = respEvent.getResponse();
+            if (response == null) {
+                if (log.isDebugEnabled()) {
+                    log.debug("[snmpGet] [response is null, request time out]");
+                }
+                return resultData;
+            } else {
+                VariableBinding vb = null;
+                for (int i = 0; i < response.size(); i++) {
+                    Map map = Tool.MapUtil.newHashMap();
+                    vb = response.get(i);
+                    map.put("oid", vb.getOid().toString());
+                    map.put("value", vb.getVariable().toString());
+                    map.put("type", vb.getVariable().getSyntaxString());
+                    map.put("ip", ip);
+                    map.put("port", port);
+                    resultData.add(map);
+                }
+            }
+        } catch (Exception e) {
+            log.error(e, "[snmpGet] [error] [objetc: {}]", this.toString());
+        }
+        return resultData;
+    }
+
+    public List<Map> snmpMulitGet() {
+        List<Map> resultData = Tool.ListUtil.list(true);
+        try {
+            // initSnmp
+            this.initSnmp();
+
+            // createTarget
+            Target target = this.createTarget(PDU.GET);
+
+            // 根据版本不同获取不同的pdu对象
+            String[] array = this.oidList.stream().toArray(n -> new String[n]);
+            PDU pdu = createGetPDU(this.getSnmpCredential().getType(), PDU.GET, array);
+
+            ResponseEvent respEvent = snmp.send(pdu, target);
+            PDU response = respEvent.getResponse();
+            if (response == null) {
+                if (log.isDebugEnabled()) {
+                    log.debug("[snmpGet] [response is null, request time out]");
+                }
+                return resultData;
+            } else {
+                VariableBinding vb = null;
+                for (int i = 0; i < response.size(); i++) {
+                    Map map = Tool.MapUtil.newHashMap();
+                    vb = response.get(i);
+                    map.put("oid", vb.getOid().toString());
+                    map.put("value", vb.getVariable().toString());
+                    map.put("type", vb.getVariable().getSyntaxString());
+                    map.put("ip", ip);
+                    map.put("port", port);
+                    resultData.add(map);
+                }
+            }
+        } catch (Exception e) {
+            log.error(e, "[snmpGet] [error] [objetc: {}]", this.toString());
+        }
+        return resultData;
+    }
+
+    public List<Map> snmpGetNext() {
+        List<Map> resultData = Tool.ListUtil.list(true);
+        try {
+            // initSnmp
+            this.initSnmp();
+
+            // createTarget
+            Target target = this.createTarget(PDU.GETNEXT);
+
+            // 根据版本不同获取不同的pdu对象
+            PDU pdu = createGetPDU(this.getSnmpCredential().getType(), PDU.GETNEXT, this.oid);
+
+            ResponseEvent respEvent = snmp.send(pdu, target);
+            PDU response = respEvent.getResponse();
+            if (response == null) {
+                log.error("[snmpGetNext] [response is null, request time out]");
+                return resultData;
+            } else {
+                VariableBinding vb = null;
+                for (int i = 0; i < response.size(); i++) {
+                    Map map = Tool.MapUtil.newHashMap();
+                    vb = response.get(i);
+                    map.put("oid", vb.getOid().toString());
+                    map.put("value", vb.getVariable().toString());
+                    map.put("type", vb.getVariable().getSyntaxString());
+                    map.put("ip", ip);
+                    map.put("port", port);
+                    resultData.add(map);
+                }
+            }
+        } catch (Exception e) {
+            log.error(e, "[snmpGetNext] [error] [objetc: {}]", this.toString());
+        }
+        return resultData;
+    }
+
+    public List<Map> snmpWalk() {
+        List<Map> resultData = Tool.ListUtil.list(true);
+        try {
+            // initSnmp
+            this.initSnmp();
+
+            // createTarget
+            Target target = this.createTarget(PDU.GETNEXT);
+
+            // createPDU
+            PDU pdu = createGetPDU(this.getSnmpCredential().getType(), PDU.GETNEXT, this.oid);
+
+            // 结束标识
+            boolean finished = false;
+
+            int i = 0;
+            while (!finished) {
+                i++;
+                VariableBinding vb = null;
+                ResponseEvent respEvent = snmp.getNext(pdu, target);
+
+                PDU response = respEvent.getResponse();
+
+                // 为空则直接结束
+                if (response == null) {
+                    finished = true;
+                    break;
+                } else {
+                    vb = response.get(0);
+                }
+
+                // 判断是否结束
+                finished = checkWalkFinished(this.oid, pdu, vb);
+                // 获取 table 类型某一个 标量时 ， 使用 getnext 会获取平行节点数据
+                if (i == 1 && finished) {
+                    ResponseEvent responseEvent = snmp.get(pdu, target);
+                    VariableBinding variableBinding = responseEvent.getResponse().get(0);
+                    Map map = Tool.MapUtil.newHashMap();
+                    map.put("oid", variableBinding.getOid().toString());
+                    map.put("value", variableBinding.getVariable().toString());
+                    map.put("type", variableBinding.getVariable().getSyntaxString());
+                    map.put("ip", ip);
+                    map.put("port", port);
+                    resultData.add(map);
+                    break;
+                } else {
+                    if (!finished) {
+                        pdu.setRequestID(new Integer32(0));
+                        pdu.set(0, vb);
+
+                        Map map = Tool.MapUtil.newHashMap();
+                        map.put("oid", vb.getOid().toString());
+                        map.put("value", vb.getVariable().toString());
+                        map.put("type", vb.getVariable().getSyntaxString());
+                        map.put("ip", ip);
+                        map.put("port", port);
+                        resultData.add(map);
+                    } else {
+                        // 获取结束
+                        break;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error(e, "[snmpWalk] [error] [objetc: {}]", this.toString());
+        }
+        return resultData;
+    }
+
+    /**
+     * @param value
+     * @return 0 success
+     * -1 unknow error
+     * 1   PDU encoding is too big for the transport used.
+     * 2   No such variable binding name.
+     * 3   Bad value in variable binding
+     * 4   The variable binding is read-only
+     * 6   The variable binding is not accessible by the current MIB view,No assess
+     * 17  The variable's value cannot be modified
+     * For more details see: org.snmp4j.smi.OID.SnmpConstants.SNMP_ERROR_XXX
+     */
+    public int setPDU(String value) {
+        int rv = 0;
+        try {
+            // initSnmp
+            this.initSnmp();
+
+            // createTarget
+            Target target = this.createTarget(PDU.SET);
+
+            // createPDU
+            PDU pdu = createSetPDU(this.getSnmpCredential().getType(), PDU.SET, this.oid, value);
+
             ResponseEvent responseEvent = snmp.send(pdu, target);
             PDU response = responseEvent.getResponse();
             if (response == null) {
-                logger.error("response is null, request time out");
-                R.error(RCode.SNMP_MIB_BROWSER_TIMEOUT);
+                log.error("response is null, request time out");
+                return -1;
             } else {
                 int errorIndex = response.getErrorIndex();
-                if(errorIndex != 0){
-                    int errorStatus = response.getErrorStatus();
-                    switch(errorStatus){
-                        case 1:{
-                            return R.error(RCode.SNMP_MIB_TOOBIG);
-                        }
-                        case 2:{
-                            return R.error(RCode.SNMP_MIB_NOSUCHNAME);
-                        }
-                        case 3:{
-                            return R.error(RCode.SNMP_MIB_BADVALUE);
-                        }
-                        case 4:{
-                            return R.error(RCode.SNMP_MIB_READONLY);
-                        }
-                        case 6:{
-                            return R.error(RCode.SNMP_MIB_NOACCESS);
-                        }
-                        case 17:{
-                            return R.error(RCode.SNMP_MIB_NOTWRITABLE);
-                        }
-                    }
-                }
-                return R.ok();
-            }
-        } finally {
-            if (snmp != null) {
-                try {
-                    snmp.close();
-                } catch (IOException e) {
-                    logger.error("关闭snmp失败",e);
+                if (errorIndex != 0) {
+                    return response.getErrorStatus();
                 }
             }
-            if (transport != null) {
-                try {
-                    transport.close();
-                } catch (IOException e) {
-                    logger.error("关闭transport失败",e);
-                }
+        } catch (Exception e) {
+            log.error(e, "[setPDU] [error] [objetc: {}]", this.toString());
+            rv = -1;
+        }
+        return rv;
+    }
+
+    public void close() {
+        if (snmp != null) {
+            try {
+                snmp.close();
+            } catch (IOException e) {
+                snmp = null;
+                log.error(e, "[close] [error]");
             }
         }
-        return R.ok();
+    }
+
+    public Integer getTimeout() {
+        return Tool.ObjectUtil.defaultIfNull(this.timeout, 1000);
+    }
+
+    public Integer getRetries() {
+        return Tool.ObjectUtil.defaultIfNull(retries, 3);
     }
 
     public static void ValidateAuthForSnmpV3(Map<String, String> authInfo) {
@@ -449,13 +460,13 @@ public class SnmpUtil {
             String privProtocol = authInfo.get("privProtocol");
             String authProtocol = authInfo.get("authProtocol");
 
-
-            if ("authPriv".equals(securityLevel)) { // 认证且加密
+            // 认证且加密
+            if ("authPriv".equals(securityLevel)) {
                 if (StringUtils.isEmpty(privPassword)) {
                     throw new NZException(RCode.MODULE_PRIVPASSWORD_ISNULL);
                 }
 
-                if (StringUtils.isEmpty(privProtocol) || !Arrays.asList(new String[]{"DES","AES-128","AES-192","AES-256"}).contains(privProtocol)) {
+                if (StringUtils.isEmpty(privProtocol) || !Arrays.asList(new String[]{"DES", "AES-128", "AES-192", "AES-256"}).contains(privProtocol)) {
                     throw new NZException(RCode.MODULE_PRIVPROTOCOL_INVALID);
                 }
 
@@ -466,7 +477,8 @@ public class SnmpUtil {
                 if (StringUtils.isEmpty(authProtocol) || (!"MD5".equals(authProtocol) && !"SHA".equals(authProtocol))) {
                     throw new NZException(RCode.MODULE_AUTHPROTOCOL_INVALID);
                 }
-            } else if ("authNoPriv".equals(securityLevel)) { // 认证不加密
+                // 认证不加密
+            } else if ("authNoPriv".equals(securityLevel)) {
                 if (StringUtils.isEmpty(pin)) {
                     throw new NZException(RCode.MODULE_PASSWORD_INVALID);
                 }
@@ -481,5 +493,18 @@ public class SnmpUtil {
                 throw new NZException(RCode.MODULE_AUTHSECURITYLEVEL_INVALID);
             }
         }
+    }
+
+
+    @Override
+    public String toString() {
+        return "SnmpUtil1{" +
+                "ip='" + this.ip + '\'' +
+                ", port='" + this.port + '\'' +
+                ", oid='" + this.oid + '\'' +
+                ", snmpCredential=" + Tool.JSONUtil.toJsonStr(this.snmpCredential) +
+                ", timeout=" + this.timeout +
+                ", retries=" + this.retries +
+                '}';
     }
 }

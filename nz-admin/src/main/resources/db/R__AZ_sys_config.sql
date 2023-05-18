@@ -85,4 +85,5 @@ REPLACE INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) 
 REPLACE INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (null, 'talon_name', '{\"centos\":\"nz-talon-.*rpm\",\"ubuntu\":\"nz-talon-.*rpm\"}', 1, 'nz-talon 下载文件名称');
 REPLACE INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (null, 'asset_chart_tpl', '{\"name\":\"Asset information\",\"type\":\"assetInfo\",\"span\":12,\"height\":4,\"unit\":2}', 1, 'asset添加时，默认chart配置');
 REPLACE INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (null, 'endpoint_chart_tpl', '{\"name\":\"Endpoint information\",\"type\":\"endpointInfo\",\"span\":12,\"height\":4,\"unit\":2}', 1, 'endpoint添加时，默认chart配置');
+REPLACE INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (null, 'asset_discovery_snmp_mode', '1', 1, '1:nz-web 使用 snmp 探测；2:nz-agent 使用 snmp 探测；默认为 1');
 INSERT IGNORE INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (null, 'date_format', 'YYYY-MM-DD HH:mm:ss', 1, '时间格式化');

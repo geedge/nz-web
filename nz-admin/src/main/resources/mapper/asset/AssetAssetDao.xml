@@ -432,4 +432,19 @@
         WHERE
             model.tsg_appliance = 1
     </select>
+
+    <select id="getDiscoveredAssetInfoList" resultMap="assetMap">
+        SELECT
+            asset.manage_ip,
+            asset.id,
+            asset.name,
+            dc.id AS d_id,
+            dc.name AS d_name,
+            model.id AS m_id,
+            model.name AS m_name
+        FROM
+            asset_asset asset
+            LEFT JOIN dc dc ON asset.dc_id = dc.id
+            LEFT JOIN asset_model model ON asset.model_id = model.id
+    </select>
 </mapper>
