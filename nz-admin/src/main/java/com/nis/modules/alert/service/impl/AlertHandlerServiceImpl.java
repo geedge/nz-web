@@ -205,6 +205,10 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			//缓存 到redis
 			redisTemplate.opsForValue().set(Tool.StrUtil.concat(true, Constant.ALERT_MESSAGE_ACTIVE_PRIX, hashKey),String.valueOf(messageId),this.getKeyTimeout(endAt),TimeUnit.MILLISECONDS);
 			this.pushMessageNotifyList(message);
+			// 入库删除 labels.severity_id
+			Map<String, String> labelMap = Tool.JSONUtil.toBean(message.getLabels(), HashMap.class);
+			Tool.MapUtil.removeAny(labelMap, Constant.LABEL_SEVERITY_ID_KEY);
+			message.setLabels(Tool.JSONUtil.toJsonStr(labelMap));
 		}
 		// msgHandlerDao.saveMessageBatch(msgList, tableName);//批量保存
 		// 批量保存 active message -> ALERT_MESSAGE_ACTIVE table
@@ -239,6 +243,10 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 					smRels.add(rel);
 				}
 			}
+			// 入库删除 labels.severity_id
+			Map<String, String> labelMap = Tool.JSONUtil.toBean(message.getLabels(), HashMap.class);
+			Tool.MapUtil.removeAny(labelMap, Constant.LABEL_SEVERITY_ID_KEY);
+			message.setLabels(Tool.JSONUtil.toJsonStr(labelMap));
 			//缓存 到redis
 			redisTemplate.opsForValue().set(Tool.StrUtil.concat(true, Constant.ALERT_MESSAGE_SILENCE_PRIX, hashKey),String.valueOf(messageId),this.getKeyTimeout(endAt),TimeUnit.MILLISECONDS);
 		}
@@ -285,6 +293,10 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 				ids.add(message.getId());
 				redisTemplate.delete(Tool.StrUtil.concat(true, Constant.ALERT_MESSAGE_SILENCE_PRIX, hashKey));
 			}
+			// 入库删除 labels.severity_id
+			Map<String, String> labelMap = Tool.JSONUtil.toBean(message.getLabels(), HashMap.class);
+			Tool.MapUtil.removeAny(labelMap, Constant.LABEL_SEVERITY_ID_KEY);
+			message.setLabels(Tool.JSONUtil.toJsonStr(labelMap));
 		}
 		//只有 active 消息失效会保存到 history
 		if(Tool.CollUtil.isNotEmpty(msgList) && Constant.ALERT_MESSAGE_ACTIVE_STATE.equals(fromState)) {
