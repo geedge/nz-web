@@ -413,7 +413,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             switch (editType) {
                 case 1: // metric label
                     JSONObject config = JSONObject.parseObject(endpointConfig.getConfig());
-                    JSONObject configlabels = config.getJSONObject("labels");
+                    JSONObject configlabels = Tool.ObjectUtil.defaultIfNull(config.getJSONObject("labels"), new JSONObject());
                     for(Map label : labels) {
                         ValidateUtils.is(label.get("action")).notNull(RCode.ENDPOINT_LABELS_ACTION_ISNULL)
                                 .and(label.get("key")).notNull(RCode.ENDPOINT_LABELS_KEY_ISNULL);
@@ -426,6 +426,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                             throw new NZException(RCode.ENDPOINT_LABELS_ACTION_INVALIDE);
                         }
                     }
+                    config.put("labels", configlabels);
                     endpointConfig.setConfig(config.toJSONString());
                     break;
                 case 2 : // metric enable
