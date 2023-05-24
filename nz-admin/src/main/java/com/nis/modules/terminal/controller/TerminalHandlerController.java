@@ -206,7 +206,7 @@ public class TerminalHandlerController {
     }
 
     @PostMapping("/sftp/download")
-    @SysLog(operation = OperationEnum.UNKNOWN, type = TypeEnum.TERMINAL)
+    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.TERMINAL)
     public void download(@RequestBody Map<String, String> param, HttpServletResponse response) {
         String uuid = param.get("uuid");
         String path = param.get("path");

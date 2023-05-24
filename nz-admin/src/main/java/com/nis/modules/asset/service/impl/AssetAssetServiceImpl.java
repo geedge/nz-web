@@ -240,7 +240,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         List<AlertMessageEntity> alertMessageList = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getAssetId, asset.getId()));
         asset.setAlertNum(alertMessageList.size());
-        List<Map<String, Object>> alert = alertMessageService.getAlertsStatBySeverity("asset",id);
+        List<Map<String, Object>> alert = alertMessageService.getAlertsStatBySeverity("asset", id);
         asset.setAlert(alert);
 
         // 不返回 密码 / 密钥信息
@@ -352,9 +352,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         if (ToolUtil.isNotEmpty(params.get("comment"))) {
             Map commentParams = JSONUtil.toBean(JSONUtil.createObj().set("pageSize", "-1").set("content", params.get("comment")), Map.class);
-            List<AssetComment> assetComments = (List<AssetComment>)assetCommentService.queryCommentPage(commentParams).getList();
+            List<AssetComment> assetComments = (List<AssetComment>) assetCommentService.queryCommentPage(commentParams).getList();
             List<Integer> assetIds = assetComments.stream().map(AssetComment::getAssetId).collect(Collectors.toList());
-            if(Tool.CollectionUtil.isEmpty(assetComments)){
+            if (Tool.CollectionUtil.isEmpty(assetComments)) {
                 assetIds.add(-99999);
             }
             params.put("innerAssetIdsByComment", assetIds);
@@ -653,6 +653,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     /**
      * 校验U位置占用情况
      * 补充 isUpdate 参数
+     *
      * @return
      */
     public boolean validateUSizeForImport(Integer start, Integer end, Cabinet cab, String assetName, boolean isUpdate) {
@@ -1046,8 +1047,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     /**
      * asset 删除方法
      * asset 删除提示关联内容：
-     *      baby asset
-     *      endpoint
+     * baby asset
+     * endpoint
+     *
      * @param force 0：存在关联数据时，删除失败 1：存在关联数据时，同时删除关联数据 默认：0
      * @return
      */
@@ -1060,7 +1062,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         List<Integer> idList = new ArrayList<>(Arrays.asList(ids));
         List<AssetAsset> delAssets = this.list(new LambdaQueryWrapper<AssetAsset>().in(AssetAsset::getId, idList));
         if (Tool.CollUtil.isEmpty(delAssets)) {
-            return  R.ok().putData("list", resultList);
+            return R.ok().putData("list", resultList);
         }
 
         for (AssetAsset assetEntity : delAssets) {
@@ -1142,8 +1144,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
     /**
      * 获取 asset 删除提示关联信息：
-     *      baby asset
-     *      endpoint
+     * baby asset
+     * endpoint
+     *
      * @return
      */
     private Map<Object, Object> getAssetDelRelObjectInfoMap(AssetAsset asset) {
@@ -1790,7 +1793,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             validateUtil.validateDuplicate("asset_asset", "manage_ip", manageIp, assetName, lineNum, AssetImportEnum.MANAGE_IP.getIndex());
 
             String ipmiIp = dataMap.get(AssetImportEnum.IPMI_IP.getIndex());
-            if(StrUtil.isNotEmpty(ipmiIp))
+            if (StrUtil.isNotEmpty(ipmiIp))
                 validateUtil.validateRegex(ipmiIp, Constant.REGEX_IP, lineNum, AssetImportEnum.IPMI_IP.getIndex());
 
             // state conf 不自动添加
@@ -2107,7 +2110,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 assetFieldMetaService.save(meta);
             }
             JSONArray fieldValueArr = fieldMetaObject.getJSONArray("value");
-            for(Object fieldValue : fieldValueArr){
+            for (Object fieldValue : fieldValueArr) {
                 AssetFieldValue value = new AssetFieldValue();
                 value.setMetaId(meta.getId());
                 value.setValue(ToolUtil.toStr(fieldValue));
@@ -2387,44 +2390,45 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 if (ToolUtil.isEmpty(object)) {
                     break;
                 }
-                // 将标签操作区分 批量删除还是批量新增或者更新
                 List<Integer> removeFieldIds = new ArrayList<Integer>();
-                List<AssetFieldValue> addOrUpdateFields = new ArrayList<AssetFieldValue>();
+                List<AssetFieldValue> addFields = new ArrayList<AssetFieldValue>();
                 for (Map<String, Object> map : object) {
+                    removeFieldIds.add((Integer) map.get("id"));
                     Integer action = (Integer) map.get("action");
-                    if (ToolUtil.equals(action, 1)) {
-                        removeFieldIds.add((Integer) map.get("id"));
-                    } else {
-                        List<AssetFieldValue> assetFieldValues = assetFieldValueService.list(new QueryWrapper<AssetFieldValue>().lambda()
-                                .eq(AssetFieldValue::getMetaId, map.get("id"))
-                                .in(AssetFieldValue::getAssetId, ids));
-                        // 分拣出更新数据和新增数据
-                        List<Integer> assetIds = assetFieldValues.stream().map(AssetFieldValue::getAssetId).collect(Collectors.toList());
-                        List<Integer> addIds = ids.stream().filter(item -> !assetIds.contains(item)).collect(Collectors.toList());
 
-                        for (AssetFieldValue assetFieldValue : assetFieldValues) {
-                            assetFieldValue.setValue((String) map.get("value"));
-                            addOrUpdateFields.add(assetFieldValue);
-                        }
-
-                        for (Integer id : addIds) {
-                            AssetFieldValue data = new AssetFieldValue();
-                            data.setAssetId(id);
-                            data.setMetaId((Integer) map.get("id"));
-                            data.setValue((String) map.get("value"));
-                            addOrUpdateFields.add(data);
+                    if (ToolUtil.equals(action, 0)) {
+                        //根据 meta type 判断 value 是否为多值
+                        String type = (String) map.get("type");
+                        if (Tool.StrUtil.equalsIgnoreCase("MULTITEXT", type) || Tool.StrUtil.equalsIgnoreCase("CHECKBOX", type)) {
+                            List<String> values = (List<String>) map.get("value");
+                            for (Integer id : ids) {
+                                for (String value : values) {
+                                    AssetFieldValue data = new AssetFieldValue();
+                                    data.setAssetId(id);
+                                    data.setMetaId((Integer) map.get("id"));
+                                    data.setValue(value);
+                                    addFields.add(data);
+                                }
+                            }
+                        }else {
+                            for (Integer id : ids) {
+                                AssetFieldValue data = new AssetFieldValue();
+                                data.setAssetId(id);
+                                data.setMetaId((Integer) map.get("id"));
+                                data.setValue((String) map.get("value"));
+                                addFields.add(data);
+                            }
                         }
                     }
                 }
-
                 if (ToolUtil.isNotEmpty(removeFieldIds)) {
                     assetFieldValueService.remove(new QueryWrapper<AssetFieldValue>()
                             .lambda().in(AssetFieldValue::getMetaId, removeFieldIds)
                             .in(AssetFieldValue::getAssetId, ids));
                 }
 
-                if (ToolUtil.isNotEmpty(addOrUpdateFields)) {
-                    assetFieldValueService.saveOrUpdateBatch(addOrUpdateFields);
+                if (ToolUtil.isNotEmpty(addFields)) {
+                    assetFieldValueService.saveOrUpdateBatch(addFields);
                 }
                 break;
             case 3:
