@@ -37,9 +37,6 @@
 	    	<result column="name" property="name"/>
 	    	<result column="remark" property="remark"/>
 	    </association>
-	    <collection property="value" ofType="string" javaType="list">
-     		<result column="val" />
-   		</collection>
 	</resultMap>
     
     <select id="selectAssetFieldMeta" resultMap="assetFieldMeta">
@@ -118,7 +115,6 @@
 	<select id="selectMateInfoListByAssetId" resultMap="assetFieldMetaDetail">
 			SELECT
 				me.*,
-				va.value as val,
 				va.asset_id,
 				mg.id as afg_id,
 				mg.name as afg_name

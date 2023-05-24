@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
+import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.asset.dao.AssetFieldMetaDao;
 import com.nis.modules.asset.dao.AssetFieldValueDao;
 import com.nis.modules.asset.entity.AssetFieldMeta;
@@ -26,6 +27,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service("assetFieldMetaService")
 public class AssetFieldMetaServiceImpl extends ServiceImpl<AssetFieldMetaDao,AssetFieldMeta> implements AssetFieldMetaService{
@@ -101,7 +103,16 @@ public class AssetFieldMetaServiceImpl extends ServiceImpl<AssetFieldMetaDao,Ass
 	@Override
 	public List<AssetFieldMeta> getAssetFieldMetaListByAssetId(Integer assetId) {
 		List<AssetFieldMeta> metaList = assetFieldMetaDao.selectMateInfoListByAssetId(assetId);
+		List<Integer> metaIds = metaList.stream().map(meta -> meta.getId()).collect(Collectors.toList());
+		List<AssetFieldValue> assetFieldValues = assetFieldValueDao.selectList(new LambdaQueryWrapper<AssetFieldValue>()
+				.in(AssetFieldValue::getMetaId, metaIds)
+				.eq(ObjectUtil.isNotEmpty(assetId), AssetFieldValue::getAssetId,assetId));
+
+		Map<Integer, List<AssetFieldValue>> assetFieldValueByMetaId = assetFieldValues.stream().collect(Collectors.groupingBy(AssetFieldValue::getMetaId));
+
 		for (AssetFieldMeta meta : metaList) {
+			List<String> values = assetFieldValueByMetaId.get(meta.getId()).stream().map(assetFieldValue -> assetFieldValue.getValue()).collect(Collectors.toList());
+			meta.setValue(values);
 			meta.setKey(meta.getMetaKey());
 		}
 		return metaList;
