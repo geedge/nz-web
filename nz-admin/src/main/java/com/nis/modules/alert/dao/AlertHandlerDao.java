@@ -173,4 +173,13 @@ public interface AlertHandlerDao {
 	 * @param message
 	 */
     void updateMessageEndAck(AlertMessageEntity alertMessageEntity);
+
+	/**
+	 * alertMessage 高级搜索
+	 *
+	 * @param page
+	 * @param params
+	 * @return
+	 */
+	List<AlertMessageEntity> queryAlertMessageFullText(IPage page, Map<String, Object> params);
 }

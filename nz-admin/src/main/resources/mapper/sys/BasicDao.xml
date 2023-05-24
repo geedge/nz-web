@@ -7,4 +7,16 @@
         SELECT id,name FROM ${tableName} WHERE ${col} = #{value}
     </select>
 
+    <select id="selectKeywordsByTableName" resultType="string">
+        SELECT
+            t.name
+        FROM
+            ${params.tableName} t
+        <where>
+            <if test="params.text != null and params.text != ''">
+                locate(#{params.text}, t.name)
+            </if>
+        </where>
+    </select>
+
 </mapper>

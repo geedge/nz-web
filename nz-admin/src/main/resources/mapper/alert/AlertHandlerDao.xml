@@ -597,4 +597,280 @@
 		</if>
 	</select>
 
+
+	<select id="queryAlertMessageFullText" resultMap="alertMessageMap">
+		SELECT
+			am.id,
+			am.description,
+			am.labels,
+			am.start_at,
+			am.end_at,
+			am.last_at,
+			am.state,
+			am.remark,
+			am.hash_key,
+			am.ack,
+			ar.id AS r_id ,
+			ar.name AS r_name,
+			ar.type AS r_type,
+			ar.trb_shot AS r_trb_shot,
+			p.id AS p_id,
+			p.name AS p_name,
+			m.id AS m_id,
+			m.name AS m_name,
+			e.id AS e_id,
+			e.name AS e_name,
+			ass.id AS ass_id,
+			ass.name AS ass_name,
+			alsc.id AS alsc_id,
+			alsc.name AS alsc_name,
+			alsc.color AS alsc_color,
+			dc.id AS dc_id,
+			dc.name AS dc_name
+		FROM
+		<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.tableName)">
+			${params.tableName} am
+		</if>
+		<if test="@cn.hutool.core.util.ObjectUtil@isEmpty(params.tableName)">
+			(SELECT * FROM alert_message_active UNION ALL
+			SELECT * FROM alert_message_history UNION ALL
+			SELECT * FROM alert_message_silence) am
+		</if>
+		LEFT JOIN alert_rule ar ON am.rule_id = ar.id
+		LEFT JOIN alert_severity_conf alsc ON am.severity_id = alsc.id
+		LEFT JOIN monitor_project p ON am.project_id = p.id
+		LEFT JOIN monitor_module m ON am.module_id = m.id
+		LEFT JOIN monitor_endpoint e ON am.endpoint_id = e.id
+		LEFT JOIN asset_asset ass ON am.asset_id = ass.id
+		LEFT JOIN dc dc ON am.dc_id = dc.id
+		<where>
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.id)">
+				<foreach item="item" collection="params.id" separator="AND" index="" open="(" close=")">
+					am.id ${item.operator} #{item.value}
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.ruleId)">
+				AND <foreach item="item" collection="params.ruleId" separator="AND" index="" open="(" close=")">
+					am.rule_id ${item.operator} #{item.value}
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.dcId)">
+				AND <foreach item="item" collection="params.dcId" separator="AND" index="" open="(" close=")">
+					am.dc_id ${item.operator} #{item.value}
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.assetId)">
+				AND <foreach item="item" collection="params.assetId" separator="AND" index="" open="(" close=")">
+					am.asset_id ${item.operator} #{item.value}
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.projectId)">
+				AND <foreach item="item" collection="params.projectId" separator="AND" index="" open="(" close=")">
+					am.project_id ${item.operator} #{item.value}
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.moduleId)">
+				AND <foreach item="item" collection="params.moduleId" separator="AND" index="" open="(" close=")">
+					am.module_id ${item.operator} #{item.value}
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.endpointId)">
+				AND <foreach item="item" collection="params.endpointId" separator="AND" index="" open="(" close=")">
+					am.endpoint_id ${item.operator} #{item.value}
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.priorityId)">
+				AND <foreach item="item" collection="params.priorityId" separator="AND" index="" open="(" close=")">
+					am.severity_id ${item.operator} #{item.value}
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.asset)">
+				AND <foreach item="item" collection="params.asset" separator="OR" index="" open="(" close=")">
+					ass.name = #{item}
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['*asset'])">
+				AND <foreach item="item" collection="params['*asset']" separator="OR" index="" open="(" close=")">
+					locate(#{item},ass.name)
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['-asset'])">
+				AND <foreach item="item" collection="params['-asset']" separator="AND" index="" open="(" close=")">
+					ass.name != #{item}
+				</foreach>
+			</if>
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['-*asset'])">
+				AND <foreach item="item" collection="params['-*asset']" separator="AND" index="" open="(" close=")">
+					NOT locate(#{item},ass.name)
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.dc)">
+				AND <foreach item="item" collection="params.dc" separator="OR" index="" open="(" close=")">
+					dc.name = #{item}
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['*dc'])">
+				AND <foreach item="item" collection="params['*dc']" separator="OR" index="" open="(" close=")">
+					locate(#{item},dc.name)
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['-dc'])">
+				AND <foreach item="item" collection="params['-dc']" separator="AND" index="" open="(" close=")">
+					dc.name != #{item}
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['-*dc'])">
+				AND <foreach item="item" collection="params['-*dc']" separator="AND" index="" open="(" close=")">
+					NOT locate(#{item},dc.name)
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.project)">
+				AND <foreach item="item" collection="params.project" separator="OR" index="" open="(" close=")">
+					p.name = #{item}
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['*project'])">
+				AND <foreach item="item" collection="params['*project']" separator="OR" index="" open="(" close=")">
+					locate(#{item},p.name)
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['-project'])">
+				AND <foreach item="item" collection="params['-project']" separator="AND" index="" open="(" close=")">
+					p.name != #{item}
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['-*project'])">
+				AND <foreach item="item" collection="params['-*project']" separator="AND" index="" open="(" close=")">
+					NOT locate(#{item},p.name)
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.module)">
+				AND <foreach item="item" collection="params.module" separator="OR" index="" open="(" close=")">
+					m.name = #{item}
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['*module'])">
+				AND <foreach item="item" collection="params['*module']" separator="OR" index="" open="(" close=")">
+					locate(#{item},m.name)
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['-module'])">
+				AND <foreach item="item" collection="params['-module']" separator="AND" index="" open="(" close=")">
+					m.name != #{item}
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['-*module'])">
+				AND <foreach item="item" collection="params['-*module']" separator="AND" index="" open="(" close=")">
+					NOT locate(#{item},m.name)
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.endpoint)">
+				AND <foreach item="item" collection="params.endpoint" separator="OR" index="" open="(" close=")">
+					e.name = #{item}
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['*endpoint'])">
+				AND <foreach item="item" collection="params['*endpoint']" separator="OR" index="" open="(" close=")">
+					locate(#{item},e.name)
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['-endpoint'])">
+				AND <foreach item="item" collection="params['-endpoint']" separator="AND" index="" open="(" close=")">
+					e.name != #{item}
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['-*endpoint'])">
+				AND <foreach item="item" collection="params['-*endpoint']" separator="AND" index="" open="(" close=")">
+					NOT locate(#{item},e.name)
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.rule)">
+				AND <foreach item="item" collection="params.rule" separator="OR" index="" open="(" close=")">
+					ar.name = #{item}
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['*rule'])">
+				AND <foreach item="item" collection="params['*rule']" separator="OR" index="" open="(" close=")">
+					locate(#{item},ar.name)
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['-rule'])">
+				AND <foreach item="item" collection="params['-rule']" separator="AND" index="" open="(" close=")">
+					ar.name != #{item}
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['-*rule'])">
+				AND <foreach item="item" collection="params['-*rule']" separator="AND" index="" open="(" close=")">
+					NOT locate(#{item},ar.name)
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.priority)">
+				AND <foreach item="item" collection="params.priority" separator="OR" index="" open="(" close=")">
+					alsc.name = #{item}
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['*priority'])">
+				AND <foreach item="item" collection="params['*priority']" separator="OR" index="" open="(" close=")">
+					locate(#{item},alsc.name)
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['-priority'])">
+				AND <foreach item="item" collection="params['-priority']" separator="AND" index="" open="(" close=")">
+					alsc.name != #{item}
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['-*priority'])">
+				AND <foreach item="item" collection="params['-*priority']" separator="AND" index="" open="(" close=")">
+					NOT locate(#{item},alsc.name)
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.startAt)">
+				AND am.start_at &gt;= #{params.startAt}
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.endAt)">
+				AND am.start_at &lt;= #{params.endAt}
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.q)">
+				AND (locate(#{params.q} , am.summary) OR locate(#{params.q} , am.description) OR locate(#{params.q},am.labels))
+			</if>
+		</where>
+	</select>
+
 </mapper>

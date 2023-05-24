@@ -1048,6 +1048,8 @@ public enum RCode {
     TOOL_PING_IP_ISNULL(751000, "Ping ip can not be empty"),
     TOOL_TRACEROUTE_IP_ISNULL(751001, "Traceroute ip can not be empty"),
     TOOL_NOT_SUPPORTED_IPV6SUBNET(753002, "IPV6 subnet asset scanning is not supported"),
+    TOOL_FULLTEXT_METADATA_TYPE_ISNULL(751003, "Fulltext search metadata type cannot be empty"),
+    TOOL_FULLTEXT_KEYWORD_TYPE_INVALID(754004, "Fulltext keyword type not in enumeration range"),
 
     /**
      * integration 相关
