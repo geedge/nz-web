@@ -772,7 +772,7 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
                 log.info("[downloadOfSftp] [no such file] [path: {}]", path);
                 throw new NZException(RCode.TERMINAL_DOWNLOAD_NO_SUCH_FILE);
             }
-            boolean isDir = sftp.cd(path);
+            boolean isDir = sftp.isDir(path);
             if (isDir) {
                 log.info("[downloadOfSftp] [not supported to get directory] [path: {}]", path);
                 throw new NZException(RCode.TERMINAL_DOWNLOAD_NOT_SUPPORTED_DIRECTORY);
