@@ -563,7 +563,12 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
     public void rmOfSftp(String uuid, String path) {
         Sftp sftp = this.getSftpChannel(uuid);
         try {
-            boolean cd = sftp.cd(path);
+            boolean exist = sftp.exist(path);
+            if (!exist){
+                log.info("[rmOfSftp] [no such file] [path: {}]", path);
+                throw new NZException(RCode.TERMINAL_DOWNLOAD_NO_SUCH_FILE);
+            }
+            boolean cd = sftp.isDir(path);
             if (cd) {
                 throw new NZException(RCode.TERMINAL_CANNOT_DELETE_DIR);
             }
