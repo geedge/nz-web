@@ -83,8 +83,8 @@ public class FullTextSearchServiceImpl implements FullTextSearchService {
         Map queryBody = JSONUtil.toBean(queryBodyJsonStr, HashMap.class);
 
         // 根据状态判断对应的表
-        if (ToolUtil.isNotEmpty(queryBody.get("state"))) {
-            String tableName = Constant.ALERT_MESSAGE_STATE_TABLE_MAPPING.get(Integer.valueOf(queryBody.get("state").toString()));
+        if (ToolUtil.isNotEmpty(params.get("state"))) {
+            String tableName = Constant.ALERT_MESSAGE_STATE_TABLE_MAPPING.get(Integer.valueOf(params.get("state").toString()));
             queryBody.put("tableName", tableName);
         }
 

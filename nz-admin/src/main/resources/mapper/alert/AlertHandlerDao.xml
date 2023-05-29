@@ -860,11 +860,11 @@
 			</if>
 
 			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.startAt)">
-				AND am.start_at &gt;= #{params.startAt}
+				AND am.start_at &gt;= #{params.startAt[0]}
 			</if>
 
 			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.endAt)">
-				AND am.start_at &lt;= #{params.endAt}
+				AND am.start_at &lt;= #{params.endAt[0]}
 			</if>
 
 			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.q)">
