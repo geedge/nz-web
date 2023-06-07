@@ -703,8 +703,7 @@ public class VisualServiceImpl implements VisualService {
             }
 
             // update dashboard param & tmplid
-            VisualDashboard updateDashboardObject = new VisualDashboard();
-            BeanUtil.copyProperties(syncDashboard, updateDashboardObject);
+            VisualDashboard updateDashboardObject = JSONUtil.toBean(JSONUtil.toJsonStr(syncDashboard), VisualDashboard.class);
 
             updateDashboardObject.setParam(Tool.NzExpressionUtil.renderExpression(templateDashboardParam.toString(), linkObject));
             updateDashboardObject.setTmplId(templateDashboardId);
@@ -718,8 +717,7 @@ public class VisualServiceImpl implements VisualService {
             List<VisualChartElement> saveChartElementList = Tool.ListUtil.list(true);
             Map<Integer, Integer> groupIdMapping = new HashMap<>();
             for (VisualChart tempChart : templateDashboardCharts) {
-                VisualChart saveChart = new VisualChart();
-                BeanUtil.copyProperties(tempChart, saveChart);
+                VisualChart saveChart = JSONUtil.toBean(JSONUtil.toJsonStr(tempChart), VisualChart.class);
 
                 saveChart.setId(null);
                 saveChart.setDashboardId(syncDashboardId);
