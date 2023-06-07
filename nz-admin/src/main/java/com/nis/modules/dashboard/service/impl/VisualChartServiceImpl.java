@@ -674,8 +674,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		Integer syncDashboardLink = syncChartDashboard.getLink();
 
 		// copy Properties
-		VisualChart saveChart = new VisualChart();
-		BeanUtil.copyProperties(tmplChartForSync, saveChart);
+		VisualChart saveChart = JSONUtil.toBean(JSONUtil.toJsonStr(tmplChartForSync), VisualChart.class);
 
 		saveChart.setId(null);
 		saveChart.setDashboardId(syncDashboardId);
@@ -699,8 +698,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		if (Tool.CollUtil.isNotEmpty(saveChart.getElements())) {
 			List<VisualChartElement> saveElementList = Tool.ListUtil.list(true);
 			for (VisualChartElement element : saveChart.getElements()) {
-				VisualChartElement saveElement = new VisualChartElement();
-				BeanUtil.copyProperties(element, saveElement);
+				VisualChartElement saveElement = JSONUtil.toBean(JSONUtil.toJsonStr(element), VisualChartElement.class);
 
 				saveElement.setId(null);
 				saveElement.setExpression(Tool.NzExpressionUtil.renderExpression(element.getExpression(), linkObject));
