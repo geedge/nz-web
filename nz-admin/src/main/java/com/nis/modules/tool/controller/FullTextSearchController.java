@@ -64,13 +64,7 @@ public class FullTextSearchController {
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ALERTMESSAGE)
     public R alertMessageFullTextSearchQuery(@RequestParam Map<String, Object> params) {
         PageUtils page = fullTextSearchService.queryAlertMessageFullTextPage(params);
-        R result = R.ok(page);
-        Object statFlag = params.getOrDefault("statistics", 0);
-        if (Tool.ObjectUtil.equal("1", String.valueOf(statFlag))) {
-            Map<String, List> messageGroupBy = handlerService.queryMessageGroupBy(params);
-            result.put("statistics", messageGroupBy);
-        }
-        return result;
+        return R.ok(page);
     }
 
 }
