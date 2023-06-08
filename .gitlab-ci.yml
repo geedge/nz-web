@@ -16,7 +16,7 @@ variables:
   NZ_DB_HOST: "192.168.44.23"
   NZ_DB_USER: "nezha"
   NZ_DB_PASSWORD: "nezha02"
-  NZ_DB_NAME: "nz-dev-3.7"
+  NZ_DB_NAME: "nz-dev-3.8"
 # 定义全局依赖的docker服务，即 这条流水线 pipeline 中的任务都用这里的服务
 services:
   - mariadb:10.2.14
