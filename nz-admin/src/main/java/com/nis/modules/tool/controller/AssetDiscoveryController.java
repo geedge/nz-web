@@ -9,6 +9,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
@@ -16,9 +17,11 @@ import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.service.AgentService;
 import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.asset.entity.AssetModel;
 import com.nis.modules.asset.service.AssetAssetService;
+import com.nis.modules.asset.service.AssetModelService;
+import com.nis.modules.ipam.dao.IpamSubnetDao;
 import com.nis.modules.ipam.entity.IpamSubnet;
-import com.nis.modules.ipam.service.IpamSubnetService;
 import com.nis.modules.sys.entity.SnmpCredential;
 import com.nis.modules.sys.service.SnmpCredentialService;
 import com.nis.modules.sys.service.SysConfService;
@@ -65,10 +68,13 @@ public class AssetDiscoveryController {
     private AssetAssetService assetService;
 
     @Autowired
-    private IpamSubnetService ipamSubnetService;
+    private AssetModelService assetModelService;
 
     @Autowired
     private SnmpCredentialService snmpCredentialService;
+
+    @Autowired
+    private IpamSubnetDao ipamSubnetDao;
 
     /**
      * discovery 执行线程池，无界+不抛弃
@@ -110,8 +116,8 @@ public class AssetDiscoveryController {
         ValidateUtils.is(subnetIds).notNull(RCode.IPAM_SUBNET_ID_ISNULL)
                 .and(snmpCredentialIds).notNull(RCode.SNMP_CREDENTIAL_ID_ISNULL);
 
-        List<String> subnetIdList = Tool.StrUtil.split(subnetIds, ",");
-        List<IpamSubnet> ipamSubnetList = ipamSubnetService.getBaseMapper().selectBatchIds(subnetIdList);
+        Map<String, Object> queryParams = Tool.MapUtil.of(Pair.of("ids", Tool.StrUtil.split(subnetIds, ",")));
+        List<IpamSubnet> ipamSubnetList = ipamSubnetDao.queryPage(new Page(0, -1), queryParams);
         ValidateUtils.is(ipamSubnetList).notNull(RCode.IPAM_IP_SUBNET_NOT_EXISTS);
 
         IpamSubnet ipv6TypeSubnet = ipamSubnetList.stream().filter(ipamSubnet -> Tool.ObjectUtil.equal(6, ipamSubnet.getType())).findFirst().orElse(null);
@@ -123,18 +129,18 @@ public class AssetDiscoveryController {
 
         // snmp 探测模式
         String discoverySnmpMode = sysConfService.getValueOrDefault("asset_discovery_snmp_mode", "1");
+        List<Agent> agentList = agentService.list(new LambdaQueryWrapper<Agent>().eq(Agent::getStatus, 1));
+        if (BooleanUtil.and(StrUtil.equals("2", discoverySnmpMode), Tool.CollectionUtil.isEmpty(agentList))) {
+            throw new NZException(RCode.AGENT_UNAVAILABLE);
+        }
         Map<String, Object> confParams = Tool.MapUtil.newHashMap();
         confParams.put("timeout", requestBody.get("timeout"));
         confParams.put("retries", requestBody.get("retries"));
+        confParams.put("agentList", agentList);
+        confParams.put("credentialList", credentialList);
         confParams.put("discoverySnmpMode", discoverySnmpMode);
-
         List<AssetAsset> discoveredAssetList = assetService.getDiscoveredAssetInfoList();
-        List<Agent> agentList = agentService.list(new LambdaQueryWrapper<Agent>().eq(Agent::getStatus, 1));
-        if (BooleanUtil.and(
-                StrUtil.equals("2", discoverySnmpMode),
-                Tool.CollectionUtil.isEmpty(agentList))) {
-            throw new NZException(RCode.AGENT_UNAVAILABLE);
-        }
+        List<AssetModel> assetModelList = assetModelService.list(new LambdaQueryWrapper<AssetModel>().ne(AssetModel::getSysObjectId, StrUtil.EMPTY));
 
         String tid = StrUtil.uuid();
         ThreadUtil.execAsync(() -> {
@@ -157,7 +163,7 @@ public class AssetDiscoveryController {
                     int high = ReflectUtil.invoke(subnetUtils.getInfo(), "high");
                     for (int add = low, j = 0; add <= high; ++add, ++j) {
                         String ip = format(toArray(add));
-                        DiscoveryRunnable runnable = new DiscoveryRunnable(threadGroup, tid, ip, credentialList, discoveredAssetList, agentList, confParams);
+                        DiscoveryRunnable runnable = new DiscoveryRunnable(threadGroup, tid, ip, ipamSubnet, assetModelList, discoveredAssetList, confParams);
                         runnable.setName(StrUtil.concat(true, tid, "-", ipamSubnet.getName()));
 
                         ReflectUtil.invoke(threadGroup, "add", runnable);
@@ -314,8 +320,8 @@ public class AssetDiscoveryController {
 
         private String ip;
         private String tid;
-        private List<Agent> agentList;
-        private List<SnmpCredential> credentialList;
+        private IpamSubnet subnet;
+        private List<AssetModel> assetModelList;
         private List<AssetAsset> discoveredAssetList;
         private Map<String, Object> confParams;
 
@@ -323,14 +329,14 @@ public class AssetDiscoveryController {
         private Integer retries;
         private boolean isInterrupted = false;
 
-        public DiscoveryRunnable(ThreadGroup tg, String tid, String ip, List<SnmpCredential> credentialList, List<AssetAsset> discoveredAssetList, List<Agent> agentList, Map<String, Object> confParams) {
+        public DiscoveryRunnable(ThreadGroup tg, String tid, String ip, IpamSubnet subnet, List<AssetModel> assetModelList, List<AssetAsset> discoveredAssetList, Map<String, Object> confParams) {
             super(tg, String.format("discovery-%s-%s", tg.getName(), ip));
             this.tg = tg;
 
             this.ip = ip;
             this.tid = tid;
-            this.agentList = agentList;
-            this.credentialList = credentialList;
+            this.subnet = subnet;
+            this.assetModelList = assetModelList;
             this.discoveredAssetList = discoveredAssetList;
             this.confParams = confParams;
         }
@@ -351,6 +357,9 @@ public class AssetDiscoveryController {
                         m.put("asset", Tool.MapUtil.builder().put("id", asset.getId()).put("name", asset.getName()).map());
                         m.put("model", Tool.MapUtil.builder().put("id", asset.getModel().getId()).put("name", asset.getModel().getName()).map());
                         m.put("dc", Tool.MapUtil.builder().put("id", asset.getDc().getId()).put("name", asset.getDc().getName()).map());
+                    } else {
+                        // 扫描结果没有导入系统中时，使用 ipam_subnet.dc 补充 datacenter 内容
+                        m.put("dc", Tool.MapUtil.builder().put("id", this.subnet.getDc().getId()).put("name", this.subnet.getDc().getName()).map());
                     }
                     // ping
                     boolean ipIsReachable = this.checkIpIsReachable(ip, this.getTimeout());
@@ -360,11 +369,13 @@ public class AssetDiscoveryController {
                         // discovery Snmp Mode, 1:nz-web 2:nz-agent
                         String discoverySnmpMode = (String) confParams.get("discoverySnmpMode");
                         List<Map> snmpGetResultList = null;
+                        List<SnmpCredential> credentialList = (List<SnmpCredential>) confParams.get("credentialList");
                         if (StrUtil.equals("1", discoverySnmpMode)) {
-                            snmpGetResultList = this.snmpGetpViaWeb();
+                            snmpGetResultList = this.snmpGetpViaWeb(credentialList);
                         } else {
+                            List<Agent> agentList = (List<Agent>) confParams.get("agentList");
                             Agent server = agentList.get(RandomUtils.nextInt(0, agentList.size()));
-                            snmpGetResultList = this.snmpGetpViaAgent(server);
+                            snmpGetResultList = this.snmpGetpViaAgent(server, credentialList);
                         }
                         if (Tool.CollUtil.isNotEmpty(snmpGetResultList)) {
                             m.put("state", 1);
@@ -379,6 +390,17 @@ public class AssetDiscoveryController {
                                 if (StrUtil.equals(SYSUPTIME_OID, oid))
                                     m.put("sysUptime", tmap.get("value"));
                             });
+                            if (ObjectUtil.equal(0, Tool.MapUtil.getInt(m, "imported"))) {
+                                // 扫描结果没有导入系统中时，根据 snmp_result.sysObjectId 补充 model 内容
+                                AssetModel tempModel = this.assetModelList.stream().filter(model -> {
+                                    String modelSysObjectId = StrUtil.trim(model.getSysObjectId());
+                                    String snmpGetSysObjectId = Tool.MapUtil.getStr(m, "sysObjectId");
+                                    return StrUtil.equals(modelSysObjectId, snmpGetSysObjectId);
+                                }).findFirst().orElse(null);
+                                if (ObjectUtil.isNotNull(tempModel)) {
+                                    m.put("model", Tool.MapUtil.builder().put("id", tempModel.getId()).put("name", tempModel.getName()).map());
+                                }
+                            }
                         }
                     }
                     if (!this.isInterrupted()) {
@@ -412,9 +434,10 @@ public class AssetDiscoveryController {
         /**
          * snmpGetpViaWeb
          *
+         * @param credentialList
          * @return
          */
-        private List<Map> snmpGetpViaWeb() {
+        private List<Map> snmpGetpViaWeb(List<SnmpCredential> credentialList) {
             List<Map> snmpGetResultList = Tool.ListUtil.list(true);
             List<String> oidList = Tool.ListUtil.of(SYSNAME_OID, SYSOBJECTID_OID, SYSDESCR_OID, SYSUPTIME_OID);
             for (SnmpCredential credential : credentialList) {
@@ -438,9 +461,10 @@ public class AssetDiscoveryController {
          * snmpGetpViaAgent
          *
          * @param server
+         * @param credentialList
          * @return
          */
-        private List<Map> snmpGetpViaAgent(Agent server) {
+        private List<Map> snmpGetpViaAgent(Agent server, List<SnmpCredential> credentialList) {
             String path = "/cmd/snmp";
             Map requestBody = Tool.MapUtil.newHashMap();
             requestBody.put("ips", Tool.ListUtil.of(ip));
