@@ -182,4 +182,4 @@ INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type
 INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (2276, 'Dashboard Temp View', 'dashboard_temp_view', 'buttons.view', 2273, '', 2, '', 1, '', '', 1);
 INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (2277, 'Dashboard Temp Delete', 'dashboard_temp_delete', 'buttons.delete', 2273, '', 2, '', 4, '', '', 1);
 INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (2278, 'Integration', 'integration', 'integration', 0, '', 1, '/integration', 95, 'nz-icon nz-icon-Integration', '', 1);
-
+INSERT INTO `sys_menu`(`id`, `name`, `code`, `i18n`, `parent_id`, `perms`, `type`, `route`, `order_num`, `icon`, `required`, `state`) VALUES (2290, 'Discovery Asset', 'dscoveryAsset', 'asset.assetDiscovery', 2245, '', 1, '/discoveryAsset', 3, '', '', 1);
