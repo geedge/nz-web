@@ -1,8 +1,10 @@
 package com.nis.modules.agent.util;
 
+import cn.hutool.core.lang.Opt;
 import cn.hutool.core.net.url.UrlBuilder;
 import cn.hutool.core.net.url.UrlPath;
 import cn.hutool.core.net.url.UrlQuery;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.URLUtil;
 import cn.hutool.http.Header;
@@ -221,15 +223,29 @@ public class AgentUtil {
 		ResponseEntity<String> responseEntity = null;
 		try {
 			responseEntity = restTemplate.exchange(new URI(urlStr), HttpMethod.GET, entity, String.class);
-		} catch (URISyntaxException e) {
-			log.error(e);
+		} catch (Exception e) {
+			log.error(e, "agent request error. url:{}", urlStr);
+			String message = e.getMessage();
+			if (ObjectUtil.isNotNull(e.getCause())) {
+				message = e.getCause().getMessage();
+			}
+			throw new NZException(message, HttpStatus.INTERNAL_SERVER_ERROR.value());
 		}
-		log.info("agent request url:{}, responseStatus:{}", urlStr, responseEntity.getStatusCodeValue());
 
+		Integer getStatusCodeValue = Opt.ofNullable(responseEntity).map(ResponseEntity::getStatusCodeValue).get();
+		String responseBody = Opt.ofNullable(responseEntity).map(ResponseEntity::getBody).get();
+
+		log.info("agent request url:{}, responseStatus:{}", urlStr, getStatusCodeValue);
 		if (log.isDebugEnabled()) {
-			log.debug("agent request body:{}", urlStr, responseEntity.getStatusCodeValue(), responseEntity.getBody());
+			log.debug("agent request url:{} responseStatus: {} body:{}", urlStr, getStatusCodeValue, responseBody);
 		}
-		return JSONObject.parseObject(responseEntity.getBody(), JSONObject.class, Feature.OrderedField);
+
+		if (Tool.ObjectUtil.equal(HttpStatus.OK.value(), getStatusCodeValue)) {
+			return JSONObject.parseObject(responseBody, JSONObject.class, Feature.OrderedField);
+		} else {
+			log.warn("agent request error. url:{} responseStatus: {} response: {}", urlStr, getStatusCodeValue, responseBody);
+			throw new NZException(responseBody, getStatusCodeValue);
+		}
 	}
 
 	/**
