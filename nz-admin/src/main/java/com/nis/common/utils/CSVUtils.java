@@ -1,6 +1,7 @@
 package com.nis.common.utils;
 
 
+import cn.hutool.core.io.CharsetDetector;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.text.csv.CsvData;
 import cn.hutool.core.text.csv.CsvReader;
@@ -28,7 +29,7 @@ public class CSVUtils {
         try {
             FileUtils.copyInputStreamToFile(multipartFile.getInputStream(), tempCsvFile);
             //data = reader.read(tempCsvFile);
-            data = reader.read(ResourceUtil.getReader(tempCsvFile.getPath(), CharsetUtil.CHARSET_UTF_8));
+            data = reader.read(ResourceUtil.getReader(tempCsvFile.getPath(), CharsetDetector.detect(tempCsvFile)));
         } catch (IOException e) {
             logger.error(e);
         } finally {
