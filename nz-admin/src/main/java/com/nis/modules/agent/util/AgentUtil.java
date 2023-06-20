@@ -20,6 +20,7 @@ import com.nis.common.utils.Tool;
 import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.service.PromApiService;
 import com.nis.modules.sys.service.SysConfigService;
+import com.sun.javafx.fxml.builder.URLBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
@@ -41,6 +42,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -84,9 +86,18 @@ public class AgentUtil {
 		String agentPath = sysConfigService.getValueOrDefault(Constant.CONFAGENT_PATH, "");
 		path = path.startsWith("/") ? (String.format("%s%s", agentPath, path))
 				: (String.format("%s/%s", agentPath, path));
-		String urlString = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
+		/*String urlString = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
 				.setPort(server.getPort()).setPath(UrlPath.of(path, Charset.forName("UTF-8")))
-				.setQuery(UrlQuery.of(queryString, Charset.forName("UTF-8"), false, true)).toString();
+				.setQuery(UrlQuery.of(queryString, Charset.forName("UTF-8"), false, true)).toString();*/
+		String urlString = new UrlBuilder(
+				server.getProtocol(),
+				server.getHost(),
+				Integer.valueOf(server.getPort()),
+				UrlPath.of(path, Charset.forName("UTF-8")),
+				UrlQuery.of(queryString, Charset.forName("UTF-8"), false, true),
+				null,
+				StandardCharsets.UTF_8).toString();
+
 		HttpHeaders headers = new HttpHeaders();
 		headers.add(HttpHeaders.AUTHORIZATION, server.getToken());
 		HttpEntity httpEntity = body == null ? new HttpEntity(headers) : new HttpEntity(body, headers);
@@ -194,8 +205,16 @@ public class AgentUtil {
 	 * @return
 	 */
 	public static JSONObject getForObject(Agent server, String url, Map requestParam) {
-		UrlBuilder urlBuilder = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
-				.setPort(server.getPort()).setPath(UrlPath.of(url, Charset.forName("UTF-8")));
+		/*UrlBuilder urlBuilder = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
+				.setPort(server.getPort()).setPath(UrlPath.of(url, Charset.forName("UTF-8")));*/
+
+		UrlBuilder urlBuilder = new UrlBuilder(server.getProtocol(),
+				server.getHost(),
+				Integer.valueOf(server.getPort()),
+				UrlPath.of(url, Charset.forName("UTF-8")),
+				null,
+				null,
+				StandardCharsets.UTF_8);
 
 		UrlQuery urlQuery = new UrlQuery(true);
 		Iterator<Map.Entry<String, Object>> iterator = ((Map<String, Object>) requestParam).entrySet().iterator();
@@ -364,9 +383,18 @@ public class AgentUtil {
 			queryString = StrUtil.isNotBlank(queryString) ? queryString : "";
 			queryString = URLUtil.decode(queryString);
 
-			String urlStr = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
+			/*String urlStr = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
 					.setPort(server.getPort()).setPath(UrlPath.of(url, Charset.forName("UTF-8")))
-					.setQuery(UrlQuery.of(queryString, Charset.forName("UTF-8"), false, true)).toString();
+					.setQuery(UrlQuery.of(queryString, Charset.forName("UTF-8"), false, true)).toString();*/
+
+			String urlStr = new UrlBuilder(
+					server.getProtocol(),
+					server.getHost(),
+					Integer.valueOf(server.getPort()),
+					UrlPath.of(url, Charset.forName("UTF-8")),
+					UrlQuery.of(queryString, Charset.forName("UTF-8"), false, true),
+					null,
+					StandardCharsets.UTF_8).toString();
 
 			String method = request.getMethod();
 			ResponseEntity<byte[]> exchange = restTemplate.exchange(new URI(urlStr), HttpMethod.resolve(method),
