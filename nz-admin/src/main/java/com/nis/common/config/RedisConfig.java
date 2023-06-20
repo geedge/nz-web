@@ -2,37 +2,45 @@ package com.nis.common.config;
 
 import java.net.UnknownHostException;
 import java.time.Duration;
+import java.util.List;
 
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.connection.RedisConfiguration;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.RedisNode;
+import org.springframework.data.redis.connection.RedisSentinelConfiguration;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettucePoolingClientConfiguration;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import com.nis.common.utils.Tool;
 
 import cn.hutool.log.Log;
 import lombok.Data;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 /**
  * redis 初始化配置
+ * 
  * @author fang
  *
  */
 @Configuration
 @Data
 public class RedisConfig {
-	
+
 	private static final Log log = Log.get();
+
+	@Value("${redis.mode:standalone}")
+	private String redisMode;
 	
 	@Value("${redis.host}")
 	private String redisHost;
@@ -44,6 +52,11 @@ public class RedisConfig {
 	private String redisPin;
 	@Value("${nezha.inited:0}")
 	private int inited;
+	// redis sentinel配置项
+	@Value("${redis.sentinel.master}")
+	private String sentinelMaster;
+	@Value("${redis.sentinel.nodes}")
+	private String sentinelNodes;
 	/**
 	 * redis配置项
 	 */
@@ -57,40 +70,64 @@ public class RedisConfig {
 	private int maxActive;
 	@Value("${spring.redis.timeout:100000}")
 	private long redisTimeout;
-	
-	
+
 	@Bean(name = "redisConnectionFactory")
 	public RedisConnectionFactory redisConnectionFactory() {
-		if(!Tool.ObjectUtil.isAllNotEmpty(this.getRedisHost(),this.getRedisPort(),this.getRedisDatabase())) {
+
+		RedisConfiguration configuration;
+		if (Tool.StrUtil.equalsIgnoreCase(redisMode, "standalone")) {
+			log.info("standalone redis config: {}:{}/{}", this.getRedisHost(), this.getRedisPort(),this.getRedisDatabase());
+			if (!Tool.ObjectUtil.isAllNotEmpty(this.getRedisHost(), this.getRedisPort(), this.getRedisDatabase())) {
+				log.error("redis config error");
+				return null;
+			}
+			configuration = new RedisStandaloneConfiguration();
+			((RedisStandaloneConfiguration) configuration).setDatabase(this.getRedisDatabase());
+			((RedisStandaloneConfiguration) configuration).setHostName(this.getRedisHost());
+			((RedisStandaloneConfiguration) configuration).setPort(this.getRedisPort());
+			if (Tool.StrUtil.isNotBlank(this.getRedisPin())) {
+				((RedisStandaloneConfiguration) configuration).setPassword(this.getRedisPin());
+			}
+		} else if (Tool.StrUtil.equalsIgnoreCase(redisMode, "sentinel")) {
+			log.info("sentinel redis config: {}, {}, {}", sentinelMaster, sentinelNodes, this.getRedisDatabase());
+			if (!Tool.ObjectUtil.isAllNotEmpty(this.getSentinelMaster(), this.getSentinelNodes(),this.getRedisDatabase())) {
+				log.error("redis config error");
+				return null;
+			}
+			configuration = new RedisSentinelConfiguration();
+			((RedisSentinelConfiguration) configuration).master(sentinelMaster);
+			List<RedisNode> nodeList = Tool.ListUtil.list(false);
+			String[] nodeArr = sentinelNodes.split(",");
+			for (String node : nodeArr) {
+				nodeList.add(new RedisNode(node.split(":")[0], Tool.NumberUtil.parseInt(node.split(":")[1])));
+			}
+			((RedisSentinelConfiguration) configuration).setSentinels(nodeList);
+			((RedisSentinelConfiguration) configuration).setDatabase(redisDatabase);
+			if (Tool.StrUtil.isNotBlank(redisPin)) {
+				((RedisSentinelConfiguration) configuration).setPassword(redisPin);
+			}
+		} else {
+			log.error("redis config error, unknow redis mode: {}", redisMode);
 			return null;
 		}
-		log.info("redis config: {}:{}/{}",this.getRedisHost(),this.getRedisPort(),this.getRedisDatabase());
-		RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
-		configuration.setDatabase(this.getRedisDatabase());
-		configuration.setHostName(this.getRedisHost());
-		configuration.setPort(this.getRedisPort());
-		if(Tool.StrUtil.isNotBlank(this.getRedisPin())) {
-			configuration.setPassword(this.getRedisPin());
-		}
-        GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig();
-        poolConfig.setMinIdle(this.getMinIdle());
-        poolConfig.setMaxIdle(this.getMaxIdle());
-        poolConfig.setMaxTotal(this.getMaxActive());
-        poolConfig.setMaxWaitMillis(this.getMaxWait());
 
-	    LettucePoolingClientConfiguration lettucePoolingClientConfiguration = LettucePoolingClientConfiguration.builder()
-	            .commandTimeout(Duration.ofMillis(this.getRedisTimeout()))
-	            .shutdownTimeout(Duration.ZERO)
-	            .poolConfig(poolConfig)
-	            .build();
-		 
-        RedisConnectionFactory factory = new LettuceConnectionFactory(configuration, lettucePoolingClientConfiguration);
+		GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig();
+		poolConfig.setMinIdle(this.getMinIdle());
+		poolConfig.setMaxIdle(this.getMaxIdle());
+		poolConfig.setMaxTotal(this.getMaxActive());
+		poolConfig.setMaxWaitMillis(this.getMaxWait());
+
+		LettucePoolingClientConfiguration lettucePoolingClientConfiguration = LettucePoolingClientConfiguration
+				.builder().commandTimeout(Duration.ofMillis(this.getRedisTimeout())).shutdownTimeout(Duration.ZERO)
+				.poolConfig(poolConfig).build();
+
+		RedisConnectionFactory factory = new LettuceConnectionFactory(configuration, lettucePoolingClientConfiguration);
 		return factory;
 	}
-	
-	
+
 	@Bean(name = "redisTemplate")
-	public RedisTemplate<?, ?> redisTemplate(RedisConnectionFactory redisConnectionFactory) throws UnknownHostException {
+	public RedisTemplate<?, ?> redisTemplate(RedisConnectionFactory redisConnectionFactory)
+			throws UnknownHostException {
 		RedisTemplate<?, ?> template = new RedisTemplate<>();
 
 		template.setKeySerializer(new StringRedisSerializer());
@@ -104,7 +141,7 @@ public class RedisConfig {
 			@Override
 			public Object doInRedis(RedisConnection connection) throws DataAccessException {
 				String ping = connection.ping();
-				if(Tool.StrUtil.isBlank(ping)) {
+				if (Tool.StrUtil.isBlank(ping)) {
 					log.error("redis connetion error");
 				}
 				return null;
@@ -114,7 +151,8 @@ public class RedisConfig {
 	}
 
 	@Bean(name = "stringRedisTemplate")
-	public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory redisConnectionFactory) throws UnknownHostException {
+	public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory redisConnectionFactory)
+			throws UnknownHostException {
 		StringRedisTemplate template = new StringRedisTemplate();
 		template.setKeySerializer(new StringRedisSerializer());
 		template.setHashKeySerializer(new StringRedisSerializer());
@@ -124,7 +162,5 @@ public class RedisConfig {
 		template.afterPropertiesSet();
 		return template;
 	}
-	
+
 }
-
-
