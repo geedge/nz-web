@@ -22,6 +22,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -121,12 +122,21 @@ public class TalonUtil {
         // build urlQuery
         UrlQuery urlQuery = TalonUtil.buildUrlQuery(requestParam);
 
-        UrlBuilder urlBuilder = UrlBuilder.create()
+        /*UrlBuilder urlBuilder = UrlBuilder.create()
                 .setScheme("http")
                 .setHost(targetUrl.split(":")[0])
                 .setPort(Integer.valueOf(targetUrl.split(":")[1]))
                 .setQuery(urlQuery)
-                .setPath(UrlPath.of(String.format("%s%s", "/nz-talon", path), Charset.forName("UTF-8")));
+                .setPath(UrlPath.of(String.format("%s%s", "/nz-talon", path), Charset.forName("UTF-8")));*/
+
+        UrlBuilder urlBuilder = new UrlBuilder(
+                "http",
+                targetUrl.split(":")[0],
+                Integer.valueOf(targetUrl.split(":")[1]),
+                UrlPath.of(String.format("%s%s", "/nz-talon", path), Charset.forName("UTF-8")),
+                urlQuery,
+                null,
+                StandardCharsets.UTF_8);
         String urlStr = urlBuilder.build();
 
         HttpHeaders headers = new HttpHeaders();
@@ -160,12 +170,21 @@ public class TalonUtil {
         Agent server = promApiService.getOneAvaliableGlobalAgent();
         String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
 
-        UrlBuilder urlBuilder = UrlBuilder.create()
+        /*UrlBuilder urlBuilder = UrlBuilder.create()
                 .setScheme(server.getProtocol())
                 .setHost(server.getHost())
                 .setPort(server.getPort())
                 .setQuery(urlQuery)
-                .setPath(UrlPath.of(String.format("%s%s%s", agentPath, "/talon/proxy", path), Charset.forName("UTF-8")));
+                .setPath(UrlPath.of(String.format("%s%s%s", agentPath, "/talon/proxy", path), Charset.forName("UTF-8")));*/
+
+        UrlBuilder urlBuilder = new UrlBuilder(
+                server.getProtocol(),
+                server.getHost(),
+                Integer.valueOf(server.getPort()),
+                UrlPath.of(String.format("%s%s%s", agentPath, "/talon/proxy", path), Charset.forName("UTF-8")),
+                urlQuery,
+                null,
+                StandardCharsets.UTF_8);
         String urlStr = urlBuilder.build();
 
         HttpHeaders headers = new HttpHeaders();
