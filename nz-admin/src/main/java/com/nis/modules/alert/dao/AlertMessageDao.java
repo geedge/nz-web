@@ -43,7 +43,7 @@ public interface AlertMessageDao extends BaseMapper<AlertMessageEntity> {
      * @param id
      * @return
      */
-    Integer getAlertNumByCabinetId(Integer id);
+    Long getAlertNumByCabinetId(Integer id);
     
     void removeAllData();
 

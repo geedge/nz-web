@@ -169,8 +169,8 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
         Dc dc = dcService.getById(cabinet.getDcId());
         cabinet.setDc(dc);
 
-        Integer num = alertMessageDao.getAlertNumByCabinetId(id);
-        cabinet.setAlertNum(num);
+        Long num = alertMessageDao.getAlertNumByCabinetId(id);
+        cabinet.setAlertNum(num.intValue());
         // 收藏标识 0：未收藏 1：已收藏
         List<SysUserStarredEntity> tUserStatList = starredService.list(new LambdaQueryWrapper<SysUserStarredEntity>()
                 .select(SysUserStarredEntity::getId)
