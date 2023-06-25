@@ -775,7 +775,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
         // dashboard_id
         Integer dashboardId = alertRule.getDashboardId();
-        if (ObjectUtil.isNotNull(dashboardId)) {
+        if (ObjectUtil.isNotNull(dashboardId) && ObjectUtil.notEqual(-1, dashboardId)) {
             VisualDashboard dashboard = dashboardService.getById(dashboardId);
             ValidateUtils.is(dashboard).notNull(RCode.DASHBOARD_NOT_EXIST);
             if (!StrUtil.equals(DashboardConstant.Type.DASHBOARD.getValue(), dashboard.getType())) {
