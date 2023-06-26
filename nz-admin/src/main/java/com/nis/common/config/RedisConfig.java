@@ -29,7 +29,7 @@ import lombok.Data;
 
 /**
  * redis 初始化配置
- * 
+ *
  * @author fang
  *
  */
@@ -41,7 +41,7 @@ public class RedisConfig {
 
 	@Value("${redis.mode:standalone}")
 	private String redisMode;
-	
+
 	@Value("${redis.host}")
 	private String redisHost;
 	@Value("${redis.port:6379}")
@@ -74,43 +74,6 @@ public class RedisConfig {
 	@Bean(name = "redisConnectionFactory")
 	public RedisConnectionFactory redisConnectionFactory() {
 
-		RedisConfiguration configuration;
-		if (Tool.StrUtil.equalsIgnoreCase(redisMode, "standalone")) {
-			log.info("standalone redis config: {}:{}/{}", this.getRedisHost(), this.getRedisPort(),this.getRedisDatabase());
-			if (!Tool.ObjectUtil.isAllNotEmpty(this.getRedisHost(), this.getRedisPort(), this.getRedisDatabase())) {
-				log.error("redis config error");
-				return null;
-			}
-			configuration = new RedisStandaloneConfiguration();
-			((RedisStandaloneConfiguration) configuration).setDatabase(this.getRedisDatabase());
-			((RedisStandaloneConfiguration) configuration).setHostName(this.getRedisHost());
-			((RedisStandaloneConfiguration) configuration).setPort(this.getRedisPort());
-			if (Tool.StrUtil.isNotBlank(this.getRedisPin())) {
-				((RedisStandaloneConfiguration) configuration).setPassword(this.getRedisPin());
-			}
-		} else if (Tool.StrUtil.equalsIgnoreCase(redisMode, "sentinel")) {
-			log.info("sentinel redis config: {}, {}, {}", sentinelMaster, sentinelNodes, this.getRedisDatabase());
-			if (!Tool.ObjectUtil.isAllNotEmpty(this.getSentinelMaster(), this.getSentinelNodes(),this.getRedisDatabase())) {
-				log.error("redis config error");
-				return null;
-			}
-			configuration = new RedisSentinelConfiguration();
-			((RedisSentinelConfiguration) configuration).master(sentinelMaster);
-			List<RedisNode> nodeList = Tool.ListUtil.list(false);
-			String[] nodeArr = sentinelNodes.split(",");
-			for (String node : nodeArr) {
-				nodeList.add(new RedisNode(node.split(":")[0], Tool.NumberUtil.parseInt(node.split(":")[1])));
-			}
-			((RedisSentinelConfiguration) configuration).setSentinels(nodeList);
-			((RedisSentinelConfiguration) configuration).setDatabase(redisDatabase);
-			if (Tool.StrUtil.isNotBlank(redisPin)) {
-				((RedisSentinelConfiguration) configuration).setPassword(redisPin);
-			}
-		} else {
-			log.error("redis config error, unknow redis mode: {}", redisMode);
-			return null;
-		}
-
 		GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig();
 		poolConfig.setMinIdle(this.getMinIdle());
 		poolConfig.setMaxIdle(this.getMaxIdle());
@@ -121,7 +84,48 @@ public class RedisConfig {
 				.builder().commandTimeout(Duration.ofMillis(this.getRedisTimeout())).shutdownTimeout(Duration.ZERO)
 				.poolConfig(poolConfig).build();
 
-		RedisConnectionFactory factory = new LettuceConnectionFactory(configuration, lettucePoolingClientConfiguration);
+		RedisStandaloneConfiguration redisStandaloneConfiguration = null;
+		RedisSentinelConfiguration redisSentinelConfiguration = null;
+		RedisConnectionFactory factory;
+
+		if (Tool.StrUtil.equalsIgnoreCase(redisMode, "standalone")) {
+			log.info("standalone redis config: {}:{}/{}", this.getRedisHost(), this.getRedisPort(),this.getRedisDatabase());
+			if (!Tool.ObjectUtil.isAllNotEmpty(this.getRedisHost(), this.getRedisPort(), this.getRedisDatabase())) {
+				log.error("redis config error");
+				return null;
+			}
+			redisStandaloneConfiguration = new RedisStandaloneConfiguration();
+			redisStandaloneConfiguration.setDatabase(this.getRedisDatabase());
+			redisStandaloneConfiguration.setHostName(this.getRedisHost());
+			redisStandaloneConfiguration.setPort(this.getRedisPort());
+			if (Tool.StrUtil.isNotBlank(this.getRedisPin())){
+				redisStandaloneConfiguration.setPassword(this.getRedisPin());
+			}
+			factory = new LettuceConnectionFactory(redisStandaloneConfiguration, lettucePoolingClientConfiguration);
+		} else if (Tool.StrUtil.equalsIgnoreCase(redisMode, "sentinel")) {
+			log.info("sentinel redis config: {}, {}, {}", sentinelMaster, sentinelNodes, this.getRedisDatabase());
+			if (!Tool.ObjectUtil.isAllNotEmpty(this.getSentinelMaster(), this.getSentinelNodes(),this.getRedisDatabase())) {
+				log.error("redis config error");
+				return null;
+			}
+			redisSentinelConfiguration = new RedisSentinelConfiguration();
+			redisSentinelConfiguration.master(sentinelMaster);
+			List<RedisNode> nodeList = Tool.ListUtil.list(false);
+			String[] nodeArr = sentinelNodes.split(",");
+			for (String node : nodeArr) {
+				nodeList.add(new RedisNode(node.split(":")[0], Tool.NumberUtil.parseInt(node.split(":")[1])));
+			}
+			redisSentinelConfiguration.setSentinels(nodeList);
+			redisSentinelConfiguration.setDatabase(redisDatabase);
+			if (Tool.StrUtil.isNotBlank(redisPin)) {
+				redisSentinelConfiguration.setPassword(redisPin);
+			}
+			factory = new LettuceConnectionFactory(redisSentinelConfiguration, lettucePoolingClientConfiguration);
+		} else {
+			log.error("redis config error, unknow redis mode: {}", redisMode);
+			return null;
+		}
+
 		return factory;
 	}
 
