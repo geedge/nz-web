@@ -72,10 +72,12 @@ public class AssetFieldMetaController {
 	@DeleteMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSETFIELDMETA)
 	@RequiresPermissions({"field:meta:delete"})
-	public R removeAssetFieldMeta(@RequestParam String ids) {
+	public R removeAssetFieldMeta(@RequestParam Map requestParam) {
+		String ids = (String)requestParam.get("ids");
+		Integer force = Integer.valueOf(Tool.StrUtil.emptyToDefault((String)requestParam.get("force"),"0"));
 		ValidateUtils.is(ids).notNull(RCode.ASSET_FIELD_META_ID_ISNULL);
 		
-		assetFieldMetaService.removeAssetFieldMetas(Arrays.asList(ids.split(",")));
+		assetFieldMetaService.removeAssetFieldMetas(Arrays.asList(ids.split(",")),force);
 		return R.ok();
 	}
 	

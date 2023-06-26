@@ -120,16 +120,24 @@ public class AssetFieldMetaServiceImpl extends ServiceImpl<AssetFieldMetaDao,Ass
 
 	@Override
 	@Transactional(rollbackFor = Exception.class)
-	public void removeAssetFieldMetas(List<String> assetFieldMetaIds) {
+	public void removeAssetFieldMetas(List<String> assetFieldMetaIds, Integer force) {
 		//判断是否被asset 引用
 		List<AssetFieldValue> assetFieldValues = assetFieldValueDao.selectList(new LambdaQueryWrapper<AssetFieldValue>().in(AssetFieldValue::getMetaId, assetFieldMetaIds));
-		if (ObjectUtil.isNotEmpty(assetFieldValues)){
-			throw new NZException(RCode.ASSET_FIELD_META_REFERENCED);
-		}
-		// 先删除关联关系 最后删除本身数据信息
-		//assetFieldValueDao.delete(new QueryWrapper<AssetFieldValue>().lambda().in(AssetFieldValue::getMetaId, assetFieldMetaIds));
-		assetFieldMetaDao.deleteBatchIds(assetFieldMetaIds);
 
+		switch (force){
+			case 0:
+				//存在关联数据时，删除失败
+				if (ObjectUtil.isNotEmpty(assetFieldValues)){
+					throw new NZException(RCode.ASSET_FIELD_META_REFERENCED);
+				}
+				assetFieldMetaDao.deleteBatchIds(assetFieldMetaIds);
+				break;
+			case 1:
+				// 先删除关联关系 最后删除本身数据信息
+				assetFieldValueDao.delete(new QueryWrapper<AssetFieldValue>().lambda().in(AssetFieldValue::getMetaId, assetFieldMetaIds));
+				assetFieldMetaDao.deleteBatchIds(assetFieldMetaIds);
+				break;
+		}
 		//删除starred
 		starredService.remove(new LambdaQueryWrapper<SysUserStarredEntity>()
 				.eq(SysUserStarredEntity::getType,"assetFieldMeta")

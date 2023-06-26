@@ -17,5 +17,5 @@ public interface AssetFieldMetaService extends IService<AssetFieldMeta>{
 
 	List<AssetFieldMeta> getAssetFieldMetaListByAssetId(Integer assetId);
 	
-	void removeAssetFieldMetas(List<String> assetFieldMetaIds);
+	void removeAssetFieldMetas(List<String> assetFieldMetaIds, Integer force);
 }
