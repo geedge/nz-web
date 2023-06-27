@@ -55,7 +55,7 @@
             </if>
             
             <if test="params.dcIds != null and params.dcIds.size > 0">
-                ipam.dc_id IN
+                AND ipam.dc_id IN
                 <foreach collection="params.dcIds" item="dcId" index="no" open="(" separator="," close=")">
                     #{dcId}
                 </foreach>
