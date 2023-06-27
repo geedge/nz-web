@@ -1,13 +1,18 @@
 package com.nis.common.config;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
-import javax.servlet.Filter;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletResponse;
-
+import Aladdin.HaspStatus;
+import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.nis.common.interceptor.TokenCheckFilter;
+import com.nis.common.utils.*;
+import com.nis.modules.metric.dto.NezhaMetrics;
+import com.nis.modules.sys.dao.SysApiKeyDao;
+import com.nis.modules.sys.dao.SysUserDao;
+import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.service.LicenseService;
+import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.shiro.*;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.catalina.connector.Connector;
 import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.session.mgt.SessionManager;
@@ -16,7 +21,6 @@ import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.apache.shiro.web.filter.AccessControlFilter;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
 import org.crazycake.shiro.RedisCacheManager;
-import org.crazycake.shiro.RedisManager;
 import org.crazycake.shiro.RedisSessionDAO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,66 +31,55 @@ import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerF
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.nis.common.interceptor.TokenCheckFilter;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
-import com.nis.modules.metric.dto.NezhaMetrics;
-import com.nis.modules.sys.dao.SysApiKeyDao;
-import com.nis.modules.sys.dao.SysUserDao;
-import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.service.LicenseService;
-import com.nis.modules.sys.service.SysConfigService;
-import com.nis.modules.sys.shiro.MySessionManager;
-import com.nis.modules.sys.shiro.ShiroUtils;
-import com.nis.modules.sys.shiro.UserRealm;
-
-import Aladdin.HaspStatus;
-import cn.hutool.core.util.StrUtil;
-import io.micrometer.core.instrument.MeterRegistry;
+import javax.servlet.Filter;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletResponse;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Shiro的配置文件
- *
  */
 @Configuration
 @DependsOn(value = { "mybatisPlusConfig", "redisConfig" })
 public class ShiroConfig {
 
-	@Autowired
-	private RedisConfig config;
+	@Value("${compileType:release}")
+	private String compileType;
+
+	@Value("${vendorCode}")
+	private String vendorCode;
 
 	@Autowired
-	private RedisTemplate<String, String> redisTemplate;
-
-	@Autowired
-	private SysUserDao sysUserDao;
+	private LicenseService licenseService;
 
 	@Autowired
 	private SysConfigService sysconfigService;
 
 	@Autowired
-	private SysApiKeyDao sysApiKeyDao;
-	
-	@Value("${compileType:release}")
-	private String compileType;
-	@Value("${vendorCode}")
-	private String vendorCode;
-	@Autowired
-    private NezhaMetrics nezhaMetrics;
+	private SysUserDao sysUserDao;
 
-    @Autowired
-    private MeterRegistry meterRegistry;
 	@Autowired
-	private LicenseService licenseService;
-	
+	private SysApiKeyDao sysApiKeyDao;
+
+	@Autowired
+	private NezhaMetrics nezhaMetrics;
+
+	@Autowired
+	private MeterRegistry meterRegistry;
+
+	@Autowired
+	private RedisTemplate<String, String> redisTemplate;
+
+	@Autowired
+	private RedisConnectionFactory redisConnectionFactory;
+
 	@Bean("shiroFilter")
 	public ShiroFilterFactoryBean shiroFilter(SecurityManager securityManager) {
 		ShiroFilterFactoryBean shiroFilter = new ShiroFilterFactoryBean();
@@ -220,14 +213,8 @@ public class ShiroConfig {
 	 *
 	 * @return
 	 */
-	public RedisManager redisManager() {
-		RedisManager redisManager = new RedisManager();
-		redisManager.setHost(config.getRedisHost() + ":" + config.getRedisPort());
-		redisManager.setTimeout(Tool.NumberUtil.parseInt(Tool.StrUtil.toString(config.getRedisTimeout())));
-		redisManager.setDatabase(config.getRedisDatabase());
-		if (Tool.StrUtil.isNotBlank(config.getRedisPin())) {
-			redisManager.setPassword(config.getRedisPin());
-		}
+	public MyRedisManager redisManager() {
+		MyRedisManager redisManager = new MyRedisManager(redisConnectionFactory);
 		return redisManager;
 	}
 
@@ -255,7 +242,7 @@ public class ShiroConfig {
 	@Bean
 	public RedisSessionDAO redisSessionDAO() {
 		Integer loginExpiration = getTimeOutData();
-		RedisSessionDAO redisSessionDAO = new RedisSessionDAO();
+		MyRedisSessionDAO redisSessionDAO = new MyRedisSessionDAO();
 		redisSessionDAO.setRedisManager(redisManager());
 		redisSessionDAO.setExpire(loginExpiration * 60);
 		redisSessionDAO.setKeyPrefix(ShiroUtils.REDIS_KEYPREFIX);
