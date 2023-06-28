@@ -111,7 +111,10 @@ public class AssetFieldMetaServiceImpl extends ServiceImpl<AssetFieldMetaDao,Ass
 		Map<Integer, List<AssetFieldValue>> assetFieldValueByMetaId = assetFieldValues.stream().collect(Collectors.groupingBy(AssetFieldValue::getMetaId));
 
 		for (AssetFieldMeta meta : metaList) {
-			List<String> values = assetFieldValueByMetaId.get(meta.getId()).stream().map(assetFieldValue -> assetFieldValue.getValue()).collect(Collectors.toList());
+			List<String> values = assetFieldValueByMetaId.get(meta.getId()).stream()
+					.filter(assetFieldValue -> assetFieldValue.getAssetId().equals(meta.getAssetId()))
+					.map(assetFieldValue -> assetFieldValue.getValue())
+					.collect(Collectors.toList());
 			meta.setValue(values);
 			meta.setKey(meta.getMetaKey());
 		}
