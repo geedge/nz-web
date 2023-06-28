@@ -91,7 +91,17 @@ public class AssetFieldMetaServiceImpl extends ServiceImpl<AssetFieldMetaDao,Ass
 		if(ObjectUtil.isNotEmpty(list)) {
 			throw new NZException(RCode.ASSET_FIELD_META_KEY_NAME_DUPLICATE);
 		}
-		
+		if (ObjectUtil.isNotEmpty(assetFieldMeta.getId())){
+			AssetFieldValue assetFieldValue = assetFieldValueDao.selectOne(new LambdaQueryWrapper<AssetFieldValue>()
+					.eq(AssetFieldValue::getMetaId, assetFieldMeta.getId())
+					.last("limit 1"));
+			AssetFieldMeta oldAssetFieldMeta = this.getById(assetFieldMeta.getId());
+			// 被引用的 meta 不能变更 type
+			if (ObjectUtil.isNotEmpty(assetFieldValue) && !oldAssetFieldMeta.getType().equalsIgnoreCase(type)){
+				throw new NZException(RCode.ASSET_FIELD_META_REFERENCED);
+			}
+		}
+
 		if(ObjectUtil.isEmpty(assetFieldMeta.getParam())){
 			assetFieldMeta.setParam(JSON.toJSONString(new HashMap()));
 		}
