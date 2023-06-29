@@ -1,25 +1,25 @@
 package com.nis.common.config;
 
-import Aladdin.HaspStatus;
-import cn.hutool.core.util.StrUtil;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.nis.common.interceptor.TokenCheckFilter;
-import com.nis.common.utils.*;
-import com.nis.modules.metric.dto.NezhaMetrics;
-import com.nis.modules.sys.dao.SysApiKeyDao;
-import com.nis.modules.sys.dao.SysUserDao;
-import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.service.LicenseService;
-import com.nis.modules.sys.service.SysConfigService;
-import com.nis.modules.sys.shiro.*;
-import io.micrometer.core.instrument.MeterRegistry;
+import java.nio.charset.Charset;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
+import javax.servlet.Filter;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.catalina.connector.Connector;
 import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.session.mgt.SessionManager;
 import org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor;
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.apache.shiro.web.filter.AccessControlFilter;
+import org.apache.shiro.web.filter.authc.AuthenticatingFilter;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
+import org.crazycake.shiro.IRedisManager;
 import org.crazycake.shiro.RedisCacheManager;
 import org.crazycake.shiro.RedisSessionDAO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,55 +31,59 @@ import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerF
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
-import javax.servlet.Filter;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletResponse;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.nis.common.interceptor.TokenCheckFilter;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
+import com.nis.modules.metric.dto.NezhaMetrics;
+import com.nis.modules.sys.dao.SysApiKeyDao;
+import com.nis.modules.sys.dao.SysUserDao;
+import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.service.LicenseService;
+import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.shiro.MySessionManager;
+import com.nis.modules.sys.shiro.ShiroUtils;
+import com.nis.modules.sys.shiro.UserRealm;
+
+import Aladdin.HaspStatus;
+import cn.hutool.core.util.StrUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 
 /**
  * Shiro的配置文件
+ *
  */
 @Configuration
 @DependsOn(value = { "mybatisPlusConfig", "redisConfig" })
 public class ShiroConfig {
 
-	@Value("${compileType:release}")
-	private String compileType;
-
-	@Value("${vendorCode}")
-	private String vendorCode;
-
 	@Autowired
-	private LicenseService licenseService;
+	private RedisTemplate<String,String> redisTemplate;
 
 	@Autowired
 	private SysConfigService sysconfigService;
 
-	@Autowired
-	private SysUserDao sysUserDao;
-
-	@Autowired
-	private SysApiKeyDao sysApiKeyDao;
-
+	@Value("${compileType:release}")
+	private String compileType;
+	@Value("${vendorCode}")
+	private String vendorCode;
 	@Autowired
 	private NezhaMetrics nezhaMetrics;
 
 	@Autowired
 	private MeterRegistry meterRegistry;
-
 	@Autowired
-	private RedisTemplate<String, String> redisTemplate;
-
+	private LicenseService licenseService;
 	@Autowired
-	private RedisConnectionFactory redisConnectionFactory;
-
+	private TokenCheckFilter tokenCheckFilter;
 	@Bean("shiroFilter")
 	public ShiroFilterFactoryBean shiroFilter(SecurityManager securityManager) {
 		ShiroFilterFactoryBean shiroFilter = new ShiroFilterFactoryBean();
@@ -88,10 +92,9 @@ public class ShiroConfig {
 		shiroFilter.setUnauthorizedUrl("/");
 
 		Map<String, String> filterMap = new LinkedHashMap<>();
-		
-		
+
 		/*
-		 * 静态资源 
+		 * 静态资源
 		 */
 		filterMap.put("/", "anon");
 		filterMap.put("/static/**", "anon");
@@ -101,37 +104,35 @@ public class ShiroConfig {
 		filterMap.put("/**/*.jpg", "anon");
 		filterMap.put("/**/*.css", "anon");
 		filterMap.put("/**/*.ico", "anon");
-		
+
 		/*
 		 * 开放权限接口
 		 */
 		filterMap.put("/sys/login", "anon"); // 登录接口
 		filterMap.put("/api/**", "anon"); // 告警消息接收 接口
-		filterMap.put("/sys/i18n/lang", "anon"); //国际化文件获取接口
+		filterMap.put("/sys/i18n/lang", "anon"); // 国际化文件获取接口
 		filterMap.put("/mfa/**", "anon"); // mfa 认证接口
-		filterMap.put("/healthy", "anon"); //健康检查接口
-		filterMap.put("/buildInfo", "anon"); //编译信息查询接口
-		filterMap.put("/terminal.ws", "anon"); //terminal websocket 接口
-		filterMap.put("/terminal/monitor.ws", "anon"); //terminal/monitor websocket 接口
+		filterMap.put("/healthy", "anon"); // 健康检查接口
+		filterMap.put("/buildInfo", "anon"); // 编译信息查询接口
+		filterMap.put("/terminal.ws", "anon"); // terminal websocket 接口
+		filterMap.put("/terminal/monitor.ws", "anon"); // terminal/monitor websocket 接口
 		filterMap.put("/sys/license/**", "anon");// license 相关接口
 		filterMap.put("/monitor/project/topo/icon/**", "anon"); // topo icon 相关接口
 		filterMap.put("/setup/**", "anon");// 程序配置 相关接口
-		filterMap.put("/sys/appearance","anon"); //系统外观配置查询接口
-		filterMap.put("/ctl/**","anon"); //管理员账号密码重置接口
+		filterMap.put("/sys/appearance", "anon"); // 系统外观配置查询接口
+		filterMap.put("/ctl/**", "anon"); // 管理员账号密码重置接口
 		filterMap.put("/ui/**", "anon"); // UI 接口
 		filterMap.put("/topology/**", "anon"); // topology 接口
 		filterMap.put("/file/download/**", "anon"); // 文件下载接口
-		
+
 		/*
 		 * 自定义 过滤器
 		 */
-		filterMap.put("/actuator/prometheus", "metricsFilter"); //prometheus metrics
+		filterMap.put("/actuator/prometheus", "metricsFilter"); // prometheus metrics
 		filterMap.put("/actuator/**", "anon"); // 诊断接口
 		filterMap.put("/**", "tokenCheckFilter,licenseFilter");
 
-		Integer loginExpiration = getTimeOutData();
 		Map<String, Filter> cumstomFilterMap = new LinkedHashMap<String, Filter>();
-		TokenCheckFilter tokenCheckFilter = new TokenCheckFilter(redisTemplate, loginExpiration, sysUserDao,sysApiKeyDao);
 		LicenseShiroFilter licenseShiroFilter = new LicenseShiroFilter();
 		MetricsShiroFilter metricsShiroFilter = new MetricsShiroFilter();
 		cumstomFilterMap.put("tokenCheckFilter", tokenCheckFilter);
@@ -139,26 +140,27 @@ public class ShiroConfig {
 		cumstomFilterMap.put("metricsFilter", metricsShiroFilter);
 		shiroFilter.setFilters(cumstomFilterMap);
 		shiroFilter.setFilterChainDefinitionMap(filterMap);
-		
+
 		return shiroFilter;
 	}
 
 	@Component
 	public class LicenseShiroFilter extends AccessControlFilter {
-		
+
 		@Override
 		protected boolean isAccessAllowed(ServletRequest request, ServletResponse response, Object mappedValue)
 				throws Exception {
 			// debug 模式不校验 license
-			if(Tool.StrUtil.equalsIgnoreCase(compileType, "debug")) {
+			if (Tool.StrUtil.equalsIgnoreCase(compileType, "debug")) {
 				return true;
 			}
-			
+
 			Integer status = licenseService.verify();
-			if( ! Tool.NumberUtil.equals(status, HaspStatus.HASP_STATUS_OK)) {
-				HttpServletResponse httpResponse=(HttpServletResponse) response;
+			if (!Tool.NumberUtil.equals(status, HaspStatus.HASP_STATUS_OK)) {
+				HttpServletResponse httpResponse = (HttpServletResponse) response;
 				httpResponse.setStatus(HttpStatus.FORBIDDEN.value());
-				httpResponse.getWriter().write(Tool.JSONUtil.toJsonStr(R.error(RCode.LICENSE_FILE_INVALID.setParam(status))));
+				httpResponse.getWriter()
+						.write(Tool.JSONUtil.toJsonStr(R.error(RCode.LICENSE_FILE_INVALID.setParam(status))));
 				return false;
 			}
 			return true;
@@ -170,21 +172,21 @@ public class ShiroConfig {
 		}
 
 	}
-	
-	public class MetricsShiroFilter extends AccessControlFilter {
-	    @Override
-	    protected boolean isAccessAllowed(ServletRequest servletRequest, ServletResponse servletResponse, Object o) throws Exception {
-	        nezhaMetrics.bindTo(meterRegistry);
-	        return true;
-	    }
 
-	    @Override
-	    protected boolean onAccessDenied(ServletRequest request, ServletResponse response) throws Exception {
-	        return false;
-	    }
+	public class MetricsShiroFilter extends AccessControlFilter {
+		@Override
+		protected boolean isAccessAllowed(ServletRequest servletRequest, ServletResponse servletResponse, Object o)
+				throws Exception {
+			nezhaMetrics.bindTo(meterRegistry);
+			return true;
+		}
+
+		@Override
+		protected boolean onAccessDenied(ServletRequest request, ServletResponse response) throws Exception {
+			return false;
+		}
 	}
-	
-	
+
 	@Bean
 	@ConditionalOnExpression("${nezha.shiroPermisSupport:true}")
 	public AuthorizationAttributeSourceAdvisor authorizationAttributeSourceAdvisor(SecurityManager securityManager) {
@@ -213,8 +215,9 @@ public class ShiroConfig {
 	 *
 	 * @return
 	 */
-	public MyRedisManager redisManager() {
-		MyRedisManager redisManager = new MyRedisManager(redisConnectionFactory);
+	@Bean
+	public IRedisManager redisManager() {
+		RedisManager  redisManager = new RedisManager(redisTemplate);
 		return redisManager;
 	}
 
@@ -242,7 +245,7 @@ public class ShiroConfig {
 	@Bean
 	public RedisSessionDAO redisSessionDAO() {
 		Integer loginExpiration = getTimeOutData();
-		MyRedisSessionDAO redisSessionDAO = new MyRedisSessionDAO();
+		RedisSessionDAO redisSessionDAO = new RedisSessionDAO();
 		redisSessionDAO.setRedisManager(redisManager());
 		redisSessionDAO.setExpire(loginExpiration * 60);
 		redisSessionDAO.setKeyPrefix(ShiroUtils.REDIS_KEYPREFIX);
@@ -300,5 +303,54 @@ public class ShiroConfig {
 					: loginExpiration;
 		}
 		return loginExpiration;
+	}
+
+	/**
+	 * 自定义 redis manager
+	 * @author ThinkPad
+	 *
+	 */
+	public static class RedisManager implements IRedisManager {
+		private RedisTemplate<String, String> redisTemplate;
+
+		public RedisManager(RedisTemplate<String, String> redisTemplate) {
+			this.redisTemplate = redisTemplate;
+		}
+
+		@Override
+		public byte[] get(byte[] key) {
+			ValueOperations<String, String> opsForValue = redisTemplate.opsForValue();
+			String v = opsForValue.get(Tool.StrUtil.str(key, "UTF-8"));
+			return Tool.HexUtil.decodeHex(v);
+		}
+
+		@Override
+		public byte[] set(byte[] key, byte[] value, int expire) {
+			ValueOperations<String, String> opsForValue = redisTemplate.opsForValue();
+			opsForValue.set(Tool.StrUtil.str(key, "UTF-8"), Tool.HexUtil.encodeHexStr(value), expire, TimeUnit.SECONDS);
+			return value;
+		}
+
+		@Override
+		public void del(byte[] key) {
+			redisTemplate.delete(Tool.StrUtil.str(key, "UTF-8"));
+		}
+
+		@Override
+		public Long dbSize(byte[] pattern) {
+			return (long)redisTemplate.keys(Tool.StrUtil.str(pattern, "UTF-8")).size();
+		}
+
+		@Override
+		public Set<byte[]> keys(byte[] pattern) {
+			Set<String> set = redisTemplate.keys(Tool.StrUtil.str(pattern, "UTF-8"));
+			if(Tool.CollUtil.isEmpty(set)) {
+				return null;
+			}
+			Set<byte[]> keys = Tool.CollUtil.newHashSet();
+			set.forEach( k -> keys.add(Tool.StrUtil.bytes(k,"UTF-8")));
+			return keys;
+		}
+
 	}
 }

@@ -2,6 +2,7 @@ package com.nis.modules.sys.shiro;
 
 import cn.hutool.log.Log;
 import com.nis.common.utils.SpringContextUtils;
+import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.sys.entity.SysUserEntity;
 import org.apache.shiro.SecurityUtils;
@@ -10,9 +11,11 @@ import org.apache.shiro.session.Session;
 import org.apache.shiro.session.UnknownSessionException;
 import org.apache.shiro.session.mgt.DefaultSessionKey;
 import org.apache.shiro.session.mgt.SimpleSession;
+import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.subject.SimplePrincipalCollection;
 import org.apache.shiro.subject.Subject;
 import org.apache.shiro.subject.support.DefaultSubjectContext;
+import org.crazycake.shiro.RedisSessionDAO;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
@@ -43,7 +46,11 @@ public class ShiroUtils {
 	}
 
 	public static Session getSessionById(String sessionId) {
-		return SecurityUtils.getSecurityManager().getSession(new DefaultSessionKey(sessionId));
+		try {
+			return SecurityUtils.getSecurityManager().getSession(new DefaultSessionKey(sessionId));
+		} catch (Exception e) {
+			return null;
+		}
 	}
 	
 	public static SysUserEntity getUserEntityBySessionId(String sessionId){
@@ -87,54 +94,50 @@ public class ShiroUtils {
 		SecurityUtils.getSubject().logout();
 	}
 	
+	
+	public static void updateSession(Session session) {
+		RedisSessionDAO sessionDao = SpringContextUtils.getBean("redisSessionDAO", RedisSessionDAO.class);
+		sessionDao.update(session);
+	}
+	
+	
+	public static List<SysUserEntity> getActiveUsers() {
+		RedisSessionDAO sessionDao = SpringContextUtils.getBean("redisSessionDAO", RedisSessionDAO.class);
+		Collection<Session> sessions = sessionDao.getActiveSessions();
+		List<SysUserEntity> userList = Tool.CollUtil.newArrayList();
+		for (Session session : sessions) {
+			PrincipalCollection primaryPrincipal = (PrincipalCollection) session.getAttribute(DefaultSubjectContext.PRINCIPALS_SESSION_KEY);
+			if(ToolUtil.isNotEmpty(primaryPrincipal)) {
+				userList.add((SysUserEntity) primaryPrincipal.getPrimaryPrincipal());
+			}
+		}
+		return userList;
+	}
+	
 	/**
 	 * 从 redis 中获取 token 和 用户信息
 	 *
 	 * @return
 	 */
 	public static Map<String, SysUserEntity> getShiroSessionInfoMap() {
-		RedisConnectionFactory factory = SpringContextUtils.getBean("redisConnectionFactory", RedisConnectionFactory.class);
-		RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
-		redisTemplate.setKeySerializer(new StringRedisSerializer());
-		redisTemplate.setValueSerializer(new JdkSerializationRedisSerializer());
-		redisTemplate.setConnectionFactory(factory);
-
-		redisTemplate.afterPropertiesSet();
-
-		ValueOperations ops = redisTemplate.opsForValue();
-
-		Set keys = redisTemplate.keys(ShiroUtils.REDIS_KEYPREFIX + "*");
-		List<String> keyList = new ArrayList<>(keys);
-		List<Object> values = ops.multiGet(keyList);
-		Map<String, Object> map = new HashMap();
-
-		int size = keyList.size();
-		for (int i = 0; i < size; i++) {
-			map.put(keyList.get(i), values.get(i));
-		}
-
-		Map<String, SysUserEntity> resultMap = new HashMap(map.size());
-		for (Map.Entry<String, Object> entry : map.entrySet()) {
-			Object obj = entry.getValue();
-			SimpleSession session = (SimpleSession) obj;
-			if (ToolUtil.isEmpty(session.getAttributes()))
-				continue;
-			SimplePrincipalCollection primaryPrincipal = (SimplePrincipalCollection) session.getAttribute(DefaultSubjectContext.PRINCIPALS_SESSION_KEY);
+		RedisSessionDAO sessionDao = SpringContextUtils.getBean("redisSessionDAO", RedisSessionDAO.class);
+		Collection<Session> sessions = sessionDao.getActiveSessions();
+		Map<String, SysUserEntity> resultMap = Tool.MapUtil.newHashMap(sessions.size());
+		for (Session session : sessions) {
+			PrincipalCollection primaryPrincipal = (PrincipalCollection) session.getAttribute(DefaultSubjectContext.PRINCIPALS_SESSION_KEY);
 			if(ToolUtil.isNotEmpty(primaryPrincipal)) {
-				resultMap.put(entry.getKey(), (SysUserEntity) primaryPrincipal.getPrimaryPrincipal());
+				resultMap.put(session.getId().toString(), (SysUserEntity) primaryPrincipal.getPrimaryPrincipal());
 			}
 		}
 		return resultMap;
 	}
 	
-	public static void removeRedisCacheByToken(List<String> tokens) {
-		RedisConnectionFactory factory = SpringContextUtils.getBean("redisConnectionFactory", RedisConnectionFactory.class);
-		RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
-		redisTemplate.setKeySerializer(new StringRedisSerializer());
-		redisTemplate.setValueSerializer(new JdkSerializationRedisSerializer());
-		redisTemplate.setConnectionFactory(factory);
-
-		redisTemplate.afterPropertiesSet();
-		redisTemplate.delete(tokens);
+	public static void deleteSession(List<String> sessionIds) {
+		RedisSessionDAO sessionDao = SpringContextUtils.getBean("redisSessionDAO", RedisSessionDAO.class);
+		for(String s : sessionIds) {
+			SimpleSession ss = new SimpleSession();
+			ss.setId(s);
+			sessionDao.delete(ss);
+		}
 	}
 }

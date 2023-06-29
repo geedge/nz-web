@@ -29,7 +29,7 @@ public class TerminalMonitorHandler extends TextWebSocketHandler {
         String token = (String) attributes.get("terminalToken");
 
         Map<String, SysUserEntity> shiroSessionInfoMap = ShiroUtils.getShiroSessionInfoMap();
-        SysUserEntity user = shiroSessionInfoMap.get(Tool.StrUtil.concat(true, ShiroUtils.REDIS_KEYPREFIX, token));
+        SysUserEntity user = shiroSessionInfoMap.get(token);
         if (user == null) {
             session.sendMessage(new TextMessage("Token error,Please log in to the system first"));
             session.close();
