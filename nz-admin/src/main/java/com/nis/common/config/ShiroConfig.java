@@ -67,6 +67,8 @@ public class ShiroConfig {
 
 	@Autowired
 	private RedisTemplate<String,String> redisTemplate;
+	@Autowired
+	private SysApiKeyDao sysApiKeyDao;
 
 	@Autowired
 	private SysConfigService sysconfigService;
@@ -82,8 +84,6 @@ public class ShiroConfig {
 	private MeterRegistry meterRegistry;
 	@Autowired
 	private LicenseService licenseService;
-	@Autowired
-	private TokenCheckFilter tokenCheckFilter;
 	@Bean("shiroFilter")
 	public ShiroFilterFactoryBean shiroFilter(SecurityManager securityManager) {
 		ShiroFilterFactoryBean shiroFilter = new ShiroFilterFactoryBean();
@@ -135,6 +135,7 @@ public class ShiroConfig {
 		Map<String, Filter> cumstomFilterMap = new LinkedHashMap<String, Filter>();
 		LicenseShiroFilter licenseShiroFilter = new LicenseShiroFilter();
 		MetricsShiroFilter metricsShiroFilter = new MetricsShiroFilter();
+		TokenCheckFilter tokenCheckFilter = new TokenCheckFilter(sysApiKeyDao);
 		cumstomFilterMap.put("tokenCheckFilter", tokenCheckFilter);
 		cumstomFilterMap.put("licenseFilter", licenseShiroFilter);
 		cumstomFilterMap.put("metricsFilter", metricsShiroFilter);

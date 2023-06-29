@@ -35,14 +35,12 @@ import com.nis.modules.sys.shiro.ShiroUtils;
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
 
-@Component
 public class TokenCheckFilter extends AccessControlFilter {
 
-	@Autowired
 	private SysApiKeyDao sysApiKeyDao;
 
-	public TokenCheckFilter() {
-
+	public TokenCheckFilter(SysApiKeyDao sysApiKeyDao) {
+		this.sysApiKeyDao = sysApiKeyDao;
 	}
 
 	@Override
