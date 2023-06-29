@@ -65,9 +65,9 @@ public class SysApiKeyServiceImpl extends ServiceImpl<SysApiKeyDao,SysApiKey> im
 		List<SysApiKey> sysApiKeys = this.list(new QueryWrapper<SysApiKey>().lambda().in(SysApiKey::getId, Arrays.asList(ids.split(","))));
 		List<String> tokens = new ArrayList<String>();
 		for(SysApiKey sysApiKey : sysApiKeys) {
-			tokens.add(StrUtil.str(ShiroUtils.REDIS_KEYPREFIX+sysApiKey.getToken()));
+			tokens.add(sysApiKey.getToken());
 		}
-		ShiroUtils.removeRedisCacheByToken(tokens);
+		ShiroUtils.deleteSession(tokens);
 		this.removeByIds(Arrays.asList(ids.split(",")));
 	}
 
@@ -122,8 +122,8 @@ public class SysApiKeyServiceImpl extends ServiceImpl<SysApiKeyDao,SysApiKey> im
 						.eq(SysApiKey::getCreateBy, ShiroUtils.getUserId().intValue())
 		);
 		// 删除 redis 中 api key
-		List<String> tokens = sysApiKeys.stream().map(k -> ShiroUtils.REDIS_KEYPREFIX + k.getToken()).collect(Collectors.toList());
-		ShiroUtils.removeRedisCacheByToken(tokens);
+		List<String> tokens = sysApiKeys.stream().map(k -> k.getToken()).collect(Collectors.toList());
+		ShiroUtils.deleteSession(tokens);
 
 		List<Integer> removeIds = sysApiKeys.stream().map(SysApiKey::getId).collect(Collectors.toList());
 		this.removeByIds(removeIds);

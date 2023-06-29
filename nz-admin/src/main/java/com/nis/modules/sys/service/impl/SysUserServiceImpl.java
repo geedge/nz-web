@@ -1,8 +1,35 @@
 package com.nis.modules.sys.service.impl;
 
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.session.Session;
+import org.apache.shiro.subject.PrincipalCollection;
+import org.apache.shiro.subject.support.DefaultSubjectContext;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -12,7 +39,13 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.*;
+import com.nis.common.utils.CommonUtils;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.Query;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.alert.dao.AlertRuleDao;
 import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.service.AlertRuleService;
@@ -27,29 +60,17 @@ import com.nis.modules.sys.entity.SysApiKey;
 import com.nis.modules.sys.entity.SysRoleEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.entity.SysUserRoleEntity;
-import com.nis.modules.sys.service.*;
+import com.nis.modules.sys.service.SysApiKeyService;
+import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysMenuService;
+import com.nis.modules.sys.service.SysRoleService;
+import com.nis.modules.sys.service.SysUserRoleService;
+import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.RandomStringUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.shiro.SecurityUtils;
-import org.apache.shiro.session.mgt.SimpleSession;
-import org.apache.shiro.subject.SimplePrincipalCollection;
-import org.apache.shiro.subject.support.DefaultSubjectContext;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import javax.servlet.http.HttpServletRequest;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 
 @Service("sysUserService")
 public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> implements SysUserService {
@@ -116,17 +137,17 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 			}
 			// 获取缓存中登录的用户
 			Map<String, SysUserEntity> shiroSessionInfoMap = ShiroUtils.getShiroSessionInfoMap();
-			List<SysUserEntity> users = new ArrayList<SysUserEntity>(shiroSessionInfoMap.values());
+			List<Long> loginUserIds = Tool.CollUtil.newArrayList();
+			shiroSessionInfoMap.values().forEach( u -> {
+				loginUserIds.add(u.getId());
+			});
 			for (SysUserEntity userEntity : userList) {
-				for (SysUserEntity user : users) {
-					if (user.getId().equals(userEntity.getId())){
-						//在线
-						userEntity.setOnline(1);
-						break;
-					}else {
-						//离线
-						userEntity.setOnline(0);
-					}
+				if (loginUserIds.contains(userEntity.getId())){
+					//在线
+					userEntity.setOnline(1);
+				}else {
+					//离线
+					userEntity.setOnline(0);
 				}
 				List<SysUserRoleEntity> userRoleEntities = userRoleMap.get(userEntity.getId().intValue());
 				if (CollectionUtils.isEmpty(userRoleEntities)) {
@@ -290,7 +311,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		} finally {
 			// 删除 关联key
 			if (CollectionUtils.isNotEmpty(removeKeys)) {
-				redisTemplate.delete(removeKeys);
+				ShiroUtils.deleteSession(removeKeys);
 			}
 		}
 	}
@@ -384,7 +405,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		} finally {
 			// 删除 关联key
 			if (CollectionUtils.isNotEmpty(removeKeys)) {
-				redisTemplate.delete(removeKeys);
+				ShiroUtils.deleteSession(removeKeys);
 			}
 		}
 	}
@@ -393,24 +414,14 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 	public Map<String, Object> getUserPermissions(HttpServletRequest request) {
 		String requestToken = request.getHeader(Constant.AUTH_TOKEN_CODE);
 		requestToken = StringUtils.isEmpty(requestToken) ? request.getParameter(Constant.AUTH_TOKEN_CODE) : requestToken;
-		if (StringUtils.isEmpty(requestToken))
+		if (StringUtils.isEmpty(requestToken)) {
 			throw new NZException(RCode.SYS_TOKEN_ISNULL);
-
-		RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
-		redisTemplate.setKeySerializer(new StringRedisSerializer());
-		redisTemplate.setValueSerializer(new JdkSerializationRedisSerializer());
-		redisTemplate.setConnectionFactory(factory);
-
-		redisTemplate.afterPropertiesSet();
-
-		Boolean exist = redisTemplate.hasKey(ShiroUtils.REDIS_KEYPREFIX + requestToken);
-		if (!exist)
+		}
+		Session session = ShiroUtils.getSessionById(requestToken);
+		if(Tool.ObjectUtil.isNull(session)) {
 			throw new NZException(RCode.SYS_LOGIN_REQUIRED);
-
-		ValueOperations ops = redisTemplate.opsForValue();
-		Object obj = ops.get(ShiroUtils.REDIS_KEYPREFIX + requestToken);
-		SimpleSession session = (SimpleSession) obj;
-		SimplePrincipalCollection primaryPrincipal = (SimplePrincipalCollection) session.getAttribute(DefaultSubjectContext.PRINCIPALS_SESSION_KEY);
+		}
+		PrincipalCollection primaryPrincipal = (PrincipalCollection) session.getAttribute(DefaultSubjectContext.PRINCIPALS_SESSION_KEY);
 		SysUserEntity userEntity = (SysUserEntity) primaryPrincipal.getPrimaryPrincipal();
 
 		SysUserEntity user = this.getById(userEntity.getId());

@@ -147,7 +147,7 @@ public class TerminalHandler extends TextWebSocketHandler {
         this.initFieldVal(session);
         log.info("WebSocket connectioned. after connection established open terminal begin...  uuid: {}", uuid);
 
-        SysUserEntity userEntity = Tool.MapUtil.get(ShiroUtils.getShiroSessionInfoMap(), StrUtil.concat(true, ShiroUtils.REDIS_KEYPREFIX, token), SysUserEntity.class);
+        SysUserEntity userEntity = Tool.MapUtil.get(ShiroUtils.getShiroSessionInfoMap(), token, SysUserEntity.class);
         if (ObjectUtil.isNull(userEntity)) {
             log.warn("open terminal error. system login token exception. uuid: {}, token: {}", uuid, token);
             session.sendMessage(new TextMessage("Token error, Please log in to the system first"));

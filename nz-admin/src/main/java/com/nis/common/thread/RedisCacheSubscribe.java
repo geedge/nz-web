@@ -84,7 +84,7 @@ public class RedisCacheSubscribe  implements MessageListener{
 			TokenCheckFilter filter = (TokenCheckFilter) filters.get("tokenCheckFilter");
 //			Integer loginExpiration = filter.getLoginExpiration();
 //			System.out.println(loginExpiration);
-			filter.setLoginExpiration(Integer.valueOf(sessionTimeOut));
+//			filter.setLoginExpiration(Integer.valueOf(sessionTimeOut));
 			redisCacheManager.setExpire(Integer.valueOf(sessionTimeOut) * 60);
 			redisSessionDao.setExpire(Integer.valueOf(sessionTimeOut) * 60);
 			mySessionManager.setGlobalSessionTimeout(Integer.valueOf(sessionTimeOut) * 60 * 1000);

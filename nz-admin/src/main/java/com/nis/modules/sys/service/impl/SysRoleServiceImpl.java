@@ -177,7 +177,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
         } finally {
             // 删除 关联key
             if (CollectionUtils.isNotEmpty(removeKeys)) {
-                redisTemplate.delete(removeKeys);
+                ShiroUtils.deleteSession(removeKeys);
             }
         }
     }
