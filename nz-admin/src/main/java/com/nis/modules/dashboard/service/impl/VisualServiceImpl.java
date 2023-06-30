@@ -354,6 +354,7 @@ public class VisualServiceImpl implements VisualService {
                 .collect(Collectors.toList());
 
         // copy group charts and render vars
+        Integer startTempId = -10;
         for (VisualChart groupChart : repeatConfGroupChartList) {
             String chartParamJsonStr = JSONUtil.toJsonStr(ObjectUtil.defaultIfNull(groupChart.getParam(), Tool.MapUtil.empty()));
             String repeatVariable = JSONPath.read(chartParamJsonStr, "repeat.variable").toString();
@@ -367,7 +368,6 @@ public class VisualServiceImpl implements VisualService {
             // remove old chart
             chartList.remove(groupChart);
             List<VisualChart> copyGroupChartList = Tool.ListUtil.list(true);
-            Integer startTempId = -10;
             for (String varValue : varValues) {
                 // 这里重新对 group_id 进行赋值
                 Integer tempGroupId = startTempId--;
@@ -445,6 +445,12 @@ public class VisualServiceImpl implements VisualService {
         Set<Map.Entry<String, String>> singleVariableEntrySet = singleVariableMap.entrySet();
 
         for (VisualChart chart : allChartList) {
+            for (Map.Entry<String, String> entry : singleVariableEntrySet) {
+                // chart name
+                String chartName = chart.getName();
+                chart.setName(chartName.replaceAll(StrUtil.concat(true, "\\$", entry.getKey()), entry.getValue()));
+            }
+
             List<VisualChartElement> elements = chart.getElements();
             elements = Tool.CollUtil.defaultIfEmpty(elements, Tool.ListUtil.list(true));
             for (VisualChartElement element : elements) {
