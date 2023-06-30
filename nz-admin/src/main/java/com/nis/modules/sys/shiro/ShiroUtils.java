@@ -1,10 +1,9 @@
 package com.nis.modules.sys.shiro;
 
-import cn.hutool.log.Log;
-import com.nis.common.utils.SpringContextUtils;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
-import com.nis.modules.sys.entity.SysUserEntity;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.crypto.hash.SimpleHash;
 import org.apache.shiro.session.Session;
@@ -16,13 +15,13 @@ import org.apache.shiro.subject.SimplePrincipalCollection;
 import org.apache.shiro.subject.Subject;
 import org.apache.shiro.subject.support.DefaultSubjectContext;
 import org.crazycake.shiro.RedisSessionDAO;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
 
-import java.util.*;
+import com.nis.common.utils.SpringContextUtils;
+import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
+import com.nis.modules.sys.entity.SysUserEntity;
+
+import cn.hutool.log.Log;
 
 /**
  * Shiro工具类
@@ -35,7 +34,7 @@ public class ShiroUtils {
 	public final static int hashIterations = 16;
 
 	// redis 中 shiro key 前缀
-	public final static String REDIS_KEYPREFIX = "shiro_redis_session:";
+	public final static String REDIS_KEYPREFIX = "shiro_session:";
 
 	public static String sha256(String pin, String salt) {
 		return new SimpleHash(hashAlgorithmName, pin, salt, hashIterations).toString();
