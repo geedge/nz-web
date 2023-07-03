@@ -1,30 +1,27 @@
 package com.nis.common.config;
 
-import java.net.UnknownHostException;
-import java.time.Duration;
-import java.util.List;
-
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
+import com.nis.common.utils.Tool;
+import lombok.Data;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.dao.DataAccessException;
-import org.springframework.data.redis.connection.RedisConnection;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.connection.RedisNode;
-import org.springframework.data.redis.connection.RedisSentinelConfiguration;
-import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.*;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettucePoolingClientConfiguration;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import redis.clients.jedis.HostAndPort;
 
-import com.nis.common.utils.Tool;
-
-import cn.hutool.log.Log;
-import lombok.Data;
+import java.net.UnknownHostException;
+import java.time.Duration;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * redis 初始化配置
@@ -41,10 +38,13 @@ public class RedisConfig {
 	@Value("${redis.mode:standalone}")
 	private String redisMode;
 
-	@Value("${redis.host}")
-	private String redisHost;
-	@Value("${redis.port:6379}")
-	private int redisPort;
+	/**
+	 * 格式： host:port
+	 * 多个用逗号分割
+	 */
+	@Value("${redis.ur1}")
+	private String redisUrl;
+
 	@Value("${redis.database:0}")
 	private int redisDatabase;
 	@Value("${redis.pin}")
@@ -87,16 +87,20 @@ public class RedisConfig {
 		RedisSentinelConfiguration redisSentinelConfiguration = null;
 		RedisConnectionFactory factory;
 
+		List<String> redisUrlList = StrUtil.split(this.getRedisUrl(), ",");
+		redisUrlList.sort(Comparator.naturalOrder());
 		if (Tool.StrUtil.equalsIgnoreCase(redisMode, "standalone")) {
-			log.info("standalone redis config: {}:{}/{}", this.getRedisHost(), this.getRedisPort(),this.getRedisDatabase());
-			if (!Tool.ObjectUtil.isAllNotEmpty(this.getRedisHost(), this.getRedisPort(), this.getRedisDatabase())) {
+			String urlStr = redisUrlList.get(0);
+			log.info("standalone redis config: {}/{}", urlStr, this.getRedisDatabase());
+			if (!Tool.ObjectUtil.isAllNotEmpty(urlStr, this.getRedisDatabase())) {
 				log.error("redis config error");
 				return null;
 			}
+			HostAndPort hostAndPort = HostAndPort.parseString(urlStr);
 			redisStandaloneConfiguration = new RedisStandaloneConfiguration();
 			redisStandaloneConfiguration.setDatabase(this.getRedisDatabase());
-			redisStandaloneConfiguration.setHostName(this.getRedisHost());
-			redisStandaloneConfiguration.setPort(this.getRedisPort());
+			redisStandaloneConfiguration.setHostName(hostAndPort.getHost());
+			redisStandaloneConfiguration.setPort(hostAndPort.getPort());
 			if (Tool.StrUtil.isNotBlank(this.getRedisPin())){
 				redisStandaloneConfiguration.setPassword(this.getRedisPin());
 			}
@@ -120,6 +124,23 @@ public class RedisConfig {
 				redisSentinelConfiguration.setPassword(redisPin);
 			}
 			factory = new LettuceConnectionFactory(redisSentinelConfiguration, lettucePoolingClientConfiguration);
+		} else if (Tool.StrUtil.equalsIgnoreCase(redisMode, "dms")) {
+			String urlStr = redisUrlList.get(0);
+			log.info("dms redis config: {}/{}", urlStr, this.getRedisDatabase());
+			if (!Tool.ObjectUtil.isAllNotEmpty(urlStr, this.getRedisDatabase())) {
+				log.error("redis config error");
+				return null;
+			}
+			HostAndPort hostAndPort = HostAndPort.parseString(urlStr);
+			redisStandaloneConfiguration = new RedisStandaloneConfiguration();
+			redisStandaloneConfiguration.setDatabase(this.getRedisDatabase());
+			redisStandaloneConfiguration.setHostName(hostAndPort.getHost());
+			redisStandaloneConfiguration.setPort(hostAndPort.getPort());
+			if (Tool.StrUtil.isNotBlank(this.getRedisPin())) {
+				redisStandaloneConfiguration.setPassword(this.getRedisPin());
+			}
+			factory = new LettuceConnectionFactory(redisStandaloneConfiguration, lettucePoolingClientConfiguration);
+			return factory;
 		} else {
 			log.error("redis config error, unknow redis mode: {}", redisMode);
 			return null;

@@ -15,6 +15,7 @@ import com.nis.modules.dashboard.service.VisualDashboardService;
 import com.nis.modules.dashboard.utils.DashboardConstant;
 import com.nis.modules.report.job.ReportJobManager;
 import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.job.RedisHAWatcherThread;
 import com.nis.modules.sys.job.SysBackJobManager;
 import com.nis.modules.sys.service.LicenseService;
 import com.nis.modules.sys.service.SysConfigService;
@@ -30,6 +31,9 @@ import org.springframework.stereotype.Component;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * setup初始化操作
@@ -73,9 +77,12 @@ public class SetupRunner implements CommandLineRunner{
 
 	@Autowired
 	private VsysTaskConfigThread vsysTaskConfigThread;
-	
-    
-    
+
+	@Autowired
+	private RedisHAWatcherThread redisHAWatcherThread;
+
+    private static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(1);
+
 	@Override
 	public void run(String... args) throws Exception {		
 		log.info("compileType  value  is : "+compileType);
@@ -114,6 +121,10 @@ public class SetupRunner implements CommandLineRunner{
 		// 启动VSYS 配置下发线程
 		Tool.ThreadUtil.execute(vsysTaskConfigThread);
 		log.info("启动 {} 成功", "VsysTaskConfigThread");
+
+		// 启动 RedisHAWatcherThread 线程
+		Future<?> submit = THREAD_POOL.submit(redisHAWatcherThread);
+		log.info("启动 {} 成功", "RedisHAWatcherThread");
 
 		if (inited == 2) {
 			log.info(" inited = {}	,skip init setup", inited);
