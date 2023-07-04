@@ -168,8 +168,8 @@ public class RedisHAWatcherThread implements Runnable {
         try (Jedis jedis = new Jedis(masterAddress.getHost(), masterAddress.getPort(), this.getTimeout())) {
             if (StrUtil.isNotEmpty(this.getRedisPin()))
                 jedis.auth(this.getRedisPin());
-            jedis.slaveofNoOne();
-            log.info("[initMasterSlaveState] [master status completed]");
+            String slaveofNoOne = jedis.slaveofNoOne();
+            log.info("[initMasterSlaveState] [master status completed] [status: {}]", slaveofNoOne);
         } catch (Exception e) {
             log.error(e, "[initMasterSlaveState] [master error]");
         }
@@ -178,8 +178,8 @@ public class RedisHAWatcherThread implements Runnable {
         try (Jedis jedis = new Jedis(slaveAddress.getHost(), slaveAddress.getPort(), this.getTimeout())) {
             if (StrUtil.isNotEmpty(this.getRedisPin()))
                 jedis.auth(this.getRedisPin());
-            jedis.slaveof(masterAddress.getHost(), masterAddress.getPort());
-            log.info("[initMasterSlaveState] [slave status completed]");
+            String slaveof = jedis.slaveof(masterAddress.getHost(), masterAddress.getPort());
+            log.info("[initMasterSlaveState] [slave status completed] [status: {}]", slaveof);
         } catch (Exception e) {
             log.error(e, "[initMasterSlaveState] [slave error]");
         }
@@ -203,17 +203,18 @@ public class RedisHAWatcherThread implements Runnable {
 
             // 是否同步数据
             if (isRepl) {
-                jedis.slaveof(replSourceAddress.getHost(), replSourceAddress.getPort());
+                String slaveof = jedis.slaveof(replSourceAddress.getHost(), replSourceAddress.getPort());
+                log.info("[switchToMaster] [sync data] [status: {}]", slaveof);
                 // 等待同步
                 Tool.ThreadUtil.sleep(10, TimeUnit.SECONDS);
             }
 
             // 切换角色为 master
-            jedis.slaveofNoOne();
+            String slaveofNoOne = jedis.slaveofNoOne();
 
             // update Redis DataSource
             this.updateRedisDataSource(host, port);
-            log.info("[switchToMaster] [success] [master: {}]", toMasterAddress);
+            log.info("[switchToMaster] [success] [master: {}] [status: {}]", toMasterAddress, slaveofNoOne);
         } catch (Exception e) {
             log.error(e, "[switchToMaster] [error]");
         }
@@ -234,8 +235,8 @@ public class RedisHAWatcherThread implements Runnable {
                 jedis.auth(this.getRedisPin());
 
             // 切换角色为 slave
-            jedis.slaveof(replSourceAddress.getHost(), replSourceAddress.getPort());
-            log.info("[switchToSlave] [success] [slave: {}]", toSlaveAddress);
+            String slaveof = jedis.slaveof(replSourceAddress.getHost(), replSourceAddress.getPort());
+            log.info("[switchToSlave] [success] [slave: {}] [status: {}]", toSlaveAddress, slaveof);
         } catch (Exception e) {
             log.error(e, "[switchToSlave] [error]");
         }
