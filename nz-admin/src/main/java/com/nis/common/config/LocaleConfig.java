@@ -17,6 +17,7 @@ import org.springframework.web.servlet.support.RequestContextUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.util.Locale;
 
 @Configuration
@@ -71,11 +72,14 @@ class MyI18nInterceptor extends LocaleChangeInterceptor {
 					throw new IllegalStateException("找不到LocaleResolver");
 				}
 				try {
-					localeResolver.setLocale(request, response, parseLocaleValue(newLocale));
-					// 若语言和session中记录的值不同了，刷新session中的值
-					String currLang = (String) request.getSession().getAttribute(getParamName());
-					if (CommonUtil.isNull(currLang) || !StrUtil.equals(currLang,newLocale)) {
-						request.getSession().setAttribute(getParamName(), newLocale);
+					HttpSession session = request.getSession(false);
+					if (session != null) {
+						localeResolver.setLocale(request, response, parseLocaleValue(newLocale));
+						// 若语言和session中记录的值不同了，刷新session中的值
+						String currLang = (String) request.getSession().getAttribute(getParamName());
+						if (CommonUtil.isNull(currLang) || !StrUtil.equals(currLang, newLocale)) {
+							request.getSession().setAttribute(getParamName(), newLocale);
+						}
 					}
 				}
 				catch (IllegalArgumentException ex) {

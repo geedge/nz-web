@@ -22,6 +22,7 @@ import com.nis.common.utils.ToolUtil;
 import com.nis.modules.sys.entity.SysUserEntity;
 
 import cn.hutool.log.Log;
+import org.springframework.data.redis.core.RedisTemplate;
 
 /**
  * Shiro工具类
@@ -130,13 +131,11 @@ public class ShiroUtils {
 		}
 		return resultMap;
 	}
-	
+
 	public static void deleteSession(List<String> sessionIds) {
-		RedisSessionDAO sessionDao = SpringContextUtils.getBean("redisSessionDAO", RedisSessionDAO.class);
-		for(String s : sessionIds) {
-			SimpleSession ss = new SimpleSession();
-			ss.setId(s);
-			sessionDao.delete(ss);
+		RedisTemplate redisTemplate = SpringContextUtils.getBean("redisTemplate", RedisTemplate.class);
+		for (String sessionId : sessionIds) {
+			redisTemplate.delete(ShiroUtils.REDIS_KEYPREFIX + sessionId);
 		}
 	}
 }
