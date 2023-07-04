@@ -32,10 +32,9 @@ import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
-import com.nis.modules.sys.entity.Timezone;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
-import com.nis.modules.sys.service.TimezoneService;
+import com.nis.setup.controller.TimezoneController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -78,8 +77,6 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	private AlertSilenceDao alertSilenceDao;
 	@Autowired
 	private SysConfigService sysConfigService;
-	@Autowired
-	private TimezoneService timezoneService;
 	@Autowired
 	private BasicImportAndExportServices basicImportAndExportServices;
 
@@ -569,7 +566,7 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	private List<List<String>> handleExportDataList(List<AlertMessageEntity> list) {
 		List<List<String>> exportDataList = new ArrayList<>();
 
-		Timezone sysTimezone = timezoneService.getOne(new LambdaQueryWrapper<Timezone>().eq(Timezone::getName, sysConfigService.getValue("timezone")));
+		TimezoneController.Timezone sysTimezone = TimezoneController.queryTimezoneByName(sysConfigService.getValue("timezone"));
 		DateFormat dateformat = getISO8601DateFormatBySysTimeOffset(sysTimezone.getOffset());
 
 		for (AlertMessageEntity alertMessage : list) {

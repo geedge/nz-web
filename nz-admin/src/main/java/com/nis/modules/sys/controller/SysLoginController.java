@@ -14,12 +14,11 @@ import com.nis.common.utils.*;
 import com.nis.modules.sys.entity.AuthTokenEntity;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.entity.Timezone;
 import com.nis.modules.sys.redis.SysLoginRedis;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
-import com.nis.modules.sys.service.TimezoneService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import com.nis.setup.controller.TimezoneController;
 import org.apache.commons.lang.time.DateUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authc.*;
@@ -60,10 +59,6 @@ public class SysLoginController extends AbstractController {
 	private SysUserService sysUserService;
 	@Autowired
 	private SysLoginRedis sysLoginRedis;
-
-	@Autowired
-	private TimezoneService timezoneService;
-
 	@Autowired
 	private SysConfigService sysConfigService;
 	
@@ -149,7 +144,7 @@ public class SysLoginController extends AbstractController {
 			List<SysConfigEntity> configEntityList = configService.list(new LambdaUpdateWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey, paramkeys));
 			for (SysConfigEntity configEntity : configEntityList) {
 				if ("timezone".equals(configEntity.getParamKey())) {
-					Timezone timezoneEntity = timezoneService.getOne(new LambdaUpdateWrapper<Timezone>().eq(Timezone::getName, configEntity.getParamValue()));
+					TimezoneController.Timezone timezoneEntity = TimezoneController.queryTimezoneByName(configEntity.getParamValue());
 					result.put("offset", timezoneEntity.getOffset());
 				}
 				result.put(ToolUtil.toCamelCase(configEntity.getParamKey()), configEntity.getParamValue());

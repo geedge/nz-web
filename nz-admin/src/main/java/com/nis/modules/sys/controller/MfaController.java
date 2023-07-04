@@ -9,12 +9,11 @@ import com.nis.common.utils.*;
 import com.nis.modules.sys.entity.AuthTokenEntity;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.entity.Timezone;
 import com.nis.modules.sys.redis.SysLoginRedis;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
-import com.nis.modules.sys.service.TimezoneService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import com.nis.setup.controller.TimezoneController;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -38,10 +37,7 @@ public class MfaController extends AbstractController {
 	private SysUserService sysUserService;
 	@Autowired
 	private SysLoginRedis sysLoginRedis;
-	@Autowired
-	private TimezoneService timezoneService;
 
-	
 	@PostMapping(value = "/genkey")
 	public R genKey(@RequestBody SysUserEntity sysUser) {
 
@@ -209,7 +205,7 @@ public class MfaController extends AbstractController {
 		List<SysConfigEntity> configEntityList = configService.list(new LambdaUpdateWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey, paramkeys));
 		for (SysConfigEntity configEntity : configEntityList) {
 			if ("timezone".equals(configEntity.getParamKey())) {
-				Timezone timezoneEntity = timezoneService.getOne(new LambdaUpdateWrapper<Timezone>().eq(Timezone::getName, configEntity.getParamValue()));
+				TimezoneController.Timezone timezoneEntity = TimezoneController.queryTimezoneByName(configEntity.getParamValue());
 				obj.put("offset", timezoneEntity.getOffset());
 			}
 			obj.put(ToolUtil.toCamelCase(configEntity.getParamKey()), configEntity.getParamValue());

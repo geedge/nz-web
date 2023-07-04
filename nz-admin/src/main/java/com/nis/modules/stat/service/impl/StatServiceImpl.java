@@ -32,11 +32,10 @@ import com.nis.modules.stat.dao.StatDao;
 import com.nis.modules.stat.entity.StatAnalysis;
 import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.entity.Timezone;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
-import com.nis.modules.sys.service.TimezoneService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import com.nis.setup.controller.TimezoneController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
@@ -82,9 +81,6 @@ public class StatServiceImpl implements StatService {
 
 	@Autowired
 	private AlertMessageDao alertMessageDao;
-
-	@Autowired
-	private TimezoneService timezoneService;
 
 	private Integer topNSize = 10;
 
@@ -501,8 +497,7 @@ public class StatServiceImpl implements StatService {
 		Map<String, Object> result = new HashMap<String, Object>();
 
 		// 处理时区问题
-		Timezone sysTimezone = timezoneService.getOne(
-				new LambdaQueryWrapper<Timezone>().eq(Timezone::getName, sysConfigService.getValue("timezone")));
+		TimezoneController.Timezone sysTimezone = TimezoneController.queryTimezoneByName(sysConfigService.getValue("timezone"));
         params.put("timezone", ToolUtil.isEmpty(sysTimezone) ? 0 : sysTimezone.getOffset() / 1000);
 
 		if (ToolUtil.isEmpty(params.get("stime"))) {
