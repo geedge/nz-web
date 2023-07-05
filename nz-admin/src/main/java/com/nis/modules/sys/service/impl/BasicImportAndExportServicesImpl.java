@@ -182,7 +182,7 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
                 // 表头校验
                 List<String> arrayList = new ArrayList<>(map.keySet());
                 for (int i = 0; i < headerInfos.size(); i++) {
-                    if (!Tool.StrUtil.equalsIgnoreCase(headerInfos.get(i), arrayList.get(i))) {
+                    if (!Tool.StrUtil.equalsIgnoreCase(StrUtil.trim(headerInfos.get(i)), StrUtil.trim(arrayList.get(i)))) {
                         throw new NZException(RCode.EXCELFILE_HEADER_TEMPLATE_ERROR);
                     }
                 }

@@ -253,21 +253,12 @@ public class ExcelUtils {
 
     public static boolean validateExcelHeader(Sheet sheet, int firstRowNum, List<String> columnInfoList) {
         Row row = sheet.getRow(firstRowNum);
-        List<Boolean> flags = new ArrayList<>();
         for (int i = 0; i < columnInfoList.size(); i++) {
-            boolean flag = true;
-            if (!StrUtil.equals(columnInfoList.get(i).toLowerCase(), ExcelUtils.getCellValue(row.getCell(i)).toLowerCase())) {
-                flag = false;
-                break;
+            if (!StrUtil.equalsIgnoreCase(Tool.StrUtil.trim(columnInfoList.get(i)), ExcelUtils.getCellValue(row.getCell(i)))) {
+                return false;
             }
-            flags.add(flag);
         }
-
-        boolean headerFlag = false;
-        for (Boolean flag : flags) {
-            headerFlag = (headerFlag || flag);
-        }
-        return headerFlag;
+        return true;
     }
 
     public static Workbook getWorkBookFromMultipartFile(MultipartFile excelFile) {
