@@ -5,6 +5,7 @@ import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
+import com.nis.modules.agent.service.MonitorEventLogService;
 import com.nis.modules.sys.entity.SysComponent;
 import com.nis.modules.sys.service.SysComponentService;
 import com.nis.modules.sys.service.SysConfigService;
@@ -32,6 +33,8 @@ public class SysComponentJob extends QuartzJobBean {
 	private SysConfigService sysConfigService;
 	@Autowired
 	private RedisTemplate<String, String> redisTemplate;
+	@Autowired
+	private MonitorEventLogService eventLogService;
 	@Value("${server.host:}")
 	private String host;
 	@Value("${server.port}")
@@ -85,7 +88,10 @@ public class SysComponentJob extends QuartzJobBean {
 					.orderByDesc(SysComponent::getUtime));
 			if (one != null) {
 				alertApi = String.format("%s://%s:%s", one.getProtocol(), one.getHost(), one.getPort());
+				// update alert_api
 				sysConfigService.updateValueByKey(Constant.ALERT_API, alertApi);
+				// increment monitor_event_log.prometheus
+				eventLogService.increment("prometheus");
 				log.info("update alert api : {}", alertApi);
 			}else {
 				log.warn("No nz-web components available");
