@@ -6,7 +6,9 @@ import lombok.Data;
 
 @Data
 public class RedisEntity implements Serializable {
-    private String host;
-    private Integer port = 6379;
-    private String pin ;
+    private String mode = "standalone";
+    private String[] url;
+    private String masterName = "";
+    private String database = "0";
+    private String pin = "";
 }

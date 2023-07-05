@@ -769,14 +769,14 @@ public enum RCode {
     SYS_CONFIG_UNSAVEDCHANGE_ISNULL(571065, "System config unsaved change can not be empty"),
     SYS_CONFIG_CODE_FILE_ISNULL(574066,"The validate file is not exist"), //不存在校验使用的文件
     SYS_CONFIG_CODE_INVALID(574067,"The code is invalid"),//校验文件中的code与传递的值不符
-    SYS_CONFIG_DB_PARAM_INVALID(574068,"The DB connect params is invalid"),//校验文件中的code与传递的值不符
-    SYS_CONFIG_REDIS_PASSWORD_INVALID(574069,"The redis password is invalid"),
-    SYS_CONFIG_REDIS_PASSWORD_REQUIRED(574070,"The redis password is required"),
+    SYS_CONFIG_DB_CONNECTION_FAILED(570068, "{0} Connection failed"),
+    SYS_CONFIG_REDIS_PASSWORD_INVALID(578069, "{0} Password is invalid"),
+    SYS_CONFIG_REDIS_PASSWORD_REQUIRED(571070, "{0} Password is required"),
     SYS_CONFIG_REDIS_PARAM_INVALID(574071,"The redis params is invalid"),
-    SYS_CONFIG_DB_URL_ISNULL(574072,"The DB host is null"),
+    SYS_CONFIG_DB_URL_ISNULL(571072, "The DB url is null"),
     SYS_CONFIG_DB_USERNAME_ISNULL(574073,"The DB username is null"),
     SYS_CONFIG_DB_PASSWORD_ISNULL(574074,"The DB password is null"),
-    SYS_CONFIG_REDIS_HOST_ISNULL(574075,"The redis host is null"),
+    SYS_CONFIG_REDIS_URL_ISNULL(571075, "The redis url is null"),
     SYS_CONFIG_REDIS_PORT_ISNULL(574076,"The redis host is null"),
     SYS_CONFIG_HAD_CONFIG(574077,"Someone has started to configure the system"),
     SYS_CONFIG_SESSION_TIMEOUT_INVALID(573078,"Session timeout is not less than 15"),
@@ -785,6 +785,12 @@ public enum RCode {
     SYS_CONFIGI_METRICSSTORAGETYPE_NCORRECT(574081, "Metrics storage type must be 1 or 2"),
     SYS_CONFIGI_LOGSSTORAGETYPE_NCORRECT(574082, "Logs storage type must be 1 or 2"),
     SYS_CONFIG_DB_NAME_ISNULL(574083,"The DB name is null"),
+    SYS_CONFIG_DB_URL_EXCEEDED_LIMIT(573084, "Please limit the number of DB URL configuration items"),
+    SYS_CONFIG_REDIS_MODE_ISNULL(571085, "Redis mode is required"),
+    SYS_CONFIG_REDIS_MODE_INVALID(574086, "Redis mode value is not in the enum range"),
+    SYS_CONFIG_REDIS_URL_INVALID(574087, "The number of Redis URL configurations does not meet the requirements"),
+    SYS_CONFIG_REDIS_MASTER_NAME_ISNULL(571088, "Master name is required when mode equals sentinel"),
+    SYS_CONFIG_REDIS_CONNECTION_FAILED(570089, "{0} Connection failed"),
 
 
     /**

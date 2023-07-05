@@ -42,7 +42,7 @@ public class RedisConfig {
 	 * 格式： host:port
 	 * 多个用逗号分割
 	 */
-	@Value("${redis.ur1}")
+	@Value("${redis.url}")
 	private String redisUrl;
 
 	@Value("${redis.database:0}")
@@ -54,8 +54,6 @@ public class RedisConfig {
 	// redis sentinel配置项
 	@Value("${redis.sentinel.master:}")
 	private String sentinelMaster;
-	@Value("${redis.sentinel.nodes:}")
-	private String sentinelNodes;
 	/**
 	 * redis配置项
 	 */
@@ -106,16 +104,15 @@ public class RedisConfig {
 			}
 			factory = new LettuceConnectionFactory(redisStandaloneConfiguration, lettucePoolingClientConfiguration);
 		} else if (Tool.StrUtil.equalsIgnoreCase(redisMode, "sentinel")) {
-			log.info("sentinel redis config: {}, {}, {}", sentinelMaster, sentinelNodes, this.getRedisDatabase());
-			if (!Tool.ObjectUtil.isAllNotEmpty(this.getSentinelMaster(), this.getSentinelNodes(),this.getRedisDatabase())) {
+			log.info("sentinel redis config: {}, {}, {}", sentinelMaster, redisUrl, this.getRedisDatabase());
+			if (!Tool.ObjectUtil.isAllNotEmpty(this.getSentinelMaster(), this.getRedisUrl(),this.getRedisDatabase())) {
 				log.error("redis config error");
 				return null;
 			}
 			redisSentinelConfiguration = new RedisSentinelConfiguration();
 			redisSentinelConfiguration.master(sentinelMaster);
 			List<RedisNode> nodeList = Tool.ListUtil.list(false);
-			String[] nodeArr = sentinelNodes.split(",");
-			for (String node : nodeArr) {
+			for (String node : redisUrlList) {
 				nodeList.add(new RedisNode(node.split(":")[0], Tool.NumberUtil.parseInt(node.split(":")[1])));
 			}
 			redisSentinelConfiguration.setSentinels(nodeList);

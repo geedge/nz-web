@@ -53,7 +53,7 @@ public class RedisHAWatcherThread implements Runnable {
      * 格式： host:port
      * 多个用逗号分割
      */
-    @Value("${redis.ur1}")
+    @Value("${redis.url}")
     private String redisUrl;
     @Value("${redis.pin}")
     private String redisPin;
