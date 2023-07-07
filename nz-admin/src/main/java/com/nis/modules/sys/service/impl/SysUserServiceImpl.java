@@ -1,35 +1,8 @@
 package com.nis.modules.sys.service.impl;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import javax.servlet.http.HttpServletRequest;
-
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.RandomStringUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.shiro.SecurityUtils;
-import org.apache.shiro.session.Session;
-import org.apache.shiro.subject.PrincipalCollection;
-import org.apache.shiro.subject.support.DefaultSubjectContext;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -39,13 +12,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.CommonUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
+import com.nis.common.utils.*;
 import com.nis.modules.alert.dao.AlertRuleDao;
 import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.service.AlertRuleService;
@@ -60,17 +27,27 @@ import com.nis.modules.sys.entity.SysApiKey;
 import com.nis.modules.sys.entity.SysRoleEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.entity.SysUserRoleEntity;
-import com.nis.modules.sys.service.SysApiKeyService;
-import com.nis.modules.sys.service.SysConfigService;
-import com.nis.modules.sys.service.SysMenuService;
-import com.nis.modules.sys.service.SysRoleService;
-import com.nis.modules.sys.service.SysUserRoleService;
-import com.nis.modules.sys.service.SysUserService;
+import com.nis.modules.sys.service.*;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.session.Session;
+import org.apache.shiro.subject.PrincipalCollection;
+import org.apache.shiro.subject.support.DefaultSubjectContext;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import javax.servlet.http.HttpServletRequest;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service("sysUserService")
 public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> implements SysUserService {
@@ -306,8 +283,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 					removeKeys.add(entry.getKey());
 				}
 			}
-		} catch (RuntimeException e) {
-			log.error(String.format("从redis中获取用户登录信息失败,错误信息是：%s,当前用户是:%s", e.getMessage(), userId), e);
+		} catch (Exception e) {
+            log.error(e, "[removeUserInfoInRedis] [error] [userId: {}]", userId);
 		} finally {
 			// 删除 关联key
 			if (CollectionUtils.isNotEmpty(removeKeys)) {
@@ -370,8 +347,6 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 				.set(AlertRuleEntity::getNotifyActive, 0).set(AlertRuleEntity::getNotifyExpired, 0));
 		// 删除 dc 引用
 		dcService.update(new LambdaUpdateWrapper<Dc>().in(Dc::getPrincipal, idList).set(Dc::getPrincipal, null));
-		// 删除相关 sys_api_key
-		sysApiKeyService.remove(new LambdaUpdateWrapper<SysApiKey>().in(SysApiKey::getCreateBy, idList));
 		// 删除 dashboard 引用
 		dashboardDao.delReceivers(idList);
 		// 关闭 dashboard 接收人为空的报表
@@ -385,6 +360,11 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 			redisTemplate.convertAndSend(Constant.REPORT_TOPIC_NAME, JSONObject.toJSONString(publishMap));
 		}
 		if(Tool.CollUtil.isNotEmpty(visualDashboardList)) dashboardService.updateBatchById(visualDashboardList);
+
+        // 先查询，redis 中的 api key 同样需要删除
+        List<SysApiKey> apiKeyList = sysApiKeyService.list(new LambdaUpdateWrapper<SysApiKey>().in(SysApiKey::getCreateBy, idList));
+        // 删除相关 sys_api_key
+        sysApiKeyService.remove(new LambdaUpdateWrapper<SysApiKey>().in(SysApiKey::getCreateBy, idList));
 
 		// 删除 redis 中 用户token 信息
 		List<String> removeKeys = new ArrayList<>();
@@ -400,8 +380,11 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 					removeKeys.add(entry.getKey());
 				}
 			}
-		} catch (RuntimeException e) {
-			log.error(String.format("从redis中获取用户登录信息失败,错误信息是：%s,删除用户ID:%s", e.getMessage(), userIdList.toString()), e);
+            for (SysApiKey apiKey : apiKeyList) {
+                removeKeys.add(apiKey.getToken());
+            }
+		} catch (Exception e) {
+            log.error(e, "[delete user error] [userIds: {}]", userIds);
 		} finally {
 			// 删除 关联key
 			if (CollectionUtils.isNotEmpty(removeKeys)) {

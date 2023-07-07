@@ -704,8 +704,14 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 
 	@Override
 	public Map importChartData(MultipartFile multipartFile, Map<String, Object> params) throws IOException {
-		String str = IoUtil.read(multipartFile.getInputStream(), CharsetUtil.charset("UTF-8"));
-		List<LinkedHashMap> importDataList = JSONObject.parseArray(str, LinkedHashMap.class);
+		List<LinkedHashMap> importDataList = ListUtil.list(true);
+		try {
+			String str = IoUtil.read(multipartFile.getInputStream(), CharsetUtil.charset("UTF-8"));
+			importDataList = JSONObject.parseArray(str, LinkedHashMap.class);
+		} catch (Exception e) {
+			log.error(e, "[importChartData] [Import file parsing failed] [file: {}]", multipartFile.getOriginalFilename());
+			throw new NZException(RCode.EXCELFILE_PARSE_ERROR);
+		}
 
 		// 表头信息 国际化之后的
 		String dashboardHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_DASHBOARD_EXPORT_HEADER);

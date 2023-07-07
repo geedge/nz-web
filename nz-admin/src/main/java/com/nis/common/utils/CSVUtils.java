@@ -42,7 +42,7 @@ public class CSVUtils {
         for (int i = 0; i < headerInfos.size(); i++) {
             String header = headers.get(i);
             if(header.indexOf("\uFEFF") >= 0) header = header.substring(1); //去除BOM头
-            if (!Tool.StrUtil.equalsIgnoreCase(headerInfos.get(i), header)) {
+            if (!Tool.StrUtil.equalsIgnoreCase(Tool.StrUtil.trim(headerInfos.get(i)), Tool.StrUtil.trim(header))) {
                 return false;
             }
         }
