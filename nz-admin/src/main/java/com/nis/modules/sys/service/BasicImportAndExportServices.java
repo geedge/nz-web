@@ -13,7 +13,7 @@ public interface BasicImportAndExportServices {
 
     void getTemplate(String sysHeaderJsonStr, String format, String fileName, HttpServletResponse response) throws IOException;
 
-    List<Map<Integer, String>> getImportDataFromMultipartFile(MultipartFile multipartFile, String sysHeaderJsonStr) throws IOException;
+    List<Map<Integer, String>> getImportDataFromMultipartFile(MultipartFile multipartFile, String sysHeaderJsonStr);
 
     void exportDataByFormat(HttpServletResponse response, List<List<String>> exportDataList, String sysHeaderJsonStr, String format, String fileName) throws IOException;
 

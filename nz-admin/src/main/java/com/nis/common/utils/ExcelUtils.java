@@ -2,6 +2,7 @@ package com.nis.common.utils;
 
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.nis.common.exception.NZException;
 import org.apache.commons.io.IOUtils;
 import org.apache.poi.hssf.usermodel.HSSFCellStyle;
@@ -18,7 +19,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -27,6 +27,9 @@ import java.util.Map;
  * apache poi excel工具类
  */
 public class ExcelUtils {
+
+    private final static Log log = Log.get();
+
     // 2003- 版本的excel
     private final static String excel2003L = ".xls";
     // 2007+ 版本的excel
@@ -269,7 +272,8 @@ public class ExcelUtils {
         Workbook work = null;
         try {
             work = ExcelUtils.getWork(excelFile.getOriginalFilename(), excelFile.getInputStream());
-        } catch (IOException e) {
+        } catch (Exception e) {
+            log.error(e, "[getWorkBookFromMultipartFile] [error] [file: {}]", excelFile.getOriginalFilename());
             throw new NZException(RCode.EXCELFILE_PARSE_ERROR);
         } finally {
             if (work != null) {

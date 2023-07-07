@@ -701,7 +701,7 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 			importDataList = JSONObject.parseArray(str, LinkedHashMap.class);
 		} catch (Exception e) {
 			log.error(e, "[importChartData] [Import file parsing failed] [file: {}]", multipartFile.getOriginalFilename());
-			throw new NZException(RCode.EXCELFILE_PARSE_ERROR);
+			throw new NZException(RCode.IMPORT_FILE_PARSE_ERROR);
 		}
 
 		// 表头信息 国际化之后的
