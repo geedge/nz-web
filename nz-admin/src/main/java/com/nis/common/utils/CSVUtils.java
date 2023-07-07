@@ -7,19 +7,18 @@ import cn.hutool.core.text.csv.CsvData;
 import cn.hutool.core.text.csv.CsvReader;
 import cn.hutool.core.text.csv.CsvRow;
 import cn.hutool.core.text.csv.CsvUtil;
-import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.log.Log;
+import com.nis.common.exception.NZException;
 import org.apache.commons.io.FileUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
 public class CSVUtils {
 
-    private static Log logger = Log.get();
+    private final static Log log = Log.get();
 
     static final CsvReader reader = CsvUtil.getReader();
 
@@ -30,8 +29,9 @@ public class CSVUtils {
             FileUtils.copyInputStreamToFile(multipartFile.getInputStream(), tempCsvFile);
             //data = reader.read(tempCsvFile);
             data = reader.read(ResourceUtil.getReader(tempCsvFile.getPath(), CharsetDetector.detect(tempCsvFile)));
-        } catch (IOException e) {
-            logger.error(e);
+        } catch (Exception e) {
+            log.error(e, "[getCsvDataFromMultipartFile] [error] [file: {}]", multipartFile.getOriginalFilename());
+            throw new NZException(RCode.IMPORT_FILE_PARSE_ERROR);
         } finally {
             if (tempCsvFile != null && tempCsvFile.exists()) tempCsvFile.delete();
         }

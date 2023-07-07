@@ -955,6 +955,7 @@ public enum RCode {
     IMPORT_FIELDS_DUPLICATE(817, "{0} Duplicate ,{1} Duplicate"),
     IMPORT_ERROR_STOP(818, "Error stop import"),
     IMPORT_SUBNET_VALUE_ERROR(819, "{0} Not in subnet value list"),
+    IMPORT_FILE_PARSE_ERROR(820, "Import file resolution failed"),
 
 
     /**

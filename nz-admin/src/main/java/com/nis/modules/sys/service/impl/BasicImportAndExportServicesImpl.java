@@ -124,7 +124,7 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
     }
 
     @Override
-    public List<Map<Integer, String>> getImportDataFromMultipartFile(MultipartFile multipartFile, String sysHeaderJsonStr) throws IOException {
+    public List<Map<Integer, String>> getImportDataFromMultipartFile(MultipartFile multipartFile, String sysHeaderJsonStr) {
         String fileType = FilenameUtils.getExtension(multipartFile.getOriginalFilename());
 
         Map<String, String> exportHeaderMap = this.getI18nHeaderMap(sysHeaderJsonStr);
@@ -176,8 +176,14 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
                 break;
             }
             case JSON: {
-                String str = IoUtil.read(multipartFile.getInputStream(), CharsetUtil.charset("UTF-8"));
-                List<LinkedHashMap> mapList = JSONObject.parseArray(str, LinkedHashMap.class);
+                List<LinkedHashMap> mapList = ListUtil.list(true);
+                try {
+                    String str = IoUtil.read(multipartFile.getInputStream(), CharsetUtil.charset("UTF-8"));
+                    mapList = JSONObject.parseArray(str, LinkedHashMap.class);
+                } catch (Exception e) {
+                    log.error(e, "[getJSONDataFromMultipartFile] [error] [file: {}]", multipartFile.getOriginalFilename());
+                    throw new NZException(RCode.IMPORT_FILE_PARSE_ERROR);
+                }
                 LinkedHashMap map = mapList.get(0);
                 // 表头校验
                 List<String> arrayList = new ArrayList<>(map.keySet());
