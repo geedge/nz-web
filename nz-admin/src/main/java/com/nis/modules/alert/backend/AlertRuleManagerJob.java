@@ -16,9 +16,11 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.stereotype.Component;
 
-import java.util.Calendar;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TimeZone;
 
 /**
  * 所有 nz-web 实例都执行此定时任务
@@ -171,6 +173,7 @@ public class AlertRuleManagerJob extends QuartzJobBean {
 						JobKey jobKey = this.getAlertRuleJudgeJobKey(newHash, rule.getId());
 						// 开启job
 						boolean exists = scheduler.checkExists(jobKey);
+						log.info("create alert rule judge, ruleId: {},exists: {}", rule.getId(), exists);
 						if (!exists) {
 							JobDataMap dataMap = new JobDataMap();
 							dataMap.put(AlertContext.JOB_DATA_KEY_ALERT_RULE_ENTITY, rule);
@@ -178,16 +181,26 @@ public class AlertRuleManagerJob extends QuartzJobBean {
 									.storeDurably().setJobData(dataMap).build();
 							// 设置执行周期
 							SimpleScheduleBuilder scheduleBuilder = SimpleScheduleBuilder.repeatSecondlyForever(rule.getInr());
-					        SimpleTrigger simpleTrigger = TriggerBuilder.newTrigger()
-					                .forJob(jobDetail)
-					                .withIdentity(jobKey.getName(), jobKey.getGroup())
-					                .withSchedule(scheduleBuilder)
-					                .startAt(Tool.DateUtil.date(System.currentTimeMillis() + Tool.RandomUtil.randomInt(10, 60)*1000)) //加入随机时间，分散alert rule 执行时间
-					                .build();
-							// 创建任务
-							scheduler.scheduleJob(jobDetail, simpleTrigger);
+							SimpleTrigger simpleTrigger = TriggerBuilder.newTrigger()
+									.forJob(jobDetail)
+									.withIdentity(jobKey.getName(), jobKey.getGroup())
+									.withSchedule(scheduleBuilder)
+									.startAt(Tool.DateUtil.date(System.currentTimeMillis() + Tool.RandomUtil.randomInt(10, 60) * 1000)) //加入随机时间，分散alert rule 执行时间
+									.build();
+							// 定时任务是否开启
+							if (Tool.ObjectUtil.equal(1, rule.getSchedEnable())) {
+								// 任务是否在执行周期内
+								boolean isTaskInSched = ruleService.isTaskInSched(rule);
+								if (isTaskInSched) {
+									scheduler.scheduleJob(jobDetail, simpleTrigger);
+								}
+								log.info("create alert rule judge finshed, ruleId: {}, isTaskInSched: {}", rule.getId(), isTaskInSched);
+							} else {
+								// 创建任务
+								scheduler.scheduleJob(jobDetail, simpleTrigger);
+								log.info("create alert rule judge finshed, ruleId: {}", rule.getId());
+							}
 						}
-						log.info("create alert rule judge, ruleId: {},exists: {}", rule.getId(), exists);
 					}
 				}
 			}
@@ -309,7 +322,8 @@ public class AlertRuleManagerJob extends QuartzJobBean {
 			JobDetail jobDetail = JobBuilder.newJob(AlertRuleScheduleJob.class).withIdentity(onJobKey).storeDurably()
 					.build();
 			String jobCronExpression = this.genCron(rule.getSchedStime(), rule.getSchedDays());
-			CronScheduleBuilder cronScheduleBuilder = CronScheduleBuilder.cronSchedule(jobCronExpression);
+			String timezone = configService.getValue("timezone");
+			CronScheduleBuilder cronScheduleBuilder = CronScheduleBuilder.cronSchedule(jobCronExpression).inTimeZone(TimeZone.getTimeZone(timezone));
 			CronTrigger cronTrigger = TriggerBuilder.newTrigger().forJob(jobDetail).withSchedule(cronScheduleBuilder)
 					.build();
 			// 创建任务
@@ -322,7 +336,8 @@ public class AlertRuleManagerJob extends QuartzJobBean {
 			JobDetail jobDetail = JobBuilder.newJob(AlertRuleScheduleJob.class).withIdentity(offJobKey).storeDurably()
 					.build();
 			String jobCronExpression = this.genCron(rule.getSchedEtime(), rule.getSchedDays());
-			CronScheduleBuilder cronScheduleBuilder = CronScheduleBuilder.cronSchedule(jobCronExpression);
+			String timezone = configService.getValue("timezone");
+			CronScheduleBuilder cronScheduleBuilder = CronScheduleBuilder.cronSchedule(jobCronExpression).inTimeZone(TimeZone.getTimeZone(timezone));
 			CronTrigger cronTrigger = TriggerBuilder.newTrigger().forJob(jobDetail).withSchedule(cronScheduleBuilder)
 					.build();
 			// 创建任务
@@ -331,7 +346,6 @@ public class AlertRuleManagerJob extends QuartzJobBean {
 	}
 
 	/**
-	 * 
 	 * @param time 时间，00:00
 	 * @param days 星期，多个逗号分隔
 	 * @return
@@ -339,18 +353,8 @@ public class AlertRuleManagerJob extends QuartzJobBean {
 	public String genCron(String time, String days) {
 		if (Tool.StrUtil.isAllNotBlank(time, days)) {
 			String[] split = time.split(":");
-			// 将定时时间 根据系统设置 转换为 utc 对应时间
-			String value = configService.getValue("timezone");
-			TimeZone timezone = TimeZone.getTimeZone(value);
-			Calendar cal = Calendar.getInstance();
-			int hourOfDay = Tool.NumberUtil.parseInt(split[0]);
-			int minute = Tool.NumberUtil.parseInt(split[1]);
-			cal.set(1997, 7, 1, hourOfDay, minute);
-			cal.add(Calendar.MILLISECOND, 0 - timezone.getRawOffset());
-			hourOfDay = cal.get(Calendar.HOUR_OF_DAY);
-			minute = cal.get(Calendar.MINUTE);
 			// 0 1 2 0 0 1,2,4
-			return String.format("0 %s %s ? * %s *", minute, hourOfDay, days);
+			return String.format("0 %s %s ? * %s *", split[1], split[0], days);
 		}
 		return null;
 	}
