@@ -37,5 +37,13 @@ public interface AlertRuleService extends IService<AlertRuleEntity> {
 	
 	AlertRuleEntity queryAlertRule(Integer id);
 
+	/**
+	 * 任务是否在执行周期内
+	 *
+	 * @param alertRule
+	 * @return
+	 */
+	boolean isTaskInSched(AlertRuleEntity alertRule);
+
 }
 

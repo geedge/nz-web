@@ -11,6 +11,7 @@ import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
@@ -48,6 +49,8 @@ import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -80,7 +83,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
     @Autowired
     private BasicImportAndExportServices basicImportAndExportServices;
-    
+
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         String receiverStr = (String) params.get("receiver");
@@ -232,6 +235,9 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             }
 
             this.updateById(alertRule);
+
+            // 任务是否在执行周期内
+            this.isTaskInSched(alertRule);
         }
         return alertRule.getId();
     }
@@ -515,6 +521,9 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             rule.setId(oldRule.getId());
 
             this.updateById(rule);
+
+            // 任务是否在执行周期内
+            this.isTaskInSched(rule);
         } else {
             params.put("save", true);
             // insert
@@ -788,7 +797,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 	public AlertRuleEntity queryAlertRule(Integer id) {
 		AlertRuleEntity alertRule = alertRuleDao.selectById(id);
         ValidateUtils.is(alertRule).notNull(RCode.ALERTRULE_NOT_EXIST);
-		
+
         List<AlertMessageEntity> alertMessageList = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getRuleId, id));
         alertRule.setAlertNum(alertMessageList.size());
         List<Map<String, Object>> alert = alertMessageService.getAlertsStatBySeverity("rule",id);
@@ -828,4 +837,53 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         }
         return alertRule;
 	}
+
+    @Override
+    public boolean isTaskInSched(AlertRuleEntity rule) {
+        // 创建任务前，判断 rule 是否在执行周期内
+        boolean isTaskInSched = false;
+        if (Tool.ObjectUtil.equal(1, rule.getSchedEnable())) {
+            List<String> schedDayList = Tool.StrUtil.split(rule.getSchedDays(), ",");
+
+            String timezone = sysConfigService.getValue("timezone");
+            // 当前时间-带时区
+            LocalDateTime now = LocalDateTime.now(ZoneId.of(timezone));
+            String currentWeek = Tool.StrUtil.toString((now.getDayOfWeek().getValue() % 7) + 1);
+            if (schedDayList.contains(currentWeek)) {
+                String schedStime = rule.getSchedStime();
+                LocalDateTime startTime = LocalDateTime.now(ZoneId.of(timezone));
+                startTime = startTime.withHour(Integer.valueOf(schedStime.split(":")[0]));
+                startTime = startTime.withMinute(Integer.valueOf(schedStime.split(":")[1]));
+                startTime = startTime.withSecond(0);
+
+                String schedEtime = rule.getSchedEtime();
+                LocalDateTime endTime = LocalDateTime.now(ZoneId.of(timezone));
+                endTime = endTime.withHour(Integer.valueOf(schedEtime.split(":")[0]));
+                endTime = endTime.withMinute(Integer.valueOf(schedEtime.split(":")[1]));
+                endTime = endTime.withSecond(59);
+
+                // 任务是否在执行周期内
+                isTaskInSched = now.isAfter(startTime) && now.isBefore(endTime);
+            }
+
+            // 在执行周期内，将 rule.state 设置为 0
+            if (Tool.BooleanUtil.isTrue(isTaskInSched)) {
+                this.update(new UpdateWrapper<AlertRuleEntity>().lambda()
+                        .set(AlertRuleEntity::getState, 1)
+                        .eq(AlertRuleEntity::getId, rule.getId()));
+            }
+
+            // 不在执行周期内，将 rule.state 设置为 0
+            if (Tool.BooleanUtil.isFalse(isTaskInSched)) {
+                this.update(new UpdateWrapper<AlertRuleEntity>().lambda()
+                        .set(AlertRuleEntity::getState, 0)
+                        .eq(AlertRuleEntity::getId, rule.getId()));
+            }
+        } else {
+            isTaskInSched = false;
+        }
+        log.info("[isTaskInSched] [rule: {}] [schedEnable: {}] [inSched: {}]", rule.getId(), rule.getSchedEnable(), isTaskInSched);
+        return isTaskInSched;
+    }
+
 }
