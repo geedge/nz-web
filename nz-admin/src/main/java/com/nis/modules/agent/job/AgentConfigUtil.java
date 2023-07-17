@@ -1128,6 +1128,7 @@ public class AgentConfigUtil {
 		Map<String, String> sysConfiMap = sysConfigList.stream()
 				.collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
 		params.put("systemConfig", sysConfiMap);
+		params.put("currentAgent", currentAgent);
 
 		Map map = null;
 		String content = "";
