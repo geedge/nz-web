@@ -486,7 +486,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             Map<String, Object> globalConfigBody = new LinkedHashMap(4);
             globalConfigBody.put("config", gloablAgentYmlMap);
 
-            Map<String, String> sysCmdLineMap = configUtil.generatePrometheusCmdLine();
+            Map<String, String> sysCmdLineMap = configUtil.generatePrometheusCmdLine(agent);
             boolean cmdFlag = this.compareCmdLineChanges(agent, sysCmdLineMap);
             if (cmdFlag) {
                 log.debug("cmdline 配置下发" + JSONObject.toJSONString(agent));
@@ -584,7 +584,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             Map perdatacenterYmlMap = configUtil.generatePerdatacenterYml(agent, endpointListForThisAgent, assetListForThisAgent, globalPromServers);
             perDatacenterConfigBody.put("config", perdatacenterYmlMap);
 
-            Map<String, String> sysCmdLineMap = configUtil.generatePrometheusCmdLine();
+            Map<String, String> sysCmdLineMap = configUtil.generatePrometheusCmdLine(agent);
             // 启动项涉及
             boolean cmdFlag = this.compareCmdLineChanges(agent, sysCmdLineMap);
             if (cmdFlag) {

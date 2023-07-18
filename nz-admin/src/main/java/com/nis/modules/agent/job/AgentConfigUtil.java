@@ -383,20 +383,17 @@ public class AgentConfigUtil {
 	/**
 	 * Prometheus cmdline 模板生成
 	 *
+	 * @param currentAgent
 	 * @return
 	 */
-	public Map<String, String> generatePrometheusCmdLine() {
-		Map params = new HashMap(2);
-		// object storage 标识 1: 本地文件存储，2：S3对象存储
-		String objStroageEnable = sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_TYPE);
-		if (StrUtil.equals("1", objStroageEnable)) {
-			// 本地存储时，prometheus 保存天数为 sys_config key = metrics_storage_retention (d)
-			params.put("storageDays", sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_RETENTION));
-		} else {
-			// 对象存储时， cortex 配置 metrics 保存天数为 sys_config key = metrics_storage_retention (d)，prometheus 保存天数设置为 1 d
-			params.put("storageDays", sysConfigService.getValue(Constant.SYSCONFIG_KEY_PROMETHEUS_DEFAULT_RETENTION_TIME_WHEN_S3));
-		}
+	public Map<String, String> generatePrometheusCmdLine(Agent currentAgent) {
+		List<SysConfigEntity> sysConfigList = sysConfigService.list();
+		Map<String, String> sysConfiMap = sysConfigList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
 
+		Map params = Tool.MapUtil.builder()
+				.put("currentAgent", currentAgent)
+				.put("systemConfig", sysConfiMap)
+				.map();
 		String content = "";
 		try {
 			Template template = TemplateUtil.stringToTemplate(
@@ -709,6 +706,7 @@ public class AgentConfigUtil {
 		Map<String, String> sysConfiMap = sysConfigList.stream()
 				.collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
 		params.put("systemConfig", sysConfiMap);
+		params.put("currentAgent", agent);
 
 		Map map = null;
 		String content = "";
