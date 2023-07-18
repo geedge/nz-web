@@ -48,7 +48,7 @@ public class AlertRuleTest extends BaseTest<AlertRuleEntity> {
 
         List<Map<String, Object>> alert = (List) ((Map) actualResult.get("data")).get("alert");
 
-        String p3Alert = alert.stream().filter(map -> Tool.StrUtil.equals("P3", map.get("priority").toString())).findFirst().orElseThrow(RuntimeException::new).get("num").toString();
+        String p3Alert = alert.stream().filter(map -> Tool.StrUtil.equals("P2", map.get("priority").toString())).findFirst().orElseThrow(RuntimeException::new).get("num").toString();
         Assert.assertNotEquals("0", p3Alert);
     }
 

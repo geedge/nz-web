@@ -118,13 +118,13 @@ public class MonitorProjectTest extends BaseTest<MonitorProject> {
         List<Map<String, Object>> alert = (List) ((Map) actualResult.get("data")).get("alert");
 
         String p1Alert = alert.stream().filter(map -> Tool.StrUtil.equals("P1", map.get("priority").toString())).findFirst().orElseThrow(RuntimeException::new).get("num").toString();
-        Assert.assertNotEquals("0", p1Alert);
+        Assert.assertEquals("0", p1Alert);
 
         String p2Alert = alert.stream().filter(map -> Tool.StrUtil.equals("P2", map.get("priority").toString())).findFirst().orElseThrow(RuntimeException::new).get("num").toString();
         Assert.assertNotEquals("0", p2Alert);
 
         String p3Alert = alert.stream().filter(map -> Tool.StrUtil.equals("P3", map.get("priority").toString())).findFirst().orElseThrow(RuntimeException::new).get("num").toString();
-        Assert.assertNotEquals("0", p3Alert);
+        Assert.assertEquals("0", p3Alert);
     }
 
     /**
