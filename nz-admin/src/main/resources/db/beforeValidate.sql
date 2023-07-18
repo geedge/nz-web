@@ -5,6 +5,9 @@
  * 2023-07-13
  * 1. 删除 sys_timezone 表，清空 flyway_schema_history 中 ’R__AZ_sys_timezone.sql‘记录，避免验证失败
  *
+ * 2023-07-18
+ * 1. 删除 V2023.07.17__update integration dashboard template.sql 文件，清空 flyway_schema_history 的记录，避免验证失败
+ *
  */
 
 -- ----------------------------
@@ -31,5 +34,13 @@ FROM
 	flyway_schema_history
 WHERE
 	script = "R__AZ_sys_timezone.sql";
+
+DELETE
+FROM
+	flyway_schema_history
+WHERE
+	script = "V2023.07.17__update integration dashboard template.sql";
+
+
 
 
