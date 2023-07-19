@@ -16,3 +16,17 @@ VALUES (9, 0, '0', '0', 'TSG', '', '1', 1, 1, 0, 0, '', 0, '');
 
 UPDATE asset_model SET type_id = 9 WHERE name = "TSG-X";
 UPDATE asset_model SET type_id = 9 WHERE name = "TSG-9140";
+
+
+UPDATE asset_asset asset
+LEFT JOIN asset_model model ON asset.model_id = model.id
+SET asset.type_id = 9
+WHERE
+	model.name = "TSG-X";
+
+
+UPDATE asset_asset asset
+LEFT JOIN asset_model model ON asset.model_id = model.id
+SET asset.type_id = 9
+WHERE
+	model.name = "TSG-9140";
