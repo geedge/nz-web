@@ -208,6 +208,9 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 								.last("limit 1")
 						);
 						childrenDashboard.setStarred(CollUtil.isEmpty(tUserStatList) ? 0 : 1);
+						// chartNum
+						int chartNum = visualChartService.count(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getDashboardId, childrenDashboard.getId()));
+						childrenDashboard.setChartNum(chartNum);
 					}
 					visualDashboard.setChildren(childrenList);
 				}
