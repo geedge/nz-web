@@ -545,6 +545,7 @@ public class AgentConfigUtil {
 		labels.put("type", Constant.AgentType.getAgentType(agent.getType()).getName());
 		labels.put("application", "prometheus");
 		labels.put("agent_name",agent.getName());
+		labels.put("nz_agent_id",agent.getId());
 		promMetricsStaticConfig.put("labels", labels);
 		promMetricsStaticConfigList.add(promMetricsStaticConfig);
 		promMetricsMap.put("staticConfigList", promMetricsStaticConfigList);
@@ -567,6 +568,7 @@ public class AgentConfigUtil {
 		agentLabels.put("type", Constant.AgentType.getAgentType(agent.getType()).getName());
 		agentLabels.put("application", "nz-agent");
 		agentLabels.put("agent_name", agent.getName());
+		agentLabels.put("nz_agent_id",agent.getId());
 		agentMetricsStaticConfig.put("labels", agentLabels);
 
 		agentMetricsStaticConfigList.add(agentMetricsStaticConfig);
@@ -590,6 +592,7 @@ public class AgentConfigUtil {
 		snmpExporterLabels.put("type", Constant.AgentType.getAgentType(agent.getType()).getName());
 		snmpExporterLabels.put("application", "snmp-exporter");
 		snmpExporterLabels.put("agent_name",agent.getName());
+		snmpExporterLabels.put("nz_agent_id",agent.getId());
 		snmpExporterMetricsStaticConfig.put("labels", snmpExporterLabels);
 
 		snmpExporterMetricsStaticConfigList.add(snmpExporterMetricsStaticConfig);
@@ -613,6 +616,7 @@ public class AgentConfigUtil {
 		blackboxExporterLabels.put("type", Constant.AgentType.getAgentType(agent.getType()).getName());
 		blackboxExporterLabels.put("application", "blackbox-exporter");
 		blackboxExporterLabels.put("agent_name",agent.getName());
+		blackboxExporterLabels.put("nz_agent_id",agent.getId());
 		blackboxExporterMetricsStaticConfig.put("labels", blackboxExporterLabels);
 
 		blackboxExporterMetricsStaticConfigList.add(blackboxExporterMetricsStaticConfig);
