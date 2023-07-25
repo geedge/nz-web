@@ -24,6 +24,9 @@ import com.nis.modules.diagnose.chain.endpoint.logs.EndpointLogClientStatusCheck
 import com.nis.modules.diagnose.chain.endpoint.logs.TalonNetworkCheckInterceptor;
 import com.nis.modules.diagnose.chain.endpoint.logs.TalonStatusCheckInterceptor;
 import com.nis.modules.diagnose.chain.endpoint.metrics.*;
+import com.nis.modules.diagnose.chain.talon.TalonClientEnableCheckInterceptor;
+import com.nis.modules.diagnose.chain.talon.TalonComponentsCheckInterceptor;
+import com.nis.modules.diagnose.chain.talon.TalonConnectableCheckInterceptor;
 import com.nis.modules.diagnose.service.DiagnoseService;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.entity.MonitorEndpointConfig;
@@ -74,6 +77,9 @@ public class DiagnoseServiceImpl implements DiagnoseService {
                     .addInterceptor(new AssetNetworkCheckInterceptor())
                     .addInterceptor(new AgentStateCheckOfPingInterceptor())
                     .addInterceptor(new BlackboxConfigCheckInterceptor())
+                    .addInterceptor(new TalonClientEnableCheckInterceptor())
+                    .addInterceptor(new TalonConnectableCheckInterceptor())
+                    .addInterceptor(new TalonComponentsCheckInterceptor())
                     .build();
 
             // diagnose

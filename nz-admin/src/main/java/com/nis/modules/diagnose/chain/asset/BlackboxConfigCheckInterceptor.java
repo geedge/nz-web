@@ -60,6 +60,9 @@ public class BlackboxConfigCheckInterceptor implements DiagnoseInterceptor {
                 resultMap.put("state", DiagnoseState.DID_NOT_PASS.getValue());
                 // set resolution
                 resultMap.put("resolution", "diagnose.asset.resolution.blackbox");
+
+                // stopDiagnose
+                chain.stopDiagnose();
             }
 
             // update check msg
@@ -75,6 +78,8 @@ public class BlackboxConfigCheckInterceptor implements DiagnoseInterceptor {
             // update check msg
             DiagnoseClient.addDiagnoseMsg(resultMap);
         }
+
+        chain.proceed(chain.object());
     }
 
     /**
