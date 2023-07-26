@@ -41,7 +41,6 @@ public class VisualChartController {
     @SysLog(operation = OperationEnum.ADD,type = TypeEnum.VISUALCHART)
     @RequiresPermissions({"visual:chart:save"})
     public R chartSave(@RequestBody VisualChart chart){
-    	visualChartService.validateChart(chart);
     	Integer id = visualChartService.saveChart(chart);
     	return R.ok().putData("id", id);
     }
@@ -62,7 +61,7 @@ public class VisualChartController {
     public R chartDelete(@RequestParam Integer[] ids, Integer sync){
         ValidateUtils.is(ids).notNull(RCode.CHART_ID_ISNULL);
 
-        visualChartService.delCharts(ids, sync);
+        visualChartService.delCharts(Tool.ListUtil.list(true, ids), sync);
         return R.ok();
     }
 

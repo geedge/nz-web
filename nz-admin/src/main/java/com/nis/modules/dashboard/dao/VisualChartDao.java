@@ -27,7 +27,4 @@ public interface VisualChartDao extends BaseMapper<VisualChart> {
     // 查询model和module实例化的图表数据信息
     List<VisualChart> selectInstanceChart(@Param("type")Integer type,@Param("id")Integer id);
 
-    void insertBatchChart(@Param("list") List<VisualChart> oldChartListByDashboardId);
-
-    List<VisualChart> queryChartsIncludeElementInfo(@Param("dashboardId") Integer dashboardId);
 }

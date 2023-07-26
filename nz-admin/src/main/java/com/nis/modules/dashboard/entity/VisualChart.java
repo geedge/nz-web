@@ -1,7 +1,9 @@
 package com.nis.modules.dashboard.entity;
 
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.nis.common.utils.Tool;
 import com.nis.modules.asset.entity.AssetAsset;
 import lombok.Data;
 
@@ -51,9 +53,6 @@ public class VisualChart implements Serializable {
 
 	private Double y;
 
-	@TableField(exist = false)
-    private List<VisualChartElement> elements;
-
     /**
      * 同步标识
      */
@@ -83,4 +82,26 @@ public class VisualChart implements Serializable {
     private String varName;
     
     private String datasource;
+
+    private String elementArr;
+
+    @TableField(exist = false)
+    private List<VisualChartElement> elements;
+
+    public void setName(String name) {
+        this.name = Tool.StrUtil.trim(name);
+    }
+
+    public String getElementArr() {
+        return Tool.StrUtil.emptyToDefault(elementArr, "[]");
+    }
+
+    public List<VisualChartElement> getElements() {
+        if (Tool.ObjectUtil.isNull(this.elements)) {
+            List<VisualChartElement> visualChartElements = JSONUtil.toList(this.getElementArr(), VisualChartElement.class);
+            return visualChartElements;
+        }
+        return this.elements;
+    }
+
 }

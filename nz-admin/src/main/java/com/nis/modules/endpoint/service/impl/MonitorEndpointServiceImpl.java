@@ -837,10 +837,20 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         // 删除 alert
         alertMessageService.removeByEndpointIds(ids);
 
-        // 删除关联的 dashboard chart  chartElement信息
-        List<VisualDashboard> dashboards = dashboardService.list(new LambdaQueryWrapper<VisualDashboard>().eq(VisualDashboard::getType, DashboardConstant.Type.ENDPOINT.getValue()).in(VisualDashboard::getLink, ids));
-        if (CollectionUtils.isNotEmpty(dashboards)) {
-            Set<Integer> dashboardIds = dashboards.stream().map(VisualDashboard::getId).collect(Collectors.toSet());
+        // dashboard chart
+        List<VisualDashboard> endpointInfoDashboardList = dashboardService.list(new LambdaQueryWrapper<VisualDashboard>()
+                .eq(VisualDashboard::getType, DashboardConstant.Type.ENDPOINT.getValue())
+                .in(VisualDashboard::getLink, ids));
+
+        // referenced dashboard
+        List<VisualDashboard> endpointRefDashboardList = dashboardService.list(new LambdaUpdateWrapper<VisualDashboard>()
+                .eq(VisualDashboard::getType, DashboardConstant.Type.DASHBOARD.getValue())
+                .eq(VisualDashboard::getVarType, DashboardConstant.VariableType.ENDPOINT.getValue())
+                .in(VisualDashboard::getLink, ids));
+
+        if (Tool.CollUtil.isNotEmpty(endpointInfoDashboardList) || Tool.CollUtil.isNotEmpty(endpointRefDashboardList)) {
+            endpointInfoDashboardList.addAll(endpointRefDashboardList);
+            Set<Integer> dashboardIds = endpointInfoDashboardList.stream().map(VisualDashboard::getId).collect(Collectors.toSet());
             dashboardService.delDashboardsAndChartInfoByDashboardIds(dashboardIds);
         }
 

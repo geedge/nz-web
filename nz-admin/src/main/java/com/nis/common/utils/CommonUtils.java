@@ -1,14 +1,11 @@
 package com.nis.common.utils;
 
-import cn.hutool.core.io.resource.Resource;
 import cn.hutool.core.net.NetUtil;
-import org.apache.commons.collections.CollectionUtils;
 
 import java.io.File;
 import java.net.URL;
 import java.util.*;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * 
@@ -344,34 +341,6 @@ public class CommonUtils {
     }
 
     /**
-     * 处理导入错误信息
-     * @param failDetails
-     * @return
-     */
-    public static List<Map> handleImportFailDetails(List<Map> failDetails) {
-        if (CollectionUtils.isEmpty(failDetails)) return Collections.emptyList();
-        Map<Object, List<Map>> listMap = failDetails.stream().collect(Collectors.groupingBy(map -> map.get("lineNo")));
-
-        List<Map> resultData = new ArrayList<>(listMap.size());
-        List<Map> tempList;
-        Map tempMap;
-        String msg, lineFailInfos;
-        for (Map.Entry<Object, List<Map>> entry : listMap.entrySet()) {
-            tempList = entry.getValue();
-            lineFailInfos = "";
-            for (Map map : tempList) {
-                msg = (String) map.get("errorMsg");
-                lineFailInfos += msg + (msg.endsWith(".") ? " " : ". ");
-            }
-            tempMap = new HashMap(4);
-            tempMap.put("lineNo", entry.getKey());
-            tempMap.put("errorMsg", lineFailInfos);
-            resultData.add(tempMap);
-        }
-        return resultData;
-    }
-
-    /**
      * 检查 id 集合 是否一致
      * @param list
      * @param list1
@@ -433,40 +402,6 @@ public class CommonUtils {
 	    return flag;
     }
 
-    /**
-     * 校验url
-     *
-     * @param url
-     * @return
-     */
-    public static boolean checkUrl(String url) {
-        Pattern compile = Pattern.compile("("
-                + "("
-                + "(?:" + PROTOCOL + "(?:" + USER_INFO + ")?" + ")?"
-                + "(?:" + DOMAIN_NAME_STR + ")"
-                + "(?:" + PORT_NUMBER + ")?"
-                + ")"
-                + "(" + PATH_AND_QUERY + ")?"
-                + WORD_BOUNDARY
-                + ")");
-        return compile.matcher(url).matches();
-    }
-
-    public static boolean checkUrlInModel(String url) {
-        Pattern compile = Pattern.compile("("
-                + "("
-                + "(?:" + PROTOCOL + "(?:" + USER_INFO + ")?" + ")?"
-                + "(?:" + DOMAIN_NAME_IN_MODEL + ")"
-                + "(?:" + PORT_NUMBER + ")?"
-                + ")"
-                + "(" + PATH_AND_QUERY + ")?"
-                + WORD_BOUNDARY
-                + ")");
-        return compile.matcher(url).matches();
-    }
-
-    private static  final String DOMAIN_NAME_IN_MODEL = "(" + "[a-zA-Z0-9.]*" + ")";
-
     private static final String IP_ADDRESS_STRING =
             "((25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9])\\.(25[0-5]|2[0-4]"
                     + "[0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]"
@@ -500,21 +435,6 @@ public class CommonUtils {
 
     private static final String DOMAIN_NAME_STR = "(" + HOST_NAME + "|" + IP_ADDRESS_STRING + ")";
 
-    private static final String PROTOCOL = "(?i:http|https|rtsp|ftp)://";
-
-    /* A word boundary or end of input.  This is to stop foo.sure from matching as foo.su */
-    private static final String WORD_BOUNDARY = "(?:\\b|$|^)";
-
-    private static final String USER_INFO = "(?:[a-zA-Z0-9\\$\\-\\_\\.\\+\\!\\*\\'\\(\\)"
-            + "\\,\\;\\?\\&\\=]|(?:\\%[a-fA-F0-9]{2})){1,64}(?:\\:(?:[a-zA-Z0-9\\$\\-\\_"
-            + "\\.\\+\\!\\*\\'\\(\\)\\,\\;\\?\\&\\=]|(?:\\%[a-fA-F0-9]{2})){1,25})?\\@";
-
-    private static final String PORT_NUMBER = "\\:\\d{1,5}";
-
-    private static final String PATH_AND_QUERY = "[/\\?](?:(?:[" + LABEL_CHAR
-            + ";/\\?:@&=#~"  // plus optional query params
-            + "\\-\\.\\+!\\*'\\(\\),_\\$])|(?:%[a-fA-F0-9]{2}))*";
-    
     public static boolean checkPinCorrect(String pin,int code) {
     	if(ToolUtil.isEmpty(pin)) {
     		return false;

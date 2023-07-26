@@ -22,7 +22,6 @@ import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.dashboard.entity.VisualChart;
 import com.nis.modules.dashboard.entity.VisualChartElement;
 import com.nis.modules.dashboard.entity.VisualDashboard;
-import com.nis.modules.dashboard.service.VisualChartElementService;
 import com.nis.modules.dashboard.service.VisualChartService;
 import com.nis.modules.dashboard.service.VisualDashboardService;
 import com.nis.modules.dashboard.service.VisualService;
@@ -94,9 +93,6 @@ public class VisualServiceImpl implements VisualService {
 
     @Autowired
     private VisualChartService visualChartService;
-
-    @Autowired
-    private VisualChartElementService visualChartElementService;
 
     @Autowired
     private AssetAssetService assetAssetService;
@@ -390,12 +386,11 @@ public class VisualServiceImpl implements VisualService {
                     List<VisualChartElement> elements = chart.getElements();
                     elements = Tool.CollUtil.defaultIfEmpty(elements, Tool.ListUtil.list(true));
                     for (VisualChartElement element : elements) {
-                        // temp chart id
-                        element.setChartId(tempChartId);
                         String expression = element.getExpression();
                         expression = expression.replaceAll(StrUtil.concat(true, "\\$", repeatVariable), varValue);
                         element.setExpression(expression);
                     }
+                    chart.setElements(elements);
                 }
                 copyGroupChartList.add(tempGroupChart);
             }
@@ -456,6 +451,7 @@ public class VisualServiceImpl implements VisualService {
                 }
                 element.setExpression(expression);
             }
+            chart.setElements(elements);
         }
         log.info("[renderSingleChartVariables] [finshed]");
         return allChartList;
@@ -691,7 +687,7 @@ public class VisualServiceImpl implements VisualService {
 
             Integer syncDashboardId = syncDashboard.getId();
 
-            // remove chart. no remove buildin assetInfo endpointInfo chart
+            // remove chart. no remove buildin chart
             List<VisualChart> removeChartList = visualChartService.list(new LambdaUpdateWrapper<VisualChart>()
                     .eq(VisualChart::getDashboardId, syncDashboardId)
                     .eq(VisualChart::getBuildIn, 0));
@@ -701,7 +697,6 @@ public class VisualServiceImpl implements VisualService {
             List<Integer> removeChartIdList = removeChartList.stream().map(VisualChart::getId).collect(Collectors.toList());
             if (Tool.CollUtil.isNotEmpty(removeChartIdList)) {
                 visualChartService.removeByIds(removeChartIdList);
-                visualChartElementService.remove(new LambdaQueryWrapper<VisualChartElement>().in(VisualChartElement::getChartId, removeChartIdList));
             }
 
             // update dashboard param & tmplid
@@ -715,8 +710,7 @@ public class VisualServiceImpl implements VisualService {
             // update Report Config In Redis
             dashboardService.updateReportConfigInRedis(syncDashboard, updateDashboardObject);
 
-            // insert chart & chart element
-            List<VisualChartElement> saveChartElementList = Tool.ListUtil.list(true);
+            // insert chart
             Map<Integer, Integer> groupIdMapping = new HashMap<>();
             for (VisualChart tempChart : templateDashboardCharts) {
                 VisualChart saveChart = JSONUtil.toBean(JSONUtil.toJsonStr(tempChart), VisualChart.class);
@@ -734,26 +728,22 @@ public class VisualServiceImpl implements VisualService {
                 saveChart.setName(Tool.NzExpressionUtil.renderExpression(saveChart.getName(), linkObject));
                 saveChart.setParam(ToolUtil.isNotEmpty(saveChart.getParam()) ? Tool.NzExpressionUtil.renderExpression(saveChart.getParam().toString(), linkObject) : null);
 
-                // save
-                visualChartService.save(saveChart);
+                // element_arr
                 if (Tool.CollUtil.isNotEmpty(saveChart.getElements())) {
                     for (VisualChartElement element : saveChart.getElements()) {
-                        element.setId(null);
                         element.setExpression(Tool.NzExpressionUtil.renderExpression(element.getExpression(), linkObject));
-                        element.setChartId(saveChart.getId());
                     }
-                    saveChartElementList.addAll(saveChart.getElements());
+                    saveChart.setElementArr(JSONUtil.toJsonStr(saveChart.getElements()));
                 }
+
+                // save
+                visualChartService.save(saveChart);
 
                 // record group id mapping
                 if (StrUtil.equalsIgnoreCase(Constant.CHART_GROUP_TYPE, saveChart.getType())) {
                     groupIdMapping.put(tempChart.getId(), saveChart.getId());
                 }
             }
-
-            // save element
-            if (Tool.CollUtil.isNotEmpty(saveChartElementList))
-                visualChartElementService.saveBatch(saveChartElementList);
         }
     }
 

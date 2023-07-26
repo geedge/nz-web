@@ -100,9 +100,6 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 	private VisualChartService visualChartService;
 
 	@Autowired
-	private VisualChartElementService chartElementService;
-
-	@Autowired
 	private VisualPlaylistService playlistService;
 
 	@Autowired
@@ -229,12 +226,11 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 	@Transactional(rollbackFor = Exception.class)
 	public void delDashboardsAndChartInfoByDashboardIds(Set<Integer> dashboardIds) {
 		if (CollectionUtils.isNotEmpty(dashboardIds)) {
-			// 删除 dashboard
+			// dashboard
 			this.removeByIds(dashboardIds);
 
-			// 删除 chart info
-			Integer[] removeDashboardIds = dashboardIds.stream().toArray(n -> new Integer[n]);
-			visualChartService.delVisualChartsByDashboardId(removeDashboardIds);
+			// chart
+			visualChartService.remove(new LambdaUpdateWrapper<VisualChart>().in(VisualChart::getDashboardId, dashboardIds));
 		}
 	}
 
@@ -266,9 +262,8 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 		starredService.remove(new LambdaQueryWrapper<SysUserStarredEntity>().eq(SysUserStarredEntity::getType, "dashboard")
 				.in(SysUserStarredEntity::getTid, allDashboardIds));
 
-		// 3. 删除关联的 chart chartElement
-		Integer[] removeDashboardIds = allDashboardIds.stream().toArray(n -> new Integer[n]);
-		visualChartService.delVisualChartsByDashboardId(removeDashboardIds);
+		// 3. 删除关联的 chart
+		visualChartService.remove(new LambdaUpdateWrapper<VisualChart>().in(VisualChart::getDashboardId, allDashboardIds));
 
 		// 4. template dashboard
 		// dashboard & asset model & monitor module
@@ -786,16 +781,6 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 						chart.setGroupId(chartsGroupMap.get(chart.getGroupId()));
 					visualChartService.save(chart);
 				}
-				// 查询当前chart下的chartElement
-				List<VisualChartElement> elementList = chartElementService.list(
-						new QueryWrapper<VisualChartElement>().lambda().eq(VisualChartElement::getChartId, chartId));
-				if (!CollectionUtils.isEmpty(elementList)) {
-					for (VisualChartElement element : elementList) {
-						element.setId(null);
-						element.setChartId(chart.getId());
-					}
-					chartElementService.saveOrUpdateElements(chart.getId(), elementList);
-				}
 			}
 		}
 	}
@@ -908,8 +893,8 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 		VisualDashboard dashboard = this.getById(dashboardId);
 		ValidateUtils.is(dashboard).notNull(RCode.DASHBOARD_NOT_EXIST);
 
-		// charts & chart element
-		List<VisualChart> chartList = visualChartService.queryChartsIncludeElementInfo(dashboardId);
+		// chart list
+		List<VisualChart> chartList = visualChartService.list(new LambdaUpdateWrapper<VisualChart>().eq(VisualChart::getDashboardId, dashboardId));
 		dashboard.setCharts(chartList);
 		return dashboard;
 	}
@@ -1011,22 +996,10 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 	@Override
 	@Transactional(rollbackFor = Exception.class)
 	public void cancelImport(String seq) {
-		List<VisualDashboard> dashboardList = this.list(new QueryWrapper<VisualDashboard>().lambda().eq(VisualDashboard::getType,
-				DashboardConstant.Type.DASHBOARD.getValue()));
-		List<Integer> delDashboardIds = dashboardList.stream().filter(dashboard -> seq.equals(dashboard.getSeq()))
-				.map(VisualDashboard::getId).collect(Collectors.toList());
-		if (CollectionUtils.isNotEmpty(delDashboardIds)) {
-			// 删除 dashboard
-			this.remove(new QueryWrapper<VisualDashboard>().lambda().eq(VisualDashboard::getSeq, seq));
-		}
-
-		List<VisualChart> delCharts = visualChartService
-				.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getSeq, seq));
-		if (CollectionUtils.isNotEmpty(delCharts)) {
-			// 删除 charts
-			visualChartService.remove(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getSeq, seq));
-		}
-		chartElementService.remove(new QueryWrapper<VisualChartElement>().lambda().eq(VisualChartElement::getSeq, seq));
+		// remove dashboard
+		this.remove(new LambdaUpdateWrapper<VisualDashboard>().eq(VisualDashboard::getSeq, seq));
+		// remove chart
+		visualChartService.remove(new LambdaUpdateWrapper<VisualChart>().eq(VisualChart::getSeq, seq));
 	}
 
 	@Override
@@ -1467,13 +1440,6 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 				}
 			}
 			String param = ToolUtil.toStr(chartMap.get(ChartsImportEnum.PARAM.getName()));
-			if (typeFlag) {
-				String msg = this.validateChartParamForImport(type, param, dashboardType);
-				if (StrUtil.isNotEmpty(msg)) {
-					validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_SUPPORT.setParam(validaName + chartHeaderInfos.get(ChartsImportEnum.PARAM.getIndex())));
-					log.error("Dashboard chart " + validaName + " param import error: " + msg);
-				}
-			}
 			String remark = ToolUtil.toStr(chartMap.get(ChartsImportEnum.REMARK.getName()));
 			String x = ToolUtil.toStr(chartMap.get(ChartsImportEnum.X.getName()));
 			if (StringUtils.isEmpty(x)) {
@@ -1529,7 +1495,7 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 					log.error("Dashboard chart " + validaName + " elements import error: " + msg);
 				} else {
 					List<VisualChartElement> elementsList = JSONArray.parseArray(elements, VisualChartElement.class);
-					visualChart.setElements(elementsList);
+					visualChart.setElementArr(JSONUtil.toJsonStr(elementsList));
 				}
 			}
 			visualChart.setName(name);
@@ -1568,91 +1534,6 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 				}
 				if (ToolUtil.isEmpty(element.getName())) {
 					return RCode.CHARTELEMENT_NAME_ISNULL.getMsg();
-				}
-			}
-		}
-		return "";
-	}
-
-	private String validateChartParamForImport(String type, String param, String dashboardType) {
-		switch (type) {
-			// url
-			case Constant.CHART_URL_TYPE: {
-				if (StringUtils.isEmpty(param)) {
-					return RCode.CHART_URLPARAM_ISNULL.getMsg();
-				}
-				Map map = null;
-				try {
-					map = JSONObject.parseObject(param, Map.class);
-				} catch (JSONException e) {
-					return RCode.CHART_PARAM_FORMAT.getMsg();
-				}
-				Object url = map.get(Constant.CHART_URL_TYPE);
-				if (ToolUtil.isEmpty(url)) {
-					return RCode.CHART_URLPARAM_ISNULL.getMsg();
-				}
-
-				if (StrUtil.equals(DashboardConstant.Type.TEMPLATE.getValue(), dashboardType)) {
-					// 替换全部变量 替换为 a（任意字符） 不影响原来的数据格式 然后进行校验
-					String urlStr = url.toString();
-					urlStr = urlStr.replaceAll("\\{\\{asset\\..*?\\}\\}", "a");
-
-					boolean b = CommonUtils.checkUrlInModel(urlStr);
-					boolean b1 = CommonUtils.checkUrl(urlStr);
-
-					if (!b && !b1) {
-						return RCode.CHART_PARAMURL_FORMAT.getMsg();
-					}
-				} else {
-					if (!CommonUtils.checkUrl(url.toString())) {
-						return RCode.CHART_PARAMURL_FORMAT.getMsg();
-					}
-				}
-				break;
-			}
-			// singleStat
-			case Constant.CHART_SINGLESTAT_TYPE: {
-				if (StringUtils.isEmpty(param)) {
-					return RCode.CHART_SINGLESTATPARAM_ISNULL.getMsg();
-				}
-				Map map = null;
-				try {
-					map = JSONObject.parseObject(param, Map.class);
-				} catch (JSONException e) {
-					return RCode.CHART_PARAM_FORMAT.getMsg();
-				}
-				Object statistics = map.get(Constant.CHART_SINGLESTAT_PARAMkEY);
-				if (ToolUtil.isEmpty(statistics)) {
-					return RCode.CHART_PARAMSINGLESTAT_ISNULL.getMsg();
-				}
-				if (!Constant.CHART_SINGLESTAT_STATISTICS.contains(statistics.toString())) {
-					return RCode.CHART_PARAMSINGLESTAT_INVALIDE.getMsg();
-				}
-				break;
-			}
-			case Constant.CHART_TEXT_TYPE: {
-				if (StringUtils.isEmpty(param)) {
-					return RCode.CHART_TEXTPARAM_ISNULL.getMsg();
-				}
-				Map map = null;
-				try {
-					map = JSONObject.parseObject(param, Map.class);
-				} catch (JSONException e) {
-					return RCode.CHART_PARAM_FORMAT.getMsg();
-				}
-				Object text = map.get(Constant.CHART_TEXT_TYPE);
-				if (ToolUtil.isEmpty(text)) {
-					return RCode.CHART_TEXTPARAM_ISNULL.getMsg();
-				}
-				break;
-			}
-			default: {
-				if (StringUtils.isNotEmpty(param)) {
-					try {
-						JSONObject.parseObject(param, Map.class);
-					} catch (JSONException e) {
-						return RCode.CHART_PARAM_FORMAT.getMsg();
-					}
 				}
 			}
 		}
@@ -1733,16 +1614,6 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 			}
 			if(chart.getId() == null){
 				visualChartService.save(chart);
-			}
-
-			List<VisualChartElement> chartElements = chart.getElements();
-			if (CollectionUtils.isNotEmpty(chartElements)) {
-				chartElements.forEach(chartElement -> {
-					chartElement.setChartId(chart.getId());
-					chartElement.setSeq(seq);
-					chartElement.setType(Constant.CHART_ELEMENT_EXPERT_TYPE);
-				});
-				chartElementService.saveBatch(chartElements);
 			}
 			if(isGroup){
 				this.importSaveCharts(chart.getChildren(), chart.getId(), dashboardId, seq);

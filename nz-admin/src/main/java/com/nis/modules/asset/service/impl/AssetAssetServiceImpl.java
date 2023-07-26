@@ -41,7 +41,6 @@ import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
-import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.entity.SnmpCredential;
 import com.nis.modules.sys.entity.SysUserEntity;
@@ -127,9 +126,6 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
     @Autowired
     private AlertMessageService alertMessageService;
-
-    @Autowired
-    private StatService statService;
 
     @Autowired
     private SnmpCredentialService snmpCredentialService;
@@ -1099,12 +1095,19 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             monitorEndpointService.deleteEndpointByIds(endpointIds);
         }
 
-        // dashboard chart chartElement
-        List<VisualDashboard> dashboardList = dashboardService.list(new LambdaQueryWrapper<VisualDashboard>()
+        // dashboard chart
+        List<VisualDashboard> assetInfoDashboardList = dashboardService.list(new LambdaQueryWrapper<VisualDashboard>()
                 .eq(VisualDashboard::getType, DashboardConstant.Type.ASSET.getValue())
                 .in(VisualDashboard::getLink, removeAssetIdList));
-        if (Tool.CollUtil.isNotEmpty(dashboardList)) {
-            Set<Integer> dashboardIds = dashboardList.stream().map(VisualDashboard::getId).collect(Collectors.toSet());
+
+        // referenced dashboard
+        List<VisualDashboard> assetRefDashboardList = dashboardService.list(new LambdaUpdateWrapper<VisualDashboard>()
+                .eq(VisualDashboard::getType, DashboardConstant.Type.DASHBOARD.getValue())
+                .eq(VisualDashboard::getVarType, DashboardConstant.VariableType.ASSET.getValue())
+                .in(VisualDashboard::getLink, removeAssetIdList));
+        if (Tool.CollUtil.isNotEmpty(assetInfoDashboardList) || Tool.CollUtil.isNotEmpty(assetRefDashboardList)) {
+            assetInfoDashboardList.addAll(assetRefDashboardList);
+            Set<Integer> dashboardIds = assetInfoDashboardList.stream().map(VisualDashboard::getId).collect(Collectors.toSet());
             dashboardService.delDashboardsAndChartInfoByDashboardIds(dashboardIds);
         }
 

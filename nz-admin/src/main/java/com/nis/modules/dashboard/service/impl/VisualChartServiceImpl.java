@@ -1,33 +1,29 @@
 package com.nis.modules.dashboard.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.common.utils.Constant.ChartDatasourceType;
-import com.nis.modules.asset.entity.AssetModel;
 import com.nis.modules.asset.service.AssetAssetService;
-import com.nis.modules.asset.service.AssetModelService;
 import com.nis.modules.dashboard.dao.VisualChartDao;
 import com.nis.modules.dashboard.entity.VisualChart;
 import com.nis.modules.dashboard.entity.VisualChartElement;
 import com.nis.modules.dashboard.entity.VisualDashboard;
-import com.nis.modules.dashboard.service.VisualChartElementService;
 import com.nis.modules.dashboard.service.VisualChartService;
 import com.nis.modules.dashboard.service.VisualDashboardService;
 import com.nis.modules.dashboard.utils.DashboardConstant;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
-import com.nis.modules.module.entity.MonitorModule;
-import com.nis.modules.module.service.MonitorModuleService;
+import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
@@ -36,7 +32,6 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.ObjectUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -56,16 +51,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	private VisualDashboardService dashboardService;
 
 	@Autowired
-	private VisualChartElementService chartElementService;
-
-	@Autowired
 	private AssetAssetService assetService;
-
-	@Autowired
-	private AssetModelService assetModelService;
-
-	@Autowired
-	private MonitorModuleService monitorModuleService;
 
 	@Autowired
 	private MonitorEndpointService endpointService;
@@ -85,55 +71,40 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		IPage page = new Query(VisualChart.class).getPage(params);
 		// 查询出chart信息
 		List<VisualChart> result = this.baseMapper.queryPage(page,params);
-		//查询elements
-        List<Integer> chartIds = result.stream().map(VisualChart::getId).collect(Collectors.toList());
-        List<VisualChartElement> chartElements = chartElementService.list(new QueryWrapper<VisualChartElement>().lambda().in(VisualChartElement::getChartId, chartIds));
-		Map<Integer, List<VisualChartElement>> chartIdAndElement = chartElements.stream().collect(Collectors.groupingBy(VisualChartElement::getChartId));
-        
-		String param;
         for (VisualChart chart : result) {
             // param 格式处理
-            param = (String) chart.getParam();
+	        String param = (String) chart.getParam();
             if (StringUtils.isNotEmpty(param)) {
                 chart.setParam(JSONObject.parseObject(param, Map.class));
             }
-            chart.setElements(chartIdAndElement.get(chart.getId()));
         }
-        
-        String returnChildren = (String) params.get("returnChildren");
-        if(ToolUtil.isEmpty(returnChildren)) {
-        	returnChildren = "1" ;
-        }
-        if(StrUtil.equals(returnChildren, "1")) {
+
+		String returnChildren = (String) params.get("returnChildren");
+		if (StrUtil.equals(StrUtil.emptyToDefault(returnChildren, "1"), "1")) {
         	List<Integer> fatherIds = result.stream().filter(chart->chart.getGroupId()==0).map(VisualChart::getId).collect(Collectors.toList());
         	if(ToolUtil.isNotEmpty(fatherIds)) {
-        		Map<String, Object> queryChildren =new HashMap<String,Object>();
+		        Map<String, Object> queryChildren = new HashMap();
     	        queryChildren.put(Constant.LIMIT, "-1");
             	IPage childrenpage = new Query(VisualChart.class).getPage(queryChildren);
             	queryChildren.put("groupIds", fatherIds);
             	List<VisualChart> childrens = this.baseMapper.queryPage(childrenpage,queryChildren);
-            	// 查询chart相关的element
             	if(ToolUtil.isNotEmpty(childrens)) {
-            		List<Integer> childIds = childrens.stream().map(VisualChart::getId).collect(Collectors.toList());
-            		List<VisualChartElement> childElements = chartElementService.list(new QueryWrapper<VisualChartElement>().lambda().in(VisualChartElement::getChartId, childIds));
-            		Map<Integer, List<VisualChartElement>> childIdAndElement = childElements.stream().collect(Collectors.groupingBy(VisualChartElement::getChartId));
             		for (VisualChart chart : childrens) {
                         // param 格式处理
-                        param = (String) chart.getParam();
+			            String param = (String) chart.getParam();
                         if (StringUtils.isNotEmpty(param)) {
                             chart.setParam(JSONObject.parseObject(param, Map.class));
                         }
-                        chart.setElements(childIdAndElement.get(chart.getId()));
                     }
                 	result.addAll(childrens);
                 	result = this.getChartTreeList(result,0);
             	}
-        	}        	
+        	}
         }
         page.setRecords(result);
 		return new PageUtils(page);
 	}
-	
+
 	/**
      * 递归获取树结构
      *
@@ -157,324 +128,147 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	
 	@Override
 	public VisualChart queryInfo(Integer id) {
-		
 		return this.baseMapper.queryInfo(id);
 	}
-	    
+
 	/**
-	 * 校验 chart 信息
-	 * 1. dashboard 是否存在
-	 * 2. tyep 有效性校验
-	 * 3. param 校验
+	 * validate Chart
 	 *
 	 * @param chart
 	 */
-	@Override
-	public void validateChart(VisualChart chart) {
-		
-		Integer dashboardId = chart.getDashboardId();
-		ValidateUtils.is(dashboardId).notNull(RCode.DASHBOARD_ID_ISNULL);
-	    // 1. dashboard 是否存在
-	    this.validateDashboard(dashboardId);
-	
-	    // 校验vartype
-	    if(dashboardId==0) {
-	    	ValidateUtils.is(chart.getVarType()).notNull(RCode.CHART_VARTYPE_ISNULL);
-	    }
-	    
-	    String type = chart.getType();
-	    ValidateUtils.is(chart.getName()).notNull(RCode.CHART_TITLE_ISNULL).maxLength(64)
-	            .and(chart.getSpan()).notNull(RCode.CHART_SPAN_ISNULL)
-	            .and(chart.getHeight()).notNull(RCode.CHART_HEIGHT_ISNULL)
-	            .and(type).notNull(RCode.CHART_TYPE_ISNULL)
-	            .and(chart.getRemark()).maxLength(256);
-	
-	    // 2. 验证type是否在枚举范围内
-	    sysDictService.checkSysDicValue(Constant.DICT_CHART_TYPE, type, RCode.CHART_TYPE_INVALIDE);
-	
-	    // 3. 根据 type 校验 各项参数
-	    Map param = (Map) chart.getParam();
-	    List<VisualChartElement> elements = chart.getElements();
-	    switch (type) {
-	        // url类型
-	        case Constant.CHART_URL_TYPE: {
-	            ValidateUtils.is(param).notNull(RCode.CHART_URLPARAM_ISNULL);
-	            Object url = param.get(Constant.CHART_URL_TYPE);
-	            if (ToolUtil.isEmpty(url)) {
-	                throw new NZException(RCode.CHART_URLPARAM_ISNULL);
-	            }
-	
-	            String urlStr = url.toString();
-	            // 如果是model dashboard添加charts url类型支持{{}}替换
-	            VisualDashboard dashboard = dashboardService.getById(dashboardId);
-	            if(ObjectUtil.isNotEmpty(dashboard) && StrUtil.equals(DashboardConstant.Type.TEMPLATE.getValue(),dashboard.getType())) {
-	                // 替换全部变量 替换为 a（任意字符） 不影响原来的数据格式 然后进行校验
-	                urlStr = urlStr.replaceAll("\\{\\{asset\\..*?\\}\\}", "a");
-	
-	                boolean b = CommonUtils.checkUrlInModel(urlStr);
-	                boolean b1 = CommonUtils.checkUrl(urlStr);
-	
-	                if (!b && !b1) {
-	                    throw new NZException(RCode.CHART_PARAMURL_FORMAT);
-	                }
-	            } else {
-	                if (!CommonUtils.checkUrl(urlStr)) {
-	                    throw new NZException(RCode.CHART_PARAMURL_FORMAT);
-	                }
-	            }
-	            break;
-	        }
-	        // stat 类型
-	        case Constant.CHART_SINGLESTAT_TYPE: {
-	            ValidateUtils.is(param).notNull(RCode.CHART_SINGLESTATPARAM_ISNULL);
-	
-	            Object statistics = param.get(Constant.CHART_SINGLESTAT_PARAMkEY);
-	            if (ToolUtil.isEmpty(statistics)) {
-	                throw new NZException(RCode.CHART_PARAMSINGLESTAT_ISNULL);
-	            }
-	            if (!Constant.CHART_SINGLESTAT_STATISTICS.contains(statistics.toString())) {
-	                throw new NZException(RCode.CHART_PARAMSINGLESTAT_INVALIDE);
-	            }
-	            break;
-	        }
-	        // group 类型不需要校验 elements
-	        case Constant.CHART_GROUP_TYPE:{
-	            chart.setElements(null);
-	            break;
-	        }
-	        case Constant.CHART_TEXT_TYPE: {
-	            ValidateUtils.is(param).notNull(RCode.CHART_TEXTPARAM_ISNULL);
-	            Object text = param.get(Constant.CHART_TEXT_TYPE);
-	            if (ToolUtil.isEmpty(text)) throw new NZException(RCode.CHART_TEXTPARAM_ISNULL);
-	            break;
-	        }
-	    }
-	
-	    
-	    // 4. 校验 unit 是否合法
-	    Integer unit = chart.getUnit();
-	    if (unit != null) {
-	        List<Integer> unitList = new ArrayList(Constant.ALERT_RULE_UNIT_MAP.values());
-	        if (unit < Collections.min(unitList) || unit > Collections.max(unitList)) {
-	            throw new NZException(RCode.CHART_UNIT_NOTFOUND);
-	        }
-	    }
-	    
-	    // 5. 校验 groupId 是否有值
-	    Integer groupId = chart.getGroupId();
-	    if(ObjectUtils.isEmpty(groupId)) {
-	    	throw new NZException(RCode.CHART_GROUPID_ISNULL);
-	    }
-	    
-	    // 6. 当前操作人信息赋值
-	    Long userId = ShiroUtils.getUserId();
-	    chart.setUpdateBy(userId.intValue());
-	    
-	    // 7. 校验datasource是否为空 
-	    if(StrUtil.isBlank(chart.getDatasource())) {
-	    	throw new NZException(RCode.CHART_DATASOURCE_ISNULL);
-	    }else {
-	    	//  校验是否为内置类型
-	    	sysDictService.checkSysDicValue(Constant.DICT_CHART_DATASOURCE, chart.getDatasource(), RCode.CHART_DATASOURCE_INVALIDE);
-	    }
-	    
-	    // 8. 校验element参数 仅datasource类型为 logs metrics需要进行校验
-		if (chart.getDatasource().equals(Constant.ChartDatasourceType.METRICS.getValue()) || chart.getDatasource().equals(Constant.ChartDatasourceType.LOGS.getValue())) {
-            ValidateUtils.is(elements).notNull(RCode.CHART_ELEMENT_ISNULL);
-            chartElementService.validateElements(elements);
-	    }
+	public void validateChartInfo(VisualChart chart) {
+		ValidateUtils.is(chart.getDashboardId()).notNull(RCode.DASHBOARD_ID_ISNULL)
+				.and(chart.getName()).notNull(RCode.CHART_TITLE_ISNULL).maxLength(64)
+				.and(chart.getSpan()).notNull(RCode.CHART_SPAN_ISNULL)
+				.and(chart.getHeight()).notNull(RCode.CHART_HEIGHT_ISNULL)
+				.and(chart.getType()).notNull(RCode.CHART_TYPE_ISNULL)
+				.and(chart.getGroupId()).notNull(RCode.CHART_GROUPID_ISNULL)
+				.and(chart.getDatasource()).notNull(RCode.CHART_DATASOURCE_ISNULL)
+				.and(chart.getRemark()).maxLength(256);
+
+		// dashboard
+		VisualDashboard dashboard = dashboardService.getById(chart.getDashboardId());
+		ValidateUtils.is(dashboard).notNull(RCode.DASHBOARD_NOT_EXIST);
+
+		// unit
+		Integer unit = chart.getUnit();
+		if (unit != null) {
+			List<Integer> unitList = new ArrayList(Constant.ALERT_RULE_UNIT_MAP.values());
+			if (unit < Collections.min(unitList) || unit > Collections.max(unitList)) {
+				throw new NZException(RCode.CHART_UNIT_NOTFOUND);
+			}
+		}
+
+		// type
+		sysDictService.checkSysDicValue(Constant.DICT_CHART_TYPE, chart.getType(), RCode.CHART_TYPE_INVALIDE);
+
+		// datasource
+		sysDictService.checkSysDicValue(Constant.DICT_CHART_DATASOURCE, chart.getDatasource(), RCode.CHART_DATASOURCE_INVALIDE);
+
+		// element, validate element when datasource is metrics or logs
+		if (StrUtil.equalsAny(chart.getDatasource(), Constant.ChartDatasourceType.METRICS.getValue(), Constant.ChartDatasourceType.LOGS.getValue())) {
+			List<VisualChartElement> elements = chart.getElements();
+			ValidateUtils.is(elements).notNull(RCode.CHART_ELEMENT_ISNULL);
+
+			List<SysDictEntity> exprTypeList = sysDictService.querySysDicByType(Constant.DICT_EXPRESSION_TYPE);
+			List<String> exprTypeValueList = exprTypeList.stream().map(SysDictEntity::getValue).collect(Collectors.toList());
+
+			for (VisualChartElement element : elements) {
+				ValidateUtils.is(element.getExpression()).notNull(RCode.CHARTELEMENT_EXPRESSION_ISNULL).maxLength(4096)
+						.and(element.getType()).notNull(RCode.CHARTELEMENT_TYPE_ISNULL)
+						.and(element.getLegend()).maxLength(512)
+						.and(element.getName()).notNull(RCode.CHARTELEMENT_NAME_ISNULL).maxLength(64);
+
+				if (!exprTypeValueList.contains(element.getType())) {
+					throw new NZException(RCode.CHARTELEMENT_TYPE_INVALIDE);
+				}
+			}
+		}
 	}
 
-	/**
-     * 校验 dashboard 是否存在
-     *
-     * @param dashboardId
-     */
-    public void validateDashboard(Integer dashboardId) {
-    	if(dashboardId.equals(0)) {
-    		return;
-    	}
-        VisualDashboard dashboard = dashboardService.getById(dashboardId);
-    	ValidateUtils.is(dashboard).notNull(RCode.DASHBOARD_NOT_EXIST);
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-	public Integer saveChart(VisualChart chart) {
-    	// 1. 新增 chart 自动追加至末尾
-		chart.setName(StrUtil.trim(chart.getName()));
-        Object param = chart.getParam();
-        if (param != null && param instanceof HashMap) {
-            chart.setParam(JSONObject.toJSONString(param));
-        }
-
-	    // update info
-	    chart.setUpdateAt(Tool.DateUtil.date());
-	    chart.setUpdateBy(ShiroUtils.getUserId().intValue());
-
-        // 2. 判断当前 dashboard 下是否已存在 charts
-        List<VisualChart> list = this.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getDashboardId, chart.getDashboardId()));
-        if (CollectionUtils.isEmpty(list)) {
-            // 不存在 charts
-            this.save(chart);
-        } else {
-        	VisualChart endChart = this.getOne(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getDashboardId, chart.getDashboardId()).orderByDesc(VisualChart::getWeight).last("limit 0,1"));
-            Integer weight = endChart.getWeight();
-            chart.setWeight(++weight);
-            this.save(chart);
-        }
-
-        // 3. 保存 chart elements信息
-        chartElementService.saveOrUpdateElements(chart.getId(), chart.getElements());
-        return chart.getId();
-	}
-    
 	@Override
 	@Transactional(rollbackFor = Exception.class)
-	public Integer updateChart(VisualChart chart) {
-		// 1. 校验
-		chart.setName(StrUtil.trim(chart.getName()));
-        this.validateChart(chart);
+	public Integer saveChart(VisualChart chart) {
+		// validate chart info
+		this.validateChartInfo(chart);
 
-        Object param = chart.getParam();
-        if (param != null) {
-            chart.setParam(JSONObject.toJSONString(param));
-        }
+		Object param = chart.getParam();
+		if (param != null) {
+			chart.setParam(JSONObject.toJSONString(param));
+		}
 
 		// update info
 		chart.setUpdateAt(Tool.DateUtil.date());
 		chart.setUpdateBy(ShiroUtils.getUserId().intValue());
 
-        this.updateById(chart);
+		// position
+		VisualChart endChart = this.getOne(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getDashboardId, chart.getDashboardId()).orderByDesc(VisualChart::getWeight).last("limit 0,1"));
+		if (ObjectUtil.isNotNull(endChart)) {
+			Integer weight = endChart.getWeight();
+			chart.setWeight(++weight);
+		}
 
-        // 3. 修改 chart elements
-        chartElementService.saveOrUpdateElements(chart.getId(), chart.getElements());
-        return chart.getId();
+		// element
+		List<VisualChartElement> elements = chart.getElements();
+		chart.setElementArr(JSONUtil.toJsonStr(elements));
+
+		// save
+		this.save(chart);
+		return chart.getId();
 	}
-	
+
 	@Override
 	@Transactional(rollbackFor = Exception.class)
-	public void delCharts(Integer[] ids, Integer sync) {
-		
-        // 内置chart不能删除
-        this.validateBuildInCharts(Arrays.asList(ids));
+	public Integer updateChart(VisualChart chart) {
+		// validate chart info
+		this.validateChartInfo(chart);
 
-        List<VisualChart> deleteCharts = this.list(new QueryWrapper<VisualChart>().lambda().in(VisualChart::getId, Arrays.asList(ids)));
-        
-        List<Integer> deleteIds =new ArrayList<Integer>();
-        for(VisualChart deleteChart : deleteCharts) {
-        	if(deleteChart.getDashboardId().equals(0)) {
-        		deleteIds.add(deleteChart.getId());
-        	}
-        }
-        
-        if (CollectionUtils.isNotEmpty(deleteIds)) {
-            if (sync != null) {
-                // 同步删除
-                if(sync.equals(1)) {
-                    this.syncDeleteAssetsCharts(deleteIds);
-                }
-            }
-        }
-
-		List<Integer> idList = new ArrayList<>(Arrays.asList(ids));
-
-		// 删除 Endpoint modules 引用的 chart templates
-		List<MonitorModule> monitorModuleList = monitorModuleService.list(new QueryWrapper<MonitorModule>().lambda().isNotNull(MonitorModule::getChartIds).ne(MonitorModule::getChartIds, ""));
-		for (MonitorModule monitorModule : monitorModuleList) {
-			monitorModule.setChartIds(this.delIds(monitorModule.getChartIds(), idList));
+		Object param = chart.getParam();
+		if (param != null) {
+			chart.setParam(JSONObject.toJSONString(param));
 		}
-		if(Tool.CollUtil.isNotEmpty(monitorModuleList))
-			monitorModuleService.saveOrUpdateBatch(monitorModuleList);
-		// 删除 Asset models 引用的 chart templates
-		List<AssetModel> assetModelList = assetModelService.list(new QueryWrapper<AssetModel>().lambda().isNotNull(AssetModel::getChartIds).ne(AssetModel::getChartIds, ""));
-		for (AssetModel assetModel : assetModelList) {
-			assetModel.setChartIds(this.delIds(assetModel.getChartIds(), idList));
-		}
-		if(Tool.CollUtil.isNotEmpty(assetModelList))
-			assetModelService.saveOrUpdateBatch(assetModelList);
 
-		// 如果删除 ids 中 type 为 group ，则补充 group 包含的 chart ids
-		List<VisualChart> childrenCharts = this.list(new LambdaQueryWrapper<VisualChart>().in(VisualChart::getGroupId, Arrays.asList(ids)));
-        if(CollectionUtils.isNotEmpty(childrenCharts)){
-	        Set<Integer> idSet = childrenCharts.stream().map(VisualChart::getId).collect(Collectors.toSet());
-	        idList.addAll(idSet);
-        }
+		// update info
+		chart.setUpdateAt(Tool.DateUtil.date());
+		chart.setUpdateBy(ShiroUtils.getUserId().intValue());
 
-		// 删除自身
-        this.baseMapper.deleteBatchIds(idList);
+		// element
+		List<VisualChartElement> elements = chart.getElements();
+		chart.setElementArr(JSONUtil.toJsonStr(elements));
 
-        // 删除char element
-        chartElementService.delElementByChartIds(idList);
+		// update
+		this.updateById(chart);
+		return chart.getId();
 	}
 
-	private String delIds(String chartIds, List<Integer> chartIdList){
-		String str = "";
-		for (String chartId : chartIds.split(",")) {
-			if(!chartIdList.contains(Integer.valueOf(chartId))){
-				str += "," + chartId;
-			}
-		}
-		return StrUtil.isBlank(str) ? str : str.substring(1);
-	}
-	
 	@Override
-    @Transactional(rollbackFor = Exception.class)
-    public void delVisualChartsByDashboardId(Integer... dashboardIds) {
-        if (ToolUtil.isEmpty(dashboardIds)) {
-            return;
-        }
+	@Transactional(rollbackFor = Exception.class)
+	public void delCharts(List<Integer> idList, Integer sync) {
+		List<VisualChart> childrenCharts = this.list(new LambdaQueryWrapper<VisualChart>().in(VisualChart::getGroupId, idList));
+		if (CollectionUtils.isNotEmpty(childrenCharts)) {
+			Set<Integer> idSet = childrenCharts.stream().map(VisualChart::getId).collect(Collectors.toSet());
+			idList.addAll(idSet);
+		}
 
-        // 1. 再次通过 dashboardid 查询 是为了只删除当前 dashboard 下的 charts
-        List<VisualChart> charts = this.list(new QueryWrapper<VisualChart>().lambda().in(VisualChart::getDashboardId, dashboardIds));
-        List<Integer> chartIds = charts.stream().map(VisualChart::getId).collect(Collectors.toList());
+		// sync = 1, 同步删除
+		sync = ObjectUtil.defaultIfNull(sync, 0);
+		if (sync == 1) {
+			// delete referenced chart data
+			List<VisualChart> referencedChart = this.list(new LambdaQueryWrapper<VisualChart>().in(VisualChart::getPid, idList));
+			if (CollUtil.isNotEmpty(referencedChart)) {
+				List<Integer> referencedChartIdList = referencedChart.stream().map(VisualChart::getId).collect(Collectors.toList());
+				this.baseMapper.deleteBatchIds(referencedChartIdList);
+			}
+		} else {
+			// update Referenced Chart Data pid=-1
+			this.update(new LambdaUpdateWrapper<VisualChart>()
+					.set(VisualChart::getPid, -1)
+					.in(VisualChart::getPid, idList));
+		}
 
-        // 2. 内置chart不能删除
-        this.validateBuildInCharts(chartIds);
-
-        // 3. 不为空 则删除自身  同时删除关联的 element
-        if (CollectionUtils.isNotEmpty(chartIds)) {
-            this.removeByIds(chartIds);
-            chartElementService.delElementByChartIds(chartIds);
-        }
-    }
-	
-	/**
-     * 校验是否是内置chart
-     *
-     * @param chartIds
-     */
-    private void validateBuildInCharts(List<Integer> chartIds) {
-        // 内置charts
-        List<VisualChart> buildInCharts = this.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getBuildIn, 1));
-        Map<Integer, String> buildInChartIdAndTitleMap = buildInCharts.stream().collect(Collectors.toMap(VisualChart::getId, VisualChart::getName));
-
-        chartIds.forEach(id -> {
-            if (ToolUtil.isNotEmpty(buildInChartIdAndTitleMap.get(id))) {
-                throw new NZException(buildInChartIdAndTitleMap.get(id) + " chart is built-in and cannot be deleted", RCode.CHART_BUILDIN_CAN_NOT_REMOVE.getCode());
-            }
-        });
-    }
-    
-    /**
-     * 根据 chart.pid 查找引用自此chart，同步删除
-     *
-     * @param deleteIds
-     */
-    private void syncDeleteAssetsCharts(List<Integer> deleteIds) {
-        // 关联 charts
-        List<VisualChart> list = this.list(new QueryWrapper<VisualChart>().lambda().in(VisualChart::getPid, deleteIds));
-        if (CollectionUtils.isEmpty(list)) {
-            return;
-        }
-        Map<Integer, List<VisualChart>> listMap = list.stream().collect(Collectors.groupingBy(VisualChart::getDashboardId));
-
-        List<Integer> allDeleteChartIds = listMap.values().stream().flatMap(Collection::stream).map(VisualChart::getId).collect(Collectors.toList());
-        // 删除自身
-        this.removeByIds(allDeleteChartIds);
-        // 删除关联的 chart Elements
-        chartElementService.delElementByChartIds(allDeleteChartIds);
-    }
+		// delete chart
+		this.baseMapper.deleteBatchIds(idList);
+	}
 
 	@Override
 	@Transactional(rollbackFor = Exception.class)
@@ -532,8 +326,6 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		List<Integer> removeChartIdList = chartListToBeSync.stream().map(VisualChart::getId).collect(Collectors.toList());
 		// del charts
 		this.removeByIds(removeChartIdList);
-		// del chart Elements
-		chartElementService.delElementByChartIds(removeChartIdList);
 
 		log.info("[chartTmplSynch] [finshed]");
 		// total
@@ -595,9 +387,6 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 			dashboardAndLinkObjectMap.put(syncChartDashboard, linkObject);
 		});
 
-		// save batch
-		List<VisualChartElement> saveChartElementList = Tool.ListUtil.list(true);
-
 		Map<Integer, Integer> groupIdMapping = Tool.MapUtil.newHashMap();
 		// 先同步独立的 Chart 和 独立的 Group Chart(不包含 Group 包含的图表)
 		for (VisualChart syncChart : performSyncChartList) {
@@ -617,12 +406,9 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 				// group
 				VisualChart visualChart = this.performChartSync(tmplChartForSync, syncChartDashboard, linkObject, 0);
 				groupIdMapping.put(chartId, visualChart.getId());
-
-				saveChartElementList.addAll(Tool.CollUtil.defaultIfEmpty(visualChart.getElements(), Tool.ListUtil.empty()));
 			} else {
 				// 同步单个图表，group id 依旧为当前 group 下
-				VisualChart visualChart = this.performChartSync(tmplChartForSync, syncChartDashboard, linkObject, syncChart.getGroupId());
-				saveChartElementList.addAll(Tool.CollUtil.defaultIfEmpty(visualChart.getElements(), Tool.ListUtil.empty()));
+				this.performChartSync(tmplChartForSync, syncChartDashboard, linkObject, syncChart.getGroupId());
 			}
 		}
 
@@ -646,16 +432,9 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 				}
 
 				// group id is new group chart id
-				VisualChart visualChart = this.performChartSync(tmplChartForSync, syncChartDashboard, linkObject, groupIdMapping.get(syncGroupChartId));
-				saveChartElementList.addAll(Tool.CollUtil.defaultIfEmpty(visualChart.getElements(), Tool.ListUtil.empty()));
+				this.performChartSync(tmplChartForSync, syncChartDashboard, linkObject, groupIdMapping.get(syncGroupChartId));
 			}
 		}
-
-		// save element
-		if (Tool.CollUtil.isNotEmpty(saveChartElementList)) {
-			chartElementService.saveBatch(saveChartElementList);
-		}
-
 		log.info("[syncChart] [finshed]");
 	}
 
@@ -691,22 +470,16 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		// group id
 		saveChart.setGroupId(ObjectUtil.defaultIfNull(groupId, 0));
 
+		// element_arr
+		if (Tool.CollUtil.isNotEmpty(saveChart.getElements())) {
+			for (VisualChartElement element : saveChart.getElements()) {
+				element.setExpression(Tool.NzExpressionUtil.renderExpression(element.getExpression(), linkObject));
+			}
+			saveChart.setElementArr(JSONUtil.toJsonStr(saveChart.getElements()));
+		}
+
 		// save chart
 		this.save(saveChart);
-
-		// element
-		if (Tool.CollUtil.isNotEmpty(saveChart.getElements())) {
-			List<VisualChartElement> saveElementList = Tool.ListUtil.list(true);
-			for (VisualChartElement element : saveChart.getElements()) {
-				VisualChartElement saveElement = JSONUtil.toBean(JSONUtil.toJsonStr(element), VisualChartElement.class);
-
-				saveElement.setId(null);
-				saveElement.setExpression(Tool.NzExpressionUtil.renderExpression(element.getExpression(), linkObject));
-				saveElement.setChartId(saveChart.getId());
-				saveElementList.add(saveElement);
-			}
-			saveChart.setElements(saveElementList);
-		}
 		return saveChart;
 	}
 
@@ -777,12 +550,6 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 			this.getAllChildrenChartList(entity, allChartList);
 		}
 		return allChartList;
-	}
-
-	@Override
-	public List<VisualChart> queryChartsIncludeElementInfo(Integer dashboardId) {
-		List<VisualChart> visualChartList = this.getBaseMapper().queryChartsIncludeElementInfo(dashboardId);
-		return Tool.CollUtil.defaultIfEmpty(visualChartList, Tool.ListUtil.empty());
 	}
 
 	/**

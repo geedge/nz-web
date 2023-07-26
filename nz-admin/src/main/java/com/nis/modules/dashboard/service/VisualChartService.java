@@ -13,19 +13,15 @@ public interface VisualChartService extends IService<VisualChart> {
 
     VisualChart queryInfo(Integer id);
 
-    void validateChart(VisualChart visualChart);
-
     Integer saveChart(VisualChart chart);
 
     Integer updateChart(VisualChart chart);
 
-    void delCharts(Integer[] ids, Integer sync);
+    void delCharts(List<Integer> idList, Integer sync);
 
     void modify(VisualChart chart);
 
     void weights(Integer dashboardId, List<VisualChart> chartList);
-
-    void delVisualChartsByDashboardId(Integer... dashboardId);
 
     Integer chartTmplSynch(Integer pid, List<Integer> chartIdList);
 
@@ -39,5 +35,4 @@ public interface VisualChartService extends IService<VisualChart> {
      */
     List<VisualChart> getAllChartList(List<VisualChart> sourceChartList);
 
-    List<VisualChart> queryChartsIncludeElementInfo(Integer dashboardId);
 }
