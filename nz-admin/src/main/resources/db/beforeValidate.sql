@@ -11,6 +11,9 @@
  * 2023-07-19
  * 1. V2023.07.18__asset_type_config modify init data.sql SQL 改动，修改 checksum 值
  *
+ * 2023-07-26
+ * 1. V2023.06.24__table alert_rule add dashboard_id column.sql 更改版本号为 V2023.07.25
+ *
  */
 
 -- ----------------------------
@@ -48,6 +51,12 @@ UPDATE flyway_schema_history
 SET `checksum` = 475861812
 WHERE
 	script = "V2023.07.18__asset_type_config modify init data.sql";
+
+DELETE
+FROM
+	flyway_schema_history
+WHERE
+	script = "V2023.06.24__table alert_rule add dashboard_id column.sql";
 
 
 
