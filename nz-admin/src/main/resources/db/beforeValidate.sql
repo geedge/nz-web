@@ -11,6 +11,9 @@
  * 2023-07-19
  * 1. V2023.07.18__asset_type_config modify init data.sql SQL 改动，修改 checksum 值
  *
+ * 2023-07-27
+ * 1. 删除 V2023.07.18.1__modify visual_chart x, y colnum type to double.sql 记录
+ *
  */
 
 -- ----------------------------
@@ -49,5 +52,9 @@ SET `checksum` = 475861812
 WHERE
 	script = "V2023.07.18__asset_type_config modify init data.sql";
 
-
+DELETE
+FROM
+	flyway_schema_history
+WHERE
+	script = "V2023.07.18.1__modify visual_chart x, y colnum type to double.sql";
 
