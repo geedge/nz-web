@@ -1,0 +1,49 @@
+{
+  "--------------- GET  /integration/module/ data---------------------": "note",
+  "queryIntModule_success": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "name": "Mysql"
+  },
+  "queryIntModule_null": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "name": "Consul"
+  },
+  "------------------ GET  /integration/metadata/ data---------------------": "note",
+  "queryIntMetadata_success": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "moduleIds": "1,2",
+    "name": "mysql",
+    "moduleName": "Mysql"
+  },
+  "queryIntMetadata_null": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "moduleIds": "11,12",
+    "name": "consul",
+    "moduleName": "consul"
+  },
+  "------------------ GET  /integration/alertRule/ data---------------------": "note",
+  "queryIntAlertRule_success": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "moduleIds": "1,2",
+    "name": "mysql",
+    "moduleName": "Mysql"
+  },
+  "queryIntAlertRule_null": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "moduleIds": "11,12",
+    "name": "consul",
+    "moduleName": "consul"
+  }
+}

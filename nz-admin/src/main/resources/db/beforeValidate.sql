@@ -14,6 +14,9 @@
  * 2023-07-26
  * 1. V2023.06.24__table alert_rule add dashboard_id column.sql 更改版本号为 V2023.07.25
  *
+ * 2023-07-27
+ * 1. 删除 V2023.07.18.1__modify visual_chart x, y colnum type to double.sql 记录
+ *
  */
 
 -- ----------------------------
@@ -59,4 +62,9 @@ WHERE
 	script = "V2023.06.24__table alert_rule add dashboard_id column.sql";
 
 
+DELETE
+FROM
+	flyway_schema_history
+WHERE
+	script = "V2023.07.18.1__modify visual_chart x, y colnum type to double.sql";
 
