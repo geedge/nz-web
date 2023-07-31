@@ -2239,6 +2239,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             model.setSeq(seq);
             model.setTypeId(typeConf.getId());
             modelService.save(model);
+            model = modelService.getOne(new LambdaQueryWrapper<AssetModel>().eq(AssetModel::getBrandId, model.getBrandId()).eq(AssetModel::getName, model.getName()));
         }
         if (brand != null) {
             brand.setSeq(seq);
@@ -2248,6 +2249,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 model.setSeq(seq);
                 model.setTypeId(typeConf.getId());
                 modelService.save(model);
+                model = modelService.getOne(new LambdaQueryWrapper<AssetModel>().eq(AssetModel::getBrandId, model.getBrandId()).eq(AssetModel::getName, model.getName()));
             }
         }
 
@@ -2294,6 +2296,14 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
             // if update asset model,use current model config dashboard template sync asset dashboard
             if (ObjectUtil.notEqual(oldAsset.getModelId(), asset.getModelId())) {
+                // update asset dashboard tmpl_id
+                AssetModel updatedModel = modelService.getById(asset.getModelId());
+                Integer modelDashboardTmplId = updatedModel.getDashboardId();
+                dashboardService.update(new LambdaUpdateWrapper<VisualDashboard>()
+                        .set(VisualDashboard::getTmplId, ObjectUtil.defaultIfNull(modelDashboardTmplId, -1))
+                        .eq(VisualDashboard::getLink, asset.getId())
+                        .eq(VisualDashboard::getType, DashboardConstant.Type.ASSET.getValue())
+                );
                 this.syncAssetDashboardViaModel(asset.getId(), asset.getModelId());
             }
 

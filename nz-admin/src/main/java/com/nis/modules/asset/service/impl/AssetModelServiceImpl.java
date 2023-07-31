@@ -217,6 +217,7 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Integer saveModel(AssetModel model) {
         // 1. 校验
         model.setName(StrUtil.trim(model.getName()));
@@ -224,6 +225,7 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
 
         // 保存
         this.save(model);
+        model = this.getOne(new LambdaQueryWrapper<AssetModel>().eq(AssetModel::getBrandId, model.getBrandId()).eq(AssetModel::getName, model.getName()));
         return model.getId();
     }
 
