@@ -60,4 +60,7 @@ public interface MonitorEndpointService extends IService<MonitorEndpoint> {
     void bulkEdit(Map<String, Object> params);
 
     Map<String, Object> diagnose(Integer id, HttpServletRequest request) throws IOException;
+
+    void syncConfigByIdList(List<Integer> syncEndpointIdList);
+
 }

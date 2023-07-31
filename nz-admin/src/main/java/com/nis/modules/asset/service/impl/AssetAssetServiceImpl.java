@@ -2279,7 +2279,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             if (StrUtil.equals("1", syncEndpoint)) {
                 List<MonitorEndpoint> endpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getAssetId, asset.getId()));
                 if (Tool.CollUtil.isNotEmpty(endpointList)) {
-                    monitorEndpointService.syncTmpl(Collections.emptyList(), Collections.emptyList(), ListUtil.of(asset.getId()));
+                    List<Integer> syncEndpointIdList = endpointList.stream().map(MonitorEndpoint::getId).collect(Collectors.toList());
+                    monitorEndpointService.syncConfigByIdList(syncEndpointIdList);
                 }
             }
         } else {
@@ -2507,5 +2508,78 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     public List<AssetAsset> getDiscoveredAssetInfoList() {
         List<AssetAsset> discoveredAssetInfoList = this.getBaseMapper().getDiscoveredAssetInfoList();
         return discoveredAssetInfoList;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void syncAssetEndpointAndDashboard(List<Integer> syncAssetIdList, Integer isSyncEndpoint, Integer isSyncDashboard) {
+        log.info("[syncAssetEndpointAndDashboard] [begin] [syncAssetIdList: {}] [isSyncEndpoint: {}] [isSyncDashboard: {}]", JSONUtil.toJsonStr(syncAssetIdList), isSyncEndpoint, isSyncDashboard);
+        if (ObjectUtil.equal(1, isSyncEndpoint)) {
+            List<MonitorEndpoint> syncEndpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().in(MonitorEndpoint::getAssetId, syncAssetIdList));
+            if (CollUtil.isEmpty(syncEndpointList)) {
+                log.warn("[syncAssetEndpointAndDashboard] [asset has no endpoint to sync] [syncAssetIdList: {}]", JSONUtil.toJsonStr(syncAssetIdList));
+            } else {
+                List<Integer> syncEndpointIdList = syncEndpointList.stream().map(MonitorEndpoint::getId).collect(Collectors.toList());
+                monitorEndpointService.syncConfigByIdList(syncEndpointIdList);
+            }
+        }
+
+        if (ObjectUtil.equal(1, isSyncDashboard)) {
+            List<AssetAsset> assetList = this.getBaseMapper().selectBatchIds(syncAssetIdList);
+            ValidateUtils.is(assetList).notNull(RCode.ASSET_NOT_EXIST);
+
+            // asset model
+            List<Integer> modelIdList = assetList.stream().map(AssetAsset::getModelId).distinct().collect(Collectors.toList());
+            List<AssetModel> modelList = modelService.getBaseMapper().selectBatchIds(modelIdList);
+
+            Map<Integer, AssetModel> assetIdWithModelMap = MapUtil.newHashMap();
+            assetList.forEach(asset -> {
+                AssetModel model = modelList.stream().filter(m -> ObjectUtil.equal(m.getId(), asset.getModelId())).findFirst().get();
+                assetIdWithModelMap.put(asset.getId(), model);
+            });
+
+            // asset info Dashboard List
+            List<VisualDashboard> assetInfoDashboardList = dashboardService.list(new LambdaQueryWrapper<VisualDashboard>()
+                    .eq(VisualDashboard::getType, DashboardConstant.Type.ASSET.getValue())
+                    .in(VisualDashboard::getLink, syncAssetIdList));
+
+            // asset info dashboard.tmpl_id = model.dashboard_id
+            for (VisualDashboard dashboard : assetInfoDashboardList) {
+                AssetModel assetRefModelEntity = assetIdWithModelMap.get(dashboard.getLink());
+                Integer assetRefModelEntityDashboardId = assetRefModelEntity.getDashboardId();
+                assetRefModelEntityDashboardId = ObjectUtil.defaultIfNull(assetRefModelEntityDashboardId, -1);
+                if (ObjectUtil.notEqual(dashboard.getTmplId(), assetRefModelEntityDashboardId)) {
+                    dashboard.setTmplId(assetRefModelEntityDashboardId);
+                    dashboardService.update(new LambdaUpdateWrapper<VisualDashboard>()
+                            .set(VisualDashboard::getTmplId, assetRefModelEntityDashboardId)
+                            .eq(VisualDashboard::getId, dashboard.getId()));
+                }
+            }
+
+            // asset Ref Dashboard List
+            List<VisualDashboard> assetRefDashboardList = dashboardService.list(new LambdaQueryWrapper<VisualDashboard>()
+                    .eq(VisualDashboard::getType, DashboardConstant.Type.DASHBOARD.getValue())
+                    .eq(VisualDashboard::getVarType, DashboardConstant.VariableType.ASSET.getValue())
+                    .in(VisualDashboard::getLink, syncAssetIdList));
+
+            List<VisualDashboard> syncDashboardList = ListUtil.list(true);
+            syncDashboardList.addAll(assetInfoDashboardList);
+            syncDashboardList.addAll(assetRefDashboardList);
+            syncDashboardList = syncDashboardList.stream().distinct().filter(d -> ObjectUtil.notEqual(d.getTmplId(), -1)).collect(Collectors.toList());
+
+            log.info("[syncAssetEndpointAndDashboard] [syncDashboardList] [size: {}]", syncDashboardList.size());
+            if (log.isDebugEnabled()) {
+                log.debug("[syncAssetEndpointAndDashboard] [syncDashboardList] [size: {}] [info: {}]", syncDashboardList.size(), JSONUtil.toJsonStr(syncDashboardList));
+            }
+            if (CollUtil.isEmpty(syncDashboardList)) {
+                log.warn("[syncAssetEndpointAndDashboard] [asset has no dashboard to sync] [syncAssetIdList: {}]", JSONUtil.toJsonStr(syncAssetIdList));
+            } else {
+                // sync dashboard
+                syncDashboardList.forEach(syncDashboard -> {
+                    visualService.syncTemplateDashboard(syncDashboard.getId(), null, null, null);
+                });
+            }
+        }
+        log.info("[syncAssetEndpointAndDashboard] [finshed]");
     }
 }

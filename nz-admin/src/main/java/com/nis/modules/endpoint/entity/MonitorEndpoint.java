@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.nis.common.utils.Tool;
 import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.Dc;
@@ -71,6 +72,9 @@ public class MonitorEndpoint implements Serializable {
 	private MonitorEndpointConfig endpointConfig;
 
 	@TableField(exist = false)
+	private List<MonitorEndpointConfig> endpointConfigList;
+
+	@TableField(exist = false)
 	private List alert;
 
 	/**
@@ -78,4 +82,8 @@ public class MonitorEndpoint implements Serializable {
 	 */
 	@TableField(exist = false)
 	private Integer starred;
+
+	public void setName(String name) {
+		this.name = Tool.StrUtil.trim(name);
+	}
 }

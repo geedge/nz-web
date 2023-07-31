@@ -186,7 +186,7 @@ public class MonitorEndpointController {
     /**
      * endpoint配置同步接口
      */
-    @PutMapping( "/endpoint/syncTmpl")
+    //@PutMapping( "/endpoint/syncTmpl")
     @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ENDPOINT)
     public R syncTmpl(@RequestBody Map<String, List<Integer>> params) {
         ValidateUtils.notAllNull(RCode.ENDPOINT_MODULE_ASSET_ID_ISALLNULL, params.get("moduleIds"), params.get("endpointIds"), params.get("assetIds"));

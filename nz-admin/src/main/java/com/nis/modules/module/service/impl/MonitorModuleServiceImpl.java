@@ -982,7 +982,8 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
             if (StrUtil.equals("1", syncEndpoint)) {
                 List<MonitorEndpoint> endpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getModuleId, module.getId()));
                 if (Tool.CollUtil.isNotEmpty(endpointList)) {
-                    monitorEndpointService.syncTmpl(ListUtil.of(module.getId()), Collections.emptyList(), Collections.emptyList());
+                    List<Integer> syncEndpointIdList = endpointList.stream().map(MonitorEndpoint::getId).collect(Collectors.toList());
+                    monitorEndpointService.syncConfigByIdList(syncEndpointIdList);
                 }
             }
 
