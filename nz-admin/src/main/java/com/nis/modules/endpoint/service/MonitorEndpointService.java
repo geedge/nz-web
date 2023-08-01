@@ -63,4 +63,12 @@ public interface MonitorEndpointService extends IService<MonitorEndpoint> {
 
     void syncConfigByIdList(List<Integer> syncEndpointIdList);
 
+    /**
+     * sync Endpoint Config And Dashboard
+     *
+     * @param syncEndpointIdList
+     * @param isSyncEndpointConfig
+     * @param isSyncDashboard
+     */
+    void syncEndpointConfigAndDashboard(List<Integer> syncEndpointIdList, Integer isSyncEndpointConfig, Integer isSyncDashboard);
 }

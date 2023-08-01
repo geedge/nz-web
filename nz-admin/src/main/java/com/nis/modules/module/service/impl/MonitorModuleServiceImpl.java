@@ -977,6 +977,19 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
                 List<MonitorModule> modules = Tool.ListUtil.of(oldModule);
                 topoService.removeTopoConfigNodeAndLineByModules(modules);
             }
+
+            // If the dashboard template is modified, the endpoint dashboard template ID will also be modified
+            if (ObjectUtil.notEqual(oldModule.getDashboardId(), module.getDashboardId())) {
+                List<MonitorEndpoint> endpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getModuleId, module.getId()));
+                if (CollUtil.isNotEmpty(endpointList)) {
+                    List<Integer> endpointIdList = endpointList.stream().map(MonitorEndpoint::getId).collect(Collectors.toList());
+                    dashboardService.update(new LambdaUpdateWrapper<VisualDashboard>()
+                            .set(VisualDashboard::getTmplId, ObjectUtil.defaultIfNull(module.getDashboardId(), -1))
+                            .in(VisualDashboard::getLink, endpointIdList)
+                            .eq(VisualDashboard::getType, DashboardConstant.Type.ENDPOINT.getValue()));
+                }
+            }
+
             // 是否同步更新关联的endpoint，可选值：  0：不同步  1：同步  默认值：1
             String syncEndpoint = Tool.ObjectUtil.defaultIfEmpty((String) params.get("syncEndpoint"), "1");
             if (StrUtil.equals("1", syncEndpoint)) {
