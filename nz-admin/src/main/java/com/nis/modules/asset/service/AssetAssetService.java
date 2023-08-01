@@ -113,4 +113,13 @@ public interface AssetAssetService extends IService<AssetAsset> {
      * @return
      */
     List<AssetAsset> getDiscoveredAssetInfoList();
+
+    /**
+     * sync Asset Endpoint And Dashboard
+     *
+     * @param syncAssetIdList
+     * @param isSyncEndpoint
+     * @param isSyncDashboard
+     */
+    void syncAssetEndpointAndDashboard(List<Integer> syncAssetIdList, Integer isSyncEndpoint, Integer isSyncDashboard);
 }

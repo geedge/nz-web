@@ -77,31 +77,25 @@
         </association>
     </resultMap>
 
-    <resultMap type="com.nis.modules.endpoint.entity.MonitorEndpoint" id="endpointDetail">
-        <result property="id" column="id"/>
-        <result property="name" column="name"/>
-        <result property="moduleId" column="module_id"/>
-        <result property="assetId" column="asset_id"/>
+	<resultMap type="com.nis.modules.endpoint.entity.MonitorEndpoint" id="endpointWithConfigResultMap">
+		<id property="id" column="id"/>
+		<result property="name" column="name"/>
+		<result property="moduleId" column="module_id"/>
+		<result property="assetId" column="asset_id"/>
+		<result property="seq" column="seq"/>
 
-        <association columnPrefix="ass_" property="asset" javaType="com.nis.modules.asset.entity.AssetAsset">
-            <id column="id" property="id"/>
-            <result column="manage_ip" property="manageIp"/>
-            <result column="sn" property="sn"/>
-            <result column="name" property="name"/>
-            <result column="dc_id" property="dcId"/>
-
-            <!--state conf monitor-->
-            <result property="state.id" column="state_id"/>
-            <result property="state.name" column="state_name"/>
-            <result property="state.monitor" column="state_monitor"/>
-        </association>
-
-        <association columnPrefix="dc_" property="dc" javaType="com.nis.modules.asset.entity.Dc">
-            <id column="id" property="id"/>
-            <result column="name" property="name"/>
-            <result column="state" property="state"/>
-        </association>
-    </resultMap>
+		<collection property="endpointConfigList" ofType="com.nis.modules.endpoint.entity.MonitorEndpointConfig"
+					columnPrefix="conf_">
+			<id property="id" column="id"/>
+			<result property="endpointId" column="endpoint_id"/>
+			<result property="type" column="type"/>
+			<result property="config" column="config"/>
+			<result property="version" column="version"/>
+			<result property="enable" column="enable"/>
+			<result property="hash" column="hash"/>
+			<result property="seq" column="seq"/>
+		</collection>
+	</resultMap>
 
 	<select id="queryPage" resultMap="endpoint">
 		SELECT
@@ -488,6 +482,30 @@
 			AND asset.client_enable = 1 
 			AND dc.state = 'ON' 
 			AND ( mes.ver != #{version} || mes.state = 0 )
+    </select>
+
+	<select id="queryEndpointListWithConfig" resultMap="endpointWithConfigResultMap">
+		SELECT
+			me.*,
+			mec.id AS conf_id,
+			mec.endpoint_id AS conf_endpoint_id,
+			mec.type AS conf_type,
+			mec.config AS conf_config,
+			mec.version AS conf_version,
+			mec.`enable` AS conf_enable,
+			mec.hash AS conf_hash,
+			mec.seq AS conf_seq
+		FROM
+			monitor_endpoint me
+			LEFT JOIN monitor_endpoint_config mec ON me.id = mec.endpoint_id
+		<where>
+			<if test="params.ids != null and params.ids.size > 0">
+				me.id IN
+				<foreach collection="params.ids" item="id" index="no" open="(" separator="," close=")">
+					#{id}
+				</foreach>
+			</if>
+		</where>
     </select>
 
 </mapper>

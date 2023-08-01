@@ -25,9 +25,7 @@ import com.nis.modules.agent.service.AgentService;
 import com.nis.modules.agent.service.PromApiService;
 import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.alert.entity.AlertMessageEntity;
-import com.nis.modules.alert.entity.AlertSeverityConf;
 import com.nis.modules.alert.service.AlertMessageService;
-import com.nis.modules.alert.service.AlertSeverityService;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetTalonStatus;
 import com.nis.modules.asset.service.AssetAssetService;
@@ -50,7 +48,6 @@ import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
-import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.entity.SnmpCredential;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.*;
@@ -108,9 +105,6 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     @Autowired
     private SnmpCredentialService snmpCredentialService;
-
-    @Autowired
-    private StatService statService;
 
     @Autowired
     private BasicImportAndExportServices basicImportAndExportServices;
@@ -194,7 +188,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         Map endpointMetricsStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
         Map endpointLogsStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
 
-        List<MonitorEndpointConfig> endpointConfigs = endpointConfigService.list(new LambdaQueryWrapper<MonitorEndpointConfig>().eq(MonitorEndpointConfig::getEndpointId, endpoint.getId()));
+        List<MonitorEndpointConfig> endpointConfigs = endpointConfigService.list(new LambdaQueryWrapper<MonitorEndpointConfig>().eq(MonitorEndpointConfig::getEndpointId, endpoint.getId()).orderByDesc(MonitorEndpointConfig::getType));
         for (MonitorEndpointConfig endpointConfig : endpointConfigs) {
             endpointConfig.setVer(endpointConfig.getVersion());
 
@@ -339,7 +333,13 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
      * endpoint配置同步接口
      * 根据参数查询符合条件的 endpoint，再根据module模板信息重新渲染endpoint配置
      * 当根据module模板生成的 endpoint 配置，缺少必填项时，以原endpoint 配置中内容为准
+     *
+     * @deprecated 使用 syncConfigByIdList 方法替代
+     * @param moduleIds
+     * @param endpointIds
+     * @param assetIds
      */
+    @Deprecated
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void syncTmpl(List<Integer> moduleIds, List<Integer> endpointIds, List<Integer> assetIds) {
@@ -672,7 +672,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     @SuppressWarnings("unlikely-arg-type")
 	private void handleResuleList(List<MonitorEndpoint> endpointList) {
-        List<MonitorEndpointConfig> endpointConfigs = endpointConfigService.list();
+        List<MonitorEndpointConfig> endpointConfigs = endpointConfigService.list(new LambdaQueryWrapper<MonitorEndpointConfig>().orderByDesc(MonitorEndpointConfig::getType));
 
         Map endpointMetricsStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
         Map endpointLogsStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
@@ -1595,6 +1595,11 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                     endpointConfig.setVersion(endpointConfig.getVersion() + 1);
                 }
                 endpointConfig.setSeq(endpoint.getSeq());
+
+                // update hash value
+                String hashStr = endpoint.getId() + endpointConfig.getType() + endpointConfig.getConfig();
+                endpointConfig.setHash(String.valueOf(Math.abs(MurmurHash.hash64(hashStr))));
+
                 endpointConfigList.add(endpointConfig);
             }
             endpointConfigService.updateBatchById(endpointConfigList);
@@ -1758,6 +1763,164 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         resultList.add(this.logsDiagnose(endpoint, logsState));
         resultMap.put("list", resultList);
         return resultMap;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void syncConfigByIdList(List<Integer> syncEndpointIdList) {
+        List<MonitorEndpoint> syncEndpointListWithConfig = this.getBaseMapper().queryEndpointListWithConfig(MapUtil.builder().put("ids", syncEndpointIdList).build());
+        log.info("[syncConfigByIdList] [begin] [syncEndpointList] [size: {}]", syncEndpointListWithConfig.size());
+
+        List<Integer> moduleIdList = syncEndpointListWithConfig.stream().map(MonitorEndpoint::getModuleId).distinct().collect(Collectors.toList());
+        List<MonitorModule> moduleList = monitorModuleService.getBaseMapper().selectBatchIds(moduleIdList);
+
+        Map<Integer, AssetAsset> assetInfoCache = MapUtil.newHashMap();
+
+        List<MonitorEndpointConfig> saveBatchEndpointConfigList = ListUtil.list(true);
+        for (MonitorEndpoint endpoint : syncEndpointListWithConfig) {
+            // module
+            MonitorModule moduleInfo = moduleList.stream().filter(m -> ObjectUtil.equal(m.getId(), endpoint.getModuleId())).findFirst().get();
+
+            // asset
+            Integer assetId = endpoint.getAssetId();
+            AssetAsset assetInfo = assetInfoCache.get(assetId);
+            if (ObjectUtil.isNull(assetInfo)) {
+                assetInfo = assetService.queryAssetInfo(assetId);
+                assetInfoCache.put(assetId, assetInfo);
+            }
+
+            String nameExprTmpl = moduleInfo.getEndpointNameTmpl();
+            String renderedName = Tool.NzExpressionUtil.renderExpression(nameExprTmpl, moduleInfo, assetInfo);
+            // name change
+            if (!StrUtil.equals(endpoint.getName(), renderedName)) {
+                // validate name duplicate
+                MonitorEndpoint duplicateEndpoint = this.getOne(new LambdaQueryWrapper<MonitorEndpoint>().select(MonitorEndpoint::getId)
+                        .eq(MonitorEndpoint::getName, renderedName)
+                        .ne(MonitorEndpoint::getId, endpoint.getId())
+                        .last("limit 1"));
+                if (ObjectUtil.isNotNull(duplicateEndpoint)) {
+                    throw new NZException(RCode.ENDPOINT_NAME_DUPLICATE);
+                }
+                // update name
+                this.update(new LambdaUpdateWrapper<MonitorEndpoint>()
+                        .set(MonitorEndpoint::getName, renderedName)
+                        .eq(MonitorEndpoint::getId, endpoint.getId())
+                );
+            }
+            String configExprTmpl = moduleInfo.getConfigs();
+            String renderedConfigJsonStr = Tool.NzExpressionUtil.renderExpression(configExprTmpl, moduleInfo, assetInfo);
+            List<MonitorEndpointConfig> renderedConfigList = JSONUtil.toList(renderedConfigJsonStr, MonitorEndpointConfig.class);
+
+            // current Endpoint Config List
+            List<MonitorEndpointConfig> currentConfigList = CollUtil.defaultIfEmpty(endpoint.getEndpointConfigList(), ListUtil.empty());
+            for (MonitorEndpointConfig renderedConfigPojo : renderedConfigList) {
+                // hash
+                String hashStr = endpoint.getId() + renderedConfigPojo.getType() + renderedConfigPojo.getConfig();
+                String hash = String.valueOf(Math.abs(MurmurHash.hash64(hashStr)));
+
+                MonitorEndpointConfig currentTypeConfig = currentConfigList.stream().filter(e -> StrUtil.equals(e.getType(), renderedConfigPojo.getType())).findFirst().get();
+                // config change
+                if (ObjectUtil.notEqual(hash, currentTypeConfig.getHash()) || ObjectUtil.notEqual(renderedConfigPojo.getEnable(), currentTypeConfig.getEnable())) {
+                    renderedConfigPojo.setHash(hash);
+                    renderedConfigPojo.setEndpointId(endpoint.getId());
+                    saveBatchEndpointConfigList.add(renderedConfigPojo);
+                }
+            }
+        }
+        log.info("[syncConfigByIdList] [save Batch Endpoint Config List] [size: {}]", saveBatchEndpointConfigList.size());
+        if (CollUtil.isNotEmpty(saveBatchEndpointConfigList)) {
+            List<Integer> removeMetricsEndpointIdList = saveBatchEndpointConfigList.stream()
+                    .filter(config -> StrUtil.equals(config.getType(), Constant.MonitorConfType.METRICS.getValue()))
+                    .map(MonitorEndpointConfig::getEndpointId).distinct().collect(Collectors.toList());
+            if (CollUtil.isNotEmpty(removeMetricsEndpointIdList)) {
+                endpointConfigService.remove(new LambdaQueryWrapper<MonitorEndpointConfig>()
+                        .eq(MonitorEndpointConfig::getType, Constant.MonitorConfType.METRICS.getValue())
+                        .in(MonitorEndpointConfig::getEndpointId, removeMetricsEndpointIdList));
+            }
+            List<Integer> removeLogsEndpointIdList = saveBatchEndpointConfigList.stream()
+                    .filter(config -> StrUtil.equals(config.getType(), Constant.MonitorConfType.LOGS.getValue()))
+                    .map(MonitorEndpointConfig::getEndpointId).distinct().collect(Collectors.toList());
+            if (CollUtil.isNotEmpty(removeLogsEndpointIdList)) {
+                endpointConfigService.remove(new LambdaQueryWrapper<MonitorEndpointConfig>()
+                        .eq(MonitorEndpointConfig::getType, Constant.MonitorConfType.LOGS.getValue())
+                        .in(MonitorEndpointConfig::getEndpointId, removeLogsEndpointIdList));
+            }
+            endpointConfigService.saveBatch(saveBatchEndpointConfigList);
+        }
+        log.info("[syncConfigByIdList] [finshed]");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void syncEndpointConfigAndDashboard(List<Integer> syncEndpointIdList, Integer isSyncEndpointConfig, Integer isSyncDashboard) {
+        log.info("[syncEndpointConfigAndDashboard] [begin] [syncEndpointIdList: {}] [isSyncEndpointConfig: {}] [isSyncDashboard: {}]", JSONUtil.toJsonStr(syncEndpointIdList), isSyncEndpointConfig, isSyncDashboard);
+        if (ObjectUtil.equal(1, isSyncEndpointConfig)) {
+            List<MonitorEndpoint> syncEndpointList = this.getBaseMapper().selectBatchIds(syncEndpointIdList);
+            if (CollUtil.isEmpty(syncEndpointList)) {
+                log.warn("[syncEndpointConfigAndDashboard] [no endpoint to sync through ids] [syncEndpointIdList: {}]", JSONUtil.toJsonStr(syncEndpointIdList));
+            } else {
+                syncEndpointIdList = syncEndpointList.stream().map(MonitorEndpoint::getId).collect(Collectors.toList());
+                this.syncConfigByIdList(syncEndpointIdList);
+            }
+        }
+
+        if (ObjectUtil.equal(1, isSyncDashboard)) {
+            List<MonitorEndpoint> syncEndpointList = this.getBaseMapper().selectBatchIds(syncEndpointIdList);
+            ValidateUtils.is(syncEndpointList).notNull(RCode.ENDPOINT_NOTFOUND);
+
+            // module
+            List<Integer> moduleIdList = syncEndpointList.stream().map(MonitorEndpoint::getModuleId).distinct().collect(Collectors.toList());
+            List<MonitorModule> moduleList = monitorModuleService.getBaseMapper().selectBatchIds(moduleIdList);
+
+            Map<Integer, MonitorModule> endpointIdWithModuleMap = MapUtil.newHashMap();
+            syncEndpointList.forEach(endpoint -> {
+                MonitorModule module = moduleList.stream().filter(m -> ObjectUtil.equal(m.getId(), endpoint.getModuleId())).findFirst().get();
+                endpointIdWithModuleMap.put(endpoint.getId(), module);
+            });
+
+            // endpoint info Dashboard List
+            List<VisualDashboard> endpointInfoDashboardList = dashboardService.list(new LambdaQueryWrapper<VisualDashboard>()
+                    .eq(VisualDashboard::getType, DashboardConstant.Type.ENDPOINT.getValue())
+                    .in(VisualDashboard::getLink, syncEndpointIdList));
+
+            // endpoint info dashboard.tmpl_id = model.dashboard_id
+            for (VisualDashboard dashboard : endpointInfoDashboardList) {
+                MonitorModule endpointRefModuleEntity = endpointIdWithModuleMap.get(dashboard.getLink());
+                Integer endpointRefModuleEntityDashboardId = endpointRefModuleEntity.getDashboardId();
+                endpointRefModuleEntityDashboardId = ObjectUtil.defaultIfNull(endpointRefModuleEntityDashboardId, -1);
+                if (ObjectUtil.notEqual(dashboard.getTmplId(), endpointRefModuleEntityDashboardId)) {
+                    dashboard.setTmplId(endpointRefModuleEntityDashboardId);
+                    dashboardService.update(new LambdaUpdateWrapper<VisualDashboard>()
+                            .set(VisualDashboard::getTmplId, endpointRefModuleEntityDashboardId)
+                            .eq(VisualDashboard::getId, dashboard.getId()));
+                }
+            }
+
+            // endpoint Ref Dashboard List
+            List<VisualDashboard> endpointRefDashboardList = dashboardService.list(new LambdaQueryWrapper<VisualDashboard>()
+                    .eq(VisualDashboard::getType, DashboardConstant.Type.DASHBOARD.getValue())
+                    .eq(VisualDashboard::getVarType, DashboardConstant.VariableType.ENDPOINT.getValue())
+                    .in(VisualDashboard::getLink, syncEndpointIdList));
+
+            List<VisualDashboard> syncDashboardList = ListUtil.list(true);
+            syncDashboardList.addAll(endpointInfoDashboardList);
+            syncDashboardList.addAll(endpointRefDashboardList);
+            syncDashboardList = syncDashboardList.stream().distinct().filter(d -> ObjectUtil.notEqual(d.getTmplId(), -1)).collect(Collectors.toList());
+
+            log.info("[syncEndpointConfigAndDashboard] [syncDashboardList] [size: {}]", syncDashboardList.size());
+            if (log.isDebugEnabled()) {
+                log.debug("[syncEndpointConfigAndDashboard] [syncDashboardList] [size: {}] [info: {}]", syncDashboardList.size(), JSONUtil.toJsonStr(syncDashboardList));
+            }
+            if (CollUtil.isEmpty(syncDashboardList)) {
+                log.warn("[syncEndpointConfigAndDashboard] [endpoint has no dashboard to sync] [syncEndpointIdList: {}]", JSONUtil.toJsonStr(syncEndpointIdList));
+            } else {
+                // sync dashboard
+                syncDashboardList.forEach(syncDashboard -> {
+                    visualService.syncTemplateDashboard(syncDashboard.getId(), null, null, null);
+                });
+            }
+        }
+        log.info("[syncEndpointConfigAndDashboard] [finshed]");
     }
 
     /**

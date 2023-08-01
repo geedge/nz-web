@@ -303,6 +303,29 @@ public class AssetController {
     	assetAssetService.bulkEdit(params);
         return R.ok();
     }
+
+
+    /**
+     * 资产配置同步更新 dashboard，endpoint
+     *
+     * @return
+     */
+    @RequestMapping(value = "/asset/sync", method = {RequestMethod.POST, RequestMethod.PUT})
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ASSET)
+    public R syncAssetEndpointAndDashboard(@RequestBody(required = false) Map<String, Object> requestParam) {
+        // validate param
+        requestParam = Tool.MapUtil.defaultIfEmpty(requestParam, Tool.MapUtil.empty());
+
+        List<Integer> syncAssetIdList = (List<Integer>) requestParam.get("ids");
+        ValidateUtils.is(syncAssetIdList).notNull(RCode.ASSET_ID_ISNULL);
+
+        Integer isSyncEndpoint = Tool.MapUtil.getInt(requestParam, "endpoint", 0);
+        Integer isSyncDashboard = Tool.MapUtil.getInt(requestParam, "dashboard", 0);
+
+        assetAssetService.syncAssetEndpointAndDashboard(syncAssetIdList, isSyncEndpoint, isSyncDashboard);
+        return R.ok();
+    }
+
     
     @GetMapping("/stateConf")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSETSTATECONF)

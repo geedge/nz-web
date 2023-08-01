@@ -186,7 +186,7 @@ public class MonitorEndpointController {
     /**
      * endpoint配置同步接口
      */
-    @PutMapping( "/endpoint/syncTmpl")
+    //@PutMapping( "/endpoint/syncTmpl")
     @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ENDPOINT)
     public R syncTmpl(@RequestBody Map<String, List<Integer>> params) {
         ValidateUtils.notAllNull(RCode.ENDPOINT_MODULE_ASSET_ID_ISALLNULL, params.get("moduleIds"), params.get("endpointIds"), params.get("assetIds"));
@@ -217,5 +217,26 @@ public class MonitorEndpointController {
         return R.ok(monitorEndpointService.diagnose(id, request));
     }
 
+
+    /**
+     * Endpoint 配置同步更新 dashboard，endpoint
+     *
+     * @return
+     */
+    @RequestMapping(value = "/endpoint/sync", method = {RequestMethod.POST, RequestMethod.PUT})
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ENDPOINT)
+    public R syncEndpointConfigAndDashboard(@RequestBody(required = false) Map<String, Object> requestParam) {
+        // validate param
+        requestParam = Tool.MapUtil.defaultIfEmpty(requestParam, Tool.MapUtil.empty());
+
+        List<Integer> syncEndpointIdList = (List<Integer>) requestParam.get("ids");
+        ValidateUtils.is(syncEndpointIdList).notNull(RCode.ENDPOINT_ID_ISNULL);
+
+        Integer isSyncEndpointConfig = Tool.MapUtil.getInt(requestParam, "endpoint", 0);
+        Integer isSyncDashboard = Tool.MapUtil.getInt(requestParam, "dashboard", 0);
+
+        monitorEndpointService.syncEndpointConfigAndDashboard(syncEndpointIdList, isSyncEndpointConfig, isSyncDashboard);
+        return R.ok();
+    }
 }
 
