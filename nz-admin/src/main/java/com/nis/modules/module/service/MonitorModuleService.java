@@ -48,4 +48,13 @@ public interface MonitorModuleService extends IService<MonitorModule> {
 
     String queryAssetMoudules(Integer assetId);
 
+    /**
+     * sync Module Endpoint And Dashboard
+     *
+     * @param syncModuleIdList
+     * @param isSyncEndpoint
+     * @param isSyncDashboard
+     */
+    void syncModuleEndpointAndDashboard(List<Integer> syncModuleIdList, Integer isSyncEndpoint, Integer isSyncDashboard);
+
 }

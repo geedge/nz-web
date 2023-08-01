@@ -167,5 +167,26 @@ public class MonitorModuleController {
         return R.ok();
     }
 
+    /**
+     * Module 配置同步更新 dashboard，endpoint
+     *
+     * @return
+     */
+    @RequestMapping(value = "/module/sync", method = {RequestMethod.POST, RequestMethod.PUT})
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.MODULE)
+    public R syncModuleEndpointAndDashboard(@RequestBody(required = false) Map<String, Object> requestParam) {
+        // validate param
+        requestParam = Tool.MapUtil.defaultIfEmpty(requestParam, Tool.MapUtil.empty());
+
+        List<Integer> syncModuleIdList = (List<Integer>) requestParam.get("ids");
+        ValidateUtils.is(syncModuleIdList).notNull(RCode.MODULE_ID_ISNULL);
+
+        Integer isSyncEndpoint = Tool.MapUtil.getInt(requestParam, "endpoint", 0);
+        Integer isSyncDashboard = Tool.MapUtil.getInt(requestParam, "dashboard", 0);
+
+        monitorModuleService.syncModuleEndpointAndDashboard(syncModuleIdList, isSyncEndpoint, isSyncDashboard);
+        return R.ok();
+    }
+
 
 }

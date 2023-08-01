@@ -1075,4 +1075,29 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
         return this.baseMapper.queryAssetMoudules(assetId);
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void syncModuleEndpointAndDashboard(List<Integer> syncModuleIdList, Integer isSyncEndpoint, Integer isSyncDashboard) {
+        log.info("[syncModuleEndpointAndDashboard] [begin] [syncModuleIdList: {}] [isSyncEndpoint: {}] [isSyncDashboard: {}]", JSONUtil.toJsonStr(syncModuleIdList), isSyncEndpoint, isSyncDashboard);
+        if (ObjectUtil.equal(1, isSyncEndpoint)) {
+            List<MonitorEndpoint> syncEndpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().in(MonitorEndpoint::getModuleId, syncModuleIdList));
+            if (CollUtil.isEmpty(syncEndpointList)) {
+                log.warn("[syncModuleEndpointAndDashboard] [module has no endpoint to sync] [syncModuleIdList: {}]", JSONUtil.toJsonStr(syncModuleIdList));
+            } else {
+                List<Integer> syncEndpointIdList = syncEndpointList.stream().map(MonitorEndpoint::getId).collect(Collectors.toList());
+                monitorEndpointService.syncConfigByIdList(syncEndpointIdList);
+            }
+        }
+
+        if (ObjectUtil.equal(1, isSyncDashboard)) {
+            List<MonitorModule> moduleList = this.getBaseMapper().selectBatchIds(syncModuleIdList);
+            ValidateUtils.is(moduleList).notNull(RCode.MODULE_NOTFOUND);
+
+            for (MonitorModule module : moduleList) {
+                visualService.syncTemplateDashboard(null, null, null, module.getId());
+            }
+        }
+        log.info("[syncModuleEndpointAndDashboard] [finshed]");
+    }
+
 }
