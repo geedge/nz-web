@@ -17,6 +17,9 @@
  * 2023-07-27
  * 1. 删除 V2023.07.18.1__modify visual_chart x, y colnum type to double.sql 记录
  *
+ * 2023-08-07
+ * 1. 删除 V2023.07.28__Update Integration Template.sql 记录
+ *
  */
 
 -- ----------------------------
@@ -67,4 +70,10 @@ FROM
 	flyway_schema_history
 WHERE
 	script = "V2023.07.18.1__modify visual_chart x, y colnum type to double.sql";
+
+DELETE
+FROM
+	flyway_schema_history
+WHERE
+	script = "V2023.07.28__Update Integration Template.sql";
 
