@@ -23,10 +23,7 @@ import com.nis.modules.dashboard.entity.VisualDashboard;
 import com.nis.modules.dashboard.service.VisualDashboardService;
 import com.nis.modules.sys.dao.SysRoleDao;
 import com.nis.modules.sys.dao.SysUserDao;
-import com.nis.modules.sys.entity.SysApiKey;
-import com.nis.modules.sys.entity.SysRoleEntity;
-import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.entity.SysUserRoleEntity;
+import com.nis.modules.sys.entity.*;
 import com.nis.modules.sys.service.*;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
@@ -38,7 +35,6 @@ import org.apache.shiro.session.Session;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.subject.support.DefaultSubjectContext;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
@@ -70,9 +66,6 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 	private RedisTemplate redisTemplate;
 
 	@Autowired
-	private RedisConnectionFactory factory;
-
-	@Autowired
 	private SysConfigService sysConfigService;
 
 	@Autowired
@@ -92,6 +85,12 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 
 	@Autowired
 	private AlertRuleService alertRuleService;
+
+	@Autowired
+	private SysUserPrefService sysUserPrefService;
+
+	@Autowired
+	private SysUserStarredService sysUserStarredService;
 
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
@@ -365,6 +364,12 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
         List<SysApiKey> apiKeyList = sysApiKeyService.list(new LambdaUpdateWrapper<SysApiKey>().in(SysApiKey::getCreateBy, idList));
         // 删除相关 sys_api_key
         sysApiKeyService.remove(new LambdaUpdateWrapper<SysApiKey>().in(SysApiKey::getCreateBy, idList));
+
+		// sys user starred
+		sysUserStarredService.remove(new LambdaQueryWrapper<SysUserStarredEntity>().in(SysUserStarredEntity::getUid, idList));
+
+		// sys user preference
+		sysUserPrefService.remove(new LambdaQueryWrapper<SysUserPreference>().in(SysUserPreference::getUid, idList));
 
 		// 删除 redis 中 用户token 信息
 		List<String> removeKeys = new ArrayList<>();
