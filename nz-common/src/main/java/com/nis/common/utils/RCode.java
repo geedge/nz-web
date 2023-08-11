@@ -856,7 +856,12 @@ public enum RCode {
     TERMINAL_LS_FOLDER_ERROR(616023, "Cannot display remote folder"),
     TERMINAL_DUPLICATE_SESSION_FAILED(618024, "Duplicate session failed."),
     TERMINAL_STOP_SESSION_FAILED(618025, "Failed to stop session"),
-
+    TERMINAL_UPLOAD_CHUNK_SIZE_EROOR(618026, "The upload chunk size error"),
+    TERMINAL_UPLOAD_FILENAME_ISNULL(618027, "Terminal upload file name can not be null"),
+    TERMINAL_UPLOAD_CHUNK_SIZE_ISNULL(618028, "Terminal upload chunk size can not be null"),
+    TERMINAL_UPLOAD_TOTAL_SIZE_ISNULL(618029, "Terminal upload total size can not be null"),
+    TERMINAL_UPLOAD_CHUNK_START_ISNULL(618030, "Terminal upload chunk start can not be null"),
+    TERMINAL_UPLOAD_REPLACE_ISNULL(618031, "Terminal upload chunk start can not be null"),
     /**
      * LINK
      */

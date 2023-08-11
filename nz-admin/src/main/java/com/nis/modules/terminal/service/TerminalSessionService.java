@@ -30,7 +30,7 @@ public interface TerminalSessionService extends IService<TerminalSessionEntity> 
 
     void rmOfSftp(String uuid, String path);
 
-    String uploadOfSftp(String uuid, String path, MultipartFile file);
+    Long uploadOfSftp(String uuid, String path, MultipartFile file, String fileName, Integer replace, Long totalSize, Long chunkSize, Long chunkStart);
 
     Map<Object, Object> querySftpUploadProcess(String tid);
 
@@ -41,4 +41,6 @@ public interface TerminalSessionService extends IService<TerminalSessionEntity> 
     void renameFileOfSftp(String uuid, String oldPath, String newPath);
 
     Map<Object, Object> duplicateSession(String token, String uuid, Integer width, Integer height, Integer cols, Integer rows);
+
+    Map uploadCheckOfSftp(String uuid, String path, String fileName);
 }

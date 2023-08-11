@@ -3,6 +3,8 @@ package com.nis.modules.terminal.service.impl;
 import cn.hutool.cache.impl.TimedCache;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.lang.Filter;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.ssh.Sftp;
@@ -49,8 +51,7 @@ import org.springframework.web.socket.WebSocketSession;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.URLEncoder;
 import java.text.ParseException;
 import java.util.*;
@@ -486,19 +487,19 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
                 long size = attrs.getSize();
                 String linkName = null;
                 // 当文件为链接时，需要进一步判断文件类型和链接文件名称
-                if(isLink) {
-                	try {
-                		linkName = channelSftp.readlink(fullName);
-                		SftpATTRS stat = channelSftp.stat(fullName);
-                		isDir = stat.isDir();
-                		isBlk = stat.isBlk();
-                		isFifo = stat.isFifo();
-                		isReg = stat.isReg();
-                		isSock = stat.isSock();
+                if (isLink) {
+                    try {
+                        linkName = channelSftp.readlink(fullName);
+                        SftpATTRS stat = channelSftp.stat(fullName);
+                        isDir = stat.isDir();
+                        isBlk = stat.isBlk();
+                        isFifo = stat.isFifo();
+                        isReg = stat.isReg();
+                        isSock = stat.isSock();
                         size = stat.getSize();
-					} catch (Exception e) {
-						log.warn(e,"link error: {}", fullName);
-					}
+                    } catch (Exception e) {
+                        log.warn(e, "link error: {}", fullName);
+                    }
                 }
                 Map<Object, Object> map = Tool.MapUtil.builder()
                         .put("name", lsEntry.getFilename())
@@ -564,7 +565,7 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
         Sftp sftp = this.getSftpChannel(uuid);
         try {
             boolean exist = sftp.exist(path);
-            if (!exist){
+            if (!exist) {
                 log.info("[rmOfSftp] [no such file] [path: {}]", path);
                 throw new NZException(RCode.TERMINAL_DOWNLOAD_NO_SUCH_FILE);
             }
@@ -583,43 +584,44 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
     }
 
     @Override
-    public String uploadOfSftp(String uuid, String path, MultipartFile multipartFile) {
+    public Long uploadOfSftp(String uuid, String path, MultipartFile multipartFile, String fileName, Integer replace, Long totalSize, Long chunkSize, Long chunkStart) {
         Sftp sftp = this.getSftpChannel(uuid);
-        String tid = StrUtil.uuid();
-
         boolean exist = sftp.exist(path);
         if (!exist) {
-            log.warn("upload file directory does not exist create a file directory, path: {}", path);
+            log.warn("[uploadOfSftp] [directory not exist create a file directory] [path: {}]", path);
             this.mkdirOfSftp(uuid, path);
+        }
+        if (ObjectUtil.notEqual(chunkSize, multipartFile.getSize())) {
+            throw new NZException(RCode.TERMINAL_UPLOAD_CHUNK_SIZE_EROOR);
         }
 
         boolean isDir = sftp.cd(path);
-        if (isDir) {
-            File tempFile = Tool.FileUtil.newFile(Tool.StrUtil.concat(true, Constant.TEMP_PATH, File.separator, multipartFile.getOriginalFilename()));
-            try {
-                // copy stream
-                FileUtils.copyInputStreamToFile(multipartFile.getInputStream(), tempFile);
-
-                // upload thread
-                SftpUploadRunnable sftpUploadRunnable = new SftpUploadRunnable(tid, path, sftp, tempFile);
-                SFTP_UPLOAD_THREAD_MAP.put(tid, sftpUploadRunnable);
-
-                // record log
-                String fullName = FileUtil.file(path, multipartFile.getOriginalFilename()).toString();
-                sftpLogService.saveSftpLog(uuid, fullName, TerminalConstant.SftpOperType.UPLOAD.getValue());
-
-                // run upload
-                Tool.ThreadUtil.execAsync(sftpUploadRunnable);
-            } catch (IOException e) {
-                log.error(e);
-                FileUtil.del(tempFile);
-            }
+        String newFilePath = StrUtil.EMPTY;
+        if (path.lastIndexOf("/") == 0) {
+            newFilePath = StrUtil.concat(true, path, fileName);
         } else {
-            // disconnect
-            sftp.getClient().disconnect();
-            throw new NZException(RCode.TERMINAL_UPLOAD_DIRECTORY_ERROR);
+            newFilePath = StrUtil.concat(true, path, "/", fileName);
         }
-        return tid;
+
+        // overwriteFile
+        if (BooleanUtil.and(sftp.exist(newFilePath), replace == 1, chunkStart.intValue() == 0)) {
+            // delFile
+            sftp.delFile(newFilePath);
+        }
+        SFTPUploadMonitor sftpUploadMonitor = new SFTPUploadMonitor(totalSize);
+        if (isDir) {
+            try {
+                // append
+                sftp.put(multipartFile.getInputStream(), newFilePath, sftpUploadMonitor, Sftp.Mode.APPEND);
+            } catch (Exception e) {
+                log.error(e);
+            } finally {
+                // disconnect
+                sftp.getClient().disconnect();
+            }
+        }
+        log.info("[uploadOfSftp] [upload file finshed] [fileName: {}, path: {}, chunkStart: {}, uploadedSize: {}]", fileName, path, chunkStart, sftpUploadMonitor.getUploadedSize());
+        return sftpUploadMonitor.getUploadedSize();
     }
 
     @Override
@@ -756,6 +758,97 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
                 .map();
         log.info("[duplicateSession] [duplicate session finshed] [source uuid: {}] [duplicate uuid: {}]", uuid, duplicateSessionUUID);
         return duplicateSessionMap;
+    }
+
+    @Override
+    public Map uploadCheckOfSftp(String uuid, String path, String fileName) {
+        Sftp sftp = this.getSftpChannel(uuid);
+
+        ChannelSftp channelSftp = null;
+        Map<Object, Object> resultData = Tool.MapUtil.empty();
+
+        boolean isPathDir = sftp.cd(path);
+        log.info("[lsOfSftp] [is the path a directory] [path: {}] [isDir: {}]", path, isPathDir);
+        if (!isPathDir) {
+            log.warn("[lsOfSftp] [cannot display remote folder] [path: {}]", path);
+            throw new NZException(RCode.TERMINAL_LS_FOLDER_ERROR);
+        }
+
+        log.info("[lsOfSftp] [ls directory] [path: {}]", path);
+        String newFilePath = StrUtil.EMPTY;
+        if (path.lastIndexOf("/") == 0) {
+            newFilePath = StrUtil.concat(true, path, fileName);
+        } else {
+            newFilePath = StrUtil.concat(true, path, "/", fileName);
+        }
+        boolean exist = sftp.exist(newFilePath);
+        if (!exist) {
+            throw new NZException(RCode.TERMINAL_DOWNLOAD_NO_SUCH_FILE);
+        }
+        try {
+            channelSftp = sftp.getClient();
+            List<ChannelSftp.LsEntry> lsEntries = sftp.lsEntries(path, new Filter<ChannelSftp.LsEntry>() {
+                @Override
+                public boolean accept(ChannelSftp.LsEntry lsEntry) {
+                    return lsEntry.getFilename().equals(fileName);
+                }
+            });
+            ChannelSftp.LsEntry entry = lsEntries.get(0);
+            SftpATTRS attrs = entry.getAttrs();
+            String fullName = StrUtil.EMPTY;
+            if (isPathDir) {
+                fullName = new File(path, entry.getFilename()).toString();
+            } else {
+                fullName = path;
+            }
+
+            log.info("[uploadCheckOfSftp] [fileName: {}]", fullName);
+            boolean isLink = attrs.isLink();
+            boolean isDir = attrs.isDir();
+            boolean isBlk = attrs.isBlk();
+            boolean isFifo = attrs.isFifo();
+            boolean isReg = attrs.isReg();
+            boolean isSock = attrs.isSock();
+            long size = attrs.getSize();
+            String linkName = null;
+            // 当文件为链接时，需要进一步判断文件类型和链接文件名称
+            if (isLink) {
+                try {
+                    linkName = channelSftp.readlink(fullName);
+                    SftpATTRS stat = channelSftp.stat(fullName);
+                    isDir = stat.isDir();
+                    isBlk = stat.isBlk();
+                    isFifo = stat.isFifo();
+                    isReg = stat.isReg();
+                    isSock = stat.isSock();
+                    size = stat.getSize();
+                } catch (Exception e) {
+                    log.warn(e, "link error: {}", fullName);
+                }
+            }
+            resultData = Tool.MapUtil.builder()
+                    .put("name", entry.getFilename())
+                    .put("fullName", fullName)
+                    .put("permissions", attrs.getPermissions())
+                    .put("permissionsString", attrs.getPermissionsString())
+                    .put("gid", attrs.getGId())
+                    .put("uid", attrs.getUId())
+                    .put("size", size)
+                    .put("isDir", isDir)
+                    .put("isBlk", isBlk)
+                    .put("isFifo", isFifo)
+                    .put("isLink", isLink)
+                    .put("isReg", isReg)
+                    .put("isSock", isSock)
+                    .put("cts", attrs.getATime())
+                    .put("uts", attrs.getMTime())
+                    .put("linkName", linkName)
+                    .map();
+
+        } finally {
+            Tool.JschUtil.close(channelSftp);
+        }
+        return resultData;
     }
 
     @Override

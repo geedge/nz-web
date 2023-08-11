@@ -1,5 +1,6 @@
 package com.nis.modules.terminal.controller;
 
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.log.Log;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.smartvalidate.ValidateUtils;
@@ -182,11 +183,18 @@ public class TerminalHandlerController {
 
     @PutMapping("/sftp/upload")
     @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.TERMINAL)
-    public R upload(@RequestParam(value = "file") MultipartFile file,
-                    @RequestParam String uuid, @RequestParam String path) {
+    public R upload(@RequestParam(value = "chunkFile") MultipartFile file,
+                    @RequestParam String uuid, @RequestParam String path, @RequestParam String fileName, @RequestParam Integer replace, @RequestParam Long totalSize, @RequestParam Long chunkSize, @RequestParam Long chunkStart) {
+        ValidateUtils.is(uuid).notNull(RCode.TERMINAL_UUID_ISNULL)
+                .and(path).notNull(RCode.TERMINAL_PATH_ISNULL)
+                .and(fileName).notNull(RCode.TERMINAL_UPLOAD_FILENAME_ISNULL)
+                .and(totalSize).notNull(RCode.TERMINAL_UPLOAD_TOTAL_SIZE_ISNULL)
+                .and(chunkSize).notNull(RCode.TERMINAL_UPLOAD_CHUNK_SIZE_ISNULL)
+                .and(chunkStart).notNull(RCode.TERMINAL_UPLOAD_CHUNK_START_ISNULL);
+        replace = ObjectUtil.defaultIfNull(replace, 1);
 
-        String tid = terminalSessionService.uploadOfSftp(uuid, path, file);
-        return R.ok().putData("tid", tid);
+        Long uploadSize = terminalSessionService.uploadOfSftp(uuid, path, file, fileName, replace, totalSize, chunkSize, chunkStart);
+        return R.ok().putData("uploadSize", uploadSize);
     }
 
 
@@ -237,6 +245,18 @@ public class TerminalHandlerController {
     public R querySftpLog(@RequestParam Map<String, Object> params) {
         PageUtils page = terminalSftpLogService.querySftpLogPage(params);
         return R.ok(page);
+    }
+
+    @GetMapping("/sftp/upload/check")
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.TERMINAL)
+    public R uploadCheck(@RequestParam String uuid, @RequestParam String path, @RequestParam String fileName) {
+
+        ValidateUtils.is(uuid).notNull(RCode.TERMINAL_UUID_ISNULL)
+                .and(path).notNull(RCode.TERMINAL_PATH_ISNULL)
+                .and(fileName).notNull(RCode.TERMINAL_UPLOAD_FILENAME_ISNULL);
+
+        Map data = terminalSessionService.uploadCheckOfSftp(uuid, path, fileName);
+        return R.ok(data);
     }
 
 }
