@@ -192,7 +192,8 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
                 } catch (IOException e) {
                     log.error(e, "[killSession] [send exit prompt error] [uuid: {}]", uuid);
                 }
-
+                // delete
+                terminalClient.disconnect();
                 // kill 之后，将剩余文件写到数据库中
                 TerminalHandler.saveRecordContentAfterClientClosed(uuid);
             } catch (Exception e) {

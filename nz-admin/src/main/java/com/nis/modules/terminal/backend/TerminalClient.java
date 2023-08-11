@@ -117,7 +117,7 @@ public class TerminalClient {
 
         // send login Success Prompt
         String loginSuccessPromptStr = StrUtil.concat(true,
-                "\r\nConnecting to " + asset.getManageIp() + ":" + asset.getAuthProtocolPort() + "\r\n",
+                "Connecting to " + asset.getManageIp() + ":" + asset.getAuthProtocolPort() + "\r\n",
                 "Connection established. \r\n",
                 "Login success，use user " + asset.getAuthUsername() + " \r\n");
         webSocketSession.sendMessage(new TextMessage(loginSuccessPromptStr));
@@ -145,7 +145,7 @@ public class TerminalClient {
 
         // send login Success Prompt
         String loginSuccessPromptStr = StrUtil.concat(true,
-                "\r\nConnecting to " + asset.getManageIp() + ":" + asset.getAuthProtocolPort() + "\r\n",
+                "Connecting to " + asset.getManageIp() + ":" + asset.getAuthProtocolPort() + "\r\n",
                 "Connection established. \r\n",
                 "Login success，use user " + asset.getAuthUsername() + " \r\n");
         webSocketSession.sendMessage(new TextMessage(loginSuccessPromptStr));
