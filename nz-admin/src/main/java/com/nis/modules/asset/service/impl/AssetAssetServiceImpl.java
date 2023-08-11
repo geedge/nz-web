@@ -166,6 +166,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     @Autowired
     private VisualService visualService;
 
+    @Autowired
+    private SoftwareAssetService softwareAssetService;
+
     @SuppressWarnings("unchecked")
     @Override
     public AssetAsset queryAssetInfo(Integer id) {
@@ -1142,6 +1145,15 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // comment
         assetCommentService.remove(new LambdaQueryWrapper<AssetComment>()
                 .in(AssetComment::getAssetId, removeAssetIdList));
+
+        // software asset
+        softwareAssetService.remove(new LambdaQueryWrapper<SoftwareAsset>()
+                .in(SoftwareAsset::getAssetId, removeAssetIdList)
+                .ne(SoftwareAsset::getBuildIn, 1));
+        softwareAssetService.update(new LambdaUpdateWrapper<SoftwareAsset>()
+                .set(SoftwareAsset::getAssetId, -1)
+                .in(SoftwareAsset::getAssetId, idList)
+                .eq(SoftwareAsset::getBuildIn, 1));
         return R.ok().putData("list", resultList);
     }
 

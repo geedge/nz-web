@@ -1063,6 +1063,26 @@ public enum RCode {
     INT_MODULE_ID_ISNULL(761000,"integration module id can not be null"),
     INT_MODULE_NOT_FOUNT(761001,"integration module not fount"),
 
+    /**
+     * Software Asset
+     */
+    SOFTWARE_ASSET_NOT_EXIST(776001, "The software asset configuration does not exist"),
+    SOFTWARE_ASSET_NAME_ISNULL(771002, "Name cannot be empty"),
+    SOFTWARE_ASSET_NAME_DUPLICATE(772003, "Name duplicate"),
+    SOFTWARE_ASSET_ID_ISNULL(771004, "ID cannot be empty"),
+    SOFTWARE_ASSET_BUILTIN_CANNOT_DELETED(777005, "Built-in software asset cannot be deleted"),
+
+    /**
+     * Software Type
+     */
+    SOFTWARE_TYPE_NOT_EXIST(786001, "The software type configuration does not exist"),
+    SOFTWARE_TYPE_NAME_ISNULL(781002, "Name cannot be empty"),
+    SOFTWARE_TYPE_NAME_DUPLICATE(782003, "Name duplicate"),
+    SOFTWARE_TYPE_ID_ISNULL(781004, "ID cannot be empty"),
+    SOFTWARE_TYPE_RELOBJ_CAN_NOT_REMOVE(787005, "Software type have associated data and cannot be deleted"),
+    SOFTWARE_TYPE_BUILTIN_CANNOT_DELETED(787006,"Built-in software type cannot be deleted"),
+
+
     CONTENT_MORETHAN_MAXLENGTH(998, "Field content length more than {0}"),
     ERROR(999, "error"); //通用错误/未知错误
 
