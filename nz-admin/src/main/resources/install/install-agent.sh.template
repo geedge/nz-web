@@ -1,19 +1,5 @@
 #!/bin/bash
 { # this ensures the entire script is downloaded #
-# Find Java
-if [[ -n "$JAVA_HOME" ]] && [[ -x "$JAVA_HOME/bin/java" ]]; then
-    JAVA_EXE="$JAVA_HOME/bin/java"
-elif type -p java > /dev/null 2>&1; then
-    JAVA_EXE=$(type -p java)
-elif [[ -x "/usr/bin/java" ]];  then
-    JAVA_EXE="/usr/bin/java"
-else
-    echo -e "\e[1;31mUnable to find Java\e[0m"
-    exit 1
-fi
-
-echo "java: $JAVA_EXE"
-
 #auto replace parameter start
 
 WEB_TOKEN=${webToken}
