@@ -714,14 +714,19 @@
 			</if>
 
 			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['-asset'])">
-				AND <foreach item="item" collection="params['-asset']" separator="AND" index="" open="(" close=")">
-					ass.name != #{item}
-				</foreach>
+				AND (
+					<foreach item="item" collection="params['-asset']" separator="AND" index="" open="(" close=")">
+						ass.name != #{item}
+					</foreach> OR ass.name IS NULL
+				)
 			</if>
+
 			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['-*asset'])">
-				AND <foreach item="item" collection="params['-*asset']" separator="AND" index="" open="(" close=")">
-					NOT locate(#{item},ass.name)
-				</foreach>
+				AND (
+					<foreach item="item" collection="params['-*asset']" separator="AND" index="" open="(" close=")">
+						NOT locate(#{item},ass.name)
+					</foreach> OR ass.name IS NULL
+				)
 			</if>
 
 			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.dc)">
@@ -737,15 +742,19 @@
 			</if>
 
 			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['-dc'])">
-				AND <foreach item="item" collection="params['-dc']" separator="AND" index="" open="(" close=")">
-					dc.name != #{item}
-				</foreach>
+				AND (
+					<foreach item="item" collection="params['-dc']" separator="AND" index="" open="(" close=")">
+						dc.name != #{item}
+					</foreach> OR dc.name IS NULL
+				)
 			</if>
 
 			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['-*dc'])">
-				AND <foreach item="item" collection="params['-*dc']" separator="AND" index="" open="(" close=")">
-					NOT locate(#{item},dc.name)
-				</foreach>
+				AND (
+					<foreach item="item" collection="params['-*dc']" separator="AND" index="" open="(" close=")">
+						NOT locate(#{item},dc.name)
+					</foreach> OR dc.name IS NULL
+				)
 			</if>
 
 			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.project)">
@@ -761,15 +770,19 @@
 			</if>
 
 			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['-project'])">
-				AND <foreach item="item" collection="params['-project']" separator="AND" index="" open="(" close=")">
-					p.name != #{item}
-				</foreach>
+				AND (
+					<foreach item="item" collection="params['-project']" separator="AND" index="" open="(" close=")">
+						p.name != #{item}
+					</foreach> OR p.name IS NULL
+				)
 			</if>
 
 			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['-*project'])">
-				AND <foreach item="item" collection="params['-*project']" separator="AND" index="" open="(" close=")">
-					NOT locate(#{item},p.name)
-				</foreach>
+				AND (
+					<foreach item="item" collection="params['-*project']" separator="AND" index="" open="(" close=")">
+						NOT locate(#{item},p.name)
+					</foreach> OR p.name IS NULL
+				)
 			</if>
 
 			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.module)">
@@ -785,15 +798,19 @@
 			</if>
 
 			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['-module'])">
-				AND <foreach item="item" collection="params['-module']" separator="AND" index="" open="(" close=")">
-					m.name != #{item}
-				</foreach>
+				AND (
+					<foreach item="item" collection="params['-module']" separator="AND" index="" open="(" close=")">
+						m.name != #{item}
+					</foreach> OR m.name IS NULL
+				)
 			</if>
 
 			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['-*module'])">
-				AND <foreach item="item" collection="params['-*module']" separator="AND" index="" open="(" close=")">
-					NOT locate(#{item},m.name)
-				</foreach>
+				AND (
+					<foreach item="item" collection="params['-*module']" separator="AND" index="" open="(" close=")">
+						NOT locate(#{item},m.name)
+					</foreach> OR m.name IS NULL
+				)
 			</if>
 
 			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.endpoint)">
@@ -809,15 +826,19 @@
 			</if>
 
 			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['-endpoint'])">
-				AND <foreach item="item" collection="params['-endpoint']" separator="AND" index="" open="(" close=")">
-					e.name != #{item}
-				</foreach>
+				AND (
+					<foreach item="item" collection="params['-endpoint']" separator="AND" index="" open="(" close=")">
+						e.name != #{item}
+					</foreach> OR e.name IS NULL
+				)
 			</if>
 
 			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params['-*endpoint'])">
-				AND <foreach item="item" collection="params['-*endpoint']" separator="AND" index="" open="(" close=")">
-					NOT locate(#{item},e.name)
-				</foreach>
+				AND (
+					<foreach item="item" collection="params['-*endpoint']" separator="AND" index="" open="(" close=")">
+						NOT locate(#{item},e.name)
+					</foreach> OR e.name IS NULL
+				)
 			</if>
 
 			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.rule)">
