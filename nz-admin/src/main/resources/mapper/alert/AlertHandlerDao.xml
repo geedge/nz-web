@@ -645,6 +645,7 @@
 		LEFT JOIN monitor_endpoint e ON am.endpoint_id = e.id
 		LEFT JOIN asset_asset ass ON am.asset_id = ass.id
 		LEFT JOIN dc dc ON am.dc_id = dc.id
+		LEFT JOIN alert_silence_message_rel asmr ON am.id = asmr.message_id
 		<where>
 			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.id)">
 				<foreach item="item" collection="params.id" separator="AND" index="" open="(" close=")">
@@ -685,6 +686,12 @@
 			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.endpointId)">
 				AND <foreach item="item" collection="params.endpointId" separator="AND" index="" open="(" close=")">
 					am.endpoint_id ${item.operator} #{item.value}
+				</foreach>
+			</if>
+
+			<if test="@cn.hutool.core.util.ObjectUtil@isNotEmpty(params.silenceId)">
+				AND <foreach item="item" collection="params.silenceId" separator="AND" index="" open="(" close=")">
+					asmr.silence_conf_id ${item.operator} #{item.value}
 				</foreach>
 			</if>
 
