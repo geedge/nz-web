@@ -380,7 +380,7 @@ public class Constant {
 		ALERT_RULE_UNIT_MAP.put("YYYY-MM-DD HH:mm:ss", 34);
 		ALERT_RULE_UNIT_MAP.put("MM/DD/YYYY h:mm:ss a", 35);
 
-		ASSET_FIELD_META_VALUE = Arrays.asList(new String[] { "text", "multitext", "textarea", "radio", "checkbox",
+		ASSET_FIELD_META_VALUE = Arrays.asList(new String[] { "text", "textarea", "radio", "checkbox",
 				"select", "integer", "double", "datetime", "password", "email" });
 
 		ALERT_MESSAGE_TABLE_STATE_MAPPING.put(ALERT_MESSAGE_ACTIVE_TABLE, ALERT_MESSAGE_ACTIVE_STATE);

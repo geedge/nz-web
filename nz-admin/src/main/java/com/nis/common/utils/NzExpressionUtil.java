@@ -95,8 +95,8 @@ public class NzExpressionUtil {
 						// 用来取值的 metakey
 						String valueKey = Tool.StrUtil.isEmpty(key) ? expre : key;
 						String type = keyTypeMap.get(valueKey);
-						// 当类型为 MULTITEXT CHECKBOX 需要通过下标进行取值
-						if (Tool.StrUtil.equalsIgnoreCase("MULTITEXT", type) || Tool.StrUtil.equalsIgnoreCase("CHECKBOX", type) || Tool.StrUtil.equalsIgnoreCase("DATETIME", type)) {
+						// 当类型为 CHECKBOX DATETIME 需要通过下标进行取值
+						if (Tool.StrUtil.equalsIgnoreCase("CHECKBOX", type) || Tool.StrUtil.equalsIgnoreCase("DATETIME", type)) {
 							if (ToolUtil.isNotEmpty(map) && ToolUtil.isNotEmpty(key) && ToolUtil.isNotEmpty(index)) {
 								List<String> list = map.get(key);
 								if (ToolUtil.isNotEmpty(list)) {
@@ -148,8 +148,8 @@ public class NzExpressionUtil {
 						// 用来取值的 metakey
 						String valueKey = Tool.StrUtil.isEmpty(key) ? expre : key;
 						String type = keyTypeMap.get(valueKey);
-						// 当类型为 MULTITEXT CHECKBOX 需要通过下标进行取值
-						if (Tool.StrUtil.equalsIgnoreCase("MULTITEXT", type) || Tool.StrUtil.equalsIgnoreCase("CHECKBOX", type) || Tool.StrUtil.equalsIgnoreCase("DATETIME", type)) {
+						// 当类型为 CHECKBOX DATETIME 需要通过下标进行取值
+						if (Tool.StrUtil.equalsIgnoreCase("CHECKBOX", type) || Tool.StrUtil.equalsIgnoreCase("DATETIME", type)) {
 							if (ToolUtil.isNotEmpty(map) && ToolUtil.isNotEmpty(key) && ToolUtil.isNotEmpty(index)) {
 								List<String> list = map.get(key);
 								if (ToolUtil.isNotEmpty(list)) {

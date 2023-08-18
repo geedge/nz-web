@@ -2411,25 +2411,13 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                     Integer action = (Integer) map.get("action");
 
                     if (ToolUtil.equals(action, 0)) {
-                        //根据 meta type 判断 value 是否为多值
-                        String type = (String) map.get("type");
-                        if (Tool.StrUtil.equalsIgnoreCase("MULTITEXT", type) || Tool.StrUtil.equalsIgnoreCase("CHECKBOX", type)) {
-                            List<String> values = (List<String>) map.get("value");
-                            for (Integer id : ids) {
-                                for (String value : values) {
-                                    AssetFieldValue data = new AssetFieldValue();
-                                    data.setAssetId(id);
-                                    data.setMetaId((Integer) map.get("id"));
-                                    data.setValue(value);
-                                    addFields.add(data);
-                                }
-                            }
-                        }else {
-                            for (Integer id : ids) {
+                        List<String> values = (List<String>) map.get("value");
+                        for (Integer id : ids) {
+                            for (String value : values) {
                                 AssetFieldValue data = new AssetFieldValue();
                                 data.setAssetId(id);
                                 data.setMetaId((Integer) map.get("id"));
-                                data.setValue((String) map.get("value"));
+                                data.setValue(value);
                                 addFields.add(data);
                             }
                         }
