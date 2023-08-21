@@ -588,6 +588,8 @@ public enum RCode {
     SYS_USER_STARRED_TID_ISNULL(511047,"Starred tid can not be empty"),
     SYS_USER_STARRED_ID_TYPE_ISNULL(511048,"Starred id and type at the same time null"),
     SYS_USER_NEWPWD_ISNULL(511049, "User new password can not be empty"), //新密码不能为空
+    SYS_USER_QUERY_KEY_ISNULL(511050,"Query key can not be empty"),
+    SYS_USER_QUERY_VALUE_ISNULL(511051,"Query value can not be empty"),
 
     AGENT_ID_ISNULL(521000, "Agent id can not be empty"),
     AGENT_DCID_ISNULL(521001, "Agent Dc id can not be empty"),
