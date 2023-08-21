@@ -25,7 +25,7 @@ public class SysUserQueryHistoryController {
      */
     @GetMapping("/queryHistory")
     public R queryHistory(@RequestParam Map<String, Object> params){
-        ValidateUtils.is(params.get("key")).notNull(RCode.SYS_USER_QUERY_KEY_ISNULL);
+        ValidateUtils.is(params.get("queryKey")).notNull(RCode.SYS_USER_QUERY_KEY_ISNULL);
         PageUtils page = sysUserQueryHistoryService.queryHistory(params);
 
         return R.ok(page);
