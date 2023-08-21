@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.nis.modules.sys.dao.SysUserQueryHistoryDao">
+    <resultMap type="com.nis.modules.sys.entity.SysUserQueryHistoryEntity" id="queryHistory">
+        <result property="id" column="id"/>
+        <result property="uid" column="uid"/>
+        <result property="queryKey" column="query_key"/>
+        <result property="queryValue" column="query_value"/>
+        <result property="queryHash" column="query_hash"/>
+        <result property="cnt" column="cnt"/>
+        <result property="uts" column="uts"/>
+    </resultMap>
+
+    <delete id="deleteQueryHistory">
+        delete from sys_user_query_history
+        <where>
+            <if test="params.ids != null and params.ids.size > 0">
+                id IN
+                <foreach collection="params.ids" item="id" index="no" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
+            </if>
+            <if test="params.hash != null and params.hash != ''">
+                or #{params.hash} = query_hash
+            </if>
+        </where>
+    </delete>
+
+    <select id="queryList" resultMap="queryHistory">
+        select
+            * ,
+            COUNT(query_hash) as cnt
+        from sys_user_query_history suqh
+        <where>
+            <if test="params.key != null and params.key != ''">
+                and locate(#{params.key} , suqh.query_key)
+            </if>
+            <if test="params.uid != null and params.uid != ''">
+                and #{params.uid} = suqh.uid
+            </if>
+        </where>
+        group by suqh.query_hash
+    </select>
+</mapper>
