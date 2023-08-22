@@ -32,8 +32,8 @@
             COUNT(query_hash) as cnt
         from sys_user_query_history suqh
         <where>
-            <if test="params.querykey != null and params.querykey != ''">
-                and locate(#{params.querykey} , suqh.query_key)
+            <if test="params.queryKey != null and params.queryKey != ''">
+                and locate(#{params.queryKey} , suqh.query_key)
             </if>
             <if test="params.uid != null and params.uid != ''">
                 and #{params.uid} = suqh.uid

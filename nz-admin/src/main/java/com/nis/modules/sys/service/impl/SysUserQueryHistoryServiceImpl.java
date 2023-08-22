@@ -34,19 +34,19 @@ public class SysUserQueryHistoryServiceImpl extends ServiceImpl<SysUserQueryHist
     }
 
     @Override
-    public Integer saveQueryHistory(SysUserQueryHistoryEntity entity) {
-        String queryValue = entity.getQueryValue();
-        String queryValueHash = DigestUtils.md5Hex(queryValue);
-        entity.setQueryHash(queryValueHash);
-        entity.setUid(ShiroUtils.getUserId().intValue());
-        entity.setUts(System.currentTimeMillis());
-        this.save(entity);
-        return entity.getId();
+    public void saveQueryHistory(List<SysUserQueryHistoryEntity> queryHistoryList) {
+        for (SysUserQueryHistoryEntity entity : queryHistoryList) {
+            String queryValueHash = DigestUtils.md5Hex(entity.getQueryValue());
+            entity.setQueryHash(queryValueHash);
+            entity.setUid(ShiroUtils.getUserId().intValue());
+            entity.setUts(System.currentTimeMillis());
+        }
+        this.saveBatch(queryHistoryList);
     }
 
     @Override
     public void deleteQueryHistory(Map params) {
-        if (ObjectUtil.isNotEmpty(params.get("ids"))){
+        if (ObjectUtil.isNotEmpty(params.get("ids"))) {
             List<String> ids = StrUtil.split(params.get("ids").toString(), ",");
             params.put("ids", ids);
         }

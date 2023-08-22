@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.sys.entity.SysUserQueryHistoryEntity;
 
+import java.util.List;
 import java.util.Map;
 
 
@@ -11,7 +12,7 @@ public interface SysUserQueryHistoryService extends IService<SysUserQueryHistory
 
     PageUtils queryHistory(Map<String, Object> params);
 
-    Integer saveQueryHistory(SysUserQueryHistoryEntity userQueryHistoryEntity);
+    void saveQueryHistory(List<SysUserQueryHistoryEntity> queryHistoryList);
 
     void deleteQueryHistory(Map params);
 }

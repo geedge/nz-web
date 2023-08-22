@@ -9,6 +9,7 @@ import com.nis.modules.sys.service.SysUserQueryHistoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -20,42 +21,42 @@ public class SysUserQueryHistoryController {
 
     /**
      * 用户查询记录查询
+     *
      * @param params
      * @return
      */
     @GetMapping("/queryHistory")
-    public R queryHistory(@RequestParam Map<String, Object> params){
+    public R queryHistory(@RequestParam Map<String, Object> params) {
         ValidateUtils.is(params.get("queryKey")).notNull(RCode.SYS_USER_QUERY_KEY_ISNULL);
         PageUtils page = sysUserQueryHistoryService.queryHistory(params);
-
         return R.ok(page);
     }
 
     /**
      * 用户查询记录保存
-     * @param userQueryHistoryEntity
+     *
+     * @param queryHistoryList
      * @return
      */
     @PostMapping("/queryHistory")
-    public R saveQueryHistory(@RequestBody SysUserQueryHistoryEntity userQueryHistoryEntity){
-        ValidateUtils.is(userQueryHistoryEntity.getQueryKey()).notNull(RCode.SYS_USER_QUERY_KEY_ISNULL)
-                .and(userQueryHistoryEntity.getQueryValue()).notNull(RCode.SYS_USER_QUERY_VALUE_ISNULL);
-
-        Integer id = sysUserQueryHistoryService.saveQueryHistory(userQueryHistoryEntity);
-
-        return R.ok().putData("id", id);
+    public R saveQueryHistory(@RequestBody List<SysUserQueryHistoryEntity> queryHistoryList) {
+        for (SysUserQueryHistoryEntity queryHistory : queryHistoryList) {
+            ValidateUtils.is(queryHistory.getQueryKey()).notNull(RCode.SYS_USER_QUERY_KEY_ISNULL)
+                    .and(queryHistory.getQueryValue()).notNull(RCode.SYS_USER_QUERY_VALUE_ISNULL);
+        }
+        sysUserQueryHistoryService.saveQueryHistory(queryHistoryList);
+        return R.ok();
     }
 
     /**
      * 用户查询记录删除
+     *
      * @param params
      * @return
      */
     @DeleteMapping("/queryHistory")
-    public R deleteQueryHistory(@RequestParam Map params){
-
+    public R deleteQueryHistory(@RequestParam Map params) {
         sysUserQueryHistoryService.deleteQueryHistory(params);
-
         return R.ok();
     }
 }
