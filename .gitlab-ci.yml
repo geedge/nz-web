@@ -103,10 +103,12 @@ dev_build:
     - chmod +x xjar
     - "git log -200 --pretty=format:'%ad : %s' > git-log.html"
     - tar -zcvf $FILE_NAME xjar nz-admin.xjar git-log.html
+    - md5sum $FILE_NAME > $CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-latest.tar.gz.md5sum.txt
     # 将 文件 上传到 minio
     - mc alias set nz $MINIO_HOST $MINIO_USER $MINIO_PWD
     - mc cp $FILE_NAME nz/ci-cd/nz-web/$FILE_NAME
     - mc cp $FILE_NAME nz/ci-cd/nz-web/$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-latest.tar.gz
+    - mc cp $CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-latest.tar.gz.md5sum.txt nz/ci-cd/nz-web/$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-latest.tar.gz.md5sum.txt
     - cd ../../
   # 在哪个分支上可用
   only:
