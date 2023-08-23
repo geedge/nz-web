@@ -1684,7 +1684,12 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 log.error(e);
                 Map failDetail = new HashMap(4);
                 failDetail.put("lineNo", i + 1);
-                String errorMsg = e instanceof NZException ? ((NZException) e).getMsg() : e.getMessage();
+                String errorMsg;
+                if (e instanceof NZException){
+                    errorMsg = i18nService.queryValueByName(String.valueOf(((NZException) e).getCode()));
+                }else {
+                    errorMsg = e.getMessage();
+                }
                 failDetail.put("errorMsg", errorMsg);
                 failDetails.add(failDetail);
             }
