@@ -956,6 +956,8 @@ public enum RCode {
     IMPORT_ERROR_STOP(818, "Error stop import"),
     IMPORT_SUBNET_VALUE_ERROR(819, "{0} Not in subnet value list"),
     IMPORT_FILE_PARSE_ERROR(820, "Import file resolution failed"),
+    IMPORT_FILE_CONTENT_ISNULL(821, "Import file content cannot be empty"),
+    IMPORT_FILE_DATA_ISNULL(822, "Import file data cannot be empty"),
 
 
     /**

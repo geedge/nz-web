@@ -141,6 +141,9 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
                 if (!headerFlag) {
                     throw new NZException(RCode.EXCELFILE_HEADER_TEMPLATE_ERROR);
                 }
+                if (sheet.getFirstRowNum() == sheet.getLastRowNum()){
+                    throw new NZException(RCode.IMPORT_FILE_DATA_ISNULL);
+                }
                 for (int i = sheet.getFirstRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
                     Row row = sheet.getRow(i);
                     if (row == null) continue;
@@ -155,6 +158,9 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
             case CSV: {
                 CsvData csvData = CSVUtils.getCsvDataFromMultipartFile(multipartFile);
                 List<CsvRow> rows = csvData.getRows();
+                if (rows.size() == 1){
+                    throw new NZException(RCode.IMPORT_FILE_DATA_ISNULL);
+                }
                 CsvRow headers = rows.get(0);
                 // 表头校验
                 if (!CSVUtils.validateCSVHeader(headers, headerInfos)) {
@@ -183,6 +189,9 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
                 } catch (Exception e) {
                     log.error(e, "[getJSONDataFromMultipartFile] [error] [file: {}]", multipartFile.getOriginalFilename());
                     throw new NZException(RCode.IMPORT_FILE_PARSE_ERROR);
+                }
+                if (CollUtil.isEmpty(mapList)){
+                    throw new NZException(RCode.IMPORT_FILE_CONTENT_ISNULL);
                 }
                 LinkedHashMap map = mapList.get(0);
                 // 表头校验
