@@ -71,7 +71,7 @@ public class VisualController {
 		Object tvarListObj = Tool.ObjectUtil.defaultIfNull(varsObj, Tool.ListUtil.empty());
 		String varsJsonStr = Tool.JSONUtil.toJsonStr(tvarListObj);
 
-		String taskId = visualService.createSnapshotTask(format, Integer.valueOf(dashboardId.toString()), Long.valueOf(start.toString()), Long.valueOf(end.toString()), varsJsonStr);
+		String taskId = visualService.createDashboardSnapshotTask(format, Integer.valueOf(dashboardId.toString()), Long.valueOf(start.toString()), Long.valueOf(end.toString()), varsJsonStr);
 
 		return R.ok().putData("tid", taskId);
 	}
@@ -85,7 +85,7 @@ public class VisualController {
 	@GetMapping("/dashboard/snapshot/result/{tid}")
 	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.DASHBOARD)
 	public R snapshotResultProcess(@PathVariable(required = true) String tid) {
-		return R.ok().putData("taskId", visualService.snapshotResultProcess(tid));
+		return R.ok().putData("taskId", visualService.querySnapshotResultProcess(DashboardConstant.DASHBOARD_SNAPSHOT_TYPE, tid));
 	}
 
 	/**
@@ -97,7 +97,7 @@ public class VisualController {
 	@GetMapping("/dashboard/snapshot/cancel/{tid}")
 	@SysLog(operation = OperationEnum.DELETE, type = TypeEnum.DASHBOARD)
 	public R cancelSnapshotTask(@PathVariable(required = true) String tid) {
-		visualService.cancelSnapshotTask(tid);
+		visualService.cancelSnapshotTask(DashboardConstant.DASHBOARD_SNAPSHOT_TYPE, tid);
 		return R.ok();
 	}
 
@@ -112,7 +112,7 @@ public class VisualController {
 	public void downloadSnapshotFile(HttpServletResponse response,
 	                                 @RequestHeader(required = false, defaultValue = "en") String language,
 	                                 @PathVariable(required = true) String tid) {
-		visualService.downloadSnapshotFile(response, language, tid);
+		visualService.downloadSnapshotFile(response, DashboardConstant.DASHBOARD_SNAPSHOT_TYPE, language, tid);
 	}
 
 

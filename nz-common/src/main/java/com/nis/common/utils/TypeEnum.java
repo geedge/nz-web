@@ -16,7 +16,8 @@ public enum TypeEnum {
 	SNMPCREDENTIAL("snmp credential"), LICENSE("license"), SYSTEMAPIKEY("sys api key"),I18N("i18n"),CTL("ctl"),IPAMSUBNET("ipam subnet"),
 	IPAMIP("ipam ip"),RECORD_RULE("record rule"), ISSUERECORD("issue record"), ISSUEACTIVITY("issue activity"), SYSFILE("sys file"), ASSETCOMMENT("asset comment"),
 	VSYS("vsys"), TERMINAL("terminal"), INTEGRATION("integration"), SYS_USER_PREFERENCE("sys user preference"),
-	SOFTWARE_ASSET("software asset"), SOFTWARE_TYPE("software type");
+	SOFTWARE_ASSET("software asset"), SOFTWARE_TYPE("software type"),
+	NOTEBOOK("notebook");
 
 	private String value;
 

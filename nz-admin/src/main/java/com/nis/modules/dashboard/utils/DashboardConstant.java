@@ -1,6 +1,8 @@
 package com.nis.modules.dashboard.utils;
 
 import cn.hutool.core.util.StrUtil;
+import com.nis.common.exception.NZException;
+import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
 
 public class DashboardConstant {
@@ -9,6 +11,17 @@ public class DashboardConstant {
      * dashboard 模板同步锁 key
      */
     public static final String TEMPLATE_SYNC_LOCK_KEY = "dashboardTemplateSynchronizationLock";
+
+
+    /**
+     * dashboard snapshot type
+     */
+    public final static String DASHBOARD_SNAPSHOT_TYPE = "dashboard";
+
+    /**
+     * notebook snapshot type
+     */
+    public final static String NOTEBOOK_SNAPSHOT_TYPE = "notebook";
 
 
     /**
@@ -73,6 +86,67 @@ public class DashboardConstant {
                 if (Tool.ObjectUtil.equal(v.getValue(), value)) return v;
             throw new IllegalArgumentException();
         }
+    }
+
+    /**
+     * notebook type
+     */
+    public enum NotebookType {
+        NONE("none"),
+        RUNBOOK("runbook"),
+        POSTMORTEM("postmortem"),
+        DOCUMENTATION("documentation"),
+        REPORT("report"),
+        INVESTIGATION("investigation");
+
+        private String value;
+
+        NotebookType(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
+        }
+
+        public static NotebookType getInstanceByValue(String value) {
+            for (NotebookType v : values()) {
+                if (StrUtil.equalsIgnoreCase(v.getValue(), value)) {
+                    return v;
+                }
+            }
+            throw new NZException(RCode.NOTEBOOK_TYPE_INVALID);
+        }
+    }
+
+    public enum NotebookImportEnum {
+
+        NAME("name", 0),
+        TYPE("type", 1),
+        REMARK("remark", 2),
+        PARAM("param", 3),
+        CHARTS("charts", 4);
+
+        private String name;
+        private int index;
+
+        NotebookImportEnum(String name, int index) {
+            this.name = name;
+            this.index = index;
+        }
+
+        public int getIndex() {
+            return index;
+        }
+
+        public String getName() {
+            return name;
+        }
+
     }
 
 }

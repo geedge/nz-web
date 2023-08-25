@@ -147,6 +147,19 @@ public enum RCode {
     PLAYLIST_MODE_ISNULL(141008, "Mode cannot be empty"),
 
     /**
+     * notebook
+     */
+    NOTEBOOK_NOT_EXIST(156001, "The notebook configuration does not exist"),
+    NOTEBOOK_NAME_ISNULL(151002, "Name cannot be empty"),
+    NOTEBOOK_TYPE_INVALID(154003, "Type not in enumeration range"),
+    NOTEBOOK_NAME_DUPLICATE(152004, "Name duplicate"),
+    NOTEBOOK_PARAM_FORMAT(153005, "Notebook param format error"),
+    NOTEBOOK_CHARTS_FORMAT(153006, "Notebook charts format error"),
+    NOTEBOOK_ID_ISNULL(151007, "ID cannot be empty"),
+    NOTEBOOK_BUILTIN_CANNOT_DELETED(157008, "Built-in notebook cannot be deleted"),
+    NOTEBOOK_IMPORT_FILETYPE_ERROR(159009, "Import file type error"),
+
+    /**
      * project菜单项相关
      */
     PROJECT_ID_ISNULL(211000, "Project id can not be empty"),

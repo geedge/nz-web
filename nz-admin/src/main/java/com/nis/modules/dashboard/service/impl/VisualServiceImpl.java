@@ -2,6 +2,7 @@ package com.nis.modules.dashboard.service.impl;
 
 import cn.hutool.cache.impl.TimedCache;
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.thread.NamedThreadFactory;
@@ -22,8 +23,10 @@ import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.dashboard.entity.VisualChart;
 import com.nis.modules.dashboard.entity.VisualChartElement;
 import com.nis.modules.dashboard.entity.VisualDashboard;
+import com.nis.modules.dashboard.entity.VisualNotebook;
 import com.nis.modules.dashboard.service.VisualChartService;
 import com.nis.modules.dashboard.service.VisualDashboardService;
+import com.nis.modules.dashboard.service.VisualNotebookService;
 import com.nis.modules.dashboard.service.VisualService;
 import com.nis.modules.dashboard.utils.DashboardConstant;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
@@ -32,11 +35,20 @@ import com.nis.modules.stat.service.impl.StatServiceImpl;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.setup.controller.TimezoneController;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
 import org.apache.commons.lang3.time.StopWatch;
+import org.openqa.selenium.*;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.print.PageSize;
+import org.openqa.selenium.print.PrintOptions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletResponse;
@@ -46,6 +58,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
@@ -92,6 +105,9 @@ public class VisualServiceImpl implements VisualService {
     private VisualDashboardService dashboardService;
 
     @Autowired
+    private VisualNotebookService notebookService;
+
+    @Autowired
     private VisualChartService visualChartService;
 
     @Autowired
@@ -106,6 +122,11 @@ public class VisualServiceImpl implements VisualService {
 
     @PostConstruct
     public void init() {
+        // ChromeDriver
+        // System.setProperty("webdriver.chrome.driver", "./lib/chromedriver.exe");
+        System.setProperty("webdriver.chrome.driver", "./lib/chromedriver");
+        System.setProperty("webdriver.http.factory", "jdk-http-client");
+
         log.info("Setup dashboard snapshot cache begin...");
         // 创建缓存，默认 snapshotTimeout * 5
         SNAPSHOT_CACHE = Tool.CacheUtil.newTimedCache(timeout * 5);
@@ -238,7 +259,7 @@ public class VisualServiceImpl implements VisualService {
     }
 
     @Override
-    public String createSnapshotTask(String format, Integer dashboardId, Long start, Long end, String varsJsonStr) {
+    public String createDashboardSnapshotTask(String format, Integer dashboardId, Long start, Long end, String varsJsonStr) {
         VisualDashboard dashboard = dashboardService.getById(dashboardId);
         ValidateUtils.is(dashboard).notNull(RCode.DASHBOARD_NOT_EXIST);
 
@@ -273,7 +294,7 @@ public class VisualServiceImpl implements VisualService {
                 .map();
 
         log.info("dashboard snapshot start. taskId: {}, dashboardId:{} total: {}", taskId, dashboardId, allChartList.size());
-        String stat = StrUtil.concat(true, "snapshot_stat_", taskId);
+        String stat = StrUtil.concat(true, DashboardConstant.DASHBOARD_SNAPSHOT_TYPE, "_snapshot_stat_", taskId);
         SNAPSHOT_CACHE.put(stat, taskStat);
 
         ThreadUtil.execAsync(() -> {
@@ -286,13 +307,13 @@ public class VisualServiceImpl implements VisualService {
 
             // run Snapshot Runnable
             ThreadGroup threadGroup = new ThreadGroup(taskId);
-            SNAPSHOT_CACHE.put(StrUtil.concat(true, "snapshot_threadGroup_", taskId), threadGroup);
+            SNAPSHOT_CACHE.put(StrUtil.concat(true, DashboardConstant.DASHBOARD_SNAPSHOT_TYPE, "_snapshot_threadGroup_", taskId), threadGroup);
 
             ReentrantReadWriteLock readWriteLock = Tool.LockUtil.createReadWriteLock(false);
             ReentrantReadWriteLock.WriteLock lock = readWriteLock.writeLock();
 
             allChartList.stream().forEach(chart -> {
-                SnapshotRunnable snapshotRunnable = new SnapshotRunnable(threadGroup, lock, chart, basicQueryParam);
+                SnapshotRunnable snapshotRunnable = new SnapshotRunnable(threadGroup, lock, DashboardConstant.DASHBOARD_SNAPSHOT_TYPE, chart, basicQueryParam);
 
                 // add thredGroup & submit
                 ReflectUtil.invoke(threadGroup, "add", snapshotRunnable);
@@ -457,13 +478,67 @@ public class VisualServiceImpl implements VisualService {
         return allChartList;
     }
 
+    @Override
+    public String createNotebookSnapshotTask(String format, Integer notebookId, Long start, Long end) {
+        VisualNotebook notebook = notebookService.getById(notebookId);
+        ValidateUtils.is(notebook).notNull(RCode.NOTEBOOK_NOT_EXIST);
+
+        List<VisualChart> chartsList = JSONUtil.toList(StrUtil.utf8Str(notebook.getCharts()), VisualChart.class);
+        ValidateUtils.is(chartsList).notNull(RCode.CHART_NOTEXSITS);
+
+        PageUtils chartPageUtils = new PageUtils(new Query(VisualChart.class).getPage(Tool.MapUtil.newHashMap()));
+        chartPageUtils.setList(chartsList);
+
+        List<VisualChart> allChartList = visualChartService.getAllChartList(chartsList);
+
+        String taskId = StrUtil.uuid();
+        Map taskStat = Tool.MapUtil.builder()
+                .put("total", allChartList.size())
+                .put("done", 0)
+                .put("process", 0)
+                .put("start", start)
+                .put("end", end)
+                .put("notebook", R.ok(notebook))
+                .put("format", format)
+                .put("charts", R.ok(chartPageUtils))
+                .map();
+
+        log.info("[createNotebookSnapshotTask] [notebook snapshot] [taskId: {}] [notebookId: {}] [total: {}]", taskId, notebookId, allChartList.size());
+        String stat = StrUtil.concat(true, DashboardConstant.NOTEBOOK_SNAPSHOT_TYPE, "_snapshot_stat_", taskId);
+        SNAPSHOT_CACHE.put(stat, taskStat);
+
+        ThreadUtil.execAsync(() -> {
+            // 计算步长
+            String step = this.getTimeStep(start, end);
+            Map<String, String> basicQueryParam = Tool.MapUtil.newHashMap();
+            basicQueryParam.put("start", StrUtil.toString(start));
+            basicQueryParam.put("end", StrUtil.toString(end));
+            basicQueryParam.put("step", StrUtil.toString(step));
+
+            // run Snapshot Runnable
+            ThreadGroup threadGroup = new ThreadGroup(taskId);
+            SNAPSHOT_CACHE.put(StrUtil.concat(true, DashboardConstant.NOTEBOOK_SNAPSHOT_TYPE, "_snapshot_threadGroup_", taskId), threadGroup);
+
+            ReentrantReadWriteLock readWriteLock = Tool.LockUtil.createReadWriteLock(false);
+            ReentrantReadWriteLock.WriteLock lock = readWriteLock.writeLock();
+
+            allChartList.stream().forEach(chart -> {
+                SnapshotRunnable snapshotRunnable = new SnapshotRunnable(threadGroup, lock, DashboardConstant.NOTEBOOK_SNAPSHOT_TYPE, chart, basicQueryParam);
+
+                ReflectUtil.invoke(threadGroup, "add", snapshotRunnable);
+                snapshotThreadPool.submit(snapshotRunnable);
+            });
+        });
+        log.info("[createNotebookSnapshotTask] [task create finished] [taskId: {}]", taskId);
+        return taskId;
+    }
 
     @Override
-    public Map snapshotResultProcess(String taskId) {
-        String snapshotStatKey = StrUtil.concat(true, "snapshot_stat_", taskId);
+    public Map querySnapshotResultProcess(String type, String taskId) {
+        String snapshotStatKey = StrUtil.concat(true, type, "_snapshot_stat_", taskId);
         Object obj = SNAPSHOT_CACHE.get(snapshotStatKey);
         if (obj == null) {
-            log.warn("dashboard snapshot result process error, the task does not exist or has expired. task id: {}", taskId);
+            log.warn("[querySnapshotResultProcess] [snapshot result process error, the task does not exist or has expired] [type: {}] [taskId: {}]", type, taskId);
             throw new NZException(RCode.DASHBOARD_SNAPSHOT_TASK_NOT_EXIST);
         }
 
@@ -476,39 +551,39 @@ public class VisualServiceImpl implements VisualService {
     }
 
     @Override
-    public void cancelSnapshotTask(String taskId) {
-        log.info("dashboard snapshot cancel task id: {}", taskId);
-        String snapshotThreadGroupKey = StrUtil.concat(true, "snapshot_threadGroup_", taskId);
+    public void cancelSnapshotTask(String type, String taskId) {
+        log.info("[cancelSnapshotTask] [snapshot cancel] [type: {}] [taskId: {}]", type, taskId);
+        String snapshotThreadGroupKey = StrUtil.concat(true, type, "_snapshot_threadGroup_", taskId);
         Object obj = SNAPSHOT_CACHE.get(snapshotThreadGroupKey);
 
         if (obj == null) {
-            log.warn("dashboard snapshot task cancel error, the task does not exist or has expired. task id: {}", taskId);
+            log.warn("[cancelSnapshotTask] [snapshot task cancel error, the task does not exist or has expired] [type: {}] [taskId: {}]", type, taskId);
             throw new NZException(RCode.DASHBOARD_SNAPSHOT_TASK_NOT_EXIST);
         } else {
             try {
                 ThreadGroup threadGroup = (ThreadGroup) obj;
-                log.info("dashboard snapshot task cancel, task id: {}, canceled task thread num: {}", taskId, threadGroup.activeCount());
+                log.info("[cancelSnapshotTask] [snapshot task cancel] [type: {}] [taskId: {}] [canceled task thread num: {}]", type, taskId, threadGroup.activeCount());
                 // thread interrupt
                 threadGroup.interrupt();
 
                 // remove cache data
-                String snapshotStatKey = StrUtil.concat(true, "snapshot_stat_", taskId);
-                String snapshotResultKey = StrUtil.concat(true, "snapshot_result_", taskId);
+                String snapshotStatKey = StrUtil.concat(true, type, "_snapshot_stat_", taskId);
+                String snapshotResultKey = StrUtil.concat(true, type, "_snapshot_result_", taskId);
 
                 SNAPSHOT_CACHE.remove(snapshotThreadGroupKey);
                 SNAPSHOT_CACHE.remove(snapshotStatKey);
                 SNAPSHOT_CACHE.remove(snapshotResultKey);
-                log.info("dashboard snapshot task is canceled, the cache data is cleared,task id {}", taskId);
+                log.info("[cancelSnapshotTask] [snapshot task is canceled,the cache data is cleared] [type: {}] [taskId: {}]", type, taskId);
             } catch (Exception e) {
-                log.error("dashboard snapshot task cancel error", e);
+                log.error(e, "[cancelSnapshotTask] [error] [type: {}] [taskId: {}]", type, taskId);
             }
         }
     }
 
     @Override
-    public void downloadSnapshotFile(HttpServletResponse response, String language, String taskId) {
-        String snapshotStatKey = StrUtil.concat(true, "snapshot_stat_", taskId);
-        String snapshotResultKey = StrUtil.concat(true, "snapshot_result_", taskId);
+    public void downloadSnapshotFile(HttpServletResponse response, String type, String language, String taskId) {
+        String snapshotStatKey = StrUtil.concat(true, type, "_snapshot_stat_", taskId);
+        String snapshotResultKey = StrUtil.concat(true, type, "_snapshot_result_", taskId);
 
         Object obj = SNAPSHOT_CACHE.get(snapshotStatKey);
         if (obj == null) {
@@ -520,6 +595,8 @@ public class VisualServiceImpl implements VisualService {
             Object start = snapshotInfoMap.get("start");
             Object end = snapshotInfoMap.get("end");
             Object dashboard = snapshotInfoMap.get("dashboard");
+            Object notebook = snapshotInfoMap.get("notebook");
+            Object format = snapshotInfoMap.get("format");
             Object charts = snapshotInfoMap.get("charts");
 
             List<Object> snapshotResultList = (List<Object>) SNAPSHOT_CACHE.get(snapshotResultKey);
@@ -539,19 +616,45 @@ public class VisualServiceImpl implements VisualService {
             Map<String, Object> resultMap = this.snapshotResultMap(Long.valueOf(start.toString()), Long.valueOf(end.toString()), language);
             resultMap.put("chartsData", chartsDataMap);
             resultMap.put("dashboard", dashboard);
+            resultMap.put("notebook", notebook);
             resultMap.put("charts", charts);
-            String snapshotTemplate = this.replaceSnapshotTemplate(resultMap);
+            resultMap.put("type", type);
 
-            // download file
-            ResponseUtil.downloadFile(response, "exploreSnapshot.html", snapshotTemplate.getBytes());
+            if (StrUtil.equals(DashboardConstant.DASHBOARD_SNAPSHOT_TYPE, type)) {
+                String snapshotHtmlContent = this.replaceSnapshotTemplate(resultMap);
+
+                // download file
+                ResponseUtil.downloadFile(response, "dashboardSnapshot.html", snapshotHtmlContent.getBytes());
+            } else if (StrUtil.equals(DashboardConstant.NOTEBOOK_SNAPSHOT_TYPE, type)) {
+                if (ObjectUtil.equal(format, "html")) {
+                    String snapshotHtmlContent = this.replaceSnapshotTemplate(resultMap);
+                    ResponseUtil.downloadFile(response, "notebookSnapshot.html", snapshotHtmlContent.getBytes());
+                } else if (ObjectUtil.equal(format, "pdf")) {
+                    resultMap.put("isPdfExport", true);
+
+                    // html
+                    String snapshotHtmlContent = this.replaceSnapshotTemplate(resultMap);
+                    // pdf
+                    String pdfContent = this.htmlToPdf(taskId, snapshotHtmlContent);
+
+                    ResponseUtil.downloadFile(response, "notebookSnapshot.pdf", OutputType.BYTES.convertFromBase64Png(pdfContent));
+                } else if (ObjectUtil.equal(format, "markdown")) {
+                    // html
+                    String snapshotHtmlContent = this.replaceSnapshotTemplate(resultMap);
+                    // markDown
+                    String markDownContent = this.htmlToMarkdown(taskId, notebook, snapshotHtmlContent);
+
+                    ResponseUtil.downloadFile(response, "notebookSnapshot.md", markDownContent.getBytes());
+                }
+            }
         } catch (Exception e) {
-            log.error(e);
+            log.error(e, "[downloadSnapshotFile] [error] [type: {}] [taskId: {}]", type, taskId);
         } finally {
-            String snapshotThreadGroupKey = StrUtil.concat(true, "snapshot_threadGroup_", taskId);
+            String snapshotThreadGroupKey = StrUtil.concat(true, type, "_snapshot_threadGroup_", taskId);
 
             Object tg = SNAPSHOT_CACHE.get(snapshotThreadGroupKey);
             ThreadGroup threadGroup = (ThreadGroup) tg;
-            log.info("dashboard snapshot task cancel, task id: {}, canceled task thread num: {}", taskId, threadGroup.activeCount());
+            log.info("[downloadSnapshotFile] [snapshot task cancel] [type: {}] [taskId: {}] [canceled task thread num: {}]", type, taskId, threadGroup.activeCount());
             // thread interrupt
             threadGroup.interrupt();
 
@@ -559,6 +662,163 @@ public class VisualServiceImpl implements VisualService {
             SNAPSHOT_CACHE.remove(snapshotThreadGroupKey);
             SNAPSHOT_CACHE.remove(snapshotStatKey);
             SNAPSHOT_CACHE.remove(snapshotResultKey);
+        }
+    }
+
+    /**
+     * html to pdf
+     *
+     * @param taskId
+     * @param htmlContent
+     * @return
+     */
+    private String htmlToPdf(String taskId, String htmlContent) {
+        log.info("[htmlToPdf] [begin] [taskId: {}] [htmlContent: {}]", taskId, StrUtil.length(htmlContent));
+        StopWatch sw = new StopWatch();
+        sw.start();
+
+        ChromeDriver driver = null;
+        File tempFile = null;
+        try {
+            tempFile = Tool.FileUtil.file(Tool.StrUtil.concat(true, Constant.TEMP_PATH, File.separator, taskId, ".html"));
+            FileUtil.writeUtf8String(htmlContent, tempFile);
+
+            ChromeOptions opt = new ChromeOptions();
+            opt.addArguments(
+                    "--headless",
+                    "--disable-cache",
+                    "--disable-dev-shm-usage",
+                    "--no-sandbox",
+                    "--window-size=1920x1080"
+            );
+
+            driver = new ChromeDriver(opt);
+            driver.resetInputState();
+            driver.get("file://" + tempFile.getAbsolutePath());
+
+            WebDriverWait wait = new WebDriverWait(driver, 60);
+            wait.until(webDriver -> {
+                Boolean isLoaded = (Boolean) ((JavascriptExecutor) webDriver).executeScript("return window.dataJson.AllChartDataLoad == true");
+                return Tool.ObjectUtil.defaultIfNull(isLoaded, false);
+            });
+
+            PrintOptions printOptions = new PrintOptions();
+            printOptions.setPageSize(new PageSize(21, 29.7)); // A4
+//            printOptions.setPageSize(new PageSize(80D, 100D));
+
+            Pdf pdf = ((PrintsPage) driver).print(printOptions);
+
+            sw.stop();
+            log.info("[htmlToPdf] [finshed] [taskId: {}] [htmlContent: {}] [Run time: {}]", taskId, StrUtil.length(htmlContent), sw.toString());
+            return pdf.getContent();
+        } finally {
+            if (driver != null) {
+                driver.quit();
+            }
+            FileUtil.del(tempFile);
+        }
+    }
+
+    /**
+     * html to markdown
+     *
+     * @param taskId
+     * @param notebookMap
+     * @param htmlContent
+     * @return
+     * @throws IOException
+     * @throws TemplateException
+     */
+    private String htmlToMarkdown(String taskId, Object notebookMap, String htmlContent) throws IOException, TemplateException {
+        log.info("[htmlToMarkdown] [begin] [taskId: {}] [htmlContent: {}]", taskId, StrUtil.length(htmlContent));
+        StopWatch sw = new StopWatch();
+        sw.start();
+
+        ChromeDriver driver = null;
+        File tempFile = null;
+        try {
+            tempFile = Tool.FileUtil.file(Tool.StrUtil.concat(true, Constant.TEMP_PATH, File.separator, taskId, ".html"));
+            FileUtil.writeUtf8String(htmlContent, tempFile);
+
+            ChromeOptions opt = new ChromeOptions();
+            opt.addArguments(
+                    "--headless",
+                    "--disable-cache",
+                    "--disable-dev-shm-usage",
+                    "--no-sandbox",
+                    "--window-size=1920x1080"
+            );
+
+            driver = new ChromeDriver(opt);
+            driver.resetInputState();
+            driver.get("file://" + tempFile.getAbsolutePath());
+
+            WebDriverWait wait = new WebDriverWait(driver, 60);
+            wait.until(webDriver -> {
+                Boolean isLoaded = (Boolean) ((JavascriptExecutor) webDriver).executeScript("return window.dataJson.AllChartDataLoad == true");
+                return Tool.ObjectUtil.defaultIfNull(isLoaded, false);
+            });
+
+            VisualNotebook notebook = MapUtil.get((Map) notebookMap, "data", VisualNotebook.class);
+            List<VisualChart> chartsList = JSONUtil.toList(StrUtil.utf8Str(notebook.getCharts()), VisualChart.class);
+
+            List<Map<Object, Object>> paragraphList = Tool.ListUtil.list(true);
+
+            List<WebElement> divElementList = driver.findElements(By.className("panel-chart"));
+            for (WebElement divElement : divElementList) {
+                String id = divElement.getAttribute("id");
+                if (Tool.StrUtil.isEmpty(id)) {
+                    continue;
+                }
+                String chartId = id.replaceAll("chart-local-", "");
+                VisualChart visualChart = chartsList.stream().filter(chart -> ObjectUtil.equal(chart.getId().toString(), chartId)).findFirst().orElse(new VisualChart());
+                if (ObjectUtil.isNotEmpty(visualChart.getParam())) {
+                    Map paramObject = JSONUtil.toBean(StrUtil.utf8Str(visualChart.getParam()), Map.class);
+                    visualChart.setParam(paramObject);
+                }
+
+                String editorType = MapUtil.getStr(((Map) visualChart.getParam()), "editorType");
+                if (StrUtil.equals("text", visualChart.getType()) && StrUtil.equals("markdown", editorType)) {
+                    Map<Object, Object> tempNodeMap = MapUtil.builder()
+                            .put("chart", visualChart)
+                            .put("imageDataStr", "")
+                            .map();
+                    paragraphList.add(tempNodeMap);
+                    continue;
+                }
+                // nz-chart 包含图表&legend
+                WebElement chartElement = divElement.findElement(By.className("nz-chart"));
+                String fileBase64 = chartElement.getScreenshotAs(OutputType.BASE64);
+                Map<Object, Object> tempNodeMap = MapUtil.builder()
+                        .put("chart", visualChart)
+                        .put("imageDataStr", StrUtil.concat(true, "data:image/png;base64,", fileBase64))
+                        .map();
+                paragraphList.add(tempNodeMap);
+            }
+
+            // 按照 chart.Y 排序
+            paragraphList.sort(Comparator.comparing(m -> {
+                VisualChart tempChartForSort = MapUtil.get(m, "chart", VisualChart.class);
+                return tempChartForSort.getY() == null ? -2D : tempChartForSort.getY();
+            }));
+
+            Map<Object, Object> templateDataParam = MapUtil.builder()
+                    .put("paragraphList", paragraphList)
+                    .map();
+
+            Template template = TemplateUtil.stringToTemplate(
+                    sysConfigService.getValue("notebook_snapshot_markdown_template"),
+                    "notebook_snapshot_markdown_template");
+            String markDownContent = FreeMarkerTemplateUtils.processTemplateIntoString(template, templateDataParam);
+
+            sw.stop();
+            log.info("[htmlToMarkdown] [finshed] [taskId: {}] [htmlContent: {}] [Run time: {}]", taskId, StrUtil.length(htmlContent), sw.toString());
+            return markDownContent;
+        } finally {
+            if (driver != null) {
+                driver.quit();
+            }
+            FileUtil.del(tempFile);
         }
     }
 
@@ -754,14 +1014,17 @@ public class VisualServiceImpl implements VisualService {
         private Map<String, String> basicQueryParam;
         private Lock lock;
 
+        // dashboard or notebook
+        private String type;
         private boolean isInterrupted = false;
 
-        public SnapshotRunnable(ThreadGroup threadGroup, Lock lock, VisualChart chart, Map<String, String> basicQueryParam) {
+        public SnapshotRunnable(ThreadGroup threadGroup, Lock lock, String type, VisualChart chart, Map<String, String> basicQueryParam) {
             // group & name
             super(threadGroup, String.format("Snapshot-%s-%s", threadGroup.getName(), chart.getId()));
 
             this.threadGroup = threadGroup;
             this.lock = lock;
+            this.type = type;
             this.chart = chart;
             this.basicQueryParam = basicQueryParam;
         }
@@ -774,7 +1037,7 @@ public class VisualServiceImpl implements VisualService {
             try {
                 // update snapshot resule & process
                 if (!this.isInterrupted())
-                    this.updateSnapshotResultAndProcess(resultData);
+                    this.updateSnapshotResultAndProcess(type, resultData);
             } catch (Exception e) {
                 log.error(e);
             } finally {
@@ -787,7 +1050,7 @@ public class VisualServiceImpl implements VisualService {
         public void interrupt() {
             super.interrupt();
             isInterrupted = true;
-            log.warn("dashboard snapshot thread is interrupted. name: {}", this.getName());
+            log.warn("snapshot thread is interrupted. type: {}, name: {}", this.type, this.getName());
         }
 
         @Override
@@ -804,7 +1067,7 @@ public class VisualServiceImpl implements VisualService {
             Object resultData = null;
             try {
                 String datasource = chart.getDatasource();
-                Map<String, Object> chartParam = (HashMap) chart.getParam();
+                Map<String, Object> chartParam = JSONUtil.toBean(StrUtil.toString(chart.getParam()), Map.class);
 
                 // system
                 if (StrUtil.equals(Constant.ChartDatasourceType.SYSTEM.getValue(), datasource)) {
@@ -877,7 +1140,7 @@ public class VisualServiceImpl implements VisualService {
                     }
                 }
             } catch (Exception e) {
-                log.error("dashboard snapshot data get failed. taskId: {}, chartInfo: {}", e, JSONUtil.toJsonStr(chart));
+                log.error(e, "snapshot data get failed. type: {}, taskId: {}, chartInfo: {}", type, threadGroup.getName(), JSONUtil.toJsonStr(chart));
             }
             return resultData;
         }
@@ -885,15 +1148,16 @@ public class VisualServiceImpl implements VisualService {
         /**
          * update snapshot resule & process
          *
+         * @param type
          * @param resultData
          */
-        private void updateSnapshotResultAndProcess(Object resultData) {
+        private void updateSnapshotResultAndProcess(String type, Object resultData) {
             try {
                 // task id
                 String taskId = threadGroup.getName();
 
                 // snapshot result cache
-                String snapshotResultKey = StrUtil.concat(true, "snapshot_result_", taskId);
+                String snapshotResultKey = StrUtil.concat(true, type, "_snapshot_result_", taskId);
                 List<Object> snapshotResultList = (List<Object>) SNAPSHOT_CACHE.get(snapshotResultKey);
                 snapshotResultList = Tool.CollUtil.defaultIfEmpty(snapshotResultList, Tool.ListUtil.list(true));
 
@@ -901,7 +1165,7 @@ public class VisualServiceImpl implements VisualService {
                 SNAPSHOT_CACHE.put(snapshotResultKey, snapshotResultList);
 
                 // snapshot task process
-                String snapshotStatKey = StrUtil.concat(true, "snapshot_stat_", taskId);
+                String snapshotStatKey = StrUtil.concat(true, type, "_snapshot_stat_", taskId);
                 Map snapshotStatMap = (Map) SNAPSHOT_CACHE.get(snapshotStatKey);
                 Integer total = (Integer) snapshotStatMap.get("total");
                 Integer done = (Integer) snapshotStatMap.get("done");
@@ -914,9 +1178,9 @@ public class VisualServiceImpl implements VisualService {
                 snapshotStatMap.put("total", total);
                 SNAPSHOT_CACHE.put(snapshotStatKey, snapshotStatMap);
 
-                log.info("dashboard snapshot result updated, taskId: {}, total: {}, done: {}, process: {}", taskId, total, done, percent);
+                log.info("snapshot result updated, type: {}, taskId: {}, total: {}, done: {}, process: {}", type, taskId, total, done, percent);
             } catch (Exception e) {
-                log.error("dashboard snapshot result error,taskId: {}", e, threadGroup.getName());
+                log.error(e, "snapshot result error. type: {}, taskId: {}", type, threadGroup.getName());
             }
         }
     }

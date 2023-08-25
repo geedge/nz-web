@@ -14,13 +14,15 @@ public interface VisualService {
 
     String replaceSnapshotTemplate(Map<String, Object> resultMap);
 
-    String createSnapshotTask(String format, Integer dashboardId, Long start, Long end, String varsJsonStr);
+    String createDashboardSnapshotTask(String format, Integer dashboardId, Long start, Long end, String varsJsonStr);
 
-    Map snapshotResultProcess(String taskId);
+    String createNotebookSnapshotTask(String format, Integer notebookId, Long start, Long end);
 
-    void cancelSnapshotTask(String taskId);
+    Map querySnapshotResultProcess(String type, String taskId);
 
-    void downloadSnapshotFile(HttpServletResponse response, String language, String taskId);
+    void cancelSnapshotTask(String type, String taskId);
+
+    void downloadSnapshotFile(HttpServletResponse response, String type, String language, String taskId);
 
     void syncTemplateDashboard(Integer id, Integer tmplId, Integer modelId, Integer moduleId);
 
