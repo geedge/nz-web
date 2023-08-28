@@ -1,9 +1,12 @@
 package com.nis.common.utils;
 
 
+import cn.hutool.core.io.FileMagicNumber;
+import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.nis.common.exception.NZException;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.hssf.usermodel.HSSFDateUtil;
@@ -30,11 +33,6 @@ public class ExcelUtils {
 
     private final static Log log = Log.get();
 
-    // 2003- 版本的excel
-    private final static String excel2003L = ".xls";
-    // 2007+ 版本的excel
-    private final static String excel2007U = ".xlsx";
-
     private static NumberFormat numberFormat = NumberFormat.getNumberInstance();
 
     static {
@@ -48,45 +46,37 @@ public class ExcelUtils {
      * @param filename
      * @return
      */
-    public static boolean validateFileType(String filename) {
-        if (!filename.contains(".")) {
-            return false;
-        } else {
-            String fileType = filename.substring(filename.lastIndexOf("."));
-            switch (fileType) {
-                case excel2003L: {
-                    return true;
-                }
-                case excel2007U: {
-                    return true;
-                }
-                default: {
-                    return false;
-                }
-            }
+    public static void validateFileType(String filename) {
+        String extension = FilenameUtils.getExtension(filename);
+
+        if (Tool.BooleanUtil.and(
+                !StrUtil.equalsIgnoreCase(FileMagicNumber.XLS.getExtension(), extension),
+                !StrUtil.equalsIgnoreCase(FileMagicNumber.XLSX.getExtension(), extension)
+        )) {
+            throw new NZException(RCode.EXCELFILE_TYPE_ERROR);
         }
     }
 
     /**
-     * 根据版本获取excel对象
+     * get Work book By Stream
      *
-     * @param url
      * @param inputStream
      * @return
-     * @throws Exception
+     * @throws IOException
      */
-    public static Workbook getWork(String url, InputStream inputStream) throws IOException {
-        Workbook wb = null;
-        String str = url.substring(url.lastIndexOf("."));
-
-        if(StrUtil.equals(excel2003L,str)) {
-            wb = new HSSFWorkbook(inputStream);  // 2003-
-        } else if (excel2007U.equals(str)) {
-            wb = new XSSFWorkbook(inputStream);  // 2007+
+    public static Workbook getWorkbookByStream(InputStream inputStream) throws IOException {
+        byte[] fileBytes = Tool.IoUtil.readBytes(inputStream);
+        FileMagicNumber magicNumber = FileMagicNumber.getMagicNumber(fileBytes);
+        if (StrUtil.equals(FileMagicNumber.XLS.getExtension(), magicNumber.getExtension())) {
+            // 2003-
+            return new HSSFWorkbook(IoUtil.toStream(fileBytes));
+        } else if (StrUtil.equals(FileMagicNumber.XLSX.getExtension(), magicNumber.getExtension())) {
+            // 2007+
+            return new XSSFWorkbook(IoUtil.toStream(fileBytes));
         } else {
-            throw new IOException("解析文件格式有误!");
+            log.error("[getWorkbookByStream] [File parsing failed,format error] [file type: {}]", magicNumber.getExtension());
+            throw new NZException(RCode.EXCELFILE_PARSE_ERROR);
         }
-        return wb;
     }
 
     /**
@@ -265,13 +255,12 @@ public class ExcelUtils {
     }
 
     public static Workbook getWorkBookFromMultipartFile(MultipartFile excelFile) {
-        if (!ExcelUtils.validateFileType(excelFile.getOriginalFilename())) {
-            throw new NZException(RCode.EXCELFILE_TYPE_ERROR);
-        }
+        // validate file type
+        ExcelUtils.validateFileType(excelFile.getOriginalFilename());
 
         Workbook work = null;
         try {
-            work = ExcelUtils.getWork(excelFile.getOriginalFilename(), excelFile.getInputStream());
+            work = ExcelUtils.getWorkbookByStream(excelFile.getInputStream());
         } catch (Exception e) {
             log.error(e, "[getWorkBookFromMultipartFile] [error] [file: {}]", excelFile.getOriginalFilename());
             throw new NZException(RCode.EXCELFILE_PARSE_ERROR);
