@@ -288,8 +288,35 @@ public class TerminalHandler extends TextWebSocketHandler {
 
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
-        log.error(exception, "WebSocket handle Transport Error");
+        log.error(exception, "[handleTransportError] [WebSocket handle Transport Error] [websocket uri: {}]", session.getUri());
         super.handleTransportError(session, exception);
+
+        TerminalClient terminalClient = TerminalSession.TERMINAL_SESSION.get(session);
+        log.info("[handleTransportError] [Close terminal client connection] [clientId: {}]", ObjectUtil.isNull(terminalClient) ? null : terminalClient.getClientId());
+        if (ObjectUtil.isNotNull(terminalClient)) {
+            TerminalSessionEntity sessionEntity = (TerminalSessionEntity) TerminalSession.getTerminalAttributeInfo(terminalClient.getClientId()).get("terminalSessionEntity");
+            log.info("[handleTransportError] [update session entity] [clientId: {}] [exist: {}]", terminalClient.getClientId(), Tool.ObjectUtil.isNotNull(sessionEntity));
+            if (Tool.ObjectUtil.isNotNull(sessionEntity)) {
+                log.info("[handleTransportError] [udpate session status] [session id: {}] [status: {}]", sessionEntity.getUuid(), sessionEntity.getStatus());
+                if (sessionEntity.getStartTime() == null) {
+                    sessionEntity.setStartTime(new Date());
+                }
+                sessionEntity.setStatus(TerminalConstant.SessionStatus.FORCE_QUIT.getValue());
+                sessionEntity.setEndTime(new Date());
+                TerminalSessionService terminalSessionService = (TerminalSessionService) TerminalSession.CLIENT_ATTRIBUTE_INFO.get("terminalSessionService");
+                terminalSessionService.saveOrUpdate(sessionEntity);
+            } else {
+                log.warn("[handleTransportError] [not found TerminalSessionEntity through client id.] [clientId: {}]", terminalClient.getClientId());
+            }
+
+            // save Record Content After Client Closed
+            TerminalHandler.saveRecordContentAfterClientClosed(terminalClient.getClientId());
+
+            // remove Terminal Attribute Info
+            TerminalSession.removeTerminalAttributeInfo(terminalClient.getClientId());
+        }
+
+        // close terminal
         TerminalHandler.closeTerminalRescourse(session);
     }
 
