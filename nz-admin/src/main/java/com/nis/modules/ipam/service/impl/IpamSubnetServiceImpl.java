@@ -164,7 +164,7 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 		// 计算子网总容量
 		ipamSubnet.setCap(new BigDecimal(Math.pow(2,ipCap-ipamSubnet.getMask())).toString());
 		
-		// 校验ip以及掩码值之前是否有创建或者包含
+		// 检验子网掩码是否修改
 		String ip = StrUtil.builder(ipamSubnet.getAddr(),StrUtil.SLASH,ipamSubnet.getMask().toString()).toString();
 		if (ObjectUtil.isNotEmpty(ipamSubnet.getId())){
 			IpamSubnet cidr = this.getById(ipamSubnet.getId());
@@ -173,14 +173,25 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 				throw new NZException(RCode.IPAM_SUBNET_MASK_NOT_MODIFIED);
 			}
 		}
+		//校验子网网段是否重叠
 		IPAddress ipAddress = new IPAddressString(ip).toAddress();
-		List<IpamSubnet> ipamSubnets = this.list(new QueryWrapper<IpamSubnet>().lambda().ne(ObjectUtil.isNotEmpty(ipamSubnet.getId()),IpamSubnet::getId, ipamSubnet.getId()));
+		List<IpamSubnet> ipamSubnets = this.list(new QueryWrapper<IpamSubnet>().lambda()
+				.ne(ObjectUtil.isNotEmpty(ipamSubnet.getId()),IpamSubnet::getId, ipamSubnet.getId())
+				.eq(IpamSubnet::getType, ipamSubnet.getType()));
 		List<String> ips = ipamSubnets.stream().map(o -> StrUtil.builder(o.getAddr(),StrUtil.SLASH,o.getMask().toString()).toString()).collect(Collectors.toList());
 		if(ToolUtil.isNotAllEmpty(ips)) {
 			for(String p : ips) {
 				IPAddress ipAddr = new IPAddressString(p).toAddress();
-				if(ipAddr.contains(ipAddress)) {
-					throw new NZException(RCode.IPAM_SUBNET_INTERVAL_ERROR);
+				if (ipamSubnet.getType().equals(4)){
+					if(ipAddr.contains(ipAddress) || ipAddress.contains(ipAddr)) {
+						throw new NZException(RCode.IPAM_SUBNET_NETWORK_SEGMENT_OVERLAP.setParam(p));
+					}
+				}else {
+					IPAddress currentIpAddress = ipAddress.toPrefixBlock();
+					IPAddress historyIpAddress = ipAddr.toPrefixBlock();
+					if(currentIpAddress.contains(historyIpAddress) || historyIpAddress.contains(currentIpAddress)) {
+						throw new NZException(RCode.IPAM_SUBNET_NETWORK_SEGMENT_OVERLAP.setParam(p));
+					}
 				}
 			}
 		}		
@@ -336,15 +347,29 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 			validateUtil.validateRequired(mask, lineNum, IpamSubnetEum.MASK.getIndex());
 			Integer ipCap = validateUtil.validateMask(mask, type, lineNum, IpamSubnetEum.MASK.getIndex());
 
-            // 校验ip以及掩码值之前是否有创建或者包含
-			IpamSubnet one = this.getOne(new LambdaQueryWrapper<IpamSubnet>().eq(IpamSubnet::getMask, mask).eq(IpamSubnet::getAddr, addr));
-			if (one != null){
-				//索引列重复 & 其他属性重复
-				if (!StrUtil.equals(name, one.getName())){
-					validateUtil.recordImportAttrErr(lineNum,RCode.IMPORT_FIELDS_DUPLICATE.setParam(IpamSubnetEum.MASK.getIndex(),IpamSubnetEum.ADDR.getIndex()));
+            // 校验子网网段是否重叠
+			List<IpamSubnet> ipamSubnets = this.list(new LambdaQueryWrapper<IpamSubnet>().eq(IpamSubnet::getType, type));
+			String cidr = StrUtil.concat(true, addr, StrUtil.SLASH, mask);
+			IPAddress ipAddress = new IPAddressString(cidr).toAddress();
+			Map<String, String> cidrByName = ipamSubnets.stream().collect(Collectors.toMap(subnet -> subnet.getName(), subnet -> StrUtil.concat(true, subnet.getAddr(), StrUtil.SLASH, subnet.getMask().toString()).toString()));
+			if(ToolUtil.isNotAllEmpty(cidrByName)) {
+				for (String subnetName : cidrByName.keySet()) {
+					String historyCidr = cidrByName.get(subnetName);
+					IPAddress ipAddr = new IPAddressString(historyCidr).toAddress();
+					if (type.equals("4")){
+						if((ipAddr.contains(ipAddress) || ipAddress.contains(ipAddr)) && !subnetName.equalsIgnoreCase(name)) {
+							validateUtil.recordImportAttrErr(lineNum,RCode.IPAM_SUBNET_NETWORK_SEGMENT_OVERLAP.setParam(historyCidr));
+						}
+					}else {
+						IPAddress currentIpAddress = ipAddress.toPrefixBlock();
+						IPAddress historyIpAddress = ipAddr.toPrefixBlock();
+						if((currentIpAddress.contains(historyIpAddress) || historyIpAddress.contains(currentIpAddress)) && !subnetName.equalsIgnoreCase(name)) {
+							validateUtil.recordImportAttrErr(lineNum,RCode.IPAM_SUBNET_NETWORK_SEGMENT_OVERLAP.setParam(historyCidr));
+						}
+					}
+
 				}
 			}
-
             //dc相关校验
             String dcId = dataMap.get(IpamSubnetEum.DC.getIndex());
 			validateUtil.validateRequired(dcId, lineNum, IpamSubnetEum.DC.getIndex());

@@ -1012,6 +1012,7 @@ public enum RCode {
     IPAM_SUBNET_NAME_ERROR(723013,"Ipamsubnet name already exists"),
     IPAM_SUBNET_RELOBJ_CAN_NOT_REMOVE(727014, "Ipamsubnet have associated data and cannot be deleted"),
     IPAM_SUBNET_MASK_NOT_MODIFIED(727015, "Ipamsubnet mask can not be modified"),
+    IPAM_SUBNET_NETWORK_SEGMENT_OVERLAP(723016,"The new IP subnet overlaps with the subnet {0}"),
 
     /**
      * IpamIp 相关
