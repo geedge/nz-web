@@ -30,10 +30,13 @@ public class TerminalInteractionRunnable extends Thread {
                 // logout
                 if (size == Tool.StrUtil.INDEX_NOT_FOUND) {
                     log.warn("[TerminalInteractionRunnable] [no more data because the end of the stream has been reached] [clientid: {}]", clientId);
-
-                    // Try sending an exit prompt statement
-                    if (webSocketSession.isOpen()) {
-                        webSocketSession.sendMessage(new TextMessage("Connection closed \r\n"));
+                    try {
+                        // Try sending an exit prompt statement
+                        if (webSocketSession.isOpen()) {
+                            webSocketSession.sendMessage(new TextMessage("Connection closed \r\n"));
+                        }
+                    } catch (Exception e) {
+                        log.error(e, "[TerminalInteractionRunnable] [Try sending an exit prompt statement error] [clientid: {}]", clientId);
                     }
 
                     // close terminal

@@ -976,6 +976,8 @@ public enum RCode {
     IMPORT_ERROR_STOP(818, "Error stop import"),
     IMPORT_SUBNET_VALUE_ERROR(819, "{0} Not in subnet value list"),
     IMPORT_FILE_PARSE_ERROR(820, "Import file resolution failed"),
+    IMPORT_FILE_CONTENT_ISNULL(821, "Import file content cannot be empty"),
+    IMPORT_FILE_DATA_ISNULL(822, "Import file data cannot be empty"),
 
 
     /**
@@ -1029,6 +1031,7 @@ public enum RCode {
 	IPAM_SUBNET_INTERVAL_ERROR(723012,"Ipamsubnet interval already exists"),
     IPAM_SUBNET_NAME_ERROR(723013,"Ipamsubnet name already exists"),
     IPAM_SUBNET_RELOBJ_CAN_NOT_REMOVE(727014, "Ipamsubnet have associated data and cannot be deleted"),
+    IPAM_SUBNET_MASK_NOT_MODIFIED(727015, "Ipamsubnet mask can not be modified"),
 
     /**
      * IpamIp 相关

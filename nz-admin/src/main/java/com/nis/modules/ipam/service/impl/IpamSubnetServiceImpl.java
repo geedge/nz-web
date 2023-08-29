@@ -166,6 +166,13 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 		
 		// 校验ip以及掩码值之前是否有创建或者包含
 		String ip = StrUtil.builder(ipamSubnet.getAddr(),StrUtil.SLASH,ipamSubnet.getMask().toString()).toString();
+		if (ObjectUtil.isNotEmpty(ipamSubnet.getId())){
+			IpamSubnet cidr = this.getById(ipamSubnet.getId());
+			String oidCidr = StrUtil.builder(cidr.getAddr(), StrUtil.SLASH, cidr.getMask().toString()).toString();
+			if (! ip.equals(oidCidr)){
+				throw new NZException(RCode.IPAM_SUBNET_MASK_NOT_MODIFIED);
+			}
+		}
 		IPAddress ipAddress = new IPAddressString(ip).toAddress();
 		List<IpamSubnet> ipamSubnets = this.list(new QueryWrapper<IpamSubnet>().lambda().ne(ObjectUtil.isNotEmpty(ipamSubnet.getId()),IpamSubnet::getId, ipamSubnet.getId()));
 		List<String> ips = ipamSubnets.stream().map(o -> StrUtil.builder(o.getAddr(),StrUtil.SLASH,o.getMask().toString()).toString()).collect(Collectors.toList());

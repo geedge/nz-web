@@ -141,6 +141,9 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
                 if (!headerFlag) {
                     throw new NZException(RCode.EXCELFILE_HEADER_TEMPLATE_ERROR);
                 }
+                if (sheet.getFirstRowNum() == sheet.getLastRowNum()){
+                    throw new NZException(RCode.IMPORT_FILE_DATA_ISNULL);
+                }
                 for (int i = sheet.getFirstRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
                     Row row = sheet.getRow(i);
                     if (row == null) continue;
@@ -155,6 +158,9 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
             case CSV: {
                 CsvData csvData = CSVUtils.getCsvDataFromMultipartFile(multipartFile);
                 List<CsvRow> rows = csvData.getRows();
+                if (rows.size() == 1){
+                    throw new NZException(RCode.IMPORT_FILE_DATA_ISNULL);
+                }
                 CsvRow headers = rows.get(0);
                 // 表头校验
                 if (!CSVUtils.validateCSVHeader(headers, headerInfos)) {
@@ -164,12 +170,7 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
                     CsvRow csvRow = rows.get(i);
                     Map<Integer, String> tmpMap = Tool.MapUtil.newHashMap();
                     for (int j = 0; j < headerInfos.size(); j++) {
-                        String cellStr = StrUtil.trim(csvRow.get(j));
-                        if ((StrUtil.startWith(cellStr, "[") && StrUtil.endWith(cellStr, "]")) ||
-                                (StrUtil.startWith(cellStr, "{") && StrUtil.endWith(cellStr, "}"))) { // csv文件中json格式双引号会变成两个
-                            cellStr = StrUtil.replace(cellStr, "\"\"", "\"");
-                        }
-                        tmpMap.put(j, cellStr);
+                        tmpMap.put(j, StrUtil.trim(csvRow.get(j)));
                     }
                     importDataList.add(tmpMap);
                 }
@@ -183,6 +184,9 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
                 } catch (Exception e) {
                     log.error(e, "[getJSONDataFromMultipartFile] [error] [file: {}]", multipartFile.getOriginalFilename());
                     throw new NZException(RCode.IMPORT_FILE_PARSE_ERROR);
+                }
+                if (CollUtil.isEmpty(mapList)){
+                    throw new NZException(RCode.IMPORT_FILE_CONTENT_ISNULL);
                 }
                 LinkedHashMap map = mapList.get(0);
                 // 表头校验
