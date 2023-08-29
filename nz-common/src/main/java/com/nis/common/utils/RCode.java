@@ -1011,6 +1011,7 @@ public enum RCode {
 	IPAM_SUBNET_INTERVAL_ERROR(723012,"Ipamsubnet interval already exists"),
     IPAM_SUBNET_NAME_ERROR(723013,"Ipamsubnet name already exists"),
     IPAM_SUBNET_RELOBJ_CAN_NOT_REMOVE(727014, "Ipamsubnet have associated data and cannot be deleted"),
+    IPAM_SUBNET_MASK_NOT_MODIFIED(727015, "Ipamsubnet mask can not be modified"),
 
     /**
      * IpamIp 相关
