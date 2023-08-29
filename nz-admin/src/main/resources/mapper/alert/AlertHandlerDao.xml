@@ -175,9 +175,9 @@
 		project_id, module_id, endpoint_id, asset_id, dc_id, hash_key, remark, severity_id)
 		VALUES
 		<foreach collection="list" item="item" separator=",">
-			( #{item.id}, #{item.summary}, #{item.description}, #{item.labels}, #{item.startAt}, #{item.endAt}, #{item.lastAt}, #{item.state},
-			#{item.ruleId}, #{item.projectId}, #{item.moduleId}, #{item.endpointId}, #{item.assetId},
-			#{item.dcId}, #{item.hashKey}, #{item.remark}, #{item.severityId} )
+			( #{item.id}, #{item.summary}, #{item.description}, #{item.labels}, #{item.startAt}, #{item.endAt}, #{item.lastAt}, #{item.state}, #{item.ruleId},
+			IFNULL(#{item.projectId}, -1), IFNULL(#{item.moduleId}, -1), IFNULL(#{item.endpointId}, -1), IFNULL(#{item.assetId}, -1), IFNULL(#{item.dcId}, -1),
+			 #{item.hashKey}, #{item.remark}, #{item.severityId} )
 		</foreach>
 		ON DUPLICATE KEY UPDATE
 		id = VALUES(id),
