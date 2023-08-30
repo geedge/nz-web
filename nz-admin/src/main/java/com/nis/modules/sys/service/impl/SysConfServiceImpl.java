@@ -112,8 +112,6 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
 
     @Autowired
     private MailUtil mailUtil;
-    @Autowired
-    private SysConfDao sysConfDao;
 
     @Autowired
     private MonitorEventLogService eventLogService;
@@ -489,47 +487,40 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
         prop.setProperty("mail.snmp.host", smtpHost);
         prop.setProperty("mail.smtp.port", smtpPort);
         prop.setProperty("mail.transport.protocol", "smtp");
-//        prop.setProperty("mail.smtp.auth", "true");
         // 设置超时时间为10秒
-        prop.setProperty("mail.smtp.timeout", Tool.StrUtil.isBlank(smtpTimeout)?Constant.CONNECTION_SMTP_TIMEOUT:smtpTimeout.trim()+"000");
+        prop.setProperty("mail.smtp.timeout", Tool.StrUtil.isBlank(smtpTimeout) ? Constant.CONNECTION_SMTP_TIMEOUT : smtpTimeout.trim() + "000");
+        prop.setProperty("mail.smtp.connectiontimeout", Tool.StrUtil.isBlank(smtpTimeout) ? Constant.CONNECTION_SMTP_TIMEOUT : smtpTimeout.trim() + "000");
 
-        if ("SSL".equalsIgnoreCase(securityType) || "TLS".equalsIgnoreCase(securityType)) {
+        if (Tool.StrUtil.equals(securityType, "SSL")) {
+            prop.put("mail.smtp.ssl.trust", "*");
+            prop.put("mail.smtp.ssl.enable", "true");
             prop.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
             prop.put("mail.smtp.socketFactory.fallback", "false");
-            prop.put("mail.smtp.starttls.enable", "true");
         }
 
-        if (Tool.StrUtil.equals(securityType,"SSL")) {
-            prop.put("mail.smtp.socketFactory.port", smtpPort);
-            prop.remove("mail.smtp.port");
-        }
-
-        if (Tool.StrUtil.equals(securityType,"TLS")) {
+        if (Tool.StrUtil.equals(securityType, "TLS")) {
             prop.put("mail.smtp.starttls.enable", "true");
-            prop.put("mail.smtp.port", smtpPort);
+            prop.put("mail.smtp.ssl.trust", "*");
         }
 
         //emailTest on 只测试，需要给测试邮箱发邮件
         try {
-            mailUtil.sendHTML(smtpHost, prop, smtpAccount, sendAccount, smtpPin, receicer, Constant.TESTEMAIL_SEND_TITLE, this.getSendMailContent(sendAccount));
+            mailUtil.sendHTML(smtpHost, smtpPort, prop, smtpAccount, sendAccount, smtpPin, receicer, Constant.TESTEMAIL_SEND_TITLE, this.getSendMailContent());
         } catch (IOException e) {
-            logger.error("获取测试发送邮件模板失败",e);
+            logger.error(e, "[testMailServer] [send text email error] [conf: {}]", JSONUtil.toJsonStr(map));
             throw new NZException(RCode.SYS_CONFIG_TESTEMAIL_TEMPLATE_NOTFOUND);
         } catch (TemplateException e) {
-            logger.error("静态化模板内容失败",e);
+            logger.error(e, "[testMailServer] [generate test email context error]");
             throw new NZException(RCode.SYS_CONFIG_TESTEMAIL_TEMPLATE_FAILED);
         }
-
     }
+
     // 获取发送邮件内容
-    public String getSendMailContent(String sendEmail) throws IOException, TemplateException {
+    public String getSendMailContent() throws IOException, TemplateException {
         // 加载模板文件
         String templateString = this.getValue(Constant.SYSCONFIG_KEY_TESTEMAIL_SEND_TEMPLATE);
         //得到模板
-        Template template = TemplateUtil.stringToTemplate(templateString,"testMail");
-        //创建模型数据
-       /* Map<String, Object> modelMap = new HashMap<String, Object>();
-        modelMap.put("sendEmail", sendEmail);*/
+        Template template = TemplateUtil.stringToTemplate(templateString, "testMail");
         //执行静态化 方式1  获取静态化内容
         String content = FreeMarkerTemplateUtils.processTemplateIntoString(template, null);
         //静态化内容;

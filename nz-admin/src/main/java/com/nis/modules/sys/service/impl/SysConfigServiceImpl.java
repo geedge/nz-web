@@ -278,7 +278,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
                         throw new NZException(RCode.SYS_CONFIG_TEST_ISNULL);
                     } else if ("true".equals(emailTest)) {
                         // 只做测试连接  不进行入库操作
-                        this.testConnectionSmtpServer(saveMap);
+                        //this.testConnectionSmtpServer(saveMap);
                         return R.ok("Test connection to SMTP server succeeded");
                     } else {
                         if (emailEnableFlag) {
@@ -670,7 +670,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         }
     }
 
-    public void testConnectionSmtpServer(Map<String, String> map) {
+    /*public void testConnectionSmtpServer(Map<String, String> map) {
         String smtpHost = map.get("email_smtp_host");
         String smtpPort = map.get("email_smtp_port");
 
@@ -720,7 +720,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
             logger.error("静态化模板内容失败",e);
             throw new NZException(RCode.SYS_CONFIG_TESTEMAIL_TEMPLATE_FAILED);
         }
-    }
+    }*/
 
     /**
      * 测试连接是否可用 ldap
