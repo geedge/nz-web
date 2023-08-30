@@ -1,5 +1,6 @@
 package com.nis.common.utils;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.nis.common.exception.NZException;
 import com.nis.modules.sys.service.SysConfigService;
@@ -18,20 +19,17 @@ import java.util.Properties;
 @Component
 public class MailUtil {
 
-	private static Log logger = Log.get();
+	private static final Log logger = Log.get();
 
 	@Autowired
 	SysConfigService configService;
     
-	private Properties props = null;
 	private Session session = null;
 
-	String from,host,port,code,protocol,user;
+	String from, host, port, pin, user;
 
 
 	public void sendHTML(List<String> to, String subject, String txt) throws MessagingException {
-		/*from = configService.getValue("email_smtp_account");
-		sendHTML(from, to, subject, txt);*/
 		// 发送邮箱地址
 		from = configService.getValue("email_send_account");
 		if (StringUtils.isEmpty(from)) {
@@ -54,33 +52,33 @@ public class MailUtil {
 	public void sendHTML(String from, List<String> to, String subject, String txt, String appendFilePath) throws MessagingException {
 		host = configService.getValue("email_host");
 		port = configService.getValue("email_port");
-		code = configService.getValue("email_auth_password");
-//		protocol = configService.getValue("email_smtp_protocol");
-		protocol = "smtp";
+		pin = configService.getValue("email_auth_password");
 		user = configService.getValue("email_send_account");
 
-		if (props == null) {
-			props = new Properties();
-			//props.setProperty("mail.transport.protocol", protocol);
-			props.setProperty("mail.smtp.host", host);// 服务主机地址
-			props.setProperty("mail.smtp.port",port);//端口
-			
-			//ssl、tls用
-			String securityType = configService.getValue("email_security_type");
-			if ("SSL".equalsIgnoreCase(securityType) || "TLS".equalsIgnoreCase(securityType)) {
-				props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
-				props.put("mail.smtp.socketFactory.fallback", "false");
-				props.put("mail.smtp.starttls.enable", "true");
-			}
-			//props.setProperty("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");//端口
-			//props.setProperty("mail.smtp.socketFactory.port", "465");//端口
-			props.put("mail.smtp.auth", "true");
-			// 用刚刚设置好的props对象构建一个session
-			session = Session.getInstance(props);
-			// 发送附件不记录日志 快照文件太大了
-			if (Tool.StrUtil.isEmpty(appendFilePath)) session.setDebug(true);
+		Properties props = new Properties();
+		props.setProperty("mail.smtp.host", host);// 服务主机地址
+		props.setProperty("mail.smtp.port", port);//端口
+		props.setProperty("mail.transport.protocol", "smtp");
+
+		//ssl、tls用
+		String securityType = configService.getValue("email_security_type");
+		if (Tool.StrUtil.equals(securityType, "SSL")) {
+			props.put("mail.smtp.ssl.trust", "*");
+			props.put("mail.smtp.ssl.enable", "true");
+			props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+			props.put("mail.smtp.socketFactory.fallback", "false");
 		}
-		
+
+		if (Tool.StrUtil.equals(securityType, "TLS")) {
+			props.put("mail.smtp.starttls.enable", "true");
+			props.put("mail.smtp.ssl.trust", "*");
+		}
+
+		// 用刚刚设置好的props对象构建一个session
+		session = Session.getInstance(props);
+		// 发送附件不记录日志 快照文件太大了
+		if (Tool.StrUtil.isEmpty(appendFilePath)) session.setDebug(true);
+
 		// 用session为参数定义消息对象
 		MimeMessage message = new MimeMessage(session);
 		try {
@@ -122,14 +120,15 @@ public class MailUtil {
 			// 保存邮件
 			message.saveChanges();
 			// 发送邮件
-			Transport transport = session.getTransport(protocol);
+			Transport transport = session.getTransport();
 			// 连接服务器的邮箱
-			transport.connect(host, user, code);
+			port = StrUtil.emptyToDefault(port, "25");
+			transport.connect(host, Integer.valueOf(port), user, pin);
 			// 把邮件发送出去
 			transport.sendMessage(message, message.getAllRecipients());
 			transport.close();
 		} catch (MessagingException e) {
-			logger.error("send to {} subject {} from {} faild with exception ",to.toString(),from,subject,e);
+			logger.error(e, "send to {} subject {} from {} faild with exception ", to.toString(), from, subject);
 			throw e;
 		} catch (UnsupportedEncodingException e) {
 			logger.error(e);
@@ -141,6 +140,7 @@ public class MailUtil {
 	 * 发送邮件
 	 *
 	 * @param smtpHost    smtp服务地址
+	 * @param smtpPort    smtp服务端口
 	 * @param prop        配置信息
 	 * @param smtpAccount 登录邮箱账号
 	 * @param sendAccount 发送邮箱
@@ -150,7 +150,7 @@ public class MailUtil {
 	 * @param txt         邮件内容
 	 * @return
 	 */
-	public void sendHTML(String smtpHost, Properties prop, String smtpAccount, String sendAccount, String pin, String to, String subject, String txt) {
+	public void sendHTML(String smtpHost, String smtpPort, Properties prop, String smtpAccount, String sendAccount, String pin, String to, String subject, String txt) {
 		session = Session.getInstance(prop);
 		session.setDebug(true);
 
@@ -186,7 +186,8 @@ public class MailUtil {
 			// 发送邮件
 			ts = session.getTransport();
 			// 连接服务器的邮箱
-			ts.connect(smtpHost, smtpAccount, pin);
+			smtpPort = StrUtil.emptyToDefault(smtpPort, "25");
+			ts.connect(smtpHost, Integer.valueOf(smtpPort), smtpAccount, pin);
 
 			// 把邮件发送出去
 			ts.sendMessage(message, message.getAllRecipients());
