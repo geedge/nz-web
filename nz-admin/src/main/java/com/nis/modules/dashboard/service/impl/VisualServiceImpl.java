@@ -1067,7 +1067,7 @@ public class VisualServiceImpl implements VisualService {
             Object resultData = null;
             try {
                 String datasource = chart.getDatasource();
-                Map<String, Object> chartParam = JSONUtil.toBean(StrUtil.toString(chart.getParam()), Map.class);
+                Map<String, Object> chartParam = JSONUtil.toBean(JSONUtil.toJsonStr(chart.getParam()), Map.class);
 
                 // system
                 if (StrUtil.equals(Constant.ChartDatasourceType.SYSTEM.getValue(), datasource)) {
