@@ -8,6 +8,7 @@ import com.nis.modules.sys.entity.SysUserPreference;
 import com.nis.modules.sys.service.SysUserPrefService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,7 @@ public class SysUserPrefServiceImpl extends ServiceImpl<SysUserPrefDao, SysUserP
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateCurrentUserPref(Map<String, String> updateKeyValueMap) {
         // remove
         this.remove(new LambdaQueryWrapper<SysUserPreference>()
