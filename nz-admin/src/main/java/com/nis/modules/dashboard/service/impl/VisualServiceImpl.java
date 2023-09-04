@@ -166,7 +166,15 @@ public class VisualServiceImpl implements VisualService {
             futureList.add(CompletableFuture.supplyAsync(() -> {
                 JSONObject queryData = null;
                 if (type == 1) {
-                    queryData = promApiService.query_range(expression, StrUtil.toString(start), StrUtil.toString(end), step, "null", null);
+                    JSONObject queryApiResultData = promApiService.query(expression, null, null);
+                    Object queryResultDataType = JSONPath.read(Tool.JSONUtil.toJsonStr(queryApiResultData), "data.resultType");
+                    if (ObjectUtil.equal("matrix", queryResultDataType)) {
+                        queryData = queryApiResultData;
+                        JSONPath.set(queryData, "api", "query");
+                    } else {
+                        queryData = promApiService.query_range(expression, StrUtil.toString(start), StrUtil.toString(end), step, "null", null);
+                        JSONPath.set(queryData, "api", "query_range");
+                    }
                 } else if (type == 2) {
                     queryData = lokiApiService.query_range(expression, StrUtil.toString(start), StrUtil.toString(end), StrUtil.emptyToDefault(limit, "100"), null, null, finalDirection, "1", null);
                 }
