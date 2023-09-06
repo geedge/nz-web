@@ -121,6 +121,7 @@ public class ShiroConfig {
 		filterMap.put("/setup/**", "anon");// 程序配置 相关接口
 		filterMap.put("/sys/timezone", "anon");// timezone
 		filterMap.put("/sys/appearance", "anon"); // 系统外观配置查询接口
+		filterMap.put("/sys/backup/sync", "anon");// 系统备份同步接口
 		filterMap.put("/ctl/**", "anon"); // 管理员账号密码重置接口
 		filterMap.put("/ui/**", "anon"); // UI 接口
 		filterMap.put("/topology/**", "anon"); // topology 接口

@@ -1,30 +1,42 @@
 package com.nis.modules.sys.service.impl;
 
+import cn.hutool.core.compress.Gzip;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.util.IdUtil;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.toolkit.StringPool;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
-import com.nis.modules.sys.dao.SysConfigDao;
+import com.nis.modules.sys.entity.SysComponent;
 import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysBackupService;
+import com.nis.modules.sys.service.SysComponentService;
+import com.nis.modules.sys.service.SysConfService;
+import com.nis.modules.sys.service.SysUserService;
+import com.nis.modules.sys.shiro.ShiroUtils;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.mariadb.jdbc.MariaDbBlob;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.sql.*;
 import java.util.Date;
 import java.util.*;
@@ -33,11 +45,17 @@ import java.util.stream.Collectors;
 @Service("sysBackupService")
 public class SysBackupServiceImpl implements SysBackupService {
 
-    private static Log log = Log.get();
-    
+    private static final Log log = Log.get();
+
     @Autowired
-    private  SysConfigDao sysConfigDao;
-    
+    private SysConfService sysConfService;
+
+    @Autowired
+    private SysUserService sysUserService;
+
+    @Autowired
+    private SysComponentService sysComponentService;
+
     @Autowired
     private DataSource dataSource;
 
@@ -46,184 +64,94 @@ public class SysBackupServiceImpl implements SysBackupService {
 
     @Value("${nezha.exportMaxSize:10000}")
     private Integer exportMaxSize;
-    
-	@Override
-	public Object queryInfo() {
-		Object result = null;
-		SysConfigEntity config = sysConfigDao.queryByKey("backup_config");
-		if(ToolUtil.isNotEmpty(config) && ToolUtil.isNotEmpty(config.getParamValue())) {
-			String paramValue = config.getParamValue();
-			result = JSON.parseObject(paramValue, Object.class);
-		}
-		return result;
-	}
 
     @Override
-	public void save(Map<String, Object> params) {
-		SysConfigEntity config = sysConfigDao.queryByKey("backup_config");
-		if(ToolUtil.isNotEmpty(config)) {
-			sysConfigDao.updateValueByKey("backup_config", JSON.toJSONString(params));
+    public Object queryInfo() {
+        String backupConfigJsonStr = sysConfService.getValue("backup_config");
+        Object resultObj = JSON.parseObject(backupConfigJsonStr, Object.class);
+        return resultObj;
+    }
 
-            String oldParamStr = ToolUtil.isEmpty(config.getParamKey()) ? JSONObject.toJSONString(Tool.MapUtil.empty()) : config.getParamValue();
-            Map oldParamMap = JSONObject.parseObject(oldParamStr, LinkedHashMap.class);
+    @Override
+    public void save(Map<String, Object> params) {
+        String backupConfigJsonStr = sysConfService.getValue("backup_config");
+        if (ToolUtil.isNotEmpty(backupConfigJsonStr)) {
+            sysConfService.update(new LambdaUpdateWrapper<SysConfigEntity>().set(SysConfigEntity::getParamValue, JSON.toJSONString(params)).eq(SysConfigEntity::getParamKey, "backup_config"));
+
+            Map oldParamMap = JSONObject.parseObject(StrUtil.emptyToDefault(backupConfigJsonStr, StrUtil.EMPTY_JSON), LinkedHashMap.class);
             if (!oldParamMap.equals(params)) {
                 redisTemplate.convertAndSend(Constant.BACKUP_TOPIC_NAME, JSONObject.toJSONString(params));
             }
-		}else {
+        } else {
             // 新增
-            config = new SysConfigEntity();
+            SysConfigEntity config = new SysConfigEntity();
             config.setParamKey("backup_config");
             config.setParamValue(JSON.toJSONString(params));
             config.setStatus("1");
-            sysConfigDao.insert(config);
+            sysConfService.save(config);
 
             redisTemplate.convertAndSend(Constant.BACKUP_TOPIC_NAME, JSONObject.toJSONString(params));
         }
-	}
-
-	@Override
-	public List<Object> queryBackupList() {
-		List<Object> result = null;
-		SysConfigEntity config = sysConfigDao.queryByKey("backup_file_path");
-		String path = Constant.BACKUP_ROOT_PATH;
-		if(ToolUtil.isNotEmpty(config) && ToolUtil.isNotEmpty(config.getParamValue())) {
-			path = config.getParamValue();
-		}
-		boolean directory = FileUtil.isDirectory(path);
-		if(directory) {
-			List<File> loopFiles = FileUtil.loopFiles(path);
-			if(ToolUtil.isNotEmpty(loopFiles)) {
-				List<File> sortFile = loopFiles.stream().sorted(Comparator.comparing(File::lastModified).reversed()).collect(Collectors.toList());
-				result = new ArrayList<Object>();
-				for(File file : sortFile) {
-					Map<String,Object> data =new HashMap<String,Object>();
-					data.put("fileName", file.getName());
-					data.put("time", DateUtil.date(file.lastModified()));
-					data.put("size", file.length());
-					result.add(data);
-				}
-			}
-		}
-		return result;
-	}
+    }
 
     @Override
-    public void backupData() throws Exception {
-    	String sqlFilename = null;
-    	Connection conn = null;
-    	Statement stmtInfo = null, stmtData = null;
-	    ResultSet rsInfo = null, rsData = null;
-    	try {
-			conn = dataSource.getConnection();
-			String dbName = conn.getCatalog();
-			//存放文件目录
-	        SysConfigEntity config = sysConfigDao.queryByKey("backup_file_path");
-			String path = Constant.BACKUP_ROOT_PATH;
-			if(ToolUtil.isNotEmpty(config) && ToolUtil.isNotEmpty(config.getParamValue())) {
-				path = config.getParamValue();
-			}
-			
-	        //文件名
-	        sqlFilename = path + File.separator +  String.format("%s_%s.sql", dbName, DateUtil.format(new Date() , "zyyyyMMdd_hh_mm_ss"));
-	        BufferedWriter writer = FileUtil.getWriter(sqlFilename, "UTF-8", false);
-		    stmtInfo = conn.createStatement();
-		    /*
-	         * 获取所有表名称 
-	         */
-	        List<String> tableNames =new ArrayList<String>(); 
-	        rsInfo = stmtInfo.executeQuery(String.format("SHOW FULL TABLES FROM `%s` WHERE TABLE_TYPE = 'BASE TABLE'", dbName));
-	        // 遍历所有表
-	        while(rsInfo.next()) {
-	            String tableName = rsInfo.getString(1);
-	            tableNames.add(tableName);
-	        }    //end for tables
-	        
-	        Tool.IoUtil.close(rsInfo);
-            Tool.IoUtil.close(stmtInfo);
-		    
-		    if(ToolUtil.isNotEmpty(tableNames)) {
-		    	
-		    	//将不需要备份表过滤
-				SysConfigEntity excludeTables = sysConfigDao.queryByKey("backup_exclude_tables");
-				if(ToolUtil.isNotEmpty(excludeTables) && ToolUtil.isNotEmpty(excludeTables.getParamValue())) {
-					List<String> excludeTableNames = Arrays.asList(excludeTables.getParamValue().split(StringPool.COMMA));
-					tableNames = tableNames.stream().filter(tableName-> !excludeTableNames.contains(tableName)).collect(Collectors.toList());
-				}
-		    	
-		    	/*
-		         * 头内容
-		         */
-		        writer.write("SET NAMES utf8mb4;");
-		        writer.newLine();
-		        writer.write("SET FOREIGN_KEY_CHECKS = 0;");
-		        writer.newLine();
-		        writer.flush();
+    public List<Object> queryBackupList() {
+        List<Object> result = null;
+        String path = sysConfService.getValueOrDefault("backup_file_path", Constant.BACKUP_ROOT_PATH);
+        boolean directory = FileUtil.isDirectory(path);
+        if (directory) {
+            List<File> loopFiles = FileUtil.loopFiles(path);
+            if (ToolUtil.isNotEmpty(loopFiles)) {
+                List<File> sortFile = loopFiles.stream().sorted(Comparator.comparing(File::lastModified).reversed()).collect(Collectors.toList());
+                result = new ArrayList<Object>();
+                for (File file : sortFile) {
+                    Map<String, Object> data = new HashMap<String, Object>();
+                    data.put("fileName", file.getName());
+                    data.put("time", DateUtil.date(file.lastModified()));
+                    data.put("size", file.length());
+                    data.put("remark", "");
+                    try (RandomAccessFile raf = new RandomAccessFile(file, "r")) {
+                        long fileSize = file.length();
+                        long startPosition = fileSize - 2 * 1024;
+                        startPosition = startPosition < 0 ? 0 : startPosition;
 
-		        /*
-		         * 导出表数据
-		         */
-				for(String tableName : tableNames) { 
-					this.dbBackExportTable(conn, tableName, writer, false); 
-				} 
-		        
-		        /*
-		         * 导出存储过程信息
-		         */
-		        stmtInfo = conn.createStatement();
-		        rsInfo = stmtInfo.executeQuery(String.format("SELECT `SPECIFIC_NAME` from `INFORMATION_SCHEMA`.`ROUTINES` WHERE `ROUTINE_SCHEMA` = '%s' AND ROUTINE_TYPE = 'PROCEDURE'; ", dbName));
-		        while (rsInfo.next()) {
-		            String procName = rsInfo.getString(1);
-		            
-		            /* 存储过程结构 */
-		            stmtData = conn.createStatement();
-		            rsData = stmtData.executeQuery(String.format("SHOW CREATE PROCEDURE `%s`", procName));
-		            if(!rsData.next()) {
-		                continue ;
-		            }
-		            writer.newLine();
-		            writer.newLine();
-		            writer.write(String.format("/* Procedure structure for procedure `%s` */", procName));
-		            writer.newLine();
-		            writer.write(String.format("/*!50003 DROP PROCEDURE IF EXISTS  `%s` */;", procName));
-		            writer.newLine();
-		            writer.write("DELIMITER $$");
-		            writer.newLine();
-		            writer.append("/*!50003 ").append(rsData.getString(3)).append(" */$$");
-		            writer.newLine();
-		            writer.write("DELIMITER ;");
-		            
-		            Tool.IoUtil.close(rsData);
-		            Tool.IoUtil.close(stmtData);
-		        }
-		        
-		        /*
-		         * 尾内容
-		         */
-		        writer.newLine();
-		        writer.newLine();
-		        writer.write("SET FOREIGN_KEY_CHECKS = 1;");
-		        writer.flush();
-		        writer.close();
-		    }
-        } finally {
-			Tool.IoUtil.close(stmtData);
-			Tool.IoUtil.close(rsData);
-			Tool.IoUtil.close(stmtInfo);
-			Tool.IoUtil.close(rsInfo);
-			Tool.IoUtil.close(conn);
-		}
-    	
-    	this.removeBackupFile();
+                        raf.seek(startPosition);
+                        byte[] buffer = new byte[2 * 1024];
+                        raf.readFully(buffer);
+                        data.put("remark", StrUtil.trim(StrUtil.str(buffer, "UTF-8")));
+                    } catch (IOException e) {
+                        log.error(e, "[queryBackupList] [read remark error] [file: {}]", file.getName());
+                    }
+                    result.add(data);
+                }
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public void backupData(String remark) throws Exception {
+        String tempFilePerfix = IdUtil.fastSimpleUUID();
+        log.info("[backupData] [begin] [tempFilePerfix: {}]", tempFilePerfix);
+
+        // export db to sql file
+        this.exportDbToSQLFile(tempFilePerfix);
+
+        /**
+         * secure writer backup file
+         * sqlFile -> gzip -> aes -> append remark str -> NZ-date.bak
+         */
+        this.secureWriterBackupFile(tempFilePerfix, remark);
+
+        // backup file rotate
+        this.backupFileRotate();
+
+        log.info("[backupData] [finshed] [tempFilePerfix: {}]", tempFilePerfix);
     }
 
     @Override
     public void removeBackFileByFilename(String filename) {
-        SysConfigEntity config = sysConfigDao.queryByKey("backup_file_path");
-        String path = Constant.BACKUP_ROOT_PATH;
-
-        if (Optional.ofNullable(config).map(SysConfigEntity::getParamValue).isPresent()) {
-            path = config.getParamValue();
-        }
+        String path = sysConfService.getValueOrDefault("backup_file_path", Constant.BACKUP_ROOT_PATH);
 
         String sqlFilePath = Tool.StrUtil.concat(true, path, File.separator, filename);
         boolean exist = FileUtil.exist(sqlFilePath);
@@ -247,12 +175,7 @@ public class SysBackupServiceImpl implements SysBackupService {
 
     @Override
     public void downloadBackFileByFilename(HttpServletResponse response, String filename) throws IOException {
-        SysConfigEntity config = sysConfigDao.queryByKey("backup_file_path");
-        String path = Constant.BACKUP_ROOT_PATH;
-
-        if (Optional.ofNullable(config).map(SysConfigEntity::getParamValue).isPresent()) {
-            path = config.getParamValue();
-        }
+        String path = sysConfService.getValueOrDefault("backup_file_path", Constant.BACKUP_ROOT_PATH);
 
         String sqlFilePath = Tool.StrUtil.concat(true, path, File.separator, filename);
         boolean exist = FileUtil.exist(sqlFilePath);
@@ -262,51 +185,245 @@ public class SysBackupServiceImpl implements SysBackupService {
                 ResponseUtil.downloadFile(response, FileUtil.file(sqlFilePath));
             }
         }
-        if(!exist){
+        if (!exist) {
             // 文件不存在
             throw new NZException(RCode.SYS_BACKUP_FILENAME_NOTEXIST);
         }
     }
 
     /**
-     * 根据数据库配置 判断保存文件数量是否超标
+     * unpack backup file
+     *
+     * @param file
+     * @param response
      */
-    public void removeBackupFile() {
-    	// 备份完成后获取文件保存数量设置 将多余文件删除
-    	SysConfigEntity backupConfig = sysConfigDao.queryByKey("backup_config");
-    	if(ToolUtil.isNotEmpty(backupConfig) && ToolUtil.isNotEmpty(backupConfig.getParamValue())) {
-    		String value = backupConfig.getParamValue();
-    		JSONObject config = JSON.parseObject(value);
-    		Integer retention = (Integer)config.get("retention");
-    		if(ToolUtil.isNotEmpty(retention) && !retention.equals(-1)) {
-    			SysConfigEntity filePathConfig = sysConfigDao.queryByKey("backup_file_path");
-    			String path = Constant.BACKUP_ROOT_PATH;
-    			if(ToolUtil.isNotEmpty(filePathConfig) && ToolUtil.isNotEmpty(filePathConfig.getParamValue())) {
-    				path = filePathConfig.getParamValue();
-    			}
-    			boolean directory = FileUtil.isDirectory(path);
-    			if(directory) {
-    				List<File> loopFiles = FileUtil.loopFiles(path);
-    				if(ToolUtil.isNotEmpty(loopFiles)) {
-    					if(loopFiles.size() > retention) {
-    						Integer diff = loopFiles.size() - retention;
-    						for(int i = 0;i < diff; i++) {
-    							FileUtil.del(loopFiles.get(i));
-    						}
-    					}
-    				}
-    			}
-    		}
-    	}
+    @Override
+    public void unpackBackupFile(MultipartFile file, HttpServletResponse response) {
+        log.info("[unpackBackupFile] [begin]");
+        File tempSecureFile = null, readSqlFile = null;
+        try {
+            String tempFilePath = Tool.StrUtil.concat(true, Constant.TEMP_PATH, File.separator, IdUtil.fastSimpleUUID(), ".bak");
+            tempSecureFile = FileUtil.file(tempFilePath);
+
+            FileUtils.copyInputStreamToFile(file.getInputStream(), tempSecureFile);
+
+            // 返回文件名称
+            String filename = file.getOriginalFilename();
+            String unpackFileName = FilenameUtils.getBaseName(filename);
+
+            // secure reader backup file
+            readSqlFile = this.secureReaderBackupFile(tempSecureFile, unpackFileName);
+            ResponseUtil.downloadFile(response, readSqlFile);
+            log.info("[unpackBackupFile] [finshed]");
+        } catch (Exception e) {
+            log.error(e, "[unpackBackupFile] [error] [file: {}]", file.getOriginalFilename());
+            throw new NZException(RCode.SYS_BACKUP_UNPACK_ERROR);
+        } finally {
+            FileUtil.del(tempSecureFile);
+            FileUtil.del(readSqlFile);
+        }
     }
+
+    /**
+     * sync backup file
+     *
+     * @param serverid
+     * @param type
+     * @param filename
+     * @param response
+     */
+    @Override
+    public void syncBackupFile(String serverid, String type, String filename, HttpServletResponse response) {
+        SysComponent sysComponent = sysComponentService.getOne(new LambdaUpdateWrapper<SysComponent>().eq(SysComponent::getServerid, serverid));
+        log.info("[syncBackupFile] [get sysComponent] [serverid: {}] [component exist: {}]", serverid, ObjectUtil.isNotNull(sysComponent));
+        if (ObjectUtil.isNull(sysComponent)) {
+            log.warn("[syncBackupFile] [get sysComponent error] [serverid: {}]", serverid);
+            try {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "System component not found.");
+            } catch (IOException e) {
+                log.error(e);
+            }
+            return;
+        }
+
+        // query back file list
+        if (StrUtil.equals("list", type)) {
+            try {
+                String path = sysConfService.getValueOrDefault("backup_file_path", Constant.BACKUP_ROOT_PATH);
+                List<File> loopFiles = FileUtil.loopFiles(path);
+                List<File> sortFile = loopFiles.stream().sorted(Comparator.comparing(File::lastModified).reversed()).collect(Collectors.toList());
+
+                List<Map<Object, Object>> resultList = Tool.ListUtil.list(true);
+                for (File file : sortFile) {
+                    Map<Object, Object> map = Tool.MapUtil.builder().put("fileName", file.getName()).put("size", file.length()).put("md5", DigestUtils.md5Hex(FileUtil.getInputStream(file))).build();
+                    resultList.add(map);
+                }
+
+                response.getWriter().write(JSON.toJSONString(R.ok().putData("list", resultList)));
+            } catch (IOException e) {
+                log.error(e, "[syncBackupFile] [error] [type: {}]", type);
+                try {
+                    response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error");
+                } catch (IOException ex) {
+                    log.error(ex);
+                }
+            }
+        } else if (StrUtil.equals("download", type)) {
+            try {
+                String path = sysConfService.getValueOrDefault("backup_file_path", Constant.BACKUP_ROOT_PATH);
+                String sqlFilePath = Tool.StrUtil.concat(true, path, File.separator, filename);
+                boolean exist = FileUtil.exist(sqlFilePath);
+                log.info("[syncBackupFile] [download file] [filename: {}] [exist: {}]", filename, exist);
+                if (exist) {
+                    ResponseUtil.downloadFile(response, FileUtil.file(sqlFilePath));
+                } else {
+                    response.sendError(HttpServletResponse.SC_NOT_FOUND, "File Not Found");
+                }
+            } catch (IOException e) {
+                log.error(e, "[syncBackupFile] [error] [type: {}] [filename: {}]", type, filename);
+                try {
+                    response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error");
+                } catch (IOException ex) {
+                    log.error(ex);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void restore(String filename, String pin) {
+        Long userId = ShiroUtils.getUserId();
+        SysUserEntity user = sysUserService.getById(userId);
+
+        // validate pin
+        String tempPinForValidate = ShiroUtils.sha256(pin, user.getSalt());
+        if (ObjectUtil.notEqual(user.getPin(), tempPinForValidate)) {
+            throw new NZException(RCode.SYS_LOGIN_ACCOUNTAUTH);
+        }
+
+        String path = sysConfService.getValueOrDefault("backup_file_path", Constant.BACKUP_ROOT_PATH);
+        String sqlFilePath = Tool.StrUtil.concat(true, path, File.separator, filename);
+
+        boolean exist = FileUtil.exist(sqlFilePath);
+        log.info("[restore] [download file] [filename: {}] [exist: {}]", filename, exist);
+        if (exist) {
+            // TODO
+        } else {
+            log.warn("[restore] [file not found] [filename: {}]", filename);
+            throw new NZException(RCode.SYS_BACKUP_FILENAME_NOTEXIST);
+        }
+    }
+
+    /**
+     * export db to sql file
+     *
+     * @param tempFilePerfix
+     * @throws IOException
+     * @throws SQLException
+     */
+    private void exportDbToSQLFile(String tempFilePerfix) throws IOException, SQLException {
+        log.info("[exportDbToSQLFile] [begin]");
+        StopWatch sw = new StopWatch();
+        sw.start();
+
+        Connection conn = null;
+        Statement stmtInfo = null, stmtData = null;
+        ResultSet rsInfo = null, rsData = null;
+        try {
+            conn = dataSource.getConnection();
+            stmtInfo = conn.createStatement();
+            String dbName = conn.getCatalog();
+
+            // 获取所有表名称
+            List<String> tableNames = new ArrayList<>();
+            rsInfo = stmtInfo.executeQuery(String.format("SHOW FULL TABLES FROM `%s` WHERE TABLE_TYPE = 'BASE TABLE'", dbName));
+            // 遍历所有表
+            while (rsInfo.next()) {
+                String tableName = rsInfo.getString(1);
+                tableNames.add(tableName);
+            }    //end for tables
+
+            Tool.IoUtil.close(rsInfo);
+            Tool.IoUtil.close(stmtInfo);
+
+            if (ToolUtil.isNotEmpty(tableNames)) {
+                //将不需要备份表过滤
+                String backupExcludeTables = sysConfService.getValue("backup_exclude_tables");
+                if (StrUtil.isNotEmpty(backupExcludeTables)) {
+                    List<String> excludeTableNames = StrUtil.split(backupExcludeTables, ",");
+                    tableNames = tableNames.stream().filter(tableName -> !excludeTableNames.contains(tableName)).collect(Collectors.toList());
+                }
+
+                String tempSqlFilePath = Tool.StrUtil.concat(true, Constant.TEMP_PATH, File.separator, tempFilePerfix, ".sql");
+                BufferedWriter writer = FileUtil.getWriter(tempSqlFilePath, "UTF-8", false);
+
+                // 头内容
+                writer.write("SET NAMES utf8mb4;");
+                writer.newLine();
+                writer.write("SET FOREIGN_KEY_CHECKS = 0;");
+                writer.newLine();
+                writer.flush();
+
+                // 导出表数据
+                for (String tableName : tableNames) {
+                    this.dbBackExportTable(conn, tableName, writer, false);
+                }
+
+                // 导出存储过程信息
+                stmtInfo = conn.createStatement();
+                rsInfo = stmtInfo.executeQuery(String.format("SELECT `SPECIFIC_NAME` from `INFORMATION_SCHEMA`.`ROUTINES` WHERE `ROUTINE_SCHEMA` = '%s' AND ROUTINE_TYPE = 'PROCEDURE'; ", dbName));
+                while (rsInfo.next()) {
+                    String procName = rsInfo.getString(1);
+
+                    // 存储过程结构
+                    stmtData = conn.createStatement();
+                    rsData = stmtData.executeQuery(String.format("SHOW CREATE PROCEDURE `%s`", procName));
+                    if (!rsData.next()) {
+                        continue;
+                    }
+                    writer.newLine();
+                    writer.newLine();
+                    writer.write(String.format("/* Procedure structure for procedure `%s` */", procName));
+                    writer.newLine();
+                    writer.write(String.format("/*!50003 DROP PROCEDURE IF EXISTS  `%s` */;", procName));
+                    writer.newLine();
+                    writer.write("DELIMITER $$");
+                    writer.newLine();
+                    writer.append("/*!50003 ").append(rsData.getString(3)).append(" */$$");
+                    writer.newLine();
+                    writer.write("DELIMITER ;");
+
+                    Tool.IoUtil.close(rsData);
+                    Tool.IoUtil.close(stmtData);
+                }
+
+                // 尾内容
+                writer.newLine();
+                writer.newLine();
+                writer.write("SET FOREIGN_KEY_CHECKS = 1;");
+                writer.flush();
+                writer.close();
+            }
+        } finally {
+            Tool.IoUtil.close(stmtData);
+            Tool.IoUtil.close(rsData);
+            Tool.IoUtil.close(stmtInfo);
+            Tool.IoUtil.close(rsInfo);
+            Tool.IoUtil.close(conn);
+            sw.stop();
+        }
+        log.info("[exportDbToSQLFile] [finshed] [Run time: {}]", sw.toString());
+    }
+
     /**
      * 导出表数据
+     *
      * @param conn
      * @param tableName
      * @param writer
-     * @param bulkFlag   是否将数据放在一起
-     * @throws SQLException 
-     * @throws IOException 
+     * @param bulkFlag  是否将数据放在一起
+     * @throws SQLException
+     * @throws IOException
      */
     private void dbBackExportTable(Connection conn, String tableName, BufferedWriter writer, boolean bulkFlag) throws SQLException, IOException {
         Statement stmt = null;
@@ -314,32 +431,32 @@ public class SysBackupServiceImpl implements SysBackupService {
         /* 表结构 */
         stmt = conn.createStatement();
         rs = stmt.executeQuery(String.format("SHOW CREATE TABLE `%s`", tableName));
-        if(!rs.next()) {
-            return ;
+        if (!rs.next()) {
+            return;
         }
         writer.newLine();
         writer.newLine();
         writer.write(String.format("/*Table structure for table `%s` */", tableName));
         writer.newLine();
         writer.write(String.format("DROP TABLE IF EXISTS `%s`;", tableName));
-        writer.newLine();                
+        writer.newLine();
         writer.write(rs.getString(2) + ";");
         writer.newLine();
         Tool.IoUtil.close(rs);
         Tool.IoUtil.close(stmt);
-        
+
         /* 导出表数据 */
         // 先获取记录数
         stmt = conn.createStatement();
         rs = stmt.executeQuery(String.format("SELECT COUNT(1) FROM `%s`", tableName));
         int rowCount = rs.next() ? rs.getInt(1) : 0;
-        if(0 >= rowCount) {
+        if (0 >= rowCount) {
             writer.flush();
-            return ;
+            return;
         }
         writer.write(String.format("/*Data for the table `%s` */", tableName));
         writer.newLine();
-        
+
         stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
         /**
          * If the fetch size specified is zero, the JDBC driver ignores the value and is free to make its own best guess as to what the fetch size should be.
@@ -351,32 +468,32 @@ public class SysBackupServiceImpl implements SysBackupService {
         // stmt.setFetchSize(Integer.MIN_VALUE);
         stmt.setFetchSize(0);
         stmt.setFetchDirection(ResultSet.FETCH_REVERSE);
-        
+
         Integer start = 0;
         Integer end = exportMaxSize;
         boolean flag = true;
-        while(flag) {
-        	if(rowCount < exportMaxSize) {
-            	end = rowCount;
+        while (flag) {
+            if (rowCount < exportMaxSize) {
+                end = rowCount;
             }
-        	
-        	if(end == rowCount) {
-        		flag = false;
-        	}
-        	
-            rs = stmt.executeQuery(String.format("SELECT * FROM `%s` limit %d , %d", tableName,start,end));
+
+            if (end == rowCount) {
+                flag = false;
+            }
+
+            rs = stmt.executeQuery(String.format("SELECT * FROM `%s` limit %d , %d", tableName, start, end));
             int colCount = 0;
             Object colValue = null;
             // 所有数据用","连接
-            if(!bulkFlag) {
-                while(rs.next()) {
+            if (!bulkFlag) {
+                while (rs.next()) {
                     colCount = rs.getMetaData().getColumnCount();
-                    
+
                     writer.write(String.format("INSERT INTO `%s` VALUES (", tableName));
                     // 获取表每一列数据
-                    for(int j = 0; j < colCount; j ++) {
-                        if(j > 0) {
-                            writer.write(',');    
+                    for (int j = 0; j < colCount; j++) {
+                        if (j > 0) {
+                            writer.write(',');
                         }
                         colValue = rs.getObject(j + 1);
                         if (null != colValue) {
@@ -387,7 +504,7 @@ public class SysBackupServiceImpl implements SysBackupService {
                                 String blobHexStr = Tool.StrUtil.concat(true, "0x", Tool.HexUtil.encodeHexStr(IoUtil.readBytes(binaryStream), false));
                                 writer.write(blobHexStr);
                             } else {
-                                writer.write(String.format("'%s'", escapeString(colValue.toString())));
+                                writer.write(com.baomidou.mybatisplus.core.toolkit.StringUtils.quotaMark(colValue.toString()));
                             }
                         } else {
                             writer.write("NULL");
@@ -402,16 +519,16 @@ public class SysBackupServiceImpl implements SysBackupService {
             else {
                 ResultSetMetaData rsMetaData = null;
                 int counter = 0;
-                while(rs.next()) {
-                    ++ counter;
+                while (rs.next()) {
+                    ++counter;
                     rsMetaData = rs.getMetaData();
                     colCount = rsMetaData.getColumnCount();
 
                     // 第一条记录，则列出列名
-                    if(1 == counter) {
+                    if (1 == counter) {
                         writer.write(String.format("INSERT INTO `%s` (", tableName));
-                        for(int i = 0; i < colCount; i ++) {
-                            if(i > 0) {
+                        for (int i = 0; i < colCount; i++) {
+                            if (i > 0) {
                                 writer.write(",");
                             }
                             writer.append('`').append(rsMetaData.getColumnName(i + 1)).append('`');
@@ -419,17 +536,17 @@ public class SysBackupServiceImpl implements SysBackupService {
                         writer.append(") VALUES ");
                     }
                     // 获取表每一列数据
-                    for(int j = 0; j < colCount; j ++) {
-                        writer.write((0 >= j) ? '(' : ',');                        
+                    for (int j = 0; j < colCount; j++) {
+                        writer.write((0 >= j) ? '(' : ',');
                         colValue = rs.getObject(j + 1);
-                        if(null != colValue) {
-                            writer.write(String.format("'%s'", this.escapeString(colValue.toString())));
+                        if (null != colValue) {
+                            writer.write(com.baomidou.mybatisplus.core.toolkit.StringUtils.quotaMark(colValue.toString()));
                         } else {
                             writer.write("NULL");
                         }
                     }    //end for one record columns
                     // 是否是最后记录
-                    if(rowCount > counter) {
+                    if (rowCount > counter) {
                         writer.write("),");
                     } else {
                         writer.write(");");
@@ -437,139 +554,205 @@ public class SysBackupServiceImpl implements SysBackupService {
                     writer.flush();
                 }    //end for table records
             }
-            
+
             start = end;
             end = end + exportMaxSize;
-            if(end > rowCount) {
-            	end = rowCount;
+            if (end > rowCount) {
+                end = rowCount;
             }
         }
         Tool.IoUtil.close(rs);
         Tool.IoUtil.close(stmt);
     }
-        
+
     /**
-     * 判断内容是否需要进行转义
-     * @param x
-     * @return
+     * secure writer backup file
+     * sqlFile -> gzip -> aes -> append remark str -> NZ-date.bak
+     *
+     * @param tempFilePerfix
+     * @param remark
+     * @throws IOException
      */
-    public static boolean isNeedEscape(String x) {
-        boolean needsHexEscape = false;
-        if(StringUtils.isBlank(x)) {
-            return needsHexEscape;
-        }
-        int stringLength = x.length();
-        int i = 0;
-        do
-        {
-            if(i >= stringLength)
-                break;
-            char c = x.charAt(i);
-            switch(c)
-            {
-            case 0: // '\0'
-                needsHexEscape = true;
-                break;
+    private void secureWriterBackupFile(String tempFilePerfix, String remark) throws IOException {
+        log.info("[secureWriterBackupFile] [begin]");
+        StopWatch sw = new StopWatch();
+        sw.start();
 
-            case 10: // '\n'
-                needsHexEscape = true;
-                break;
-
-            case 13: // '\r'
-                needsHexEscape = true;
-                break;
-
-            case 92: // '\\'
-                needsHexEscape = true;
-                break;
-
-            case 39: // '\''
-                needsHexEscape = true;
-                break;
-
-            case 34: // '"'
-                needsHexEscape = true;
-                break;
-
-            case 26: // '\032'
-                needsHexEscape = true;
-                break;
+        String tempSqlFilePath = Tool.StrUtil.concat(true, Constant.TEMP_PATH, File.separator, tempFilePerfix, ".sql");
+        String tempGzipFilePath = Tool.StrUtil.concat(true, Constant.TEMP_PATH, File.separator, tempFilePerfix, ".gz");
+        String nzBackupFileName = StrUtil.concat(true, "NZ-", DateUtil.format(new Date(), "yyyyMMdd'T'HHmmss"), ".bak");
+        try {
+            // gzip
+            File tempGzipFile = FileUtil.file(tempGzipFilePath);
+            log.info("[secureWriterBackupFile] [gzip file] [begin]");
+            Gzip gzip = null;
+            try (FileInputStream fis = new FileInputStream(tempSqlFilePath); FileOutputStream fos = new FileOutputStream(tempGzipFile);) {
+                gzip = Gzip.of(fis, fos);
+                gzip.gzip();
+                log.info("[secureWriterBackupFile] [gzip file] [finshed]");
+            } catch (IOException e) {
+                log.error(e, "[secureWriterBackupFile] [gzip error]");
+                throw e;
+            } finally {
+                IoUtil.close(gzip);
             }
-            if(needsHexEscape)
-                break;
-            i++;
-        } while(true);
-        return needsHexEscape;
+
+            // aes encrypt
+            String nzBackupFilePath = sysConfService.getValueOrDefault("backup_file_path", Constant.BACKUP_ROOT_PATH);
+            File nzBackupFile = FileUtil.file(nzBackupFilePath, nzBackupFileName);
+
+            log.info("[secureWriterBackupFile] [aes encrypt file] [begin]");
+            try (FileInputStream fis = new FileInputStream(tempGzipFile); FileOutputStream fos = new FileOutputStream(nzBackupFile);) {
+                AES aes = new AES(Constant.AES_SECRET_KEY);
+                aes.encrypt(fis, fos, true);
+                log.info("[secureWriterBackupFile] [aes encrypt file] [finshed]");
+            } catch (IOException e) {
+                log.error(e, "[secureWriterBackupFile] [aes encrypt error]");
+                throw e;
+            }
+
+            // append remark size: 2KB
+            remark = StrUtil.emptyToDefault(remark, "");
+            int desiredLength = 2 * 1024;
+            int currentLength = remark.getBytes().length;
+            log.info("[secureWriterBackupFile] [append remark] [begin] [remark length: {}]", currentLength);
+            if (currentLength < desiredLength) {
+                int spacesToAdd = desiredLength - currentLength;
+                StringBuilder paddedString = new StringBuilder(remark);
+                for (int i = 0; i < spacesToAdd; i++) {
+                    paddedString.append(" ");
+                }
+                remark = paddedString.toString();
+            } else if (currentLength > desiredLength) {
+                remark = remark.substring(0, desiredLength);
+            }
+
+            try (RandomAccessFile raf = new RandomAccessFile(nzBackupFile, "rw");) {
+                raf.seek(raf.length());
+                raf.write(remark.getBytes(), 0, remark.getBytes().length);
+                log.info("[secureWriterBackupFile] [append remark] [finshed]");
+            } catch (IOException e) {
+                log.error(e, "[secureWriterBackupFile] [append remark error]");
+                throw e;
+            }
+        } finally {
+            // del tmpl file
+            FileUtil.del(tempSqlFilePath);
+            FileUtil.del(tempGzipFilePath);
+        }
+
+        sw.stop();
+        log.info("[secureWriterBackupFile] [finshed] [nzBackUpFile: {}] [Run time: {}]", nzBackupFileName, sw.toString());
     }
-    
+
     /**
-     * 对mysql字符进行转义
-     * @param x
-     * @return
+     * backup file rotate
+     * retentionNum = sys_config.backup_config.retention
      */
-    public static String escapeString(String x) {
-        if(StringUtils.isBlank(x)) {
-            return x;
-        }
-        if(!isNeedEscape(x)) {
-            return x;
-        }
-        int stringLength = x.length();
-        String parameterAsString = x;
-        StringBuffer buf = new StringBuffer((int)((double)x.length() * 1.1000000000000001D));
-        // 可以指定结果前后追加单引号：'
-        //buf.append('\'');
-        for(int i = 0; i < stringLength; i++)
-        {
-            char c = x.charAt(i);
-            switch(c)
-            {
-            default:
-                break;
+    public void backupFileRotate() {
+        log.info("[backupFileRotate] [begin]");
+        String backupConfigJsonStr = sysConfService.getValue("backup_config");
+        JSONObject config = JSON.parseObject(backupConfigJsonStr);
+        Integer retention = (Integer) config.get("retention");
 
-            case 0: // '\0'
-                buf.append('\\');
-                buf.append('0');
-                continue;
-
-            case 10: // '\n'
-                buf.append('\\');
-                buf.append('n');
-                continue;
-
-            case 13: // '\r'
-                buf.append('\\');
-                buf.append('r');
-                continue;
-
-            case 92: // '\\'
-                buf.append('\\');
-                buf.append('\\');
-                continue;
-
-            case 39: // '\''
-                buf.append('\\');
-                buf.append('\'');
-                continue;
-
-            case 34: // '"'
-                buf.append('\\');
-                buf.append('"');
-                continue;
-
-            case 26: // '\032'
-                buf.append('\\');
-                buf.append('Z');
-                continue;
-
+        log.info("[backupFileRotate] [retention {}]", retention);
+        if (ToolUtil.isNotEmpty(retention) && !retention.equals(-1)) {
+            String path = sysConfService.getValueOrDefault("backup_file_path", Constant.BACKUP_ROOT_PATH);
+            boolean directory = FileUtil.isDirectory(path);
+            if (directory) {
+                List<File> loopFiles = FileUtil.loopFiles(path);
+                log.info("[backupFileRotate] [current backup file list] [length: {}]", Tool.CollUtil.size(loopFiles));
+                if (ToolUtil.isNotEmpty(loopFiles)) {
+                    if (loopFiles.size() > retention) {
+                        Integer delSize = loopFiles.size() - retention;
+                        log.info("[backupFileRotate] [delete expired files] [size: {}]", delSize);
+                        for (int i = 0; i < delSize; i++) {
+                            FileUtil.del(loopFiles.get(i));
+                        }
+                    }
+                }
             }
-            buf.append(c);
+        } else {
+            log.info("[backupFileRotate] [no rotate in config]");
         }
-        // 可以指定结果前后追加单引号：'
-        //buf.append('\'');
-        parameterAsString = buf.toString();
-        return parameterAsString;
+
+        log.info("[backupFileRotate] [finshed]");
     }
-    
-    
+
+    /**
+     * secure reader backup file
+     *
+     * @param secureFile
+     * @param sqlFileName
+     * @return
+     * @throws IOException
+     */
+    private File secureReaderBackupFile(File secureFile, String sqlFileName) throws IOException {
+        log.info("[secureReaderBackupFile] [begin] [sqlFileName: {}]", sqlFileName);
+        String tempAesFilePath = Tool.StrUtil.concat(true, Constant.TEMP_PATH, File.separator, IdUtil.fastSimpleUUID(), ".bak");
+        String tempGzipFilePath = Tool.StrUtil.concat(true, Constant.TEMP_PATH, File.separator, IdUtil.fastSimpleUUID(), ".gz");
+        String tempSqlFilePath = Tool.StrUtil.concat(true, Constant.TEMP_PATH, File.separator, sqlFileName, ".sql");
+        try {
+            // remove append remark size = 2k
+            log.info("[secureReaderBackupFile] [remove append remark] [begin]");
+            try (RandomAccessFile raf = new RandomAccessFile(secureFile, "r"); FileOutputStream fos = new FileOutputStream(tempAesFilePath)) {
+                int bytesToRemove = 2 * 1024;
+                long secureFileSize = raf.length();
+                long aesFileSize = secureFileSize - bytesToRemove;
+                aesFileSize = aesFileSize < 0 ? 0 : aesFileSize;
+
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                long position = 0;
+                while ((bytesRead = raf.read(buffer)) != -1) {
+                    if (position + bytesRead > aesFileSize) {
+                        int remainingBytes = (int) (aesFileSize - position);
+                        fos.write(buffer, 0, remainingBytes);
+                        break;
+                    } else {
+                        fos.write(buffer, 0, bytesRead);
+                    }
+                    position += bytesRead;
+                }
+                log.info("[secureReaderBackupFile] [remove append remark] [finshed]");
+            } catch (IOException e) {
+                log.error(e, "[secureReaderBackupFile] [remove append remark] [error]");
+                throw e;
+            }
+
+            // aes decrypt
+            log.info("[secureReaderBackupFile] [aes decrypt file] [begin]");
+            try (FileInputStream fis = new FileInputStream(tempAesFilePath); FileOutputStream fos = new FileOutputStream(tempGzipFilePath);) {
+
+                AES aes = new AES(Constant.AES_SECRET_KEY);
+                aes.decrypt(fis, fos, true);
+                log.info("[secureReaderBackupFile] [aes decrypt file] [finshed]");
+            } catch (IOException e) {
+                log.error(e, "[secureReaderBackupFile] [aes decrypt file] [error]");
+                throw e;
+            }
+
+            // unzip
+            Gzip gzip = null;
+            log.info("[secureReaderBackupFile] [ungzip file] [begin]");
+            try (FileInputStream fis = new FileInputStream(tempGzipFilePath); FileOutputStream fos = new FileOutputStream(tempSqlFilePath);) {
+                gzip = Gzip.of(fis, fos);
+                gzip.unGzip();
+                log.info("[secureReaderBackupFile] [ungzip file] [finshed]");
+            } catch (IOException e) {
+                log.error(e, "[secureReaderBackupFile] [ungzip error]");
+                FileUtil.del(tempSqlFilePath);
+                throw e;
+            } finally {
+                IoUtil.close(gzip);
+            }
+        } finally {
+            FileUtil.del(tempGzipFilePath);
+            FileUtil.del(tempAesFilePath);
+            FileUtil.del(secureFile);
+        }
+        log.info("[secureReaderBackupFile] [finshed] [tempSqlPath: {}]", tempSqlFilePath);
+        return FileUtil.file(tempSqlFilePath);
+    }
+
 }

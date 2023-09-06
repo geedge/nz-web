@@ -840,6 +840,12 @@ public enum RCode {
     SYS_BACKUP_FILENAME_NOTEXIST(601001, "System backup file does not exist"),
     SYS_BACKUP_ERROR(609002, "System data backup is abnormal"),
     SYS_BACKUP_IN_PROGRESS(607003, "System data backup is in progress please try again later"),
+    SYS_BACKUP_UNPACK_FILE_FORMAT_ERROR(609004, "Unpack file format error"),
+    SYS_BACKUP_UNPACK_ERROR(609005,"Unpack file error"),
+    SYS_BACKUP_SYNC_SERVERID_ISNULL(601006, "Serverid cannot be empty"),
+    SYS_BACKUP_SYNC_TYPE_ISNULL(601007, "Type cannot be empty"),
+    SYS_BACKUP_SYNC_TYPE_INVALID(604008, "Type not in enumeration range"),
+    SYS_BACKUP_SYNC_FILENAME_ISNULL(601009, "Filename cannot be empty"),
 
 
     /**

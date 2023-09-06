@@ -1,14 +1,18 @@
 package com.nis.modules.sys.controller;
 
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.sys.service.SysBackupService;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -23,108 +27,159 @@ import java.util.Map;
 @RequestMapping("/sys/backup")
 public class SysBackupController {
 
-	Log log = Log.get();
+    private static final Log log = Log.get();
 
     @Autowired
     private SysBackupService sysBackupService;
 
-	@Autowired
-	private RedisLock redisLock;
+    @Autowired
+    private RedisLock redisLock;
 
     /**
-	 * 查询列表
-	 */
-	@GetMapping
-	public R info(@RequestParam Map<String, Object> params){
-		Object result = sysBackupService.queryInfo();
-		return R.ok(result);
-	}
-	
-	/**
-	 * 修改备份
-	 */
-	@PutMapping
-	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.SYSTEM)
-	public R modify(@RequestBody Map<String, Object> params){
-		sysBackupService.save(params);
-		return R.ok();
-	}
+     * 查询列表
+     */
+    @GetMapping
+    public R info(@RequestParam Map<String, Object> params) {
+        Object result = sysBackupService.queryInfo();
+        return R.ok(result);
+    }
 
-	@GetMapping("/list")
-	public R backupList() {
-		List<Object> result = sysBackupService.queryBackupList();
-		return R.ok(result);
-	}
+    /**
+     * 修改备份
+     */
+    @PutMapping
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.SYSTEM)
+    public R modify(@RequestBody Map<String, Object> params) {
+        sysBackupService.save(params);
+        return R.ok();
+    }
 
-	@PostMapping
-	public R backupData() {
-		// get lock
-		String uuid = Tool.StrUtil.uuid();
-		try {
-			if (redisLock.lock(Constant.SYS_BACKUP_LOCK, uuid, 5L)) {
-				log.info("[backupData] [Get lock and start system data backup]");
+    @GetMapping("/list")
+    public R backupList() {
+        List<Object> result = sysBackupService.queryBackupList();
+        return R.ok(result);
+    }
 
-				StopWatch sw = new StopWatch();
-				sw.start();
+    @PostMapping
+    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.SYSTEM)
+    public R backupData(@RequestParam String remark) {
+        // get lock
+        String uuid = Tool.StrUtil.uuid();
+        try {
+            if (redisLock.lock(Constant.SYS_BACKUP_LOCK, uuid, 5L)) {
+                log.info("[backupData] [Get lock and start system data backup]");
 
-				sysBackupService.backupData();
-				sw.stop();
-				log.info("[backupData] [System data backup finished] [Run time: {}]", sw.toString());
+                StopWatch sw = new StopWatch();
+                sw.start();
 
-				return R.ok();
-			} else {
-				log.warn("[backupData] [System data backup is in progress please try again later]");
-				return R.error(RCode.SYS_BACKUP_IN_PROGRESS);
-			}
-		} catch (Exception e) {
-			log.error(e, "[backupData] [backup error]");
-			throw new NZException(RCode.SYS_BACKUP_ERROR);
-		} finally {
-			redisLock.unlock(Constant.SYS_BACKUP_LOCK, uuid);
-		}
-	}
+                sysBackupService.backupData(remark);
+                sw.stop();
+                log.info("[backupData] [System data backup finished] [Run time: {}]", sw.toString());
 
-
-	/**
-	 * 系统备份恢复接口
-	 *
-	 * @param params
-	 * @return
-	 */
-	@PutMapping("/restore")
-	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.SYSTEM)
-	public R restore(@RequestBody(required = false) Map<String, Object> params) {
-		ValidateUtils.is(params).notNull(RCode.SYS_BACKUP_FILENAME_ISNULL);
-		String filename = (String) params.get("filename");
-		if (Tool.StrUtil.isEmpty(filename)) throw new NZException(RCode.SYS_BACKUP_FILENAME_ISNULL);
-
-		// TODO
-		return R.ok();
-	}
+                return R.ok();
+            } else {
+                log.warn("[backupData] [System data backup is in progress please try again later]");
+                return R.error(RCode.SYS_BACKUP_IN_PROGRESS);
+            }
+        } catch (Exception e) {
+            log.error(e, "[backupData] [backup error]");
+            throw new NZException(RCode.SYS_BACKUP_ERROR);
+        } finally {
+            redisLock.unlock(Constant.SYS_BACKUP_LOCK, uuid);
+        }
+    }
 
 
-	/**
-	 * 系统备份删除接口
-	 *
-	 * @param filename
-	 * @return
-	 */
-	@DeleteMapping
-	public R delete(String filename) {
-		if (Tool.StrUtil.isEmpty(filename)) throw new NZException(RCode.SYS_BACKUP_FILENAME_ISNULL);
+    /**
+     * 系统备份恢复接口
+     *
+     * @param params
+     * @return
+     */
+    @PutMapping("/restore")
+    @SysLog(operation = OperationEnum.RESET, type = TypeEnum.SYSTEM)
+    public R restore(@RequestBody(required = false) Map<String, Object> params) {
+        ValidateUtils.is(params).notNull(RCode.SYS_BACKUP_FILENAME_ISNULL);
+        String filename = (String) params.get("filename");
+        String pin = (String) params.get("pin");
 
-		sysBackupService.removeBackFileByFilename(filename);
-		return R.ok();
-	}
+        ValidateUtils.is(filename).notNull(RCode.SYS_BACKUP_FILENAME_ISNULL)
+                .and(pin).notNull(RCode.SYS_USER_PASSWORD_ISNULL);
 
-	/**
-	 * 系统备份下载接口
-	 * @param filename
-	 */
-	@GetMapping("/download")
-	public void download(HttpServletResponse response, String filename) throws IOException {
-		if (Tool.StrUtil.isEmpty(filename)) throw new NZException(RCode.SYS_BACKUP_FILENAME_ISNULL);
-		sysBackupService.downloadBackFileByFilename(response, filename);
-	}
+        sysBackupService.restore(filename, pin);
+        return R.ok();
+    }
+
+
+    /**
+     * 系统备份删除接口
+     *
+     * @param filename
+     * @return
+     */
+    @DeleteMapping
+    public R delete(String filename) {
+        if (Tool.StrUtil.isEmpty(filename)) throw new NZException(RCode.SYS_BACKUP_FILENAME_ISNULL);
+
+        sysBackupService.removeBackFileByFilename(filename);
+        return R.ok();
+    }
+
+    /**
+     * 系统备份下载接口
+     *
+     * @param filename
+     */
+    @GetMapping("/download")
+    public void download(HttpServletResponse response, String filename) throws IOException {
+        if (Tool.StrUtil.isEmpty(filename)) throw new NZException(RCode.SYS_BACKUP_FILENAME_ISNULL);
+        sysBackupService.downloadBackFileByFilename(response, filename);
+    }
+
+
+    /**
+     * unpack backup file
+     */
+    @PostMapping("/unpack")
+    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.SYSTEM)
+    public void unpackBackupFile(@RequestParam(value = "file") MultipartFile file, HttpServletResponse response) {
+        // validate file format
+        String filename = file.getOriginalFilename();
+        String fileExtension = FilenameUtils.getExtension(filename);
+        if (!StrUtil.startWith(filename, "NZ-") || ObjectUtil.notEqual("bak", fileExtension)) {
+            throw new NZException(RCode.SYS_BACKUP_UNPACK_FILE_FORMAT_ERROR);
+        }
+
+        sysBackupService.unpackBackupFile(file, response);
+    }
+
+
+    /**
+     * sync backup file
+     *
+     * @param serverid
+     * @param type
+     * @param filename
+     * @param response
+     */
+    @GetMapping("/sync")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
+    public void syncBackupFile(@RequestParam(required = false) String serverid,
+                               @RequestParam(required = false) String type,
+                               @RequestParam(required = false) String filename,
+                               HttpServletResponse response) {
+        ValidateUtils.is(serverid).notNull(RCode.SYS_BACKUP_SYNC_SERVERID_ISNULL).and(type).notNull(RCode.SYS_BACKUP_SYNC_TYPE_ISNULL);
+
+        List<String> enumTypeList = Tool.ListUtil.of("list", "download");
+        if (!enumTypeList.contains(type)) {
+            throw new NZException(RCode.SYS_BACKUP_SYNC_TYPE_INVALID);
+        }
+
+        if (StrUtil.equals("download", type)) {
+            ValidateUtils.is(filename).notNull(RCode.SYS_BACKUP_SYNC_FILENAME_ISNULL);
+        }
+
+        sysBackupService.syncBackupFile(serverid, type, filename, response);
+    }
 
 }
