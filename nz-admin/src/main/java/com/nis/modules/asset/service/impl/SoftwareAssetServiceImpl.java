@@ -22,6 +22,7 @@ import com.nis.modules.project.service.MonitorProjectService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -81,7 +82,7 @@ public class SoftwareAssetServiceImpl extends ServiceImpl<SoftwareAssetDao, Soft
         Object softwareAssetParams = softwareAsset.getParams();
         if (Tool.ObjectUtil.isNotEmpty(softwareAssetParams)) {
             try {
-                softwareAsset.setParams(JSONUtil.toBean(StrUtil.utf8Str(softwareAssetParams), Map.class));
+                softwareAsset.setParams(JSONUtil.toBean(StrUtil.utf8Str(softwareAssetParams), LinkedHashMap.class));
             } catch (Exception e) {
                 log.error(e, "[querySoftwareAssetInfo] [json format error] [id: {}]", id);
             }
@@ -98,7 +99,7 @@ public class SoftwareAssetServiceImpl extends ServiceImpl<SoftwareAssetDao, Soft
             Object softwareAssetParams = softwareAsset.getParams();
             if (Tool.ObjectUtil.isNotEmpty(softwareAssetParams)) {
                 try {
-                    softwareAsset.setParams(JSONUtil.toBean(StrUtil.utf8Str(softwareAssetParams), Map.class));
+                    softwareAsset.setParams(JSONUtil.toBean(StrUtil.utf8Str(softwareAssetParams), LinkedHashMap.class));
                 } catch (Exception e) {
                     log.error(e, "[querySoftwareAssetPage] [json format error] [id: {}]", softwareAsset.getId());
                 }

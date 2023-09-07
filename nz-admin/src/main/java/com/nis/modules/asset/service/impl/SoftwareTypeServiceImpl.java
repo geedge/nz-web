@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -45,7 +46,7 @@ public class SoftwareTypeServiceImpl extends ServiceImpl<SoftwareTypeDao, Softwa
         Object softwareTypeParams = softwareType.getParams();
         if (Tool.ObjectUtil.isNotEmpty(softwareTypeParams)) {
             try {
-                softwareType.setParams(JSONUtil.toBean(StrUtil.utf8Str(softwareTypeParams), Map.class));
+                softwareType.setParams(JSONUtil.toBean(StrUtil.utf8Str(softwareTypeParams), LinkedHashMap.class));
             } catch (Exception e) {
                 log.error(e, "[querySoftwareTypeInfo] [json format error] [id: {}]", id);
             }
@@ -70,7 +71,7 @@ public class SoftwareTypeServiceImpl extends ServiceImpl<SoftwareTypeDao, Softwa
             Object softwareTypeParams = softwareType.getParams();
             if (Tool.ObjectUtil.isNotEmpty(softwareTypeParams)) {
                 try {
-                    softwareType.setParams(JSONUtil.toBean(StrUtil.utf8Str(softwareTypeParams), Map.class));
+                    softwareType.setParams(JSONUtil.toBean(StrUtil.utf8Str(softwareTypeParams), LinkedHashMap.class));
                 } catch (Exception e) {
                     log.error(e, "[querySoftwareTypePage] [json format error] [id: {}]", softwareType.getId());
                 }
