@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.common.utils.Tool;
-import com.nis.modules.dashboard.entity.VisualDashboard;
 import com.nis.modules.sys.entity.SysUserEntity;
 import lombok.Data;
 
@@ -139,16 +138,9 @@ public class AlertRuleEntity implements Serializable {
 	private String extLabels;
 
 	/**
-	 * dashboard Id
-	 * 默认：-1（没有关联dashboard）
+	 * 其他参数配置
 	 */
-	private Integer dashboardId;
-
-	/**
-	 * dashboard
-	 */
-	@TableField(exist = false)
-	private VisualDashboard dashboard;
+	private String param;
 
 	/**
 	 * 收藏标识： 1：收藏 0：未收藏

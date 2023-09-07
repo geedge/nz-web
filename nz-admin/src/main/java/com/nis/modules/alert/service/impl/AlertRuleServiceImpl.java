@@ -27,9 +27,6 @@ import com.nis.modules.alert.entity.AlertRuleImportEnum;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertNotifyMethodService;
 import com.nis.modules.alert.service.AlertRuleService;
-import com.nis.modules.dashboard.entity.VisualDashboard;
-import com.nis.modules.dashboard.service.VisualDashboardService;
-import com.nis.modules.dashboard.utils.DashboardConstant;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
@@ -73,9 +70,6 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     private SysConfigService sysConfigService;
 
     @Autowired
-    private VisualDashboardService dashboardService;
-
-    @Autowired
     private AlertMessageService alertMessageService;
 
     @Autowired
@@ -116,10 +110,6 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         List<AlertNotifyMethod> methodList = methodService.list();
         Map<Integer, AlertNotifyMethod> methodIdAndEntitiyMap = methodList.stream().collect(Collectors.toMap(AlertNotifyMethod::getId, Function.identity()));
 
-        // dashboard list,type = `dashboard`
-        List<VisualDashboard> dashboardList = dashboardService.list(new LambdaQueryWrapper<VisualDashboard>()
-                .eq(VisualDashboard::getType, DashboardConstant.Type.DASHBOARD.getValue()));
-
         ruleEntityList.stream().forEach(alertRule -> {
             String receiver = alertRule.getReceiver();
             if (StringUtils.isNotEmpty(receiver)) {
@@ -138,11 +128,6 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                     list.add(notifyMethod);
                 });
                 alertRule.setMethods(list);
-            }
-
-            if (ObjectUtil.notEqual(-1, alertRule.getDashboardId())) {
-                VisualDashboard dashboard = dashboardList.stream().filter(d -> ObjectUtil.equal(d.getId(), alertRule.getDashboardId())).findFirst().orElse(null);
-                alertRule.setDashboard(dashboard);
             }
         });
     }
@@ -421,6 +406,9 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                     validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_WITHIN_REASON.setParam(AlertRuleImportEnum.SCHED_ETIME.getIndex()));
             }
 
+            String param = dataMap.get(AlertRuleImportEnum.PARAM.getIndex());
+            validateUtil.validateJsonObject(param, lineNum, AlertRuleImportEnum.PARAM.getIndex());
+
             List<Map<String, String>> errMsgForThisLine = validateUtil.getImportErrMsgForThisLine(lineNum);
             if (BooleanUtil.and(Tool.StrUtil.equals("0", ignoreError), Tool.CollUtil.isNotEmpty(errMsgForThisLine))) {
                 // 结束本次导入，自导入行开始 到结尾数据行，提示错误信息
@@ -458,6 +446,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                     ruleEntity.setType(Integer.valueOf(type));
                     ruleEntity.setInr(intervalIntVal);
                     ruleEntity.setTimeout(timeoutIntVal);
+                    ruleEntity.setParam(param);
 
                     this.saveOrUpdateRowData(ruleEntity, params);
                     // save or update
@@ -622,6 +611,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             tempList.add(ObjectUtil.defaultIfNull(rule.getNotifyActive(),"").toString());
             tempList.add(ObjectUtil.defaultIfNull(rule.getNotifyExpired(),"").toString());
             tempList.add(StrUtil.emptyToDefault(rule.getTrbShot(), ""));
+            tempList.add(StrUtil.emptyToDefault(rule.getParam(), ""));
             exportDataList.add(tempList);
         }
         return exportDataList;
@@ -782,13 +772,12 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             }
         }
 
-        // dashboard_id
-        Integer dashboardId = alertRule.getDashboardId();
-        if (ObjectUtil.isNotNull(dashboardId) && ObjectUtil.notEqual(-1, dashboardId)) {
-            VisualDashboard dashboard = dashboardService.getById(dashboardId);
-            ValidateUtils.is(dashboard).notNull(RCode.DASHBOARD_NOT_EXIST);
-            if (!StrUtil.equals(DashboardConstant.Type.DASHBOARD.getValue(), dashboard.getType())) {
-                throw new NZException(RCode.ALERTRULE_SELECT_DASHBOARD_TYPE_INCORRECT);
+        // param
+        String param = alertRule.getParam();
+        if (StrUtil.isNotEmpty(param)) {
+            boolean typeJSONObject = JSONUtil.isTypeJSONObject(param);
+            if (BooleanUtil.negate(typeJSONObject)) {
+                throw new NZException(RCode.ALERTRULE_PARAM_FORMAT_ERROR);
             }
         }
     }
@@ -828,13 +817,6 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 .last("limit 1")
         );
         alertRule.setStarred(CollUtil.isEmpty(tUserStatList) ? 0 : 1);
-
-        // dashboard
-        Integer dashboardId = alertRule.getDashboardId();
-        if (ObjectUtil.notEqual(-1, dashboardId)) {
-            VisualDashboard dashboard = dashboardService.getById(dashboardId);
-            alertRule.setDashboard(dashboard);
-        }
         return alertRule;
 	}
 

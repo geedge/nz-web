@@ -499,6 +499,7 @@ public enum RCode {
     ALERTRULE_EXTLABELS_FORMAT(423048, "Alert rule extLabels format error"),
     ALERTRULE_SNMPTRAP_OPERATOR_ERROR(423049, "The SNMP trap type operator only supports regex"),
     ALERTRULE_SELECT_DASHBOARD_TYPE_INCORRECT(424050,"Incorrect type selection, only `dashboard` type dashboard is supported"),
+    ALERTRULE_PARAM_FORMAT_ERROR(423051, "Parameter format error"),
 
 
 

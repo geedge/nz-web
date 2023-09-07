@@ -279,10 +279,6 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 				.set(MonitorModule::getDashboardId, null)
 				.in(MonitorModule::getDashboardId, allDashboardIds));
 
-		alertRuleService.update(new LambdaUpdateWrapper<AlertRuleEntity>()
-				.set(AlertRuleEntity::getDashboardId, -1)
-				.in(AlertRuleEntity::getDashboardId, allDashboardIds));
-
 		// Playlist
 		List<VisualPlaylist> playlistList = playlistService.list();
 		for (VisualPlaylist playlist : playlistList) {

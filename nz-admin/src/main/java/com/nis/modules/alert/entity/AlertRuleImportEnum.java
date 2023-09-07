@@ -27,7 +27,8 @@ public enum AlertRuleImportEnum {
     SCHED_ETIME("schedule end time", 18),
     NOTIFY_ACTIVE("notify active", 19),
     NOTIFY_EXPIRED("notify expired", 20),
-    TROUBLE_SHOOTING("trouble shooting", 21);
+    TROUBLE_SHOOTING("trouble shooting", 21),
+    PARAM("param", 22);
 
     private String name;
     private int index;

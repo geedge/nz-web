@@ -312,6 +312,23 @@ public class ImportValidateUtil {
     }
 
     /**
+     * 校验字符串是否为 jsonobject 格式
+     */
+    public boolean validateJsonObject(String jsonStr, Integer lineNum, int headerIndex) {
+        if (StrUtil.isNotEmpty(jsonStr)) {
+            try {
+                JSONObject.parseObject(jsonStr);
+                return true;
+            } catch (JSONException e) {
+                String header = headerInfos.get(headerIndex);
+                this.recordImportAttrErr(lineNum, RCode.IMPORT_FORMAT_ERROR.setParam(header));
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * 校验内容是否在 枚举数组内
      */
     public void validateEnumValArr(String value, List<String> enumList, int lineNum, int headerIndex) {
