@@ -5,10 +5,10 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -133,6 +133,15 @@ public class SysBackupServiceImpl implements SysBackupService {
     public void backupData(String remark) throws Exception {
         String tempFilePerfix = IdUtil.fastSimpleUUID();
         log.info("[backupData] [begin] [tempFilePerfix: {}]", tempFilePerfix);
+
+        // preconditions
+        String nzBackupFilePath = sysConfService.getValueOrDefault("backup_file_path", Constant.BACKUP_ROOT_PATH);
+        boolean directoryExist = FileUtil.isDirectory(nzBackupFilePath);
+        log.info("[backupData] [backup_file_path] [exist: {}]", directoryExist);
+        if (BooleanUtil.negate(directoryExist)) {
+            log.info("[backupData] [create backup_file_path] [path: {}]", nzBackupFilePath);
+            FileUtil.mkdir(nzBackupFilePath);
+        }
 
         // export db to sql file
         this.exportDbToSQLFile(tempFilePerfix);
@@ -603,10 +612,9 @@ public class SysBackupServiceImpl implements SysBackupService {
 
             log.info("[secureWriterBackupFile] [aes encrypt file] [begin]");
             try (FileInputStream fis = new FileInputStream(tempGzipFile); FileOutputStream fos = new FileOutputStream(nzBackupFile);) {
-                AES aes = new AES(Constant.AES_SECRET_KEY);
-                aes.encrypt(fis, fos, true);
+                Tool.AesUtil.encrypt(fis, fos, Constant.AES_SECRET_KEY);
                 log.info("[secureWriterBackupFile] [aes encrypt file] [finshed]");
-            } catch (IOException e) {
+            } catch (Exception e) {
                 log.error(e, "[secureWriterBackupFile] [aes encrypt error]");
                 throw e;
             }
@@ -723,11 +731,9 @@ public class SysBackupServiceImpl implements SysBackupService {
             // aes decrypt
             log.info("[secureReaderBackupFile] [aes decrypt file] [begin]");
             try (FileInputStream fis = new FileInputStream(tempAesFilePath); FileOutputStream fos = new FileOutputStream(tempGzipFilePath);) {
-
-                AES aes = new AES(Constant.AES_SECRET_KEY);
-                aes.decrypt(fis, fos, true);
+                Tool.AesUtil.decrypt(fis, fos, Constant.AES_SECRET_KEY);
                 log.info("[secureReaderBackupFile] [aes decrypt file] [finshed]");
-            } catch (IOException e) {
+            } catch (Exception e) {
                 log.error(e, "[secureReaderBackupFile] [aes decrypt file] [error]");
                 throw e;
             }
@@ -739,7 +745,7 @@ public class SysBackupServiceImpl implements SysBackupService {
                 gzip = Gzip.of(fis, fos);
                 gzip.unGzip();
                 log.info("[secureReaderBackupFile] [ungzip file] [finshed]");
-            } catch (IOException e) {
+            } catch (Exception e) {
                 log.error(e, "[secureReaderBackupFile] [ungzip error]");
                 FileUtil.del(tempSqlFilePath);
                 throw e;

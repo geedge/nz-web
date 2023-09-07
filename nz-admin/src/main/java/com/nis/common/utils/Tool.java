@@ -4,9 +4,7 @@ import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.extra.qrcode.QrCodeException;
 
-import javax.crypto.Cipher;
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
+import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
@@ -14,6 +12,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.ref.*;
 import java.lang.reflect.Type;
@@ -21,6 +20,7 @@ import java.math.BigDecimal;
 import java.net.Socket;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
@@ -1585,7 +1585,7 @@ public class Tool {
 		private static final String KEY_ALGORITHM = "AES";
 		private static final String DEFAULT_CIPHER_ALGORITHM = "AES/ECB/PKCS5Padding";// 默认的加密算法
 
-		public static String encrypt(String content, byte[] key) {
+		public static synchronized String encrypt(String content, byte[] key) {
 			try {
 				Cipher cipher = Cipher.getInstance(DEFAULT_CIPHER_ALGORITHM);// 创建密码器
 
@@ -1603,7 +1603,7 @@ public class Tool {
 			return null;
 		}
 
-		public static String decrypt(String content, byte[] key) {
+		public static synchronized String decrypt(String content, byte[] key) {
 
 			try {
 				// 实例化
@@ -1622,7 +1622,7 @@ public class Tool {
 			return null;
 		}
 
-		private static SecretKeySpec getSecretKey(byte[] key) {
+		private static synchronized SecretKeySpec getSecretKey(byte[] key) {
 			// 返回生成指定算法密钥生成器的 KeyGenerator 对象
 			KeyGenerator kg = null;
 			try {
@@ -1640,6 +1640,62 @@ public class Tool {
 			return null;
 		}
 
+
+		/**
+		 * encrypt
+		 *
+		 * @param data
+		 * @param out
+		 * @param key
+		 */
+		public static synchronized void encrypt(InputStream data, OutputStream out, byte[] key) {
+			CipherOutputStream cipherOutputStream = null;
+			try {
+				Cipher cipher = Cipher.getInstance(DEFAULT_CIPHER_ALGORITHM);
+				cipher.init(Cipher.ENCRYPT_MODE, getSecretKey(key));
+
+				cipherOutputStream = new CipherOutputStream(out, cipher);
+
+				IoUtil.copy(data, cipherOutputStream);
+			} catch (NoSuchAlgorithmException e) {
+				throw new RuntimeException(e);
+			} catch (NoSuchPaddingException e) {
+				throw new RuntimeException(e);
+			} catch (InvalidKeyException e) {
+				throw new RuntimeException(e);
+			} finally {
+				IoUtil.close(cipherOutputStream);
+				IoUtil.close(data);
+			}
+		}
+
+		/**
+		 * decrypt
+		 *
+		 * @param data
+		 * @param out
+		 * @param key
+		 */
+		public static synchronized void decrypt(InputStream data, OutputStream out, byte[] key) {
+			CipherInputStream cipherInputStream = null;
+			try {
+				Cipher cipher = Cipher.getInstance(DEFAULT_CIPHER_ALGORITHM);
+				cipher.init(Cipher.DECRYPT_MODE, getSecretKey(key));
+
+				cipherInputStream = new CipherInputStream(data, cipher);
+
+				IoUtil.copy(cipherInputStream, out);
+			} catch (NoSuchAlgorithmException e) {
+				throw new RuntimeException(e);
+			} catch (NoSuchPaddingException e) {
+				throw new RuntimeException(e);
+			} catch (InvalidKeyException e) {
+				throw new RuntimeException(e);
+			} finally {
+				IoUtil.close(cipherInputStream);
+				IoUtil.close(data);
+			}
+		}
 	}
 
 	/**
