@@ -1020,6 +1020,12 @@ public enum RCode {
 	LICENSE_QRCODE_FILES_DUPLICATE(712014,"License QRCode sequence is duplicate"),
 	LICENSE_QRCODE_FILES_ALL_INCONSISTENT(713015,"License md5 is inconsistent"),
 	LICENSE_QRCODE_FILES_INCONSISTENT(713016,"The file {0} md5 is inconsistent"),
+    LICENSE_MGMT_NOT_ACC_ASSET(717017, "Not ACC software asset"),
+    LICENSE_BUILD_ADMINAPI_ERROR(710018, "Build AdminApi error"),
+    LICENSE_REQUEST_ADMINAPI_ERROR(710019,"Request AdminApi error, msg is: {0}"),
+    LICENSE_ACC_IP_ISNULL(711020, "ACC ip can not be null"),
+    LICENSE_UPLOAD_V2CFILE_ISNULL(711021,"Upload V2C file can not be null"),
+    LICENSE_DOWNLOAD_C2VFILE_HASPID_ISNULL(711022, "Haspid can not be null"),
 
 	/**
 	 * Ipamsubnet 相关
