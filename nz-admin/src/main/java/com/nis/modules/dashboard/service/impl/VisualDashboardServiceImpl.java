@@ -7,10 +7,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.thread.NamedThreadFactory;
-import cn.hutool.core.util.BooleanUtil;
-import cn.hutool.core.util.CharsetUtil;
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.*;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONException;
@@ -36,7 +33,10 @@ import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetModelService;
 import com.nis.modules.dashboard.dao.VisualDashboardDao;
 import com.nis.modules.dashboard.entity.*;
-import com.nis.modules.dashboard.service.*;
+import com.nis.modules.dashboard.service.VisualChartService;
+import com.nis.modules.dashboard.service.VisualDashboardService;
+import com.nis.modules.dashboard.service.VisualPlaylistService;
+import com.nis.modules.dashboard.service.VisualService;
 import com.nis.modules.dashboard.utils.DashboardConstant;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
@@ -486,6 +486,22 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 					if (ToolUtil.isEmpty(report.get("enable"))) {
 						report.put("enable", false);
 						param.put("report", report);
+					}
+				}
+			}
+			if (ToolUtil.isNotEmpty(param.get("variables"))) {
+				List<String> nameList = (List<String>) JSONPath.read(JSONObject.toJSONString(param.get("variables")), "name");
+				for (String name : nameList) {
+					boolean match = ReUtil.isMatch("[a-zA-Z_][a-zA-Z0-9_]*", name);
+					if (BooleanUtil.negate(match)) {
+						return RCode.DASHBOARD_PARAM_VARIABLE_NAME_FORMAT_ERROR;
+					}
+				}
+				List<String> typeList = (List<String>) JSONPath.read(JSONObject.toJSONString(param.get("variables")), "type");
+				List<String> varTypeEnumList = ListUtil.of("query", "custom");
+				for (String type : typeList) {
+					if (BooleanUtil.negate(varTypeEnumList.contains(type))) {
+						return RCode.DASHBOARD_PARAM_VARIABLE_TYPE_INVALIDE;
 					}
 				}
 			}
