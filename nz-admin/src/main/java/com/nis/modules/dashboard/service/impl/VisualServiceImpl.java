@@ -21,7 +21,6 @@ import com.nis.modules.agent.service.PromApiService;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.dashboard.entity.VisualChart;
-import com.nis.modules.dashboard.entity.VisualChartElement;
 import com.nis.modules.dashboard.entity.VisualDashboard;
 import com.nis.modules.dashboard.entity.VisualNotebook;
 import com.nis.modules.dashboard.service.VisualChartService;
@@ -57,8 +56,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
@@ -412,12 +411,12 @@ public class VisualServiceImpl implements VisualService {
                     String chartName = chart.getName();
                     chart.setName(chartName.replaceAll(StrUtil.concat(true, "\\$", repeatVariable), varValue));
 
-                    List<VisualChartElement> elements = chart.getElements();
+                    List<Map> elements = chart.getElements();
                     elements = Tool.CollUtil.defaultIfEmpty(elements, Tool.ListUtil.list(true));
-                    for (VisualChartElement element : elements) {
-                        String expression = element.getExpression();
+                    for (Map element : elements) {
+                        String expression = Tool.MapUtil.getStr(element, "expression", "");
                         expression = expression.replaceAll(StrUtil.concat(true, "\\$", repeatVariable), varValue);
-                        element.setExpression(expression);
+                        element.put("expression", expression);
                     }
                     chart.setElements(elements);
                 }
@@ -471,14 +470,14 @@ public class VisualServiceImpl implements VisualService {
                 chart.setName(chartName.replaceAll(StrUtil.concat(true, "\\$", entry.getKey()), entry.getValue()));
             }
 
-            List<VisualChartElement> elements = chart.getElements();
+            List<Map> elements = chart.getElements();
             elements = Tool.CollUtil.defaultIfEmpty(elements, Tool.ListUtil.list(true));
-            for (VisualChartElement element : elements) {
-                String expression = element.getExpression();
+            for (Map element : elements) {
+                String expression = Tool.MapUtil.getStr(element, "expression", "");
                 for (Map.Entry<String, String> entry : singleVariableEntrySet) {
                     expression = expression.replaceAll(StrUtil.concat(true, "\\$", entry.getKey()), entry.getValue());
                 }
-                element.setExpression(expression);
+                element.put("expression", expression);
             }
             chart.setElements(elements);
         }
@@ -998,8 +997,8 @@ public class VisualServiceImpl implements VisualService {
 
                 // element_arr
                 if (Tool.CollUtil.isNotEmpty(saveChart.getElements())) {
-                    for (VisualChartElement element : saveChart.getElements()) {
-                        element.setExpression(Tool.NzExpressionUtil.renderExpression(element.getExpression(), linkObject));
+                    for (Map element : saveChart.getElements()) {
+                        element.put("expression", Tool.NzExpressionUtil.renderExpression(Tool.MapUtil.getStr(element, "expression", ""), linkObject));
                     }
                     saveChart.setElementArr(JSONUtil.toJsonStr(saveChart.getElements()));
                 }
@@ -1124,13 +1123,13 @@ public class VisualServiceImpl implements VisualService {
 
                         List<Object> rList = Tool.ListUtil.list(true);
                         Integer eleIndex = 0;
-                        for (VisualChartElement element : chart.getElements()) {
+                        for (Map element : chart.getElements()) {
                             String indexStr = StrUtil.toString(eleIndex++);
                             JSONObject jsonObject = new JSONObject();
                             if (StrUtil.equals(Constant.ChartDatasourceType.METRICS.getValue(), datasource)) {
-                                jsonObject = promApiService.query_range(element.getExpression(), start, end, step, nullType, null);
+                                jsonObject = promApiService.query_range(Tool.MapUtil.getStr(element, "expression", ""), start, end, step, nullType, null);
                             } else if (StrUtil.equals(Constant.ChartDatasourceType.LOGS.getValue(), datasource)) {
-                                jsonObject = lokiApiService.query_range(element.getExpression(), start, end, limit, step, null, logsDirection, "1", null);
+                                jsonObject = lokiApiService.query_range(Tool.MapUtil.getStr(element, "expression", ""), start, end, limit, step, null, logsDirection, "1", null);
                             }
                             jsonObject.put("eleIndex", indexStr);
                             jsonObject.put("chartId", chart.getId());

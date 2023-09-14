@@ -7,7 +7,6 @@ import cn.hutool.db.sql.SqlExecutor;
 import cn.hutool.log.Log;
 import com.nis.common.utils.JSONUtil;
 import com.nis.common.utils.Tool;
-import com.nis.modules.dashboard.entity.VisualChartElement;
 import org.apache.commons.lang3.time.StopWatch;
 import org.flywaydb.core.api.MigrationVersion;
 import org.flywaydb.core.api.migration.BaseJavaMigration;
@@ -77,7 +76,7 @@ public class V2023_07_26__ChartElementDataMigration extends BaseJavaMigration {
         log.info("[migrate] [update the number of rows in table visual_chart record] [size: {}]", elementGroupedByChart.size());
         for (Map.Entry<Integer, List<Entity>> entry : elementGroupedByChart.entrySet()) {
             Integer chartId = entry.getKey();
-            List<VisualChartElement> elementListForChart = entry.getValue().stream().map(entity -> entity.toBean(VisualChartElement.class)).collect(Collectors.toList());
+            List<Map> elementListForChart = entry.getValue().stream().map(entity -> entity.toBean(Map.class)).collect(Collectors.toList());
             String elementArrStr = JSONUtil.toJsonStr(elementListForChart);
             // update visual_chart set element_arr = ? where id = ?
             sqlConnRunner.update(

@@ -10,6 +10,7 @@ import lombok.Data;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @TableName("visual_chart")
@@ -86,7 +87,7 @@ public class VisualChart implements Serializable {
     private String elementArr;
 
     @TableField(exist = false)
-    private List<VisualChartElement> elements;
+    private List<Map> elements;
 
     public void setName(String name) {
         this.name = Tool.StrUtil.trim(name);
@@ -96,9 +97,9 @@ public class VisualChart implements Serializable {
         return Tool.StrUtil.emptyToDefault(elementArr, "[]");
     }
 
-    public List<VisualChartElement> getElements() {
+    public List<Map> getElements() {
         if (Tool.ObjectUtil.isNull(this.elements)) {
-            List<VisualChartElement> visualChartElements = JSONUtil.toList(this.getElementArr(), VisualChartElement.class);
+            List<Map> visualChartElements = JSONUtil.toList(this.getElementArr(), Map.class);
             return visualChartElements;
         }
         return this.elements;

@@ -17,7 +17,6 @@ import com.nis.common.utils.Constant.ChartDatasourceType;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.dashboard.dao.VisualChartDao;
 import com.nis.modules.dashboard.entity.VisualChart;
-import com.nis.modules.dashboard.entity.VisualChartElement;
 import com.nis.modules.dashboard.entity.VisualDashboard;
 import com.nis.modules.dashboard.service.VisualChartService;
 import com.nis.modules.dashboard.service.VisualDashboardService;
@@ -167,19 +166,19 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 
 		// element, validate element when datasource is metrics or logs
 		if (StrUtil.equalsAny(chart.getDatasource(), Constant.ChartDatasourceType.METRICS.getValue(), Constant.ChartDatasourceType.LOGS.getValue())) {
-			List<VisualChartElement> elements = chart.getElements();
+			List<Map> elements = chart.getElements();
 			ValidateUtils.is(elements).notNull(RCode.CHART_ELEMENT_ISNULL);
 
 			List<SysDictEntity> exprTypeList = sysDictService.querySysDicByType(Constant.DICT_EXPRESSION_TYPE);
 			List<String> exprTypeValueList = exprTypeList.stream().map(SysDictEntity::getValue).collect(Collectors.toList());
 
-			for (VisualChartElement element : elements) {
-				ValidateUtils.is(element.getExpression()).notNull(RCode.CHARTELEMENT_EXPRESSION_ISNULL).maxLength(4096)
-						.and(element.getType()).notNull(RCode.CHARTELEMENT_TYPE_ISNULL)
-						.and(element.getLegend()).maxLength(512)
-						.and(element.getName()).notNull(RCode.CHARTELEMENT_NAME_ISNULL).maxLength(64);
+			for (Map element : elements) {
+				ValidateUtils.is(Tool.MapUtil.getStr(element, "expression", "")).notNull(RCode.CHARTELEMENT_EXPRESSION_ISNULL).maxLength(4096)
+						.and(Tool.MapUtil.getStr(element, "type", "")).notNull(RCode.CHARTELEMENT_TYPE_ISNULL)
+						.and(Tool.MapUtil.getStr(element, "legend", "")).maxLength(512)
+						.and(Tool.MapUtil.getStr(element, "name", "")).notNull(RCode.CHARTELEMENT_NAME_ISNULL).maxLength(64);
 
-				if (!exprTypeValueList.contains(element.getType())) {
+				if (!exprTypeValueList.contains(Tool.MapUtil.getStr(element, "type", ""))) {
 					throw new NZException(RCode.CHARTELEMENT_TYPE_INVALIDE);
 				}
 			}
@@ -209,7 +208,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		}
 
 		// element
-		List<VisualChartElement> elements = chart.getElements();
+		List<Map> elements = chart.getElements();
 		chart.setElementArr(JSONUtil.toJsonStr(elements));
 
 		// save
@@ -233,7 +232,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		chart.setUpdateBy(ShiroUtils.getUserId().intValue());
 
 		// element
-		List<VisualChartElement> elements = chart.getElements();
+		List<Map> elements = chart.getElements();
 		chart.setElementArr(JSONUtil.toJsonStr(elements));
 
 		// update
@@ -472,8 +471,8 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 
 		// element_arr
 		if (Tool.CollUtil.isNotEmpty(saveChart.getElements())) {
-			for (VisualChartElement element : saveChart.getElements()) {
-				element.setExpression(Tool.NzExpressionUtil.renderExpression(element.getExpression(), linkObject));
+			for (Map element : saveChart.getElements()) {
+				element.put("expression", Tool.NzExpressionUtil.renderExpression(Tool.MapUtil.getStr(element, "expression", ""), linkObject));
 			}
 			saveChart.setElementArr(JSONUtil.toJsonStr(saveChart.getElements()));
 		}

@@ -25,7 +25,6 @@ import com.nis.common.utils.*;
 import com.nis.common.utils.Constant.ChartDatasourceType;
 import com.nis.modules.agent.service.LokiApiService;
 import com.nis.modules.agent.service.PromApiService;
-import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetModel;
@@ -973,10 +972,10 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 				if (Tool.CollUtil.isNotEmpty(chart.getElements())) {
 					Integer eleIndex = 0;
 					String limit = chartParam.get("limit") == null ? "100" : chartParam.get("limit").toString();
-					for (VisualChartElement element : chart.getElements()) {
+					for (Map element : chart.getElements()) {
 						String indexStr = StrUtil.toString(eleIndex++);
 						// 将表达式进行变量渲染
-						String expr = this.replaceExprByVars(element.getExpression(), varList);
+						String expr = this.replaceExprByVars(Tool.MapUtil.getStr(element, "expression", ""), varList);
 						futureList.add(CompletableFuture.supplyAsync(() -> {
 							JSONObject jsonObject = null;
 							try {
@@ -1506,7 +1505,7 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 					validateUtil.recordImportAttrErr(lineNum, RCode.IMPORT_NOT_SUPPORT.setParam(validaName + chartHeaderInfos.get(ChartsImportEnum.ELEMENTS.getIndex())));
 					log.error("Dashboard chart " + validaName + " elements import error: " + msg);
 				} else {
-					List<VisualChartElement> elementsList = JSONArray.parseArray(elements, VisualChartElement.class);
+					List<Map> elementsList = JSONArray.parseArray(elements, Map.class);
 					visualChart.setElementArr(JSONUtil.toJsonStr(elementsList));
 				}
 			}
@@ -1529,9 +1528,9 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 			if (StringUtils.isEmpty(elements)) {
 				return RCode.CHART_ELEMENT_ISNULL.getMsg();
 			}
-			List<VisualChartElement> elementsList = null;
+			List<Map> elementsList = null;
 			try {
-				elementsList = JSONArray.parseArray(elements, VisualChartElement.class);
+				elementsList = JSONArray.parseArray(elements, Map.class);
 			} catch (JSONException e) {
 				return RCode.CHART_ELEMENTS_FORMAT.getMsg();
 			}
@@ -1540,11 +1539,11 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 				return RCode.CHART_ELEMENT_ISNULL.getMsg();
 			}
 
-			for (VisualChartElement element : elementsList) {
-				if (ToolUtil.isEmpty(element.getExpression())) {
+			for (Map element : elementsList) {
+				if (ToolUtil.isEmpty(Tool.MapUtil.getStr(element, "expression", ""))) {
 					return RCode.CHARTELEMENT_EXPRESSION_ISNULL.getMsg();
 				}
-				if (ToolUtil.isEmpty(element.getName())) {
+				if (ToolUtil.isEmpty(Tool.MapUtil.getStr(element, "name", ""))) {
 					return RCode.CHARTELEMENT_NAME_ISNULL.getMsg();
 				}
 			}
@@ -1713,33 +1712,12 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 			tempMap.put(ChartsImportEnum.REMARK.getName(), pChart.getRemark());
 			tempMap.put(ChartsImportEnum.X.getName(), ObjectUtil.defaultIfNull(pChart.getX(), "").toString());
 			tempMap.put(ChartsImportEnum.Y.getName(), ObjectUtil.defaultIfNull(pChart.getY(), "").toString());
-			tempMap.put(ChartsImportEnum.ELEMENTS.getName(), this.handleChartElementForExport(pChart.getElements()));
+			tempMap.put(ChartsImportEnum.ELEMENTS.getName(), pChart.getElements());
 			tempMap.put(ChartsImportEnum.DATASOURCE.getName(), pChart.getDatasource());
 			tempMap.put(ChartsImportEnum.CHILDREN.getName(), this.handleChartsExportDataList(pChart.getChildren(), chartTypeAndI18nMap));
 			chartsMap.add(tempMap);
 		}
 		return chartsMap;
-	}
-
-	private List<Map> handleChartElementForExport(List<VisualChartElement> chartElements) {
-		if (CollectionUtils.isEmpty(chartElements)) {
-			return null;
-		}
-		List<Map> handleMaps = new ArrayList<>();
-		Map tempMap;
-		for (VisualChartElement element : chartElements) {
-			tempMap = new LinkedHashMap(4);
-			tempMap.put("expression", element.getExpression());
-			tempMap.put("state", element.getState());
-			if (ToolUtil.isNotEmpty(element.getLegend())) {
-				tempMap.put("legend", element.getLegend());
-			}
-			if (ToolUtil.isNotEmpty(element.getName())) {
-				tempMap.put("name", element.getName());
-			}
-			handleMaps.add(tempMap);
-		}
-		return handleMaps;
 	}
 
 	private synchronized ExecutorService getSnapshotThreadPool() {
