@@ -119,6 +119,8 @@ public enum RCode {
     DASHBOARD_IMPORT_TYPE_INCORRECT(123101,"The type must be dashboard or template"),
     DASHBOARD_TEMPLATE_SYNC_PARAM_ISNULL(121102, "Dashboard template synchronization parameter is null"),
     DASHBOARD_TEMPLATE_SYNC_FAILED_GET_LOCK(127103,"Dashboard template synchronization is in progress please try again later"),
+    DASHBOARD_PARAM_VARIABLE_NAME_FORMAT_ERROR(123104, "Dashboard param variable name format error"),
+    DASHBOARD_PARAM_VARIABLE_TYPE_INVALIDE(123105, "Dashboard param variable type is not in the enum range"),
 
     /**
      * EXPRETMPL
