@@ -304,6 +304,7 @@ public enum RCode {
     ASSET_RELOBJ_CAN_NOT_REMOVE(317037, "Asset have associated data and cannot be deleted"),
     ASSET_FORCE_INVALIDE(314038,"Force param must be 0 or 1"),
     ASSET_TERMINAL_ACCOUNT_INFO_NOTFOUND(316039, "Account information for asset terminal login is not configured"),
+    ASSET_ID_IP_ISNULL(316040, "Asset id and asset ip cannot be empty at the same time"),
 
     /**
      * ASSET_MODEL

@@ -1,5 +1,9 @@
 package com.nis.modules.asset.controller;
 
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpStatus;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONPath;
@@ -20,7 +24,11 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Asset Talon Rest Controller
@@ -141,30 +149,40 @@ public class AssetTalonController {
         log.info("[talonAutoRegister] [begin] [body: {}]", JSONUtil.toJsonStr(requestBody));
 
         // validate
-        Object assetId = requestBody.get("assetId");
         Object port = requestBody.get("port");
         Object token = requestBody.get("token");
-        ValidateUtils.is(assetId).notNull(RCode.ASSET_ID_ISNULL)
-                .and(port).notNull(RCode.ASSET_CLIENT_PROT_ISNULL)
+        ValidateUtils.is(port).notNull(RCode.ASSET_CLIENT_PROT_ISNULL)
                 .and(token).notNull(RCode.ASSET_CLIENT_TOKEN_ISNULL);
 
-        String assetIdStr = Tool.StrUtil.toString(assetId);
+        // assetId and manageIp cannot be empty at the same time
+        if (BooleanUtil.and(ObjectUtil.isNull(requestBody.get("assetId")), ObjectUtil.isNull(requestBody.get("ip")))) {
+            throw new NZException(RCode.ASSET_ID_IP_ISNULL);
+        }
 
-        AssetAsset asset = assetService.getById(assetIdStr);
-        ValidateUtils.is(asset).notNull(RCode.ASSET_NOT_EXIST);
+        List<AssetAsset> assets = assetService.list(new LambdaUpdateWrapper<AssetAsset>()
+                .eq(ObjectUtil.isNotNull(requestBody.get("assetId")), AssetAsset::getId, StrUtil.toString(requestBody.get("assetId")))
+                .in(ObjectUtil.isNotNull(requestBody.get("ip")), AssetAsset::getManageIp, Arrays.asList(StrUtil.toString(requestBody.get("ip")).split(",")))
+        );
+
+        if (CollectionUtil.isEmpty(assets)){
+            throw  new NZException(RCode.ASSET_NOT_EXIST);
+        }
 
         // update asset client info
-        LambdaUpdateWrapper updateWrapper = new LambdaUpdateWrapper<AssetAsset>()
-                .set(AssetAsset::getClientEnable, 1)
-                .set(AssetAsset::getClientAddress, asset.getManageIp())
-                .set(AssetAsset::getClientPort, Tool.NumberUtil.parseInt(Tool.StrUtil.toString(port)))
-                .set(AssetAsset::getClientToken, Tool.StrUtil.toString(token))
-                .eq(AssetAsset::getId, asset.getId());
+        for (AssetAsset asset : assets) {
+            LambdaUpdateWrapper updateWrapper = new LambdaUpdateWrapper<AssetAsset>()
+                    .set(AssetAsset::getClientEnable, 1)
+                    .set(AssetAsset::getClientAddress, asset.getManageIp())
+                    .set(AssetAsset::getClientPort, Tool.NumberUtil.parseInt(Tool.StrUtil.toString(port)))
+                    .set(AssetAsset::getClientToken, Tool.StrUtil.toString(token))
+                    .eq(AssetAsset::getId, asset.getId());
 
-        assetService.update(updateWrapper);
+            assetService.update(updateWrapper);
+        }
+        List<Integer> ids = assets.stream().map(o -> o.getId()).collect(Collectors.toList());
 
-        log.info("[talonAutoRegister] [finshed] [assetId: {}]", assetIdStr);
-        return R.ok().putData("id", assetId);
+        log.info("[talonAutoRegister] [finshed] [assetId: {}]", ids.toString());
+        return R.ok().putData("id", ids.toString());
     }
 
 
