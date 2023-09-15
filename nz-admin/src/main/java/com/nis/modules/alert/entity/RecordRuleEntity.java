@@ -58,6 +58,11 @@ public class RecordRuleEntity implements Serializable {
 	private String seq;
 
 	/**
+	 * 开始执行时间
+	 */
+	private Long startts;
+
+	/**
 	 * 创建人
 	 */
 	private Integer cid;
@@ -106,7 +111,7 @@ public class RecordRuleEntity implements Serializable {
 	 */
 	public String getRecordRuleHashId() {
 		String content = new StringBuilder().append(this.id).append(this.name).append(this.type).append(this.expr)
-				.append(this.labels).append(this.inr).append(this.state).toString();
+				.append(this.labels).append(this.inr).append(this.state).append(this.startts).toString();
 		return Tool.DigestUtil.sha1Hex(content);
 	}
 	

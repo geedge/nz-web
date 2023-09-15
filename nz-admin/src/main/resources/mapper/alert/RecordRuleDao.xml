@@ -12,6 +12,7 @@
         <result property="state" column="state"/>
         <result property="buildIn" column="build_in"/>
         <result property="seq" column="seq"/>
+        <result property="startts" column="startts"/>
         <result property="cid" column="cid"/>
         <result property="cts" column="cts"/>
         <result property="uid" column="uid"/>

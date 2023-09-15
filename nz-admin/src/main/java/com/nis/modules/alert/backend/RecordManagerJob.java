@@ -147,10 +147,15 @@ public class RecordManagerJob extends QuartzJobBean {
 						// 设置执行周期
 						SimpleScheduleBuilder scheduleBuilder = SimpleScheduleBuilder
 								.repeatSecondlyForever(rule.getInr());
+						// 任务开始时间
+						Long jobStartTime = rule.getStartts();
+						if (Tool.ObjectUtil.equal(0L, jobStartTime)) {
+							// startts = 0 时，分散执行时间，以当前时间加 60s 随机数
+							jobStartTime = System.currentTimeMillis() + Tool.RandomUtil.randomInt(10, 60) * 1000;
+						}
 						SimpleTrigger simpleTrigger = TriggerBuilder.newTrigger().forJob(jobDetail)
 								.withIdentity(jobKey.getName(), jobKey.getGroup()).withSchedule(scheduleBuilder)
-								 // 加入随机时间，分散record rule 执行时间
-								.startAt(Tool.DateUtil.date(System.currentTimeMillis() + Tool.RandomUtil.randomInt(10, 60) * 1000))
+								.startAt(Tool.DateUtil.date(jobStartTime))
 								.build();
 						// 创建任务
 						scheduler.scheduleJob(jobDetail, simpleTrigger);
