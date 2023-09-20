@@ -148,6 +148,10 @@ INSERT INTO `sys_role_menu`(`id`, `role_id`, `menu_id`) VALUES (null, 1, 2298);
 INSERT INTO `sys_role_menu`(`id`, `role_id`, `menu_id`) VALUES (null, 1, 2299);
 INSERT INTO `sys_role_menu`(`id`, `role_id`, `menu_id`) VALUES (null, 1, 2300);
 INSERT INTO `sys_role_menu`(`id`, `role_id`, `menu_id`) VALUES (null, 1, 2301);
+INSERT INTO `sys_role_menu`(`id`, `role_id`, `menu_id`) VALUES (null, 1, 2304);
+INSERT INTO `sys_role_menu`(`id`, `role_id`, `menu_id`) VALUES (null, 1, 2305);
+INSERT INTO `sys_role_menu`(`id`, `role_id`, `menu_id`) VALUES (null, 1, 2306);
+INSERT INTO `sys_role_menu`(`id`, `role_id`, `menu_id`) VALUES (null, 1, 2307);
 
 INSERT INTO `sys_role_menu`(`id`, `role_id`, `menu_id`) VALUES (null, 2, 312);
 INSERT INTO `sys_role_menu`(`id`, `role_id`, `menu_id`) VALUES (null, 2, 4);
@@ -184,3 +188,4 @@ INSERT INTO `sys_role_menu`(`id`, `role_id`, `menu_id`) VALUES (null, 2, 2276);
 INSERT INTO `sys_role_menu`(`id`, `role_id`, `menu_id`) VALUES (null, 2, 2278);
 INSERT INTO `sys_role_menu`(`id`, `role_id`, `menu_id`) VALUES (null, 2, 2293);
 INSERT INTO `sys_role_menu`(`id`, `role_id`, `menu_id`) VALUES (null, 2, 2298);
+INSERT INTO `sys_role_menu`(`id`, `role_id`, `menu_id`) VALUES (null, 2, 2304);
