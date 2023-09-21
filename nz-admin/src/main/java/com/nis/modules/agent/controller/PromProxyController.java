@@ -1,11 +1,12 @@
 package com.nis.modules.agent.controller;
 
+import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.URLUtil;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.JSONPath;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
+import com.nis.common.utils.*;
 import com.nis.modules.agent.service.PromApiService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -205,6 +207,28 @@ public class PromProxyController {
                 JSONObject resultData = promApiService.targetsMetadata(dcId, agentId, endpointId, type, matchTarget, metric, limit);
                 return R.ok().put("status", resultData.get("status")).putAllData(resultData);
             }
+            /**
+             * GET
+             * URL query parameters:
+             *      query=<string>: Prometheus expression query string.
+             *      time=<rfc3339 | unix_timestamp>: Evaluation timestamp. Optional.
+             *      timeout=<duration>: Evaluation timeout. Optional. Defaults to and is capped by the value of the -query.timeout flag.
+             * @link https://prometheus.io/docs/prometheus/latest/querying/api/
+             */
+            case "/api/v1/query_instant": {
+                String query = request.getParameter("query");
+                ValidateUtils.is(query).notNull(RCode.AGENT_PARAM_QUERY_ISNULL);
+
+                String time = request.getParameter("time");
+                String timeout = request.getParameter("timeout");
+                String queryStr = URLUtil.decode(query);
+
+                JSONObject resultData = promApiService.query(queryStr, time, timeout);
+
+                // format conversion
+                resultData = this.queryResultToQueryRange(resultData);
+                return R.ok().put("status", resultData.get("status")).putAllData(resultData);
+            }
             default: {
                 promApiService.promApiProxy(request, response, promPath);
                 return null;
@@ -212,6 +236,34 @@ public class PromProxyController {
         }
     }
 
+    private JSONObject queryResultToQueryRange(JSONObject resultData) {
+        // 获取 resultType
+        String resultType = resultData.getJSONObject("data").getString("resultType");
+        String jsonStr = JSONUtil.toJsonStr(resultData);
+        switch (resultType) {
+            case "vector":
+                List result = (List) JSONPath.read(jsonStr, "$.data.result");
+                for (int i = 0; i < result.size(); i++) {
+                    //value to values
+                    String path = MessageFormat.format("$.data.result[{0}].value", i);
+                    Object value = JSONPath.read(jsonStr, path);
+                    JSONPath.remove(resultData, path);
+                    JSONPath.set(resultData, MessageFormat.format("$.data.result[{0}].values", i), Arrays.asList(value));
+                }
+                break;
+            case "string":
+            case "scalar": {
+                Object value = JSONPath.read(jsonStr, "$.data.result");
+                JSONPath.remove(resultData, "$.data.result");
+                JSONPath.set(resultData, "$.data.result[0].metric", MapUtil.newHashMap());
+                JSONPath.set(resultData, "$.data.result[0].values", Arrays.asList(value));
+                break;
+            }
+            default:
+                break;
+        }
+        return resultData;
+    }
 
     @RequestMapping(value = "/prom/api/v1/label/{label_name}/values")
     public R labelValues(HttpServletRequest request) throws IOException {
