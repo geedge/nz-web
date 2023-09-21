@@ -54,7 +54,7 @@ public class SysBackJob extends QuartzJobBean {
                 // 该接口内实现了 retention 保存文件个数
                 sysBackupService.backupData("System scheduled backup");
             } catch (Exception e) {
-                log.error("System data backup error", e);
+                log.error(e, "System data backup error");
             }
             log.info("System data backup finished.");
         } else {

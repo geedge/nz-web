@@ -1318,6 +1318,24 @@ public class Constant {
 	}
 
 	/**
+	 * SysBackupTypeEnum
+	 */
+	public enum SysBackupTypeEnum {
+		BACK_UP(1), RESTORE(2), DELETE(3);
+
+		private Integer value;
+
+		SysBackupTypeEnum(Integer value) {
+			this.value = value;
+		}
+
+		public Integer getValue() {
+			return value;
+		}
+	}
+
+
+	/**
 	 * prometheus 代理 path
 	 */
 	public static final String PROMETHEUS_READY_PATH = "/prometheus/proxy/-/ready";

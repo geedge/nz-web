@@ -15,13 +15,11 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
+import com.nis.modules.sys.entity.SysBackupLog;
 import com.nis.modules.sys.entity.SysComponent;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.service.SysBackupService;
-import com.nis.modules.sys.service.SysComponentService;
-import com.nis.modules.sys.service.SysConfService;
-import com.nis.modules.sys.service.SysUserService;
+import com.nis.modules.sys.service.*;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
@@ -55,6 +53,9 @@ public class SysBackupServiceImpl implements SysBackupService {
 
     @Autowired
     private SysComponentService sysComponentService;
+
+    @Autowired
+    private SysBackupLogService sysBackupLogService;
 
     @Autowired
     private DataSource dataSource;
@@ -131,31 +132,49 @@ public class SysBackupServiceImpl implements SysBackupService {
 
     @Override
     public void backupData(String remark) throws Exception {
-        String tempFilePerfix = IdUtil.fastSimpleUUID();
-        log.info("[backupData] [begin] [tempFilePerfix: {}]", tempFilePerfix);
+        // BACK_UP log
+        SysBackupLog backupLog = SysBackupLog.buildBasicLogEntity(Constant.SysBackupTypeEnum.BACK_UP.getValue());
+        try {
+            String tempFilePerfix = IdUtil.fastSimpleUUID();
+            log.info("[backupData] [begin] [tempFilePerfix: {}]", tempFilePerfix);
 
-        // preconditions
-        String nzBackupFilePath = sysConfService.getValueOrDefault("backup_file_path", Constant.BACKUP_ROOT_PATH);
-        boolean directoryExist = FileUtil.isDirectory(nzBackupFilePath);
-        log.info("[backupData] [backup_file_path] [exist: {}]", directoryExist);
-        if (BooleanUtil.negate(directoryExist)) {
-            log.info("[backupData] [create backup_file_path] [path: {}]", nzBackupFilePath);
-            FileUtil.mkdir(nzBackupFilePath);
+            // preconditions
+            String nzBackupFilePath = sysConfService.getValueOrDefault("backup_file_path", Constant.BACKUP_ROOT_PATH);
+            boolean directoryExist = FileUtil.isDirectory(nzBackupFilePath);
+            log.info("[backupData] [backup_file_path] [exist: {}]", directoryExist);
+            if (BooleanUtil.negate(directoryExist)) {
+                log.info("[backupData] [create backup_file_path] [path: {}]", nzBackupFilePath);
+                FileUtil.mkdir(nzBackupFilePath);
+            }
+
+            String nzBackupFileName = StrUtil.concat(true, "NZ-", DateUtil.format(new Date(), "yyyyMMdd'T'HHmmss"), ".bak");
+            backupLog.setFilename(nzBackupFileName);
+
+            // export db to sql file
+            this.exportDbToSQLFile(tempFilePerfix);
+
+            /**
+             * secure writer backup file
+             * sqlFile -> gzip -> aes -> append remark str -> NZ-date.bak
+             */
+            this.secureWriterBackupFile(tempFilePerfix, nzBackupFileName, remark);
+
+            // backup file rotate
+            this.backupFileRotate();
+
+            log.info("[backupData] [finshed] [tempFilePerfix: {}]", tempFilePerfix);
+        } catch (Exception e) {
+            backupLog.setState(0);
+            backupLog.setErrorMsg(StrUtil.sub(e.getMessage(), 0, Constant.MYSQL_TEXT_MAXLENGTH));
+            throw e;
+        } finally {
+            try {
+                // save sys backup log
+                sysBackupLogService.save(backupLog);
+            } catch (Exception e) {
+                log.error(e);
+            }
         }
-
-        // export db to sql file
-        this.exportDbToSQLFile(tempFilePerfix);
-
-        /**
-         * secure writer backup file
-         * sqlFile -> gzip -> aes -> append remark str -> NZ-date.bak
-         */
-        this.secureWriterBackupFile(tempFilePerfix, remark);
-
-        // backup file rotate
-        this.backupFileRotate();
-
-        log.info("[backupData] [finshed] [tempFilePerfix: {}]", tempFilePerfix);
     }
 
     @Override
@@ -167,13 +186,23 @@ public class SysBackupServiceImpl implements SysBackupService {
         if (exist) {
             boolean isFile = FileUtil.isFile(sqlFilePath);
             if (isFile) {
+                SysBackupLog backupLog = SysBackupLog.buildBasicLogEntity(Constant.SysBackupTypeEnum.DELETE.getValue());
+                backupLog.setFilename(filename);
                 try {
                     // 是文件 则删除
                     boolean del = FileUtil.del(sqlFilePath);
                     log.info(String.format("System backup file delete, filename :%s, result : %s", filename, del));
                 } catch (IORuntimeException e) {
-                    log.error(e);
-                    log.info("System backup file delete error, filename {}", filename);
+                    log.error(e, "[removeBackFileByFilename] [error] [filename: {}]", filename);
+                    backupLog.setState(0);
+                    backupLog.setErrorMsg(StrUtil.sub(e.getMessage(), 0, Constant.MYSQL_TEXT_MAXLENGTH));
+                } finally {
+                    try {
+                        // save sys backup log
+                        sysBackupLogService.save(backupLog);
+                    } catch (Exception e) {
+                        log.error(e);
+                    }
                 }
             }
         } else {
@@ -579,17 +608,17 @@ public class SysBackupServiceImpl implements SysBackupService {
      * sqlFile -> gzip -> aes -> append remark str -> NZ-date.bak
      *
      * @param tempFilePerfix
+     * @param nzBackupFileName
      * @param remark
      * @throws IOException
      */
-    private void secureWriterBackupFile(String tempFilePerfix, String remark) throws IOException {
+    private void secureWriterBackupFile(String tempFilePerfix, String nzBackupFileName, String remark) throws IOException {
         log.info("[secureWriterBackupFile] [begin]");
         StopWatch sw = new StopWatch();
         sw.start();
 
         String tempSqlFilePath = Tool.StrUtil.concat(true, Constant.TEMP_PATH, File.separator, tempFilePerfix, ".sql");
         String tempGzipFilePath = Tool.StrUtil.concat(true, Constant.TEMP_PATH, File.separator, tempFilePerfix, ".gz");
-        String nzBackupFileName = StrUtil.concat(true, "NZ-", DateUtil.format(new Date(), "yyyyMMdd'T'HHmmss"), ".bak");
         try {
             // gzip
             File tempGzipFile = FileUtil.file(tempGzipFilePath);
@@ -675,7 +704,24 @@ public class SysBackupServiceImpl implements SysBackupService {
                         Integer delSize = loopFiles.size() - retention;
                         log.info("[backupFileRotate] [delete expired files] [size: {}]", delSize);
                         for (int i = 0; i < delSize; i++) {
-                            FileUtil.del(loopFiles.get(i));
+                            File delFile = loopFiles.get(i);
+                            String delFileName = delFile.getName();
+                            SysBackupLog backupLog = SysBackupLog.buildBasicLogEntity(Constant.SysBackupTypeEnum.DELETE.getValue());
+                            backupLog.setFilename(delFileName);
+                            try {
+                                FileUtil.del(delFile);
+                            } catch (Exception e) {
+                                log.error(e, "[backupFileRotate] [error] [filename: {}]", delFileName);
+                                backupLog.setState(0);
+                                backupLog.setErrorMsg(StrUtil.sub(e.getMessage(), 0, Constant.MYSQL_TEXT_MAXLENGTH));
+                            } finally {
+                                try {
+                                    // save sys backup log
+                                    sysBackupLogService.save(backupLog);
+                                } catch (Exception e) {
+                                    log.error(e);
+                                }
+                            }
                         }
                     }
                 }

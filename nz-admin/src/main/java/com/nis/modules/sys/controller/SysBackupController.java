@@ -62,7 +62,7 @@ public class SysBackupController {
 
     @PostMapping
     @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.SYSTEM)
-    public R backupData(@RequestParam String remark) {
+    public R backupData(@RequestParam(required = false) String remark) {
         // get lock
         String uuid = Tool.StrUtil.uuid();
         try {
@@ -163,7 +163,6 @@ public class SysBackupController {
      * @param response
      */
     @GetMapping("/sync")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
     public void syncBackupFile(@RequestParam(required = false) String serverid,
                                @RequestParam(required = false) String type,
                                @RequestParam(required = false) String filename,

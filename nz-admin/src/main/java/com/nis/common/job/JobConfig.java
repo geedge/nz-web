@@ -18,6 +18,7 @@ import com.nis.modules.asset.job.AssetTalonStatusJob;
 import com.nis.modules.endpoint.job.MetricTypeEndpointStatusJob;
 import com.nis.modules.sys.job.CleanJob;
 import com.nis.modules.sys.job.SessionTimeOutJob;
+import com.nis.modules.sys.job.SysBackFileSyncJob;
 import com.nis.modules.sys.job.SysComponentJob;
 import com.nis.modules.terminal.job.CleanExpiredTerminalRecordDataJob;
 import com.nis.modules.terminal.job.CleanNoRealUseTerminalConnJob;
@@ -98,6 +99,9 @@ public class JobConfig {
     @Value("${nezha.cleanExpiredTerminalRecordDataJobCron:0 0 1 * * ?}")
     private String cleanExpiredTerminalRecordDataJobCron;
 
+    @Value("${nezha.sysBackFileSyncJobCron:0 0 3 * * ?}")
+    private String sysBackFileSyncJobCron;
+
     @Autowired
     private Scheduler scheduler;
 //    @Qualifier("costomSchedulerFactoryBean")
@@ -122,6 +126,7 @@ public class JobConfig {
     private String recordtRuleManagerJobName = "RECORDTRULEMANAGER_JOB";
     private String cleanNoRealUseTerminalConnJobName = "CLEANNOREALUSETERMINALCONN_JOB";
     private String cleanExpiredTerminalRecordDataJob = "CLEAN_EXPIRED_TERMINAL_RECORD_DATA_JOB";
+    private String sysBackFileSyncJob = "SYS_BACKUP_SYNC_JOB";
 
     @Bean
     public JobDetail agentCronJobDetail() {
@@ -218,6 +223,11 @@ public class JobConfig {
         return JobBuilder.newJob(CleanExpiredTerminalRecordDataJob.class).withIdentity(JOB_NAME + cleanExpiredTerminalRecordDataJob).storeDurably().build();
     }
 
+    @Bean
+    public JobDetail sysBackFileSyncJobDetail() {
+        return JobBuilder.newJob(SysBackFileSyncJob.class).withIdentity(JOB_NAME + sysBackFileSyncJob).storeDurably().build();
+    }
+
     @PostConstruct
     public void init() throws SchedulerException {
         // agent 健康检查定时任务
@@ -277,6 +287,9 @@ public class JobConfig {
 
         // terminal record expired data clean job
         createCronScheduleJob(cleanExpiredTerminalRecordDataJob, cleanExpiredTerminalRecordDataJobDetail(), Tool.StrUtil.emptyToDefault(cleanExpiredTerminalRecordDataJobCron, "0 0 1 * * ?"));
+
+        // SysBackFileSyncJob
+        createCronScheduleJob(sysBackFileSyncJob, sysBackFileSyncJobDetail(), Tool.StrUtil.emptyToDefault(sysBackFileSyncJobCron, "0 0 3 * * ?"));
     }
     
     /**
