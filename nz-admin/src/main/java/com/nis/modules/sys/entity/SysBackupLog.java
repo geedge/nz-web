@@ -75,8 +75,12 @@ public class SysBackupLog implements Serializable {
         blog.setTs(System.currentTimeMillis());
 
         // uid
-        SysUserEntity userEntity = ShiroUtils.getUserEntity();
-        Integer uid = ObjectUtil.isNull(userEntity) ? -1 : userEntity.getId().intValue();
+        Integer uid = -1;
+        try {
+            SysUserEntity userEntity = ShiroUtils.getUserEntity();
+            uid = ObjectUtil.isNull(userEntity) ? -1 : userEntity.getId().intValue();
+        } catch (Exception e) {
+        }
         blog.setUid(uid);
         return blog;
     }
