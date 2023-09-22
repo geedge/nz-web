@@ -20,6 +20,7 @@ import com.nis.modules.sys.job.CleanJob;
 import com.nis.modules.sys.job.SessionTimeOutJob;
 import com.nis.modules.sys.job.SysBackFileSyncJob;
 import com.nis.modules.sys.job.SysComponentJob;
+import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.terminal.job.CleanExpiredTerminalRecordDataJob;
 import com.nis.modules.terminal.job.CleanNoRealUseTerminalConnJob;
 import org.apache.commons.lang.StringUtils;
@@ -30,6 +31,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import javax.annotation.PostConstruct;
+import java.util.TimeZone;
 
 /**
  * JobConfig 统一管理 job config
@@ -104,6 +106,8 @@ public class JobConfig {
 
     @Autowired
     private Scheduler scheduler;
+    @Autowired
+    private SysConfService sysConfService;
 //    @Qualifier("costomSchedulerFactoryBean")
     //private SchedulerFactoryBean schedulerFactoryBean;
     private static final String JOB_NAME = "NZJOB";
@@ -300,7 +304,8 @@ public class JobConfig {
      * @throws Exception
      */
     public void createCronScheduleJob(String jobName, JobDetail jobDetail, String jobCronExpression) throws SchedulerException {
-        CronScheduleBuilder cronScheduleBuilder = CronScheduleBuilder.cronSchedule(jobCronExpression);
+        String timezone = sysConfService.getValue("timezone");
+        CronScheduleBuilder cronScheduleBuilder = CronScheduleBuilder.cronSchedule(jobCronExpression).inTimeZone(TimeZone.getTimeZone(timezone));
 
         CronTrigger cronTrigger = TriggerBuilder.newTrigger()
                 .forJob(jobDetail)

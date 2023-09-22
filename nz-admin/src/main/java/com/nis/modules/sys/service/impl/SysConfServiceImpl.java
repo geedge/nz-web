@@ -1,6 +1,7 @@
 package com.nis.modules.sys.service.impl;
 
 import cn.hutool.core.util.ArrayUtil;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
@@ -26,8 +27,11 @@ import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
+import org.quartz.*;
+import org.quartz.impl.matchers.GroupMatcher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.HttpMethod;
@@ -112,6 +116,10 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
 
     @Autowired
     private MailUtil mailUtil;
+
+    @Lazy
+    @Autowired
+    private Scheduler scheduler;
 
     @Autowired
     private MonitorEventLogService eventLogService;
@@ -200,7 +208,8 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
         final String SESSION_TIME_OUT_KEY = Constant.SYSCONFIG_SESSION_TIMEOUT_KEY;
         SysConfigEntity sessionTimeOutConf = this.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey,SESSION_TIME_OUT_KEY));
 
-        
+        String timezone = this.getValue("timezone");
+
         //过滤非法的key
         Map<String, String> result = this.validateKeys(BASIC_KEYS, params);
         //校验是否缺少必填项
@@ -231,6 +240,56 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
             redisTemplate.convertAndSend(Constant.SYSCONFIG_SNMP_PORT_KEY,params.get(Constant.SYSCONFIG_SNMP_PORT_KEY));
         }else if(ToolUtil.isEmpty(sessionTimeOutConf)||!StrUtil.equals(sessionTimeOutConf.getParamValue(),params.get(SESSION_TIME_OUT_KEY))) {
         	redisTemplate.convertAndSend(Constant.SYSCONFIG_SESSION_TIMEOUT_KEY,params.get(Constant.SYSCONFIG_SESSION_TIMEOUT_KEY));
+        }
+
+        // timezone offset变更，更新 cronJob.timezone
+        TimeZone oldTimeZone = TimeZone.getTimeZone(timezone);
+        TimeZone newTimeZone = TimeZone.getTimeZone(params.get("timezone"));
+        this.updateSystemCronJobTimeZoneConf(oldTimeZone, newTimeZone);
+    }
+
+    /**
+     * update system cron job time zone conf
+     *
+     * @param oldTimeZone
+     * @param newTimeZone
+     */
+    private void updateSystemCronJobTimeZoneConf(TimeZone oldTimeZone, TimeZone newTimeZone) {
+        logger.info("[updateSystemCronJobTimeZoneConf] [oldTimeZone: {}] [newTimeZone: {}] [change: {}]", oldTimeZone.getID(), newTimeZone.getID(), ObjectUtil.notEqual(oldTimeZone, newTimeZone));
+        if (ObjectUtil.notEqual(oldTimeZone, newTimeZone)) {
+            logger.info("[updateSystemCronJobTimeZoneConf] [timezone conf change] [update cron job timezone] [begin]");
+            try {
+                scheduler.pauseAll();
+                Set<TriggerKey> triggerKeyList = scheduler.getTriggerKeys(GroupMatcher.anyGroup());
+                for (TriggerKey triggerKey : triggerKeyList) {
+                    Trigger trigger = scheduler.getTrigger(triggerKey);
+                    if (trigger instanceof CronTrigger) {
+                        CronTrigger cronTrigger = (CronTrigger) trigger;
+                        try {
+                            CronTrigger newCronTrigger = cronTrigger.getTriggerBuilder()
+                                    .withSchedule(
+                                            CronScheduleBuilder.cronSchedule(cronTrigger.getCronExpression()).inTimeZone(newTimeZone)
+                                    )
+                                    .withIdentity(triggerKey.getName(), triggerKey.getGroup())
+                                    .build();
+                            scheduler.rescheduleJob(cronTrigger.getKey(), newCronTrigger);
+                        } catch (SchedulerException e) {
+                            logger.error(e, "[updateSystemCronJobTimeZoneConf] [rescheduleJob error] [jobKey: {}]", JSONUtil.toJsonStr(cronTrigger.getKey()));
+                        }
+                    }
+                }
+                logger.info("[updateSystemCronJobTimeZoneConf] [timezone conf change] [update cron job timezone] [finshed]");
+            } catch (Exception e) {
+                logger.error(e, "[updateSystemCronJobTimeZoneConf] [update cron job timezone] [error]");
+            } finally {
+                try {
+                    scheduler.resumeAll();
+                } catch (SchedulerException e) {
+                    logger.error(e);
+                }
+            }
+        } else {
+            logger.info("[updateSystemCronJobTimeZoneConf] [timezone conf no change]");
         }
     }
 
