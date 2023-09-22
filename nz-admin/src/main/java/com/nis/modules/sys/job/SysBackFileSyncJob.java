@@ -33,6 +33,7 @@ import org.springframework.web.client.RestTemplate;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -69,8 +70,12 @@ public class SysBackFileSyncJob extends QuartzJobBean {
         StopWatch sw = StopWatch.create("SysBackFileSyncJob");
         sw.start();
         try {
+            Date previousFireTime = context.getPreviousFireTime();
+            log.info("[SysBackFileSyncJob] [previousFireTime: {}]", previousFireTime);
+            Long syncStartTs = ObjectUtil.isNotNull(previousFireTime) ? previousFireTime.getTime() : 0;
+
             // sync system backup file
-            this.syncSysBackFile(Constant.SERVER_ID);
+            this.syncSysBackFile(Constant.SERVER_ID, syncStartTs);
         } catch (Exception e) {
             log.error(e, "[SysBackFileSyncJob] [error]");
         } finally {
@@ -83,8 +88,8 @@ public class SysBackFileSyncJob extends QuartzJobBean {
     /**
      * sync system backup file
      */
-    private void syncSysBackFile(String serverId) {
-        log.info("[syncSysBackFile] [begin] [serverId: {}]", serverId);
+    private void syncSysBackFile(String serverId, Long syncStartTs) {
+        log.info("[syncSysBackFile] [begin] [serverId: {}] [syncStartTs: {}]", serverId, syncStartTs);
 
         SysComponent anotherWebCompoent = sysComponentService.getOne(new LambdaQueryWrapper<SysComponent>()
                 .eq(SysComponent::getComponent, Constant.NZ_WEB_COMPONENT_NAME)
@@ -100,7 +105,7 @@ public class SysBackFileSyncJob extends QuartzJobBean {
             log.info("[syncSysBackFile] [retention {}]", retention);
 
             // 所有操作日志
-            List<SysBackupLog> logList = sysBackupLogService.list(new LambdaQueryWrapper<SysBackupLog>().eq(SysBackupLog::getState, 1));
+            List<SysBackupLog> logList = sysBackupLogService.list(new LambdaQueryWrapper<SysBackupLog>().eq(SysBackupLog::getState, 1).ge(SysBackupLog::getTs, syncStartTs));
             // 备份文件日志
             List<SysBackupLog> backupLogList = logList.stream()
                     .filter(backupLog -> ObjectUtil.equal(Constant.SysBackupTypeEnum.BACK_UP.getValue(), backupLog.getType()))
