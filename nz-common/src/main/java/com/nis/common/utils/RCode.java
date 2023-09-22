@@ -121,6 +121,7 @@ public enum RCode {
     DASHBOARD_TEMPLATE_SYNC_FAILED_GET_LOCK(127103,"Dashboard template synchronization is in progress please try again later"),
     DASHBOARD_PARAM_VARIABLE_NAME_FORMAT_ERROR(123104, "Dashboard param variable name format error"),
     DASHBOARD_PARAM_VARIABLE_TYPE_INVALIDE(123105, "Dashboard param variable type is not in the enum range"),
+    DASHBOARD_SNAPSHOT_ERROR(129106, "Snapshot exception"),
 
     /**
      * EXPRETMPL
@@ -842,7 +843,7 @@ public enum RCode {
      */
     SYS_BACKUP_FILENAME_ISNULL(601000, "System backup file name cannot be empty"),
     SYS_BACKUP_FILENAME_NOTEXIST(601001, "System backup file does not exist"),
-    SYS_BACKUP_ERROR(609002, "System data backup is abnormal"),
+    SYS_BACKUP_ERROR(609002, "System data backup exception"),
     SYS_BACKUP_IN_PROGRESS(607003, "System data backup is in progress please try again later"),
     SYS_BACKUP_UNPACK_FILE_FORMAT_ERROR(609004, "Unpack file format error"),
     SYS_BACKUP_UNPACK_ERROR(609005,"Unpack file error"),

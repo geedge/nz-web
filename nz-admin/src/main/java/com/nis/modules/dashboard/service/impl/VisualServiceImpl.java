@@ -656,6 +656,7 @@ public class VisualServiceImpl implements VisualService {
             }
         } catch (Exception e) {
             log.error(e, "[downloadSnapshotFile] [error] [type: {}] [taskId: {}]", type, taskId);
+            throw new NZException(RCode.DASHBOARD_SNAPSHOT_ERROR);
         } finally {
             String snapshotThreadGroupKey = StrUtil.concat(true, type, "_snapshot_threadGroup_", taskId);
 
@@ -703,7 +704,7 @@ public class VisualServiceImpl implements VisualService {
             driver.resetInputState();
             driver.get("file://" + tempFile.getAbsolutePath());
 
-            WebDriverWait wait = new WebDriverWait(driver, 60);
+            WebDriverWait wait = new WebDriverWait(driver, 60 * 5);
             wait.until(webDriver -> {
                 Boolean isLoaded = (Boolean) ((JavascriptExecutor) webDriver).executeScript("return window.dataJson.AllChartDataLoad == true");
                 return Tool.ObjectUtil.defaultIfNull(isLoaded, false);
@@ -711,13 +712,14 @@ public class VisualServiceImpl implements VisualService {
 
             PrintOptions printOptions = new PrintOptions();
             printOptions.setPageSize(new PageSize(21, 29.7)); // A4
+            printOptions.setScale(0.6);
 //            printOptions.setPageSize(new PageSize(80D, 100D));
 
             Pdf pdf = ((PrintsPage) driver).print(printOptions);
-
+            String pdfContent = pdf.getContent();
             sw.stop();
-            log.info("[htmlToPdf] [finshed] [taskId: {}] [htmlContent: {}] [Run time: {}]", taskId, StrUtil.length(htmlContent), sw.toString());
-            return pdf.getContent();
+            log.info("[htmlToPdf] [finshed] [taskId: {}] [pdfContent: {}] [Run time: {}]", taskId, StrUtil.length(pdfContent), sw.toString());
+            return pdfContent;
         } finally {
             if (driver != null) {
                 driver.quit();
@@ -760,7 +762,7 @@ public class VisualServiceImpl implements VisualService {
             driver.resetInputState();
             driver.get("file://" + tempFile.getAbsolutePath());
 
-            WebDriverWait wait = new WebDriverWait(driver, 60);
+            WebDriverWait wait = new WebDriverWait(driver, 60 * 5);
             wait.until(webDriver -> {
                 Boolean isLoaded = (Boolean) ((JavascriptExecutor) webDriver).executeScript("return window.dataJson.AllChartDataLoad == true");
                 return Tool.ObjectUtil.defaultIfNull(isLoaded, false);
@@ -795,6 +797,11 @@ public class VisualServiceImpl implements VisualService {
                 }
                 // nz-chart 包含图表&legend
                 WebElement chartElement = divElement.findElement(By.className("nz-chart"));
+                int height = chartElement.getSize().getHeight();
+                if (ObjectUtil.equal(0, height)) {
+                    log.warn("[htmlToMarkdown] [element height is 0] [divElement id: {}]", id);
+                    continue;
+                }
                 String fileBase64 = chartElement.getScreenshotAs(OutputType.BASE64);
                 Map<Object, Object> tempNodeMap = MapUtil.builder()
                         .put("chart", visualChart)
