@@ -139,7 +139,7 @@ public class VisualController {
 		// get lock
 		String uuid = Tool.StrUtil.uuid();
 		try {
-			if (redisLock.lock(DashboardConstant.TEMPLATE_SYNC_LOCK_KEY, uuid, 5L)) {
+			if (redisLock.lock(DashboardConstant.TEMPLATE_SYNC_LOCK_KEY, uuid, 300L)) {
 				log.info("[syncTemplateDashboard] [Get lock and start synchronization template]");
 
 				// sync Template On dashboard

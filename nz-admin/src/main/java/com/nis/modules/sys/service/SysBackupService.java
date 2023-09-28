@@ -27,4 +27,6 @@ public interface SysBackupService {
 
 	void restore(String filename, String pin);
 
+	void restore(String filename);
+
 }

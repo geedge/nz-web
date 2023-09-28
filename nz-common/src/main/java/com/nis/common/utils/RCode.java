@@ -851,6 +851,8 @@ public enum RCode {
     SYS_BACKUP_SYNC_TYPE_ISNULL(601007, "Type cannot be empty"),
     SYS_BACKUP_SYNC_TYPE_INVALID(604008, "Type not in enumeration range"),
     SYS_BACKUP_SYNC_FILENAME_ISNULL(601009, "Filename cannot be empty"),
+    SYS_BACKUP_RESTORE_ERROR(609010, "System data restore failed"),
+    SYS_BACKUP_RECOVERING_SYSTEM_DATA(607011, "System data recover is in progress please try again later"),
 
 
     /**

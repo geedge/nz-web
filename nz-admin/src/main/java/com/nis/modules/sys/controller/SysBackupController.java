@@ -66,7 +66,7 @@ public class SysBackupController {
         // get lock
         String uuid = Tool.StrUtil.uuid();
         try {
-            if (redisLock.lock(Constant.SYS_BACKUP_LOCK, uuid, 5L)) {
+            if (redisLock.lock(Constant.SYS_BACKUP_LOCK, uuid, 300L)) {
                 log.info("[backupData] [Get lock and start system data backup]");
 
                 StopWatch sw = new StopWatch();

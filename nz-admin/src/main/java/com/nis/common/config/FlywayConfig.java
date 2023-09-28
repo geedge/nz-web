@@ -2,7 +2,10 @@ package com.nis.common.config;
 
 import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.log.Log;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.RedisLock;
 import com.nis.common.utils.Tool;
+import com.nis.modules.sys.service.SysBackupService;
 import org.apache.commons.lang3.time.StopWatch;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.callback.Callback;
@@ -13,6 +16,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.data.redis.core.RedisTemplate;
 
 import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
@@ -22,13 +26,16 @@ import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Configuration
-@DependsOn(value = {"dataSourceConfig"})
+@DependsOn(value = {"dataSourceConfig", "redisConfig"})
 public class FlywayConfig implements ApplicationContextAware {
 
     private static final Log log = Log.get();
+
+    private static final String SYS_RESTORE_LOCK_KEY = "sys_restore_lock";
 
     private List<Callback> migrateCallbackList;
 
@@ -37,6 +44,15 @@ public class FlywayConfig implements ApplicationContextAware {
 
     @Autowired
     private FlywayProperties flywayProperties;
+
+    @Autowired
+    private RedisLock redisLock;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
+
+    @Autowired
+    private SysBackupService sysBackupService;
 
     @PostConstruct
     public void migrate() {
@@ -54,6 +70,10 @@ public class FlywayConfig implements ApplicationContextAware {
         sw.start();
         Flyway flyway = configure.load();
         try {
+            // restore system data
+            this.restoreSystemData();
+
+            // migrate
             flyway.migrate();
         } catch (Exception e) {
             log.error(e, "[FlywayConfig] [migrate error.]");
@@ -68,6 +88,62 @@ public class FlywayConfig implements ApplicationContextAware {
             sw.stop();
         }
         log.info("[FlywayConfig] [flyway migrate] [finshed] [Run time: {}]", sw.toString());
+    }
+
+    /**
+     * restore system data
+     */
+    private void restoreSystemData() {
+        Boolean hasSysRestoreFilename = redisTemplate.hasKey("sys_restore_filename");
+        log.info("[restoreSystemData] [sys_restore_filename key in redis] [exist: {}]", hasSysRestoreFilename);
+        if (hasSysRestoreFilename) {
+            // get restore filename
+            String restoreFilenameInRedis = (String) redisTemplate.opsForValue().get("sys_restore_filename");
+
+            // aes decrypt
+            String restoreFilename = Tool.AesUtil.decrypt(restoreFilenameInRedis, Constant.AES_SECRET_KEY);
+            if (restoreFilename == null) {
+                log.warn("[restoreSystemData] [decrypt error] [restoreFilenameInRedis: {}]", restoreFilenameInRedis);
+                return;
+            }
+            log.info("[restoreSystemData] [restore filename: {}]", restoreFilename);
+
+            // get lock
+            String uuid = Tool.StrUtil.uuid();
+            try {
+                if (redisLock.lock(SYS_RESTORE_LOCK_KEY, uuid, -1L)) {
+                    log.info("[restoreSystemData] [begin] [get lock]");
+
+                    // restore
+                    sysBackupService.restore(restoreFilename);
+
+                    // unlock
+                    redisLock.unlock(SYS_RESTORE_LOCK_KEY, uuid);
+                    // del sys_restore_filename key
+                    redisTemplate.delete("sys_restore_filename");
+
+                    log.info("[restoreSystemData] [finshed]");
+                } else {
+                    log.warn("[restoreSystemData] [unable to get the lock] [waiting for lock release...]");
+                    while (true) {
+                        Boolean hasKey = redisTemplate.hasKey(SYS_RESTORE_LOCK_KEY);
+                        log.warn("[restoreSystemData] [sys_restore_lock] [release: {}]", !hasKey);
+                        if (hasKey) {
+                            Tool.ThreadUtil.sleep(10, TimeUnit.SECONDS);
+                        } else {
+                            log.info("[restoreSystemData] [lock release and start web service]");
+                            break;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.error(e, "[restoreSystemData] [error]");
+                // 还原失败，停止服务
+                Tool.RuntimeUtil.exec("systemctl stop nz-web.service");
+            }
+        } else {
+            log.info("[restoreSystemData] [no need to restore]");
+        }
     }
 
     /**

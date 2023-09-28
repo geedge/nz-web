@@ -5,10 +5,12 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.text.StrBuilder;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.db.sql.SqlExecutor;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -38,6 +40,7 @@ import java.io.*;
 import java.sql.*;
 import java.util.Date;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service("sysBackupService")
@@ -329,7 +332,7 @@ public class SysBackupServiceImpl implements SysBackupService {
     }
 
     @Override
-    public void restore(String filename, String pin) {
+    public synchronized void restore(String filename, String pin) {
         Long userId = ShiroUtils.getUserId();
         SysUserEntity user = sysUserService.getById(userId);
 
@@ -345,10 +348,44 @@ public class SysBackupServiceImpl implements SysBackupService {
         boolean exist = FileUtil.exist(sqlFilePath);
         log.info("[restore] [download file] [filename: {}] [exist: {}]", filename, exist);
         if (exist) {
-            // TODO
+            // sys_restore_filename
+            redisTemplate.opsForValue().set("sys_restore_filename", Tool.AesUtil.encrypt(filename, Constant.AES_SECRET_KEY), 300, TimeUnit.SECONDS);
+
+            // send restart notify
+            redisTemplate.convertAndSend(Constant.RESTORE_TOPIC_NAME, Constant.SERVER_ID);
         } else {
             log.warn("[restore] [file not found] [filename: {}]", filename);
             throw new NZException(RCode.SYS_BACKUP_FILENAME_NOTEXIST);
+        }
+    }
+
+    @Override
+    public void restore(String filename) {
+        String path = sysConfService.getValueOrDefault("backup_file_path", Constant.BACKUP_ROOT_PATH);
+        String sqlFilePath = Tool.StrUtil.concat(true, path, File.separator, filename);
+        boolean exist = FileUtil.exist(sqlFilePath);
+        log.info("[restore] [restore file] [filename: {}] [exist: {}]", filename, exist);
+        if (BooleanUtil.negate(exist)) {
+            log.warn("[restore] [file not found] [filename: {}]", filename);
+            return;
+        }
+
+        // secure reader backup file
+        File readSqlFile = null;
+        try {
+            String unpackFileName = StrUtil.concat(true, IdUtil.fastSimpleUUID());
+            readSqlFile = this.secureReaderBackupFile(FileUtil.file(sqlFilePath), unpackFileName);
+        } catch (Exception e) {
+            log.error(e, "[restore] [secure reader backup file error] [filename: {}]", filename);
+            throw new NZException(RCode.SYS_BACKUP_UNPACK_ERROR);
+        }
+
+        // perform restore action
+        try {
+            this.performRestoreAction(readSqlFile);
+        } catch (Exception e) {
+            log.error(e, "[restore] [error] [filename: {}]", filename);
+            throw new NZException(RCode.SYS_BACKUP_RESTORE_ERROR);
         }
     }
 
@@ -408,32 +445,32 @@ public class SysBackupServiceImpl implements SysBackupService {
                 }
 
                 // 导出存储过程信息
-                stmtInfo = conn.createStatement();
-                rsInfo = stmtInfo.executeQuery(String.format("SELECT `SPECIFIC_NAME` from `INFORMATION_SCHEMA`.`ROUTINES` WHERE `ROUTINE_SCHEMA` = '%s' AND ROUTINE_TYPE = 'PROCEDURE'; ", dbName));
-                while (rsInfo.next()) {
-                    String procName = rsInfo.getString(1);
-
-                    // 存储过程结构
-                    stmtData = conn.createStatement();
-                    rsData = stmtData.executeQuery(String.format("SHOW CREATE PROCEDURE `%s`", procName));
-                    if (!rsData.next()) {
-                        continue;
-                    }
-                    writer.newLine();
-                    writer.newLine();
-                    writer.write(String.format("/* Procedure structure for procedure `%s` */", procName));
-                    writer.newLine();
-                    writer.write(String.format("/*!50003 DROP PROCEDURE IF EXISTS  `%s` */;", procName));
-                    writer.newLine();
-                    writer.write("DELIMITER $$");
-                    writer.newLine();
-                    writer.append("/*!50003 ").append(rsData.getString(3)).append(" */$$");
-                    writer.newLine();
-                    writer.write("DELIMITER ;");
-
-                    Tool.IoUtil.close(rsData);
-                    Tool.IoUtil.close(stmtData);
-                }
+//                stmtInfo = conn.createStatement();
+//                rsInfo = stmtInfo.executeQuery(String.format("SELECT `SPECIFIC_NAME` from `INFORMATION_SCHEMA`.`ROUTINES` WHERE `ROUTINE_SCHEMA` = '%s' AND ROUTINE_TYPE = 'PROCEDURE'; ", dbName));
+//                while (rsInfo.next()) {
+//                    String procName = rsInfo.getString(1);
+//
+//                    // 存储过程结构
+//                    stmtData = conn.createStatement();
+//                    rsData = stmtData.executeQuery(String.format("SHOW CREATE PROCEDURE `%s`", procName));
+//                    if (!rsData.next()) {
+//                        continue;
+//                    }
+//                    writer.newLine();
+//                    writer.newLine();
+//                    writer.write(String.format("/* Procedure structure for procedure `%s` */", procName));
+//                    writer.newLine();
+//                    writer.write(String.format("/*!50003 DROP PROCEDURE IF EXISTS  `%s` */;", procName));
+//                    writer.newLine();
+//                    writer.write("DELIMITER $$");
+//                    writer.newLine();
+//                    writer.append("/*!50003 ").append(rsData.getString(3)).append(" */$$");
+//                    writer.newLine();
+//                    writer.write("DELIMITER ;");
+//
+//                    Tool.IoUtil.close(rsData);
+//                    Tool.IoUtil.close(stmtData);
+//                }
 
                 // 尾内容
                 writer.newLine();
@@ -474,11 +511,11 @@ public class SysBackupServiceImpl implements SysBackupService {
         }
         writer.newLine();
         writer.newLine();
-        writer.write(String.format("/*Table structure for table `%s` */", tableName));
-        writer.newLine();
         writer.write(String.format("DROP TABLE IF EXISTS `%s`;", tableName));
         writer.newLine();
-        writer.write(rs.getString(2) + ";");
+        String createTableSql = rs.getString(2);
+        createTableSql = StrUtil.replace(createTableSql, "ROW_FORMAT=COMPACT", "ROW_FORMAT=DYNAMIC");
+        writer.write(createTableSql + ";");
         writer.newLine();
         Tool.IoUtil.close(rs);
         Tool.IoUtil.close(stmt);
@@ -492,8 +529,6 @@ public class SysBackupServiceImpl implements SysBackupService {
             writer.flush();
             return;
         }
-        writer.write(String.format("/*Data for the table `%s` */", tableName));
-        writer.newLine();
 
         stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
         /**
@@ -507,19 +542,11 @@ public class SysBackupServiceImpl implements SysBackupService {
         stmt.setFetchSize(0);
         stmt.setFetchDirection(ResultSet.FETCH_REVERSE);
 
-        Integer start = 0;
-        Integer end = exportMaxSize;
-        boolean flag = true;
-        while (flag) {
-            if (rowCount < exportMaxSize) {
-                end = rowCount;
-            }
+        int offset = 0;
+        while (offset < rowCount) {
+            int startRow = offset;
 
-            if (end == rowCount) {
-                flag = false;
-            }
-
-            rs = stmt.executeQuery(String.format("SELECT * FROM `%s` limit %d , %d", tableName, start, end));
+            rs = stmt.executeQuery(String.format("SELECT * FROM `%s` limit %d , %d", tableName, startRow, exportMaxSize));
             int colCount = 0;
             Object colValue = null;
             // 所有数据用","连接
@@ -593,11 +620,7 @@ public class SysBackupServiceImpl implements SysBackupService {
                 }    //end for table records
             }
 
-            start = end;
-            end = end + exportMaxSize;
-            if (end > rowCount) {
-                end = rowCount;
-            }
+            offset += exportMaxSize;
         }
         Tool.IoUtil.close(rs);
         Tool.IoUtil.close(stmt);
@@ -743,6 +766,9 @@ public class SysBackupServiceImpl implements SysBackupService {
      */
     private File secureReaderBackupFile(File secureFile, String sqlFileName) throws IOException {
         log.info("[secureReaderBackupFile] [begin] [sqlFileName: {}]", sqlFileName);
+        StopWatch sw = new StopWatch();
+        sw.start();
+
         String tempAesFilePath = Tool.StrUtil.concat(true, Constant.TEMP_PATH, File.separator, IdUtil.fastSimpleUUID(), ".bak");
         String tempGzipFilePath = Tool.StrUtil.concat(true, Constant.TEMP_PATH, File.separator, IdUtil.fastSimpleUUID(), ".gz");
         String tempSqlFilePath = Tool.StrUtil.concat(true, Constant.TEMP_PATH, File.separator, sqlFileName, ".sql");
@@ -801,10 +827,88 @@ public class SysBackupServiceImpl implements SysBackupService {
         } finally {
             FileUtil.del(tempGzipFilePath);
             FileUtil.del(tempAesFilePath);
-            FileUtil.del(secureFile);
         }
-        log.info("[secureReaderBackupFile] [finshed] [tempSqlPath: {}]", tempSqlFilePath);
+
+        sw.stop();
+        log.info("[secureReaderBackupFile] [finshed] [tempSqlPath: {}] [Run time: {}]", tempSqlFilePath, sw.toString());
         return FileUtil.file(tempSqlFilePath);
+    }
+
+    /**
+     * perform restore action
+     *
+     * @param readSqlFile
+     * @throws SQLException
+     * @throws IOException
+     */
+    public void performRestoreAction(File readSqlFile) throws SQLException, IOException {
+        log.info("[performRestoreAction] [begin]");
+        StopWatch sw = new StopWatch();
+        sw.start();
+
+        try (Connection connection = dataSource.getConnection();
+             BufferedReader reader = FileUtil.getUtf8Reader(readSqlFile);) {
+
+            String line;
+            boolean inCreateTable = false;
+            StrBuilder strBuilder = StrUtil.strBuilder();
+            List<String> insertBatchSqlList = Tool.ListUtil.list(true);
+
+            while ((line = reader.readLine()) != null) {
+                line = StrUtil.trim(line);
+
+                if (StrUtil.isEmpty(line)) {
+                    continue;
+                }
+
+                if (!inCreateTable && StrUtil.endWith(line, ";")) {
+                    String execSql = line;
+                    // insert 语句批量插入
+                    if (StrUtil.startWith(execSql, "INSERT")) {
+                        insertBatchSqlList.add(execSql);
+                        if (insertBatchSqlList.size() % 1000 == 0) {
+                            SqlExecutor.executeBatch(connection, insertBatchSqlList);
+                            insertBatchSqlList.clear();
+                        }
+                    } else {
+                        // 其他语句立即执行
+                        try {
+                            SqlExecutor.execute(connection, execSql);
+                        } catch (SQLException e) {
+                            log.error(e, "[performRestoreAction] [execute sql error] [sql: {}]", execSql);
+                            throw e;
+                        }
+                    }
+                    continue;
+                }
+
+                // create table 拼接后执行
+                strBuilder.append(line);
+                if (StrUtil.startWith(line, "CREATE TABLE")) {
+                    inCreateTable = true;
+                } else if (inCreateTable && StrUtil.endWith(line, ";")) {
+                    String execSql = strBuilder.toString();
+                    try {
+                        SqlExecutor.execute(connection, execSql);
+                    } catch (SQLException e) {
+                        log.error(e, "[performRestoreAction] [execute sql error] [sql: {}]", execSql);
+                        throw e;
+                    }
+                    strBuilder.clear();
+                    inCreateTable = false;
+                }
+            }
+
+            // 插入剩余的 insert 语句
+            if (Tool.CollUtil.isNotEmpty(insertBatchSqlList)) {
+                SqlExecutor.executeBatch(connection, insertBatchSqlList);
+            }
+        } finally {
+            FileUtil.del(readSqlFile);
+        }
+
+        sw.stop();
+        log.info("[performRestoreAction] [finshed] [Run time: {}]", sw.toString());
     }
 
 }

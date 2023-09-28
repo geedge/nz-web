@@ -32,7 +32,7 @@ public class RedisLock {
      */
     public boolean lock(String key, String value, Long timeout) {
         // 加锁并设置过期时间
-        return stringRedisTemplate.opsForValue().setIfAbsent(key, value, timeout, TimeUnit.MINUTES);
+        return stringRedisTemplate.opsForValue().setIfAbsent(key, value, timeout, TimeUnit.SECONDS);
     }
 
     /**

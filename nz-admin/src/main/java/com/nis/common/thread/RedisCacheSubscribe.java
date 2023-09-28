@@ -1,13 +1,19 @@
 package com.nis.common.thread;
 
-import java.util.Map;
-
-import javax.servlet.Filter;
-
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONPath;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nis.common.interceptor.TokenCheckFilter;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
+import com.nis.modules.alert.backend.SNMPTrapReceiver;
 import com.nis.modules.report.job.ReportJobManager;
+import com.nis.modules.sys.entity.SysComponent;
 import com.nis.modules.sys.job.SysBackJobManager;
+import com.nis.modules.sys.service.SysComponentService;
+import com.nis.modules.sys.shiro.MySessionManager;
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.crazycake.shiro.RedisCacheManager;
 import org.crazycake.shiro.RedisSessionDAO;
@@ -23,13 +29,8 @@ import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.stereotype.Component;
 
-import com.nis.common.interceptor.TokenCheckFilter;
-import com.nis.common.utils.Constant;
-import com.nis.modules.alert.backend.SNMPTrapReceiver;
-import com.nis.modules.sys.shiro.MySessionManager;
-
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import javax.servlet.Filter;
+import java.util.Map;
 
 @Component
 public class RedisCacheSubscribe  implements MessageListener{
@@ -59,6 +60,9 @@ public class RedisCacheSubscribe  implements MessageListener{
 
 	@Autowired
 	private SysBackJobManager sysBackJobManager;
+
+	@Autowired
+	private SysComponentService sysComponentService;
 	
 	@Override
 	public void onMessage(Message message, byte[] pattern) {
@@ -138,6 +142,23 @@ public class RedisCacheSubscribe  implements MessageListener{
 			}
 			log.info("Sys-backup consumer message, finished");
 		}
+		// sys restore
+		if (StrUtil.equals(topic, Constant.RESTORE_TOPIC_NAME)) {
+			log.info("Sys-restore consumer message begin ...");
+			log.info("Sys-restore consumer message :{}", value);
+			// validate
+			SysComponent component = sysComponentService.getOne(new LambdaQueryWrapper<SysComponent>()
+					.eq(SysComponent::getServerid, value)
+					.eq(SysComponent::getComponent, Constant.NZ_WEB_COMPONENT_NAME));
+			log.info("Sys-restore validate consumer message, result: {}", ObjectUtil.isNotNull(component));
+			if (ObjectUtil.isNotNull(component)) {
+				// restart nz-web
+				Tool.RuntimeUtil.exec("systemctl restart nz-web.service");
+			} else {
+				log.warn("Sys-restore validate consumer message failed");
+			}
+			log.info("Sys-restore consumer message, finished");
+		}
 	}
 
 	@Bean
@@ -149,6 +170,7 @@ public class RedisCacheSubscribe  implements MessageListener{
 	    container.addMessageListener(listenerAdapter, new PatternTopic(Constant.SYSCONFIG_SNMP_PORT_KEY));
 		container.addMessageListener(listenerAdapter, new PatternTopic(Constant.REPORT_TOPIC_NAME));
 		container.addMessageListener(listenerAdapter, new PatternTopic(Constant.BACKUP_TOPIC_NAME));
+		container.addMessageListener(listenerAdapter, new PatternTopic(Constant.RESTORE_TOPIC_NAME));
 	    return container;
 	}
 	

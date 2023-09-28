@@ -1160,6 +1160,8 @@ public class Constant {
 
 	public static final String BACKUP_TOPIC_NAME = "backup_topic";
 
+	public static final String RESTORE_TOPIC_NAME = "restore_topic";
+
 	public static final String REPORT_JOB_GROUP = "report_job_group";
 
 	public static final String BACKUP_JOB_GROUP = "backup_job_group";
