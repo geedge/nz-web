@@ -8,19 +8,17 @@
 
 package com.nis.common.config;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-
+import cn.hutool.log.Log;
+import com.nis.common.utils.Tool;
+import com.nis.modules.sys.shiro.ShiroTag;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer;
 
-import com.nis.common.utils.Tool;
-import com.nis.modules.sys.shiro.ShiroTag;
-
-import cn.hutool.log.Log;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * Freemarker配置

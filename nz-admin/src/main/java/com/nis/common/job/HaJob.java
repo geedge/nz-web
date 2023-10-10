@@ -1,7 +1,8 @@
 package com.nis.common.job;
 
-import java.util.concurrent.TimeUnit;
-
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
+import com.nis.common.utils.Constant;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -9,10 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
-import com.nis.common.utils.Constant;
-
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import java.util.concurrent.TimeUnit;
 
 @DisallowConcurrentExecution
 public class HaJob extends QuartzJobBean {

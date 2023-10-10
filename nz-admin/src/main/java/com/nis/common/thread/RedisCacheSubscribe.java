@@ -14,6 +14,7 @@ import com.nis.modules.sys.entity.SysComponent;
 import com.nis.modules.sys.job.SysBackJobManager;
 import com.nis.modules.sys.service.SysComponentService;
 import com.nis.modules.sys.shiro.MySessionManager;
+import jakarta.servlet.Filter;
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.crazycake.shiro.RedisCacheManager;
 import org.crazycake.shiro.RedisSessionDAO;
@@ -29,7 +30,6 @@ import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.stereotype.Component;
 
-import javax.servlet.Filter;
 import java.util.Map;
 
 @Component

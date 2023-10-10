@@ -12,6 +12,7 @@ import com.nis.modules.sys.entity.SysFileChunkEntity;
 import com.nis.modules.sys.entity.SysFileEntity;
 import com.nis.modules.sys.service.SysFileChunkService;
 import com.nis.modules.sys.service.SysFileService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessResourceFailureException;
@@ -19,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;

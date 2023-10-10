@@ -1,5 +1,5 @@
 # 定义全局docker镜像
-image: git.mesalab.cn:7443/nezha/nz-build-env:1.4
+image: git.mesalab.cn:7443/nezha/nz-build-env:1.5
 # 定义全局变量
 variables:
   MINIO_HOST: 'http://192.168.40.48:2020/'

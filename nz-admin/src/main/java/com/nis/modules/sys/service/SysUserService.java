@@ -11,8 +11,8 @@ package com.nis.modules.sys.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.sys.entity.SysUserEntity;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 

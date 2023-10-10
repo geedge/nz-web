@@ -1,26 +1,24 @@
 package com.nis.modules.alert.backend;
 
-import java.util.List;
-
+import cn.hutool.core.date.StopWatch;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.nis.common.protobuf.Types.TimeSeries;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.Tool;
+import com.nis.modules.agent.util.AgentUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.QueryTimeoutException;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SessionCallback;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.nis.common.protobuf.Types.TimeSeries;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.Tool;
-import com.nis.modules.agent.util.AgentUtil;
-
-import cn.hutool.core.date.StopWatch;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import java.util.List;
 
 /**
  * record data 消费线程 1、从 redis中获取 record data 2、处理内容 3、rewrite 发送到
@@ -96,7 +94,7 @@ public class RecordDataConsumer implements Runnable {
 				sw.start("request");
 				// 发送请求
 				ResponseEntity<String> responseEntity = AgentUtil.remoteWrite(timeSeriesList);
-				HttpStatus statusCode = responseEntity.getStatusCode();
+				HttpStatusCode statusCode = responseEntity.getStatusCode();
 				if (statusCode.isError()) {
 					log.warn("remote write send, status: {}, msg: {}", responseEntity.getStatusCode(),
 							responseEntity.getBody());

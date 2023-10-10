@@ -8,21 +8,20 @@
 
 package com.nis.common.config;
 
-import java.sql.SQLException;
-import java.util.Properties;
-
-import org.apache.ibatis.mapping.DatabaseIdProvider;
-import org.apache.ibatis.mapping.VendorDatabaseIdProvider;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-
 import com.nis.common.interceptor.SysMenuInterceptor;
 import com.nis.common.utils.SQLUtils;
 import com.nis.common.utils.SpringContextUtils;
 import com.nis.common.utils.SqlHelper.MysqlHelper;
 import com.nis.modules.sys.service.SysConfigService;
+import org.apache.ibatis.mapping.DatabaseIdProvider;
+import org.apache.ibatis.mapping.VendorDatabaseIdProvider;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.util.Properties;
 
 /**
  * WebMvc配置
@@ -52,8 +51,14 @@ public class WebConfig implements WebMvcConfigurer {
         return databaseIdProvider;
     }
     @Bean
-    public SQLUtils getSqlUtils() throws SQLException {
+    public SQLUtils getSqlUtils() {
     	return new MysqlHelper();
+    }
+
+    @Override
+    public void configurePathMatch(PathMatchConfigurer configurer) {
+        configurer.setUseTrailingSlashMatch(true);
+        configurer.setUseSuffixPatternMatch(true);
     }
 
     @Override

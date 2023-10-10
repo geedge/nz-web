@@ -14,6 +14,7 @@ import com.nis.modules.sys.entity.SysComponent;
 import com.nis.modules.sys.service.LicenseService;
 import com.nis.modules.sys.service.SysComponentService;
 import com.nis.modules.sys.service.SysConfigService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.DocumentHelper;
@@ -25,7 +26,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;

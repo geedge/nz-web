@@ -1,22 +1,5 @@
 package com.nis.common.utils;
 
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
-import java.security.PrivateKey;
-import java.util.Map;
-
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.Unmarshaller;
-
-import org.w3c.dom.Document;
-
-import com.alibaba.fastjson.JSON;
-import com.nis.modules.sys.entity.LicenseEntity;
-
 import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
@@ -24,7 +7,17 @@ import cn.hutool.crypto.asymmetric.Sign;
 import cn.hutool.crypto.asymmetric.SignAlgorithm;
 import cn.hutool.log.Log;
 import cn.hutool.system.oshi.OshiUtil;
+import com.alibaba.fastjson.JSON;
+import com.nis.modules.sys.entity.LicenseEntity;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.Marshaller;
+import jakarta.xml.bind.Unmarshaller;
+import org.w3c.dom.Document;
 import oshi.hardware.ComputerSystem;
+
+import java.io.*;
+import java.security.PrivateKey;
+import java.util.Map;
 
 public class LicenseUtil {
 	private static final Log log = Log.get();

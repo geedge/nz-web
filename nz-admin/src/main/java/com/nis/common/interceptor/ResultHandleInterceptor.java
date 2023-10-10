@@ -1,12 +1,12 @@
 package com.nis.common.interceptor;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.R;
+import com.nis.common.utils.ToolUtil;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -14,14 +14,12 @@ import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.serializer.SerializerFeature;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.R;
-import com.nis.common.utils.ToolUtil;
 
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @ControllerAdvice
 public class ResultHandleInterceptor implements ResponseBodyAdvice {

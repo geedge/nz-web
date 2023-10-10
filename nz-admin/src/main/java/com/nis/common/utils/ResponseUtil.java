@@ -4,9 +4,9 @@ import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.util.ReflectUtil;
 import com.j256.simplemagic.ContentInfo;
 import com.j256.simplemagic.ContentInfoUtil;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 

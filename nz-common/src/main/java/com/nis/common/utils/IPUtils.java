@@ -9,9 +9,10 @@
 package com.nis.common.utils;
 
 import cn.hutool.log.Log;
+import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang.StringUtils;
 
-import javax.servlet.http.HttpServletRequest;
+
 
 /**
  * IP地址

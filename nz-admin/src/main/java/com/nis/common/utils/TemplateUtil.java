@@ -11,7 +11,7 @@ public class TemplateUtil {
     public static Template stringToTemplate(String templateStr,String templateKey) throws IOException {
 
         // 创建配置类
-        Configuration configuration = new Configuration(Configuration.getVersion());
+        Configuration configuration = new Configuration(Configuration.DEFAULT_INCOMPATIBLE_IMPROVEMENTS);
         //创建模板加载器
         StringTemplateLoader templateLoader = new StringTemplateLoader();
         // 存入模板

@@ -20,7 +20,8 @@ import com.nis.common.utils.Tool;
 import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.service.PromApiService;
 import com.nis.modules.sys.service.SysConfigService;
-import com.sun.javafx.fxml.builder.URLBuilder;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
@@ -34,8 +35,6 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.xerial.snappy.Snappy;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;

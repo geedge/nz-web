@@ -17,8 +17,6 @@ import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.entity.MonitorEventLog;
 import com.nis.modules.agent.service.AgentService;
 import com.nis.modules.agent.util.AgentUtil;
-import com.nis.modules.alert.entity.AlertRuleEntity;
-import com.nis.modules.alert.entity.AlertSeverityConf;
 import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.alert.service.AlertSeverityService;
 import com.nis.modules.asset.entity.AssetAsset;

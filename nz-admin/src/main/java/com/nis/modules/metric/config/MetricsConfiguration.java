@@ -1,8 +1,8 @@
 package com.nis.modules.metric.config;
 
 import io.micrometer.core.instrument.Clock;
-import io.micrometer.prometheus.MultiTagPrometheusMeterRegistry;
 import io.micrometer.prometheus.PrometheusConfig;
+import io.micrometer.prometheus.PrometheusMeterRegistry;
 import io.prometheus.client.CollectorRegistry;
 import org.springframework.boot.actuate.autoconfigure.metrics.CompositeMeterRegistryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Configuration;
 public class MetricsConfiguration {
 
     @Bean
-    public MultiTagPrometheusMeterRegistry prometheusMeterRegistry(PrometheusConfig config, CollectorRegistry collectorRegistry, Clock clock) {
-        return new MultiTagPrometheusMeterRegistry(config, collectorRegistry, clock);
+    public PrometheusMeterRegistry prometheusMeterRegistry(PrometheusConfig config, CollectorRegistry collectorRegistry, Clock clock) {
+        return new PrometheusMeterRegistry(config, collectorRegistry, clock);
     }
 }

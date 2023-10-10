@@ -1,14 +1,13 @@
 package com.nis.modules.alert.entity.receive;
 
+import cn.hutool.crypto.SecureUtil;
+import com.nis.common.utils.Tool;
+import lombok.Data;
+
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import com.nis.common.utils.Tool;
-
-import cn.hutool.crypto.SecureUtil;
-import lombok.Data;
 
 /**
  * 用来接收告警信息的DTO类

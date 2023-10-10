@@ -81,7 +81,7 @@ public class IssueActivityServiceImpl extends ServiceImpl<IssueActivityDao, Issu
         ValidateUtils.is(ids).notNull(RCode.ISSUE_ACTIVITY_ID_ISNULL);
         List<Integer> idList = new ArrayList<>(Arrays.asList(ids));
         // 只允许删除自己的、comment 类型的动态
-        int notOwnCommentCount = this.count(new LambdaQueryWrapper<IssueActivity>().in(IssueActivity::getId, idList)
+        long notOwnCommentCount = this.count(new LambdaQueryWrapper<IssueActivity>().in(IssueActivity::getId, idList)
             .and(wrapper ->
                 wrapper.ne(IssueActivity::getCid, ShiroUtils.getUserId().intValue())
                 .or()

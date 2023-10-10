@@ -1,23 +1,29 @@
 package com.nis.common.config;
 
-import java.nio.charset.Charset;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
-import javax.servlet.Filter;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletResponse;
-
+import Aladdin.HaspStatus;
+import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.nis.common.interceptor.TokenCheckFilter;
+import com.nis.common.utils.*;
+import com.nis.modules.metric.dto.NezhaMetrics;
+import com.nis.modules.sys.dao.SysApiKeyDao;
+import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.service.LicenseService;
+import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.shiro.MySessionManager;
+import com.nis.modules.sys.shiro.ShiroUtils;
+import com.nis.modules.sys.shiro.UserRealm;
+import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.servlet.Filter;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.catalina.connector.Connector;
 import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.session.mgt.SessionManager;
 import org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor;
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.apache.shiro.web.filter.AccessControlFilter;
-import org.apache.shiro.web.filter.authc.AuthenticatingFilter;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
 import org.crazycake.shiro.IRedisManager;
 import org.crazycake.shiro.RedisCacheManager;
@@ -36,26 +42,10 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.nis.common.interceptor.TokenCheckFilter;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
-import com.nis.modules.metric.dto.NezhaMetrics;
-import com.nis.modules.sys.dao.SysApiKeyDao;
-import com.nis.modules.sys.dao.SysUserDao;
-import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.service.LicenseService;
-import com.nis.modules.sys.service.SysConfigService;
-import com.nis.modules.sys.shiro.MySessionManager;
-import com.nis.modules.sys.shiro.ShiroUtils;
-import com.nis.modules.sys.shiro.UserRealm;
-
-import Aladdin.HaspStatus;
-import cn.hutool.core.util.StrUtil;
-import io.micrometer.core.instrument.MeterRegistry;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Shiro的配置文件
@@ -82,6 +72,7 @@ public class ShiroConfig {
 
 	@Autowired
 	private MeterRegistry meterRegistry;
+
 	@Autowired
 	private LicenseService licenseService;
 	@Bean("shiroFilter")

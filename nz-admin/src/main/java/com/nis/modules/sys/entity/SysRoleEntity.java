@@ -21,7 +21,7 @@ public class SysRoleEntity implements Serializable {
 
     private String i18n;
 
-    @TableField(strategy = FieldStrategy.IGNORED)
+    @TableField(updateStrategy = FieldStrategy.IGNORED, insertStrategy = FieldStrategy.IGNORED)
     private String remark;
 
     private Integer buildIn;

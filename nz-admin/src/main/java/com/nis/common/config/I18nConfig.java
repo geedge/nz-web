@@ -1,14 +1,13 @@
 package com.nis.common.config;
 
-import java.text.MessageFormat;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
-import javax.annotation.PostConstruct;
-
+import cn.hutool.log.Log;
+import com.nis.common.smartvalidate.utils.CommonUtil;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.ToolUtil;
+import com.nis.modules.sys.entity.SysI18nEntity;
+import com.nis.modules.sys.service.SysDictService;
+import com.nis.modules.sys.service.SysI18nService;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ResourceLoaderAware;
 import org.springframework.context.support.AbstractMessageSource;
@@ -16,13 +15,11 @@ import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 
-import com.nis.common.smartvalidate.utils.CommonUtil;
-import com.nis.common.utils.Constant;
-import com.nis.modules.sys.entity.SysI18nEntity;
-import com.nis.modules.sys.service.SysDictService;
-import com.nis.modules.sys.service.SysI18nService;
-
-import cn.hutool.log.Log;
+import java.text.MessageFormat;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 @Service("messageSource")
 public class I18nConfig extends AbstractMessageSource implements ResourceLoaderAware {

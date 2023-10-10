@@ -21,19 +21,19 @@ server:
 #  port: 8088
 
 spring:
-  resources:
-    static-locations: ./public/
+  web:
+    resources:
+      static-locations: ./public/
   main:
     allow-bean-definition-overriding: true
+    allow-circular-references: true
   profiles:
     active: prod
   autoconfigure:
     exclude: # 排除自动装配，自己实现数据库，redis 装配
-      - com.alibaba.druid.spring.boot.autoconfigure.DruidDataSourceAutoConfigure
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
       - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
-      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
-      - com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: UTC

@@ -5,7 +5,6 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.map.MapUtil;
-import cn.hutool.core.thread.NamedThreadFactory;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.*;
 import cn.hutool.log.Log;
@@ -36,6 +35,8 @@ import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.setup.controller.TimezoneController;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
+import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.time.StopWatch;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -49,12 +50,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
-import javax.annotation.PostConstruct;
-import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.*;
@@ -75,18 +75,6 @@ public class VisualServiceImpl implements VisualService {
      */
     @Value("${dashboard.snapshot.timeout:300000}")
     private Integer timeout;
-
-    @Value("${snapshot.corePoolSize:5}")
-    private Integer snapshotCorePoolSize;
-
-    @Value("${snapshot.concurrency:10}")
-    private Integer snapshotConcurrency;
-
-    @Value("${snapshot.keepAliveTime:30}")
-    private Long snapshotKeepAliveTime;
-
-    @Value("${snapshot.capacity:10000}")
-    private Integer snapshotCapacity;
 
     @Autowired
     private SysConfigService sysConfigService;
@@ -117,38 +105,35 @@ public class VisualServiceImpl implements VisualService {
 
     private static volatile TimedCache<String, Object> SNAPSHOT_CACHE;
 
-    private ExecutorService snapshotThreadPool;
+    /**
+     * 存储 thread Executor ，用以中断线程
+     */
+    private static ConcurrentHashMap<String, ExecutorService> TASK_EXECUTOR_MAP = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void init() {
         // ChromeDriver
         // System.setProperty("webdriver.chrome.driver", "./lib/chromedriver.exe");
+        // System.setProperty("webdriver.http.factory", "jdk-http-client");
         System.setProperty("webdriver.chrome.driver", "./lib/chromedriver");
-        System.setProperty("webdriver.http.factory", "jdk-http-client");
 
         log.info("Setup dashboard snapshot cache begin...");
         // 创建缓存，默认 snapshotTimeout * 5
         SNAPSHOT_CACHE = Tool.CacheUtil.newTimedCache(timeout * 5);
-
-        // snapshot 执行线程池，避免大量请求访问 prometheus 服务
-        snapshotThreadPool = new ThreadPoolExecutor(
-                snapshotCorePoolSize,
-                snapshotConcurrency,
-                snapshotKeepAliveTime,
-                TimeUnit.SECONDS,
-                new ArrayBlockingQueue<Runnable>(snapshotCapacity),
-                new NamedThreadFactory("SNAPSHOT-", true));
-
-                /*new ThreadPoolExecutor(
-                10,
-                Integer.MAX_VALUE,
-                0L,
-                TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>(),
-                new ThreadFactoryBuilder().setNamePrefix("dashboard-snapshot-pool-").build());*/
         log.info("Setup dashboard snapshot cache finished");
     }
 
+    private synchronized ExecutorService getSnapshotThreadPoolByTid(String tid) {
+        ExecutorService executorService = TASK_EXECUTOR_MAP.get(tid);
+        if (executorService == null) {
+            executorService = Executors.newThreadPerTaskExecutor(
+                    Thread.ofVirtual().name(tid + "-", 0).factory()
+            );
+            // add
+            TASK_EXECUTOR_MAP.put(tid, executorService);
+        }
+        return executorService;
+    }
 
     @Override
     public void exploreSnapshot(HttpServletResponse response, String format, Integer type, Long start, Long end, String language, Integer unit, String limit, String direction, String[] expressions) throws IOException {
@@ -313,18 +298,14 @@ public class VisualServiceImpl implements VisualService {
             basicQueryParam.put("step", StrUtil.toString(step));
 
             // run Snapshot Runnable
-            ThreadGroup threadGroup = new ThreadGroup(taskId);
-            SNAPSHOT_CACHE.put(StrUtil.concat(true, DashboardConstant.DASHBOARD_SNAPSHOT_TYPE, "_snapshot_threadGroup_", taskId), threadGroup);
-
             ReentrantReadWriteLock readWriteLock = Tool.LockUtil.createReadWriteLock(false);
             ReentrantReadWriteLock.WriteLock lock = readWriteLock.writeLock();
 
+            ExecutorService taskExecutor = getSnapshotThreadPoolByTid(taskId);
             allChartList.stream().forEach(chart -> {
-                SnapshotRunnable snapshotRunnable = new SnapshotRunnable(threadGroup, lock, DashboardConstant.DASHBOARD_SNAPSHOT_TYPE, chart, basicQueryParam);
-
-                // add thredGroup & submit
-                ReflectUtil.invoke(threadGroup, "add", snapshotRunnable);
-                snapshotThreadPool.submit(snapshotRunnable);
+                SnapshotRunnable snapshotRunnable = new SnapshotRunnable(taskId, lock, DashboardConstant.DASHBOARD_SNAPSHOT_TYPE, chart, basicQueryParam);
+                // submit
+                taskExecutor.submit(snapshotRunnable);
             });
         });
         log.info("dashboard snapshot task create finished. taskId: {}", taskId);
@@ -522,18 +503,14 @@ public class VisualServiceImpl implements VisualService {
             basicQueryParam.put("end", StrUtil.toString(end));
             basicQueryParam.put("step", StrUtil.toString(step));
 
-            // run Snapshot Runnable
-            ThreadGroup threadGroup = new ThreadGroup(taskId);
-            SNAPSHOT_CACHE.put(StrUtil.concat(true, DashboardConstant.NOTEBOOK_SNAPSHOT_TYPE, "_snapshot_threadGroup_", taskId), threadGroup);
-
             ReentrantReadWriteLock readWriteLock = Tool.LockUtil.createReadWriteLock(false);
             ReentrantReadWriteLock.WriteLock lock = readWriteLock.writeLock();
 
+            ExecutorService taskExecutor = getSnapshotThreadPoolByTid(taskId);
             allChartList.stream().forEach(chart -> {
-                SnapshotRunnable snapshotRunnable = new SnapshotRunnable(threadGroup, lock, DashboardConstant.NOTEBOOK_SNAPSHOT_TYPE, chart, basicQueryParam);
-
-                ReflectUtil.invoke(threadGroup, "add", snapshotRunnable);
-                snapshotThreadPool.submit(snapshotRunnable);
+                SnapshotRunnable snapshotRunnable = new SnapshotRunnable(taskId, lock, DashboardConstant.NOTEBOOK_SNAPSHOT_TYPE, chart, basicQueryParam);
+                // submit
+                taskExecutor.submit(snapshotRunnable);
             });
         });
         log.info("[createNotebookSnapshotTask] [task create finished] [taskId: {}]", taskId);
@@ -560,24 +537,22 @@ public class VisualServiceImpl implements VisualService {
     @Override
     public void cancelSnapshotTask(String type, String taskId) {
         log.info("[cancelSnapshotTask] [snapshot cancel] [type: {}] [taskId: {}]", type, taskId);
-        String snapshotThreadGroupKey = StrUtil.concat(true, type, "_snapshot_threadGroup_", taskId);
-        Object obj = SNAPSHOT_CACHE.get(snapshotThreadGroupKey);
-
-        if (obj == null) {
+        ExecutorService taskExecutor = TASK_EXECUTOR_MAP.get(taskId);
+        if (taskExecutor == null) {
             log.warn("[cancelSnapshotTask] [snapshot task cancel error, the task does not exist or has expired] [type: {}] [taskId: {}]", type, taskId);
             throw new NZException(RCode.DASHBOARD_SNAPSHOT_TASK_NOT_EXIST);
         } else {
             try {
-                ThreadGroup threadGroup = (ThreadGroup) obj;
-                log.info("[cancelSnapshotTask] [snapshot task cancel] [type: {}] [taskId: {}] [canceled task thread num: {}]", type, taskId, threadGroup.activeCount());
-                // thread interrupt
-                threadGroup.interrupt();
+                // shutdownNow
+                taskExecutor.shutdownNow();
+                // remove
+                TASK_EXECUTOR_MAP.remove(taskId);
 
+                log.info("[cancelSnapshotTask] [snapshot task cancel] [type: {}] [taskId: {}]", type, taskId);
                 // remove cache data
                 String snapshotStatKey = StrUtil.concat(true, type, "_snapshot_stat_", taskId);
                 String snapshotResultKey = StrUtil.concat(true, type, "_snapshot_result_", taskId);
 
-                SNAPSHOT_CACHE.remove(snapshotThreadGroupKey);
                 SNAPSHOT_CACHE.remove(snapshotStatKey);
                 SNAPSHOT_CACHE.remove(snapshotResultKey);
                 log.info("[cancelSnapshotTask] [snapshot task is canceled,the cache data is cleared] [type: {}] [taskId: {}]", type, taskId);
@@ -658,16 +633,14 @@ public class VisualServiceImpl implements VisualService {
             log.error(e, "[downloadSnapshotFile] [error] [type: {}] [taskId: {}]", type, taskId);
             throw new NZException(RCode.DASHBOARD_SNAPSHOT_ERROR);
         } finally {
-            String snapshotThreadGroupKey = StrUtil.concat(true, type, "_snapshot_threadGroup_", taskId);
-
-            Object tg = SNAPSHOT_CACHE.get(snapshotThreadGroupKey);
-            ThreadGroup threadGroup = (ThreadGroup) tg;
-            log.info("[downloadSnapshotFile] [snapshot task cancel] [type: {}] [taskId: {}] [canceled task thread num: {}]", type, taskId, threadGroup.activeCount());
-            // thread interrupt
-            threadGroup.interrupt();
+            ExecutorService taskExecutor = TASK_EXECUTOR_MAP.get(taskId);
+            log.info("[downloadSnapshotFile] [snapshot task cancel] [type: {}] [taskId: {}]", type, taskId);
+            if (taskExecutor != null && !taskExecutor.isShutdown()) {
+                taskExecutor.shutdownNow();
+            }
 
             // remove cache data
-            SNAPSHOT_CACHE.remove(snapshotThreadGroupKey);
+            TASK_EXECUTOR_MAP.remove(taskId);
             SNAPSHOT_CACHE.remove(snapshotStatKey);
             SNAPSHOT_CACHE.remove(snapshotResultKey);
         }
@@ -704,7 +677,7 @@ public class VisualServiceImpl implements VisualService {
             driver.resetInputState();
             driver.get("file://" + tempFile.getAbsolutePath());
 
-            WebDriverWait wait = new WebDriverWait(driver, 60 * 5);
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(60 * 5));
             wait.until(webDriver -> {
                 Boolean isLoaded = (Boolean) ((JavascriptExecutor) webDriver).executeScript("return window.dataJson.AllChartDataLoad == true");
                 return Tool.ObjectUtil.defaultIfNull(isLoaded, false);
@@ -762,7 +735,7 @@ public class VisualServiceImpl implements VisualService {
             driver.resetInputState();
             driver.get("file://" + tempFile.getAbsolutePath());
 
-            WebDriverWait wait = new WebDriverWait(driver, 60 * 5);
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(60 * 5));
             wait.until(webDriver -> {
                 Boolean isLoaded = (Boolean) ((JavascriptExecutor) webDriver).executeScript("return window.dataJson.AllChartDataLoad == true");
                 return Tool.ObjectUtil.defaultIfNull(isLoaded, false);
@@ -1024,19 +997,15 @@ public class VisualServiceImpl implements VisualService {
     private class SnapshotRunnable extends Thread {
 
         private VisualChart chart;
-        private ThreadGroup threadGroup;
         private Map<String, String> basicQueryParam;
+        private String tid;
         private Lock lock;
 
         // dashboard or notebook
         private String type;
-        private boolean isInterrupted = false;
 
-        public SnapshotRunnable(ThreadGroup threadGroup, Lock lock, String type, VisualChart chart, Map<String, String> basicQueryParam) {
-            // group & name
-            super(threadGroup, String.format("Snapshot-%s-%s", threadGroup.getName(), chart.getId()));
-
-            this.threadGroup = threadGroup;
+        public SnapshotRunnable(String tid, Lock lock, String type, VisualChart chart, Map<String, String> basicQueryParam) {
+            this.tid = tid;
             this.lock = lock;
             this.type = type;
             this.chart = chart;
@@ -1050,26 +1019,13 @@ public class VisualServiceImpl implements VisualService {
             lock.lock();
             try {
                 // update snapshot resule & process
-                if (!this.isInterrupted())
+                if (!Thread.currentThread().isInterrupted())
                     this.updateSnapshotResultAndProcess(type, resultData);
             } catch (Exception e) {
                 log.error(e);
             } finally {
                 lock.unlock();
-                ReflectUtil.invoke(threadGroup, "remove", this);
             }
-        }
-
-        @Override
-        public void interrupt() {
-            super.interrupt();
-            isInterrupted = true;
-            log.warn("snapshot thread is interrupted. type: {}, name: {}", this.type, this.getName());
-        }
-
-        @Override
-        public boolean isInterrupted() {
-            return isInterrupted;
         }
 
         /**
@@ -1154,7 +1110,7 @@ public class VisualServiceImpl implements VisualService {
                     }
                 }
             } catch (Exception e) {
-                log.error(e, "snapshot data get failed. type: {}, taskId: {}, chartInfo: {}", type, threadGroup.getName(), JSONUtil.toJsonStr(chart));
+                log.error(e, "snapshot data get failed. type: {}, taskId: {}, chartInfo: {}", type, tid, JSONUtil.toJsonStr(chart));
             }
             return resultData;
         }
@@ -1167,11 +1123,8 @@ public class VisualServiceImpl implements VisualService {
          */
         private void updateSnapshotResultAndProcess(String type, Object resultData) {
             try {
-                // task id
-                String taskId = threadGroup.getName();
-
                 // snapshot result cache
-                String snapshotResultKey = StrUtil.concat(true, type, "_snapshot_result_", taskId);
+                String snapshotResultKey = StrUtil.concat(true, type, "_snapshot_result_", tid);
                 List<Object> snapshotResultList = (List<Object>) SNAPSHOT_CACHE.get(snapshotResultKey);
                 snapshotResultList = Tool.CollUtil.defaultIfEmpty(snapshotResultList, Tool.ListUtil.list(true));
 
@@ -1179,7 +1132,7 @@ public class VisualServiceImpl implements VisualService {
                 SNAPSHOT_CACHE.put(snapshotResultKey, snapshotResultList);
 
                 // snapshot task process
-                String snapshotStatKey = StrUtil.concat(true, type, "_snapshot_stat_", taskId);
+                String snapshotStatKey = StrUtil.concat(true, type, "_snapshot_stat_", tid);
                 Map snapshotStatMap = (Map) SNAPSHOT_CACHE.get(snapshotStatKey);
                 Integer total = (Integer) snapshotStatMap.get("total");
                 Integer done = (Integer) snapshotStatMap.get("done");
@@ -1192,9 +1145,9 @@ public class VisualServiceImpl implements VisualService {
                 snapshotStatMap.put("total", total);
                 SNAPSHOT_CACHE.put(snapshotStatKey, snapshotStatMap);
 
-                log.info("snapshot result updated, type: {}, taskId: {}, total: {}, done: {}, process: {}", type, taskId, total, done, percent);
+                log.info("snapshot result updated, type: {}, taskId: {}, total: {}, done: {}, process: {}", type, tid, total, done, percent);
             } catch (Exception e) {
-                log.error(e, "snapshot result error. type: {}, taskId: {}", type, threadGroup.getName());
+                log.error(e, "snapshot result error. type: {}, taskId: {}", type, tid);
             }
         }
     }

@@ -12,6 +12,7 @@ import com.nis.common.utils.ToolUtil;
 import com.nis.modules.project.dao.TopoIconDao;
 import com.nis.modules.project.entity.TopoIcon;
 import com.nis.modules.project.service.TopoIconService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.TransientDataAccessResourceException;
@@ -20,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
-import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
 import java.io.BufferedOutputStream;
 import java.io.IOException;

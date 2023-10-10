@@ -9,12 +9,12 @@
 package com.nis.common.config;
 
 import com.nis.common.xss.XssFilter;
+import jakarta.servlet.DispatcherType;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.filter.DelegatingFilterProxy;
 
-import javax.servlet.DispatcherType;
 
 /**
  * Filter配置

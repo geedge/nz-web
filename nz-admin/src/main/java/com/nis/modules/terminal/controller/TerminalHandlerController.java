@@ -13,13 +13,13 @@ import com.nis.modules.terminal.service.TerminalCmdService;
 import com.nis.modules.terminal.service.TerminalRecordService;
 import com.nis.modules.terminal.service.TerminalSessionService;
 import com.nis.modules.terminal.service.TerminalSftpLogService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;

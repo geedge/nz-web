@@ -1,19 +1,14 @@
 package com.nis.common.config;
 
-import java.net.UnknownHostException;
-import java.time.Duration;
-import java.util.List;
-
+import cn.hutool.log.Log;
+import com.nis.common.utils.Tool;
+import lombok.Data;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.dao.DataAccessException;
-import org.springframework.data.redis.connection.RedisConnection;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.connection.RedisNode;
-import org.springframework.data.redis.connection.RedisSentinelConfiguration;
-import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.*;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettucePoolingClientConfiguration;
 import org.springframework.data.redis.core.RedisCallback;
@@ -21,10 +16,9 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
-import com.nis.common.utils.Tool;
-
-import cn.hutool.log.Log;
-import lombok.Data;
+import java.net.UnknownHostException;
+import java.time.Duration;
+import java.util.List;
 
 /**
  * redis 初始化配置

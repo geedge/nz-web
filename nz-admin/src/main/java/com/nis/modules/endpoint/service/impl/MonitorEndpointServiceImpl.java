@@ -52,6 +52,8 @@ import com.nis.modules.sys.entity.SnmpCredential;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.*;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.shiro.ShiroException;
@@ -66,8 +68,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -247,8 +247,8 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     @Override
 	public Map<String, List> queryEndpointGroupBy(Map<String, Object> params) {
     	Map<String,List> result = new HashMap<String, List>();
-    	QueryWrapper wrapper = new QueryWrapper().select("id","name");
-		wrapper.orderByAsc("name");
+        QueryWrapper wrapper = (QueryWrapper) new QueryWrapper().select("id", "name");
+        wrapper.orderByAsc("name");
     	//project
     	List<Map<String, Object>> projectList = monitorProjectService.listMaps(wrapper);
     	List<Map<String,Object>> projectGroupList = this.baseMapper.queryEndpointGroupBy("p.id", params);
@@ -1486,7 +1486,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         }
 
         // 校验名称是否重复
-        int countByName = this.count(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getName, endpoint.getName()).eq(MonitorEndpoint::getModuleId, endpoint.getModuleId()));
+        long countByName = this.count(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getName, endpoint.getName()).eq(MonitorEndpoint::getModuleId, endpoint.getModuleId()));
         if (countByName > 0) {
             throw new NZException(RCode.ENDPOINT_NAME_DUPLICATE);
         }

@@ -9,12 +9,12 @@ import com.nis.modules.dashboard.entity.VisualNotebook;
 import com.nis.modules.dashboard.service.VisualNotebookService;
 import com.nis.modules.dashboard.service.VisualService;
 import com.nis.modules.dashboard.utils.DashboardConstant;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletResponse;
 import java.util.Map;
 
 /**

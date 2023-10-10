@@ -27,13 +27,13 @@ import com.nis.modules.asset.service.SoftwareAssetService;
 import com.nis.modules.asset.service.SoftwareTypeService;
 import com.nis.modules.sys.service.LicenseManagementService;
 import com.nis.modules.sys.utils.AdminStatusEnum;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Comparator;

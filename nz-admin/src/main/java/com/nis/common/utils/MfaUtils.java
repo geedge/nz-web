@@ -1,15 +1,14 @@
 package com.nis.common.utils;
 
+import de.taimos.totp.TOTP;
+import org.apache.commons.codec.binary.Base32;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
-import org.apache.commons.codec.binary.Base32;
-
-import de.taimos.totp.TOTP;
 
 
 

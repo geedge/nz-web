@@ -10,10 +10,11 @@ package com.nis.common.validator;
 
 
 import com.nis.common.exception.NZException;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
+
 import java.util.Set;
 
 /**

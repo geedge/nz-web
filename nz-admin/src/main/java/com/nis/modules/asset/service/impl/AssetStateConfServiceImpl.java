@@ -37,8 +37,8 @@ public class AssetStateConfServiceImpl extends ServiceImpl<AssetStateConfDao, As
     public AssetStateConf queryConfInfo(Integer id) {
         AssetStateConf conf = this.getById(id);
         if (ToolUtil.isNotEmpty(conf)) {
-            int assetCount = assetService.count(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getStateId, conf.getId()));
-            conf.setAssetStat(assetCount);
+            long assetCount = assetService.count(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getStateId, conf.getId()));
+            conf.setAssetStat(Long.valueOf(assetCount).intValue());
         } else {
             throw new NZException(RCode.STATECONF_NOT_FOUND);
         }

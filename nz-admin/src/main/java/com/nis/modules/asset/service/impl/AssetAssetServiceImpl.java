@@ -52,6 +52,7 @@ import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.modules.vsys.entity.VsysAssetRel;
 import com.nis.modules.vsys.service.VsysAssetRelService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.shiro.ShiroException;
@@ -65,7 +66,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
@@ -234,8 +234,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             asset.setCabinetEnd(asset.getCabinetEnd() - 1);
         }
 
-        int endpointCount = monitorEndpointService.count(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getAssetId, asset.getId()));
-        asset.setEndpointNum(endpointCount);
+        long endpointCount = monitorEndpointService.count(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getAssetId, asset.getId()));
+        asset.setEndpointNum(Long.valueOf(endpointCount).intValue());
 
         List<AlertMessageEntity> alertMessageList = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getAssetId, asset.getId()));
         asset.setAlertNum(alertMessageList.size());
@@ -383,7 +383,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     @Override
     public Map<String, List> queryAssetGroupBy(Map<String, Object> params) {
         Map<String, List> result = new HashMap<String, List>();
-        QueryWrapper wrapper = new QueryWrapper().select("id", "name");
+        QueryWrapper wrapper = (QueryWrapper) new QueryWrapper().select("id", "name");
         wrapper.orderByAsc("name");
         //dc
         List<Map<String, Object>> dcList = dcService.listMaps(wrapper);
@@ -401,7 +401,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         brandList.forEach(brand -> {
             brandMap.put(brand.getId().toString(), brand);
         });
-        QueryWrapper modelWrapper = new QueryWrapper().select("id", "name", "brand_id");
+        QueryWrapper modelWrapper = (QueryWrapper) new QueryWrapper().select("id", "name", "brand_id");
         modelWrapper.orderByAsc("name");
         List<Map<String, Object>> modelList = modelService.listMaps(modelWrapper);
         modelList.forEach(model -> {

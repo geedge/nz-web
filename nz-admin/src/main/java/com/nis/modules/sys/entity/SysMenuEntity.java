@@ -24,7 +24,7 @@ public class SysMenuEntity implements Serializable {
 
     private String i18n;
 
-    @TableField(strategy = FieldStrategy.IGNORED)
+    @TableField(updateStrategy = FieldStrategy.IGNORED, insertStrategy = FieldStrategy.IGNORED)
     private Integer parentId;
 
     // 后端使用 shiro 权限管理 多个用逗号分隔

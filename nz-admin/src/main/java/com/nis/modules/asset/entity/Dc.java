@@ -67,13 +67,13 @@ public class Dc implements Serializable {
     /**
      * 经度
      */
-    @TableField(strategy = FieldStrategy.IGNORED)
+    @TableField(updateStrategy = FieldStrategy.IGNORED, insertStrategy = FieldStrategy.IGNORED)
     private Double longitude;
 
     /**
      * 纬度
      */
-    @TableField(strategy = FieldStrategy.IGNORED)
+    @TableField(updateStrategy = FieldStrategy.IGNORED, insertStrategy = FieldStrategy.IGNORED)
     private Double latitude;
 
     /**

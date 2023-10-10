@@ -353,7 +353,7 @@ public class Tool {
 	}
 
 	/**
-	 * 邮件工具类，基于javax.mail封装
+	 * 邮件工具类，基于jakarta.mail封装
 	 *
 	 * @author looly
 	 * @since 3.1.2
@@ -864,7 +864,7 @@ public class Tool {
 	 * 在实际使用中，用户需引入validation-api的实现，如：hibernate-validator
 	 * </p>
 	 * <p>
-	 * 注意：hibernate-validator还依赖了javax.el，需自行引入。
+	 * 注意：hibernate-validator还依赖了jakarta.el，需自行引入。
 	 * </p>
 	 *
 	 * @author chengqiang

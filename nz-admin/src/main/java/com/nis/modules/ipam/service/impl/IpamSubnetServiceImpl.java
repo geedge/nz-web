@@ -33,13 +33,13 @@ import inet.ipaddr.AddressStringException;
 import inet.ipaddr.IPAddress;
 import inet.ipaddr.IPAddressString;
 import inet.ipaddr.IncompatibleAddressException;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -80,8 +80,8 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 		Dc dc = dcService.getById(ipamSubnet.getDcId());
 		ipamSubnet.setDc(dc);
 		//查询使用数量
-		Integer used = ipamIpDao.selectCount(new LambdaQueryWrapper<IpamIp>().eq(IpamIp::getSubnetId, ipamSubnet.getId()));
-		ipamSubnet.setUsed(used);
+		long used = ipamIpDao.selectCount(new LambdaQueryWrapper<IpamIp>().eq(IpamIp::getSubnetId, ipamSubnet.getId()));
+		ipamSubnet.setUsed(Long.valueOf(used).intValue());
 		// 收藏标识 0：未收藏 1：已收藏
 		List<SysUserStarredEntity> tUserStatList = starredService.list(new LambdaQueryWrapper<SysUserStarredEntity>()
 				.select(SysUserStarredEntity::getId)

@@ -1,5 +1,6 @@
 package com.nis.modules.asset.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
@@ -10,7 +11,6 @@ import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
-import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.asset.dao.AssetFieldMetaDao;
 import com.nis.modules.asset.dao.AssetFieldValueDao;
 import com.nis.modules.asset.entity.AssetFieldMeta;
@@ -115,7 +115,7 @@ public class AssetFieldMetaServiceImpl extends ServiceImpl<AssetFieldMetaDao,Ass
 		List<AssetFieldMeta> metaList = assetFieldMetaDao.selectMateInfoListByAssetId(assetId);
 		List<Integer> metaIds = metaList.stream().map(meta -> meta.getId()).collect(Collectors.toList());
 		List<AssetFieldValue> assetFieldValues = assetFieldValueDao.selectList(new LambdaQueryWrapper<AssetFieldValue>()
-				.in(AssetFieldValue::getMetaId, metaIds)
+				.in(CollUtil.isNotEmpty(metaIds), AssetFieldValue::getMetaId, metaIds)
 				.eq(ObjectUtil.isNotEmpty(assetId), AssetFieldValue::getAssetId,assetId));
 
 		Map<Integer, List<AssetFieldValue>> assetFieldValueByMetaId = assetFieldValues.stream().collect(Collectors.groupingBy(AssetFieldValue::getMetaId));

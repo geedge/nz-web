@@ -1,28 +1,25 @@
 package com.nis.modules.sys.shiro;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
+import cn.hutool.log.Log;
+import com.nis.common.utils.SpringContextUtils;
+import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
+import com.nis.modules.sys.entity.SysUserEntity;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.crypto.hash.SimpleHash;
 import org.apache.shiro.session.Session;
 import org.apache.shiro.session.UnknownSessionException;
 import org.apache.shiro.session.mgt.DefaultSessionKey;
-import org.apache.shiro.session.mgt.SimpleSession;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.subject.SimplePrincipalCollection;
 import org.apache.shiro.subject.Subject;
 import org.apache.shiro.subject.support.DefaultSubjectContext;
 import org.crazycake.shiro.RedisSessionDAO;
-
-import com.nis.common.utils.SpringContextUtils;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
-import com.nis.modules.sys.entity.SysUserEntity;
-
-import cn.hutool.log.Log;
 import org.springframework.data.redis.core.RedisTemplate;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Shiro工具类

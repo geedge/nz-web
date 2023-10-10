@@ -19,9 +19,7 @@ import com.nis.common.utils.*;
 import com.nis.modules.agent.dao.AgentDao;
 import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.alert.entity.AlertMessageEntity;
-import com.nis.modules.alert.entity.AlertSeverityConf;
 import com.nis.modules.alert.service.AlertMessageService;
-import com.nis.modules.alert.service.AlertSeverityService;
 import com.nis.modules.asset.dao.CabinetDao;
 import com.nis.modules.asset.dao.DcDao;
 import com.nis.modules.asset.entity.AssetAsset;
@@ -39,7 +37,6 @@ import com.nis.modules.ipam.service.IpamIpService;
 import com.nis.modules.ipam.service.IpamSubnetService;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.project.entity.MonitorProject;
-import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
@@ -47,6 +44,7 @@ import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,7 +52,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -124,16 +121,16 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
             dc.setAdminUser(principal);
         }
 
-        Integer cabinetNum = cabinetDao.selectCount(new LambdaQueryWrapper<Cabinet>().eq(Cabinet::getDcId, dc.getId()));
-        dc.setCabinetNum(cabinetNum);
+        long cabinetNum = cabinetDao.selectCount(new LambdaQueryWrapper<Cabinet>().eq(Cabinet::getDcId, dc.getId()));
+        dc.setCabinetNum(Long.valueOf(cabinetNum).intValue());
 
         List<AlertMessageEntity> alertMessageList = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getDcId, dc.getId()));
         dc.setAlertNum(alertMessageList.size());
         List<Map<String, Object>> alert = alertMessageService.getAlertsStatBySeverity("datacenter",id);
         dc.setAlert(alert);
 
-        Integer assetNum = assetService.count(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getDcId, dc.getId()));
-        dc.setAssetNum(assetNum);
+        long assetNum = assetService.count(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getDcId, dc.getId()));
+        dc.setAssetNum(Long.valueOf(assetNum).intValue());
 
         // 收藏标识 0：未收藏 1：已收藏
         List<SysUserStarredEntity> tUserStatList = starredService.list(new LambdaQueryWrapper<SysUserStarredEntity>()

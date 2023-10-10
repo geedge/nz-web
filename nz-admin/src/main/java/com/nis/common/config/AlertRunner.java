@@ -1,18 +1,16 @@
 package com.nis.common.config;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
+import cn.hutool.log.Log;
+import com.nis.modules.alert.backend.AlertHanlderThread;
+import com.nis.modules.alert.backend.AlertMessageNotifyThread;
+import com.nis.modules.alert.backend.RecordDataConsumer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
-import com.nis.modules.alert.backend.AlertHanlderThread;
-import com.nis.modules.alert.backend.AlertMessageNotifyThread;
-import com.nis.modules.alert.backend.RecordDataConsumer;
-
-import cn.hutool.log.Log;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * 随 项目启动同时启动 1、告警消息处理线程 2、告警通知线程

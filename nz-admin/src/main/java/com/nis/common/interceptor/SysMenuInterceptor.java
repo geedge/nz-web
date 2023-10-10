@@ -6,14 +6,13 @@ import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.http.HttpStatus;
 import org.springframework.http.HttpMethod;
-import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
+import org.springframework.web.servlet.HandlerInterceptor;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-public class SysMenuInterceptor extends HandlerInterceptorAdapter {
+public class SysMenuInterceptor implements HandlerInterceptor {
 
     private SysConfigService sysConfigService;
 

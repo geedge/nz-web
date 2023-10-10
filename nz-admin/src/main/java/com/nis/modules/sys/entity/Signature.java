@@ -1,9 +1,9 @@
 package com.nis.modules.sys.entity;
 
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlTransient;
 import lombok.Data;
 
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlTransient;
 import java.io.Serializable;
 
 @Data

@@ -103,7 +103,7 @@ public class MonitorModule implements Serializable {
     /**
      * template id
      */
-    @TableField(strategy = FieldStrategy.IGNORED)
+    @TableField(updateStrategy = FieldStrategy.IGNORED, insertStrategy = FieldStrategy.IGNORED)
     private Integer dashboardId;
 
     @TableField(exist = false)

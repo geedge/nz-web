@@ -5,13 +5,13 @@ import cn.hutool.log.Log;
 import com.nis.common.exception.NZException;
 import com.nis.modules.sys.service.SysConfigService;
 import com.sun.mail.util.MailConnectException;
+import jakarta.activation.DataHandler;
+import jakarta.activation.FileDataSource;
+import jakarta.mail.*;
+import jakarta.mail.internet.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.activation.DataHandler;
-import javax.activation.FileDataSource;
-import javax.mail.*;
-import javax.mail.internet.*;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Properties;

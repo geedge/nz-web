@@ -47,6 +47,7 @@ import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.*;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.poi.util.TempFile;
 import org.quartz.SchedulerException;
@@ -60,7 +61,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -210,8 +210,8 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 						);
 						childrenDashboard.setStarred(CollUtil.isEmpty(tUserStatList) ? 0 : 1);
 						// chartNum
-						int chartNum = visualChartService.count(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getDashboardId, childrenDashboard.getId()));
-						childrenDashboard.setChartNum(chartNum);
+						long chartNum = visualChartService.count(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getDashboardId, childrenDashboard.getId()));
+						childrenDashboard.setChartNum(Long.valueOf(chartNum).intValue());
 					}
 					visualDashboard.setChildren(childrenList);
 				}

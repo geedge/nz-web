@@ -8,8 +8,13 @@
 
 package com.nis.common.exception;
 
+import cn.hutool.log.Log;
+import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
-
+import com.nis.common.utils.ToolUtil;
+import com.nis.modules.sys.service.SysI18nService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.apache.catalina.connector.ClientAbortException;
 import org.apache.shiro.authz.AuthorizationException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,15 +23,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.ToolUtil;
-import com.nis.modules.sys.service.SysI18nService;
-
-import cn.hutool.log.Log;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * 异常处理器

@@ -8,11 +8,11 @@ import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.TypeEnum;
 import com.nis.modules.sys.service.LicenseManagementService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 
 @RestController

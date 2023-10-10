@@ -6,6 +6,7 @@ import com.nis.common.utils.Constant;
 import com.nis.common.utils.RedisLock;
 import com.nis.common.utils.Tool;
 import com.nis.modules.sys.service.SysBackupService;
+import jakarta.annotation.PostConstruct;
 import org.apache.commons.lang3.time.StopWatch;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.callback.Callback;
@@ -18,7 +19,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.data.redis.core.RedisTemplate;
 
-import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;

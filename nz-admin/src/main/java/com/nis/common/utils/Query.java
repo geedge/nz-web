@@ -1,7 +1,9 @@
 package com.nis.common.utils;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nis.common.exception.NZException;
 import com.nis.common.xss.SQLFilter;
@@ -78,18 +80,20 @@ public class Query {
             if (orderField.startsWith("-")) {
                 orderField = orderField.substring(1, orderField.length());
                 orderField = columnAliasMap.get(orderField) != null ? columnAliasMap.get(orderField) : orderField;
-                return page.setDesc(orderField);
+                return page.addOrder(OrderItem.desc(orderField));
             } else {
                 orderField = columnAliasMap.get(orderField) != null ? columnAliasMap.get(orderField) : orderField;
-                return page.setAsc(orderField);
+                return page.addOrder(OrderItem.asc(orderField));
             }
         }
 
         // 默认排序
-        if(isAsc) {
-            page.setAsc(defaultOrderField);
-        }else {
-            page.setDesc(defaultOrderField);
+        if (StrUtil.isNotEmpty(defaultOrderField)) {
+            if (isAsc) {
+                return page.addOrder(OrderItem.asc(defaultOrderField));
+            } else {
+                return page.addOrder(OrderItem.desc(defaultOrderField));
+            }
         }
 
         return page;

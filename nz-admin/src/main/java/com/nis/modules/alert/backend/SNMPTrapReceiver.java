@@ -1,41 +1,22 @@
 package com.nis.modules.alert.backend;
 
-import java.io.IOException;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Vector;
-
-import org.snmp4j.CommandResponder;
-import org.snmp4j.CommandResponderEvent;
-import org.snmp4j.MessageDispatcherImpl;
-import org.snmp4j.PDU;
-import org.snmp4j.PDUv1;
-import org.snmp4j.Snmp;
-import org.snmp4j.TransportMapping;
+import cn.hutool.log.Log;
+import com.nis.common.utils.JSONUtil;
+import com.nis.common.utils.Tool;
+import com.nis.modules.alert.entity.AlertRuleEntity;
+import com.nis.modules.alert.entity.AlertRuleEntity.ConditionItem;
+import com.nis.modules.alert.entity.Snmptrap;
+import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
+import com.nis.modules.alert.service.AlertMessageService;
+import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.asset.service.AssetAssetService;
+import com.nis.modules.sys.service.SysConfigService;
+import org.snmp4j.*;
 import org.snmp4j.mp.MPv1;
 import org.snmp4j.mp.MPv2c;
 import org.snmp4j.mp.MPv3;
-import org.snmp4j.security.AuthMD5;
-import org.snmp4j.security.Priv3DES;
-import org.snmp4j.security.PrivAES128;
-import org.snmp4j.security.PrivAES192;
-import org.snmp4j.security.PrivAES256;
-import org.snmp4j.security.SecurityModel;
-import org.snmp4j.security.SecurityModels;
-import org.snmp4j.security.SecurityProtocols;
-import org.snmp4j.security.USM;
-import org.snmp4j.security.UsmUser;
-import org.snmp4j.smi.Address;
-import org.snmp4j.smi.GenericAddress;
-import org.snmp4j.smi.IpAddress;
-import org.snmp4j.smi.OctetString;
-import org.snmp4j.smi.TcpAddress;
-import org.snmp4j.smi.TimeTicks;
-import org.snmp4j.smi.UdpAddress;
-import org.snmp4j.smi.VariableBinding;
+import org.snmp4j.security.*;
+import org.snmp4j.smi.*;
 import org.snmp4j.transport.DefaultTcpTransportMapping;
 import org.snmp4j.transport.DefaultUdpTransportMapping;
 import org.snmp4j.util.MultiThreadedMessageDispatcher;
@@ -46,17 +27,9 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
-import com.nis.common.utils.Tool;
-import com.nis.modules.alert.entity.AlertRuleEntity;
-import com.nis.modules.alert.entity.AlertRuleEntity.ConditionItem;
-import com.nis.modules.alert.entity.Snmptrap;
-import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
-import com.nis.modules.alert.service.AlertMessageService;
-import com.nis.modules.asset.entity.AssetAsset;
-import com.nis.modules.asset.service.AssetAssetService;
-import com.nis.modules.sys.service.SysConfigService;
-
-import cn.hutool.log.Log;
+import java.io.IOException;
+import java.net.UnknownHostException;
+import java.util.*;
 
 /**
  * @author
@@ -234,7 +207,9 @@ public class SNMPTrapReceiver implements CommandResponder, ApplicationRunner {
 				entity.delVariable(SYSUPTIME_OID);
 				entity.delVariable(SNMPTRAPENTERPRISE_OID);
 			}
-
+			if (log.isDebugEnabled()){
+				log.debug("[SNMPTrapReceiver] [listener from ip: {}] [snmp trap entity: {}]", fromIP, JSONUtil.toJsonStr(entity));
+			}
 			// 转换为 messagedto
 			AlertMessageReceiveDTO dto = this.transSnmptrapToPromMsg(entity);
 			if (dto != null) {
@@ -264,6 +239,10 @@ public class SNMPTrapReceiver implements CommandResponder, ApplicationRunner {
 		if (rule == null) {
 			return null;
 		}
+		if (log.isDebugEnabled()){
+			log.debug("[SNMPTrapReceiver] [transSnmptrapToPromMsg] [trap-oid: {}] [alertRule id: {}]", trapOID, rule.getId());
+		}
+
 		AlertMessageReceiveDTO dto = new AlertMessageReceiveDTO();
 		List<ConditionItem> condition = rule.getConditionItems();
 		Integer severityId = null; // 记录是否有满足的条件，没有则不产生告警消息

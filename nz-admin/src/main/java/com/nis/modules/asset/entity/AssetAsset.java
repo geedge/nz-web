@@ -46,7 +46,7 @@ public class AssetAsset implements Serializable {
     /**
      * 默认：-1 只有type vm = 1可以且必须填写此字段，且 pid.type vmh = 1
      */
-    @TableField(strategy = FieldStrategy.IGNORED)
+    @TableField(updateStrategy = FieldStrategy.IGNORED, insertStrategy = FieldStrategy.IGNORED)
     private Integer pid;
 
     /**
@@ -85,19 +85,19 @@ public class AssetAsset implements Serializable {
     /**
      * 认证服务端口
      */
-    @TableField(strategy = FieldStrategy.IGNORED)
+    @TableField(updateStrategy = FieldStrategy.IGNORED, insertStrategy = FieldStrategy.IGNORED)
     private Integer authProtocolPort;
     
     /**
      * 认证方式
      */
-    @TableField(strategy = FieldStrategy.IGNORED)
+    @TableField(updateStrategy = FieldStrategy.IGNORED, insertStrategy = FieldStrategy.IGNORED)
     private Integer authType;
     
     /**
      * 用户名
      */
-    @TableField(strategy = FieldStrategy.IGNORED)
+    @TableField(updateStrategy = FieldStrategy.IGNORED, insertStrategy = FieldStrategy.IGNORED)
     private	String authUsername;
     
     /**
@@ -115,13 +115,13 @@ public class AssetAsset implements Serializable {
     /**
      * 用户名提示
      */
-    @TableField(strategy = FieldStrategy.IGNORED)
+    @TableField(updateStrategy = FieldStrategy.IGNORED, insertStrategy = FieldStrategy.IGNORED)
     private String authUserTip;
     
     /**
      * 密码提示
      */
-    @TableField(strategy = FieldStrategy.IGNORED)
+    @TableField(updateStrategy = FieldStrategy.IGNORED, insertStrategy = FieldStrategy.IGNORED)
     private String authPinTip;
 
     /**
@@ -132,19 +132,19 @@ public class AssetAsset implements Serializable {
     /**
      * 机柜编号
      */
-    @TableField(strategy = FieldStrategy.IGNORED)
+    @TableField(updateStrategy = FieldStrategy.IGNORED, insertStrategy = FieldStrategy.IGNORED)
     private Integer cabinetId;
 
     /**
      * 机柜开始位置
      */
-    @TableField(strategy = FieldStrategy.IGNORED)
+    @TableField(updateStrategy = FieldStrategy.IGNORED, insertStrategy = FieldStrategy.IGNORED)
     private Integer cabinetStart;
 
     /**
      * 机柜结束位置
      */
-    @TableField(strategy = FieldStrategy.IGNORED)
+    @TableField(updateStrategy = FieldStrategy.IGNORED, insertStrategy = FieldStrategy.IGNORED)
     private Integer cabinetEnd;
 
     /**

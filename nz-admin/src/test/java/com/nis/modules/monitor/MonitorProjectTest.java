@@ -7,7 +7,6 @@ import com.nis.modules.BaseTest;
 import com.nis.modules.UTUtil;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.entity.Topo;
-import com.nis.modules.project.entity.TopoIcon;
 import com.qiniu.util.IOUtils;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
@@ -19,7 +18,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;

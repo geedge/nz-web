@@ -1,10 +1,10 @@
 package com.nis.common.config;
 
 import cn.hutool.log.Log;
+import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.core.incrementer.IKeyGenerator;
-import com.baomidou.mybatisplus.core.injector.ISqlInjector;
-import com.baomidou.mybatisplus.extension.injector.LogicSqlInjector;
-import com.baomidou.mybatisplus.extension.plugins.PaginationInterceptor;
+import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
+import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.RCode;
@@ -31,18 +31,15 @@ public class MybatisPlusPluginsConfig {
      * 分页插件
      */
     @Bean
-    public PaginationInterceptor paginationInterceptor() {
-        return new PaginationInterceptor();
+    public MybatisPlusInterceptor mybatisPlusInterceptor() {
+        MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
+        interceptor.addInnerInterceptor(new PaginationInnerInterceptor());
+        return interceptor;
     }
 
     @Bean
-    public SeqKeyGenerator seqKeyGenerator() {
+    public IKeyGenerator seqKeyGenerator() {
         return new SeqKeyGenerator();
-    }
-
-    @Bean
-    public ISqlInjector sqlInjector() {
-        return new LogicSqlInjector();
     }
 
     /**
@@ -78,6 +75,31 @@ public class MybatisPlusPluginsConfig {
                     return String.format("select %s.nextval from dual", incrementerName);
                 default:
                     return String.format("select seq_nextval('%s')", incrementerName);
+            }
+        }
+
+        @Override
+        public DbType dbType() {
+            String databaseId = null;
+            try {
+                databaseId = databaseIdProvider.getDatabaseId(dataSource);
+            } catch (SQLException e) {
+                logger.error(e);
+            }
+
+            if (ToolUtil.isEmpty(databaseId)) {
+                throw new NZException(RCode.ERROR);
+            }
+
+            switch (databaseId) {
+                case Constant.MYSQL:
+                    return DbType.MYSQL;
+                case Constant.POSTGRESQL:
+                    return DbType.POSTGRE_SQL;
+                case Constant.ORACLE:
+                    return DbType.ORACLE;
+                default:
+                    return DbType.MYSQL;
             }
         }
     }

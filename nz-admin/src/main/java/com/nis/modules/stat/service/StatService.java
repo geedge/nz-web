@@ -1,7 +1,6 @@
 package com.nis.modules.stat.service;
 
 import com.nis.common.utils.PageUtils;
-import com.nis.modules.alert.entity.AlertSeverityConf;
 import com.nis.modules.stat.entity.StatAnalysis;
 
 import java.util.List;

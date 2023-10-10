@@ -18,6 +18,7 @@ import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysUserService;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
+import jakarta.mail.MessagingException;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -28,7 +29,6 @@ import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.stereotype.Component;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
-import javax.mail.MessagingException;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;

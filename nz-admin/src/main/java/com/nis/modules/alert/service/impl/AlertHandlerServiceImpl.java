@@ -35,13 +35,13 @@ import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.setup.controller.TimezoneController;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -474,7 +474,7 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	@SuppressWarnings("all")
 	public Map<String,List> queryMessageGroupBy(Map<String,Object> params) {
 		Map<String,List> result = Tool.MapUtil.newHashMap();
-		QueryWrapper wrapper = new QueryWrapper().select("id","name");
+		QueryWrapper wrapper = (QueryWrapper) new QueryWrapper().select("id", "name");
 		wrapper.orderByAsc("name");
 		//dc
 		List<Map<String, Object>> dcList = dcService.listMaps(wrapper);

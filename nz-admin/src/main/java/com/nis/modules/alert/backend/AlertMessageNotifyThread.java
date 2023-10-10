@@ -21,6 +21,7 @@ import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
+import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.QueryTimeoutException;
 import org.springframework.data.redis.core.ListOperations;
@@ -28,7 +29,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
-import javax.mail.MessagingException;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Collection;

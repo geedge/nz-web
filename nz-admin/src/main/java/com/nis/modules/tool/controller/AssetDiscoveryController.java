@@ -1,7 +1,6 @@
 package com.nis.modules.tool.controller;
 
 import cn.hutool.core.lang.Pair;
-import cn.hutool.core.thread.NamedThreadFactory;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.*;
 import cn.hutool.log.Log;
@@ -28,7 +27,6 @@ import com.nis.modules.sys.service.SysConfService;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.net.util.SubnetUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.bind.annotation.*;
@@ -36,7 +34,10 @@ import org.springframework.web.bind.annotation.*;
 import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Discover assets by subnet
@@ -48,12 +49,6 @@ import java.util.concurrent.*;
 public class AssetDiscoveryController {
 
     private final static Log log = Log.get();
-
-    @Value("${discovery.corePoolSize:200}")
-    private Integer discoveryCorePoolSize;
-
-    @Value("${discovery.keepAliveTime:30}")
-    private Long discoveryKeepAliveTime;
 
     @Autowired
     private RedisTemplate redisTemplate;
@@ -77,28 +72,21 @@ public class AssetDiscoveryController {
     private IpamSubnetDao ipamSubnetDao;
 
     /**
-     * discovery 执行线程池，无界+不抛弃
+     * 存储 thread Executor ，用以中断线程
      */
-    private ExecutorService discoveryThreadPool;
-    /**
-     * 存储 thread group ，用以中断线程
-     */
-    private static volatile ConcurrentHashMap<String, List<ThreadGroup>> DISCOVERY_CACHE = Tool.MapUtil.newConcurrentHashMap();
+    private static ConcurrentHashMap<String, ExecutorService> TASK_EXECUTOR_MAP = new ConcurrentHashMap<>();
 
-    private synchronized ExecutorService getDiscoveryThreadPool() {
-        if (discoveryThreadPool == null) {
-            discoveryThreadPool = new ThreadPoolExecutor(
-                    discoveryCorePoolSize,
-                    discoveryCorePoolSize,
-                    discoveryKeepAliveTime,
-                    TimeUnit.SECONDS,
-                    new LinkedBlockingQueue<>(),
-                    new NamedThreadFactory("DISCOVERY-", true),
-                    new ThreadPoolExecutor.CallerRunsPolicy());
+    private synchronized ExecutorService getDiscoveryThreadPoolByTid(String tid) {
+        ExecutorService executorService = TASK_EXECUTOR_MAP.get(tid);
+        if (executorService == null) {
+            executorService = Executors.newThreadPerTaskExecutor(
+                    Thread.ofVirtual().name(tid + "-", 0).factory()
+            );
+            // add
+            TASK_EXECUTOR_MAP.put(tid, executorService);
         }
-        return discoveryThreadPool;
+        return executorService;
     }
-
 
     /**
      * 创建任务
@@ -144,16 +132,9 @@ public class AssetDiscoveryController {
 
         String tid = StrUtil.uuid();
         ThreadUtil.execAsync(() -> {
+            ExecutorService taskExecutor = getDiscoveryThreadPoolByTid(tid);
             for (IpamSubnet ipamSubnet : ipamSubnetList) {
                 ThreadUtil.execAsync(() -> {
-                    List<ThreadGroup> threadGroupListForTask = DISCOVERY_CACHE.get(StrUtil.concat(true, "discovery_threadGroup_", tid));
-                    threadGroupListForTask = Tool.CollUtil.defaultIfEmpty(threadGroupListForTask, Tool.ListUtil.list(true));
-
-                    ThreadGroup threadGroup = new ThreadGroup(tid + "_" + ipamSubnet.getId());
-                    threadGroupListForTask.add(threadGroup);
-
-                    DISCOVERY_CACHE.put(StrUtil.concat(true, "discovery_threadGroup_", tid), threadGroupListForTask);
-
                     // 利用 SubnetUtils 计算 ip 范围
                     SubnetUtils subnetUtils = new SubnetUtils(ipamSubnet.getAddr() + "/" + ipamSubnet.getMask());
                     subnetUtils.setInclusiveHostCount(true);
@@ -163,11 +144,9 @@ public class AssetDiscoveryController {
                     int high = ReflectUtil.invoke(subnetUtils.getInfo(), "high");
                     for (int add = low, j = 0; add <= high; ++add, ++j) {
                         String ip = format(toArray(add));
-                        DiscoveryRunnable runnable = new DiscoveryRunnable(threadGroup, tid, ip, ipamSubnet, assetModelList, discoveredAssetList, confParams);
-                        runnable.setName(StrUtil.concat(true, tid, "-", ipamSubnet.getName()));
-
-                        ReflectUtil.invoke(threadGroup, "add", runnable);
-                        CompletableFuture.runAsync(runnable, getDiscoveryThreadPool());
+                        DiscoveryRunnable discoveryRunnable = new DiscoveryRunnable(tid, ip, ipamSubnet, assetModelList, discoveredAssetList, confParams);
+                        // submit
+                        taskExecutor.submit(discoveryRunnable);
                     }
                 });
             }
@@ -248,21 +227,20 @@ public class AssetDiscoveryController {
      */
     @DeleteMapping("/discovery/{tid}")
     public R cancelTask(@PathVariable(value = "tid", required = false) String tid) {
-        List<ThreadGroup> threadGroupListForTask = DISCOVERY_CACHE.get(StrUtil.concat(true, "discovery_threadGroup_", tid));
-        threadGroupListForTask = Tool.CollUtil.defaultIfEmpty(threadGroupListForTask, Tool.ListUtil.list(true));
-
-        if (Tool.CollUtil.isEmpty(threadGroupListForTask)) {
+        ExecutorService taskExecutor = TASK_EXECUTOR_MAP.get(tid);
+        if (Tool.ObjectUtil.isNull(taskExecutor)) {
             log.warn("[cancelTask] [discovery task cancel error, the task does not exist or has expired] [task id: {}]", tid);
             return R.ok();
         } else {
             try {
-                for (ThreadGroup threadGroup : threadGroupListForTask) {
-                    log.info("[cancelTask] [discovery task cancel] [task id: {}] [canceled thread num: {}]", tid, threadGroup.activeCount());
-                    // thread interrupt
-                    threadGroup.interrupt();
-                }
+                // shutdownNow
+                taskExecutor.shutdownNow();
+
+                // remove
+                TASK_EXECUTOR_MAP.remove(tid);
+                log.info("[cancelTask] [discovery task cancel] [task id: {}]", tid);
             } catch (Exception e) {
-                log.error(e, "[cancelTask] [error] [tid: {}] [cache: {}]", tid, JSONUtil.toJsonStr(threadGroupListForTask));
+                log.error(e, "[cancelTask] [error] [tid: {}]", tid);
             }
         }
 
@@ -271,8 +249,6 @@ public class AssetDiscoveryController {
                 StrUtil.concat(true, "discovery_stat_", tid),
                 StrUtil.concat(true, "discovery_result_", tid));
         redisTemplate.delete(keys);
-
-        DISCOVERY_CACHE.remove(StrUtil.concat(true, "discovery_threadGroup_", tid));
         return R.ok();
     }
 
@@ -315,9 +291,6 @@ public class AssetDiscoveryController {
         private final static String SYSOBJECTID_OID = "1.3.6.1.2.1.1.2.0";
         private final static String SYSDESCR_OID = "1.3.6.1.2.1.1.1.0";
         private final static String SYSUPTIME_OID = "1.3.6.1.2.1.1.3.0";
-
-        private ThreadGroup tg;
-
         private String ip;
         private String tid;
         private IpamSubnet subnet;
@@ -327,12 +300,8 @@ public class AssetDiscoveryController {
 
         private Integer timeout;
         private Integer retries;
-        private boolean isInterrupted = false;
 
-        public DiscoveryRunnable(ThreadGroup tg, String tid, String ip, IpamSubnet subnet, List<AssetModel> assetModelList, List<AssetAsset> discoveredAssetList, Map<String, Object> confParams) {
-            super(tg, String.format("discovery-%s-%s", tg.getName(), ip));
-            this.tg = tg;
-
+        public DiscoveryRunnable(String tid, String ip, IpamSubnet subnet, List<AssetModel> assetModelList, List<AssetAsset> discoveredAssetList, Map<String, Object> confParams) {
             this.ip = ip;
             this.tid = tid;
             this.subnet = subnet;
@@ -344,7 +313,7 @@ public class AssetDiscoveryController {
         @Override
         public void run() {
             try {
-                if (this.isInterrupted()) {
+                if (Thread.currentThread().isInterrupted()) {
                     // interrupted
                 } else {
                     Map m = Tool.MapUtil.newHashMap();
@@ -403,14 +372,15 @@ public class AssetDiscoveryController {
                             }
                         }
                     }
-                    if (!this.isInterrupted()) {
-                        redisTemplate.opsForList().leftPush(StrUtil.concat(true, "discovery_result_", tid), JSONUtil.toJsonStr(m));
+                    if (!Thread.currentThread().isInterrupted()) {
+                        try {
+                            redisTemplate.opsForList().leftPush(StrUtil.concat(true, "discovery_result_", tid), JSONUtil.toJsonStr(m));
+                        } catch (Exception e) {
+                        }
                     }
                 }
             } catch (Exception e) {
                 log.error(e, "[DiscoveryRunnable] [error] [ip: {}]", ip);
-            } finally {
-                ReflectUtil.invoke(tg, "remove", this);
             }
         }
 
@@ -484,20 +454,6 @@ public class AssetDiscoveryController {
                 List<Map> mapList = JSONArray.parseArray(JSONArray.toJSONString(list), Map.class);
                 return mapList;
             }
-        }
-
-        @Override
-        public void interrupt() {
-            super.interrupt();
-            isInterrupted = true;
-            if (log.isDebugEnabled()) {
-                log.debug("[DiscoveryRunnable] [interrupt] [name: {}] [ip: {}]", this.getName(), ip);
-            }
-        }
-
-        @Override
-        public boolean isInterrupted() {
-            return isInterrupted;
         }
 
         /**

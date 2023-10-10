@@ -1,5 +1,6 @@
 package com.nis.common.config;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.autoconfigure.ConfigurationCustomizer;
 import com.baomidou.mybatisplus.autoconfigure.MybatisPlusProperties;
@@ -129,7 +130,7 @@ public class MybatisPlusConfig {
 		// 注入主键生成器
 		if (this.applicationContext.getBeanNamesForType(IKeyGenerator.class, false, false).length > 0) {
 			IKeyGenerator keyGenerator = this.applicationContext.getBean(IKeyGenerator.class);
-			globalConfig.getDbConfig().setKeyGenerator(keyGenerator);
+			globalConfig.getDbConfig().setKeyGenerators(CollUtil.list(false, keyGenerator));
 		}
 		// 注入sql注入器
 		if (this.applicationContext.getBeanNamesForType(ISqlInjector.class, false, false).length > 0) {

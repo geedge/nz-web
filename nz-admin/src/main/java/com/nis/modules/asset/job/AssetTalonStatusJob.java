@@ -1,29 +1,8 @@
 package com.nis.modules.asset.job;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.time.StopWatch;
-import org.apache.http.conn.ConnectTimeoutException;
-import org.quartz.DisallowConcurrentExecution;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.quartz.QuartzJobBean;
-import org.springframework.transaction.annotation.Transactional;
-
+import cn.hutool.core.net.url.UrlBuilder;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -40,10 +19,21 @@ import com.nis.modules.endpoint.entity.MonitorEndpointConfig;
 import com.nis.modules.endpoint.entity.MonitorEndpointState;
 import com.nis.modules.endpoint.service.MonitorEndpointConfigService;
 import com.nis.modules.endpoint.service.MonitorEndpointStateService;
+import org.apache.commons.lang3.time.StopWatch;
+import org.apache.http.conn.ConnectTimeoutException;
+import org.quartz.DisallowConcurrentExecution;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.quartz.QuartzJobBean;
+import org.springframework.transaction.annotation.Transactional;
 
-import cn.hutool.core.net.url.UrlBuilder;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @DisallowConcurrentExecution
 public class AssetTalonStatusJob extends QuartzJobBean {

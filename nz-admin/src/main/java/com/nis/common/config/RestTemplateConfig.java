@@ -1,22 +1,23 @@
 package com.nis.common.config;
 
-import org.apache.http.HeaderElement;
-import org.apache.http.HeaderElementIterator;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.config.Registry;
-import org.apache.http.config.RegistryBuilder;
-import org.apache.http.conn.ConnectionKeepAliveStrategy;
-import org.apache.http.conn.socket.ConnectionSocketFactory;
-import org.apache.http.conn.socket.PlainConnectionSocketFactory;
+import org.apache.hc.client5.http.ConnectionKeepAliveStrategy;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
+import org.apache.hc.client5.http.socket.PlainConnectionSocketFactory;
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
+import org.apache.hc.core5.http.HeaderElement;
+import org.apache.hc.core5.http.HttpResponse;
+import org.apache.hc.core5.http.config.Registry;
+import org.apache.hc.core5.http.config.RegistryBuilder;
+import org.apache.hc.core5.http.message.BasicHeaderElementIterator;
+import org.apache.hc.core5.http.protocol.HttpContext;
+import org.apache.hc.core5.util.TimeValue;
+import org.apache.hc.core5.util.Timeout;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.message.BasicHeaderElementIterator;
 import org.apache.http.protocol.HTTP;
-import org.apache.http.protocol.HttpContext;
 import org.apache.http.ssl.TrustStrategy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -119,9 +120,9 @@ public class RestTemplateConfig {
 		connectionManager.setMaxTotal(maxTotal);
 		// 路由是对maxTotal的细分
 		connectionManager.setDefaultMaxPerRoute(maxPerRoute);
-		RequestConfig requestConfig = RequestConfig.custom().setSocketTimeout(socketTimeout)// 服务器返回数据(response)的时间，超过该时间抛出readtimeout
-				.setConnectTimeout(connectionTimeout)// 连接上服务器(握手成功)的时间，超出该时间抛出connect timeout
-				.setConnectionRequestTimeout(connectionRequestTimeout)// 从连接池中获取连接的超时时间，超过该时间未拿到可用连接，会抛出org.apache.http.conn.ConnectionPoolTimeoutException:Timeout
+		RequestConfig requestConfig = RequestConfig.custom().setResponseTimeout(Timeout.ofMilliseconds(socketTimeout))// 服务器返回数据(response)的时间，超过该时间抛出readtimeout
+				.setConnectTimeout(Timeout.ofMilliseconds(connectionTimeout))// 连接上服务器(握手成功)的时间，超出该时间抛出connect timeout
+				.setConnectionRequestTimeout(Timeout.ofMilliseconds(connectionRequestTimeout))// 从连接池中获取连接的超时时间，超过该时间未拿到可用连接，会抛出org.apache.http.conn.ConnectionPoolTimeoutException:Timeout
 																		// waiting for connection from pool
 				.build();
 		return HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).setConnectionManager(connectionManager)
@@ -136,23 +137,23 @@ public class RestTemplateConfig {
 	@Bean
 	public ConnectionKeepAliveStrategy connectionKeepAliveStrategy() {
 		return new ConnectionKeepAliveStrategy() {
+
 			@Override
-			public long getKeepAliveDuration(HttpResponse response, HttpContext context) {
+			public TimeValue getKeepAliveDuration(HttpResponse response, HttpContext context) {
 				// Honor 'keep-alive' header
-				HeaderElementIterator it = new BasicHeaderElementIterator(
-						response.headerIterator(HTTP.CONN_KEEP_ALIVE));
+				BasicHeaderElementIterator it = new BasicHeaderElementIterator(response.headerIterator(HTTP.CONN_KEEP_ALIVE));
 				while (it.hasNext()) {
-					HeaderElement he = it.nextElement();
+					HeaderElement he = it.next();
 					String param = he.getName();
 					String value = he.getValue();
 					if (value != null && "timeout".equalsIgnoreCase(param)) {
 						try {
-							return Long.parseLong(value) * 1000;
-						} catch (NumberFormatException ignore) {
+							return TimeValue.ofMilliseconds(Integer.valueOf(value) * 1000);
+						} catch (NumberFormatException e) {
 						}
 					}
 				}
-				return keepAliveTime * 1000;
+				return TimeValue.ofMilliseconds(keepAliveTime * 1000);
 			}
 		};
 	}

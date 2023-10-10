@@ -18,6 +18,8 @@ import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.service.PromApiService;
 import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.sys.service.SysConfService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.RandomUtils;
@@ -27,8 +29,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 

@@ -3,10 +3,9 @@ package com.nis.common.aspect;
 import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.annotation.TableId;
-import com.google.gson.Gson;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
@@ -14,6 +13,9 @@ import com.nis.modules.sys.entity.SysLogEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysLogService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import org.apache.shiro.SecurityUtils;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -24,10 +26,8 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -43,8 +43,6 @@ public class SysLogAspect {
 
 	@Autowired
 	private SysLogService sysLogService;
-
-	private static Gson gson = new Gson();
 
 	@Pointcut("@annotation(com.nis.common.annotation.SysLog)")
 	public void logPointCut() {
@@ -145,9 +143,9 @@ public class SysLogAspect {
 			// 登录出现异常时
 			if ("login".equals(operationType)) {
 				sysLog.setUserId(null);
-				Map map = gson.fromJson(gson.toJson(params.get(0)), Map.class);
+				Map map = JSON.parseObject(JSON.toJSONString(params.get(0)), Map.class);
 				map.remove("pin");
-				String logParams = gson.toJson(map);
+				String logParams = JSON.toJSONString(map);
 				logParams = ToolUtil.isEmpty(logParams) ? "" : logParams;
 				if (logParams.getBytes().length > Constant.MYSQL_TEXT_MAXLENGTH) {
 					logParams = StringUtils.cutString(logParams, Constant.MYSQL_TEXT_MAXLENGTH);
@@ -426,19 +424,26 @@ public class SysLogAspect {
 				// 补全 params 为 当前退出者
 				Map map = new HashMap(2);
 				map.put("username", currentLoginUser.getName());
-				result = gson.toJson(map);
+				result = JSON.toJSONString(map);
 			} else if ("login".equals(operationType)) {
-				String params = gson.toJson(list.get(0));
-				Map map = gson.fromJson(params, Map.class);
+				String params = JSON.toJSONString(list.get(0));
+				Map map = JSON.parseObject(params, Map.class);
 				map.remove("pin");
-				result = gson.toJson(map);
+				result = JSON.toJSONString(map);
 			} else {
 				if (ToolUtil.isNotEmpty(list)) {
 					Map map = new LinkedHashMap();
 					for (int i = 0; i < list.size(); i++) {
-						map.put("arg" + (i + 1), list.get(i));
+						Object arg = list.get(i);
+						if (arg instanceof MultipartFile) {
+							String name = ((MultipartFile) arg).getOriginalFilename();
+							map.put("arg" + (i + 1), name);
+						} else {
+							map.put("arg" + (i + 1), list.get(i));
+						}
+
 					}
-					result = gson.toJson(map);
+					result = JSON.toJSONString(map);
 				}
 			}
 		} catch (Exception e) {

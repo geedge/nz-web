@@ -4,8 +4,8 @@ import com.nis.common.utils.PageUtils;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.entity.AlertSilenceConf;
 import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Date;
 import java.util.List;

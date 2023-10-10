@@ -1,12 +1,18 @@
 package com.nis.common.interceptor;
 
-import java.util.Date;
-
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import cn.hutool.core.date.DateUnit;
+import cn.hutool.core.date.DateUtil;
+import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.nis.common.utils.*;
+import com.nis.modules.sys.dao.SysApiKeyDao;
+import com.nis.modules.sys.entity.SysApiKey;
+import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.shiro.ShiroUtils;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.mgt.SecurityManager;
@@ -17,23 +23,8 @@ import org.apache.shiro.subject.Subject;
 import org.apache.shiro.subject.support.DefaultSubjectContext;
 import org.apache.shiro.util.ThreadContext;
 import org.apache.shiro.web.filter.AccessControlFilter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
-import com.alibaba.fastjson.JSON;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
-import com.nis.modules.sys.dao.SysApiKeyDao;
-import com.nis.modules.sys.entity.SysApiKey;
-import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.shiro.ShiroUtils;
-
-import cn.hutool.core.date.DateUnit;
-import cn.hutool.core.date.DateUtil;
+import java.util.Date;
 
 public class TokenCheckFilter extends AccessControlFilter {
 

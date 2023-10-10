@@ -685,7 +685,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         boolean sslFlag = Constant.SWITCH_OPEN.equals(map.get("email_ssl_flag"));
         boolean tlsFlag = Constant.SWITCH_OPEN.equalsIgnoreCase(map.get("email_tls_flag"));
         if(sslFlag || tlsFlag){
-            prop.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+            prop.put("mail.smtp.socketFactory.class", "jakarta.net.ssl.SSLSocketFactory");
             prop.put("mail.smtp.socketFactory.fallback", "false");
             prop.put("mail.smtp.starttls.enable", "true");
         }

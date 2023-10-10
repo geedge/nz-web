@@ -1,13 +1,13 @@
 package com.nis.modules.sys.shiro;
 
 import com.nis.common.utils.Constant;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import org.apache.shiro.web.servlet.ShiroHttpServletRequest;
 import org.apache.shiro.web.session.mgt.DefaultWebSessionManager;
 import org.springframework.util.StringUtils;
 
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
 import java.io.Serializable;
 
 public class MySessionManager extends DefaultWebSessionManager {

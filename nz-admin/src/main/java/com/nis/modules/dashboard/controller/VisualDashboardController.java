@@ -8,13 +8,13 @@ import com.nis.common.utils.*;
 import com.nis.modules.dashboard.entity.VisualDashboard;
 import com.nis.modules.dashboard.service.VisualDashboardService;
 import com.nis.modules.dashboard.utils.DashboardConstant;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;

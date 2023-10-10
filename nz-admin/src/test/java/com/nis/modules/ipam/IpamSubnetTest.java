@@ -1,7 +1,10 @@
 package com.nis.modules.ipam;
 
-import java.util.Map;
-
+import com.alibaba.fastjson.JSONObject;
+import com.nis.common.utils.RCode;
+import com.nis.modules.BaseTest;
+import com.nis.modules.UTUtil;
+import com.nis.modules.ipam.entity.IpamSubnet;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -9,11 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MvcResult;
 
-import com.alibaba.fastjson.JSONObject;
-import com.nis.common.utils.RCode;
-import com.nis.modules.BaseTest;
-import com.nis.modules.UTUtil;
-import com.nis.modules.ipam.entity.IpamSubnet;
+import java.util.Map;
 
 /**
  * @FixMethodOrder You should never write tests that need to be executed in a specified order. That's really bad practice. Every test should be able to run independent.

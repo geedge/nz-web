@@ -22,6 +22,7 @@
 package com.nis.modules.terminal.interceptor;
 
 import com.nis.modules.terminal.utils.TerminalConstant;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
@@ -29,7 +30,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor;
 
-import javax.servlet.http.HttpSession;
 import java.util.Map;
 
 /**

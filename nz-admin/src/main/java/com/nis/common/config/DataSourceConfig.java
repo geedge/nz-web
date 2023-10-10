@@ -1,11 +1,12 @@
 package com.nis.common.config;
 
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Properties;
-
-import javax.sql.DataSource;
-
+import cn.hutool.db.Db;
+import cn.hutool.db.ds.simple.SimpleDataSource;
+import cn.hutool.log.Log;
+import com.alibaba.druid.pool.DruidDataSource;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.Tool;
+import lombok.Data;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,14 +20,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 
-import com.alibaba.druid.pool.DruidDataSource;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.Tool;
-
-import cn.hutool.db.Db;
-import cn.hutool.db.ds.simple.SimpleDataSource;
-import cn.hutool.log.Log;
-import lombok.Data;
+import javax.sql.DataSource;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Properties;
 
 @Configuration
 public class DataSourceConfig {

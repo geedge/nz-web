@@ -3,9 +3,9 @@ package com.nis.modules.ipam.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.ipam.entity.IpamIp;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.List;
