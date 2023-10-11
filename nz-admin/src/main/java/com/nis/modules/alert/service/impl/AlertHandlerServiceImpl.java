@@ -34,6 +34,7 @@ import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.tool.service.FullTextSearchService;
 import com.nis.setup.controller.TimezoneController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -79,6 +80,8 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	private SysConfigService sysConfigService;
 	@Autowired
 	private BasicImportAndExportServices basicImportAndExportServices;
+	@Autowired
+	private FullTextSearchService fullTextSearchService;
 
 	@Value("${redis.maxQueueLength:100}")
     private Long maxQueueLength;//redis队列长度
@@ -552,7 +555,7 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			// 分页超过最大限制 则设置最大限制为 系统配置值，和 pageSize == -1 判断区别在于 pageNo
 			params.put(Constant.LIMIT, Long.toString(exportMaxLine));
 		}
-		PageUtils page = this.queryMessagePage(params);
+		PageUtils page = fullTextSearchService.queryAlertMessageFullTextPage(params);
 		List<AlertMessageEntity> list = (List<AlertMessageEntity>) page.getList();
 
 		List<List<String>> exportDataList = this.handleExportDataList(list);
