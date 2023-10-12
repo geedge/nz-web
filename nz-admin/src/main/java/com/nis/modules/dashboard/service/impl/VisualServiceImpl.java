@@ -647,6 +647,26 @@ public class VisualServiceImpl implements VisualService {
     }
 
     /**
+     * create chrome driver
+     *
+     * @return
+     */
+    private ChromeDriver createChromeDriver() {
+        final var chromeOptions = new ChromeOptions();
+        chromeOptions.addArguments(
+                "--headless",
+                "--disable-cache",
+                "--disable-dev-shm-usage",
+                "--no-sandbox",
+                "--window-size=1920x1080"
+        );
+        chromeOptions.setBinary("./lib/chrome-linux64/chrome");
+
+        ChromeDriver chromeDriver = new ChromeDriver(chromeOptions);
+        return chromeDriver;
+    }
+
+    /**
      * html to pdf
      *
      * @param taskId
@@ -658,22 +678,12 @@ public class VisualServiceImpl implements VisualService {
         StopWatch sw = new StopWatch();
         sw.start();
 
-        ChromeDriver driver = null;
+        ChromeDriver driver = this.createChromeDriver();
         File tempFile = null;
         try {
             tempFile = Tool.FileUtil.file(Tool.StrUtil.concat(true, Constant.TEMP_PATH, File.separator, taskId, ".html"));
             FileUtil.writeUtf8String(htmlContent, tempFile);
 
-            ChromeOptions opt = new ChromeOptions();
-            opt.addArguments(
-                    "--headless",
-                    "--disable-cache",
-                    "--disable-dev-shm-usage",
-                    "--no-sandbox",
-                    "--window-size=1920x1080"
-            );
-
-            driver = new ChromeDriver(opt);
             driver.resetInputState();
             driver.get("file://" + tempFile.getAbsolutePath());
 
@@ -716,22 +726,12 @@ public class VisualServiceImpl implements VisualService {
         StopWatch sw = new StopWatch();
         sw.start();
 
-        ChromeDriver driver = null;
+        ChromeDriver driver = this.createChromeDriver();
         File tempFile = null;
         try {
             tempFile = Tool.FileUtil.file(Tool.StrUtil.concat(true, Constant.TEMP_PATH, File.separator, taskId, ".html"));
             FileUtil.writeUtf8String(htmlContent, tempFile);
 
-            ChromeOptions opt = new ChromeOptions();
-            opt.addArguments(
-                    "--headless",
-                    "--disable-cache",
-                    "--disable-dev-shm-usage",
-                    "--no-sandbox",
-                    "--window-size=1920x1080"
-            );
-
-            driver = new ChromeDriver(opt);
             driver.resetInputState();
             driver.get("file://" + tempFile.getAbsolutePath());
 
@@ -782,12 +782,6 @@ public class VisualServiceImpl implements VisualService {
                         .map();
                 paragraphList.add(tempNodeMap);
             }
-
-            // 按照 chart.Y 排序
-            paragraphList.sort(Comparator.comparing(m -> {
-                VisualChart tempChartForSort = MapUtil.get(m, "chart", VisualChart.class);
-                return tempChartForSort.getY() == null ? -2D : tempChartForSort.getY();
-            }));
 
             Map<Object, Object> templateDataParam = MapUtil.builder()
                     .put("paragraphList", paragraphList)
