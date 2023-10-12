@@ -28,8 +28,10 @@ import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetTalonStatus;
+import com.nis.modules.asset.entity.SoftwareAsset;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetTalonStatusService;
+import com.nis.modules.asset.service.SoftwareAssetService;
 import com.nis.modules.dashboard.entity.VisualChart;
 import com.nis.modules.dashboard.entity.VisualDashboard;
 import com.nis.modules.dashboard.service.VisualChartService;
@@ -138,6 +140,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     @Autowired
     private VisualChartService visualChartService;
+
+    @Autowired
+    private SoftwareAssetService softwareAssetService;
     
     @Override
     public MonitorEndpoint queryEndpointEntity(Integer id) {
@@ -158,7 +163,8 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         endpoint.setAlert(alert);
 
         endpoint.setConfigs(this.getEndpointConfigs(endpoint));
-
+        SoftwareAsset softwareAsset = softwareAssetService.getById(endpoint.getSoftwareAssetId());
+        endpoint.setSoftwareAsset(softwareAsset);
 
         try{
             // 收藏标识 0：未收藏 1：已收藏
@@ -1490,6 +1496,20 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         if (countByName > 0) {
             throw new NZException(RCode.ENDPOINT_NAME_DUPLICATE);
         }
+
+        //检查 asset，project 是否一致
+        if (ObjectUtil.isNotEmpty(endpoint.getSoftwareAssetId())) {
+            SoftwareAsset softwareAsset = softwareAssetService.getById(endpoint.getSoftwareAssetId());
+            if (ObjectUtil.isNull(softwareAsset)) {
+                throw new NZException(RCode.ENDPOINT_SOFTWAREASSET_ISNULL);
+            }
+            if (ObjectUtil.notEqual(endpoint.getAssetId(), softwareAsset.getAssetId())) {
+                throw new NZException(RCode.ENDPOINT_ASSETID_ERROR);
+            }
+            if (ObjectUtil.notEqual(module.getProjectId(), softwareAsset.getProjectId())) {
+                throw new NZException(RCode.ENDPOINT_PROJECTID_ERROR);
+            }
+        }
         // 保存
         this.save(endpoint);
 
@@ -1642,6 +1662,13 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
         // 留作对比是否更改属性
         MonitorEndpoint oldEndpoint = this.getById(endpoint.getId());
+
+        //检查所属软件资产是否修改
+        if (ObjectUtil.isNotEmpty(endpoint.getSoftwareAssetId()) && ObjectUtil.notEqual(oldEndpoint.getSoftwareAssetId(), -1)) {
+            if (ObjectUtil.notEqual(endpoint.getSoftwareAssetId(), oldEndpoint.getSoftwareAssetId())) {
+                throw new NZException(RCode.ENDPOINT_SOFTWAREASSET_ERROR);
+            }
+        }
 
         // 保存
         this.updateById(endpoint);

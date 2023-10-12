@@ -262,6 +262,10 @@ public enum RCode {
     ENDPOINT_PORT_ISNULL(231022,"Endpoint port can not be empty"),
     ENDPOINT_LABELNAME_FORMAT_ERROR(233023,"Expressions label key does not comply with Prometheus labelname format"),
     ENDPOINT_RELOBJ_CAN_NOT_REMOVE(237024, "Endpoint have associated data and cannot be deleted"),
+    ENDPOINT_SOFTWAREASSET_ISNULL(231024,"The software asset to which the endpoint belongs does not exist"),
+    ENDPOINT_ASSETID_ERROR(231025,"The endpoint assets are inconsistent with the assets to which the software assets belong"),
+    ENDPOINT_PROJECTID_ERROR(231026,"The endpoint project are inconsistent with the project to which the software assets belong"),
+    ENDPOINT_SOFTWAREASSET_ERROR(231027,"The software assets to which the endpoint belongs cannot be modified."),
 
     /**
      * assets菜单项相关

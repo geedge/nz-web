@@ -8,6 +8,7 @@ import com.nis.common.utils.Tool;
 import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.Dc;
+import com.nis.modules.asset.entity.SoftwareAsset;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.project.entity.MonitorProject;
 import lombok.Data;
@@ -19,71 +20,79 @@ import java.util.Map;
 @Data
 @TableName("monitor_endpoint")
 public class MonitorEndpoint implements Serializable {
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	/**
-	 * 主键
-	 */
-	@TableId(type = IdType.AUTO)
-	private Integer id;
+    /**
+     * 主键
+     */
+    @TableId(type = IdType.AUTO)
+    private Integer id;
 
-	/**
-	 * 名称
-	 */
-	private String name;
+    /**
+     * 名称
+     */
+    private String name;
 
-	/**
-	 * 组件id
-	 */
-	private Integer moduleId;
+    /**
+     * 组件id
+     */
+    private Integer moduleId;
 
-	/**
-	 * 资产id
-	 */
-	private Integer assetId;
+    /**
+     * 硬件资产id
+     */
+    private Integer assetId;
 
-	private String seq;
+    /**
+     * 软件资产id
+     */
+    private Integer softwareAssetId;
 
-	@TableField(exist = false)
-	private Object configs;
+    private String seq;
 
-	@TableField(exist = false)
-	private MonitorModule module;
+    @TableField(exist = false)
+    private Object configs;
 
-	@TableField(exist = false)
-	private AssetAsset asset;
+    @TableField(exist = false)
+    private MonitorModule module;
 
-	@TableField(exist = false)
-	private Dc dc;
+    @TableField(exist = false)
+    private AssetAsset asset;
 
-	@TableField(exist = false)
-	private MonitorProject project;
+    @TableField(exist = false)
+    private Dc dc;
 
-	@TableField(exist = false)
-	private Integer alertNum;
+    @TableField(exist = false)
+    private MonitorProject project;
 
-	@TableField(exist = false)
-	private Agent agent;
+    @TableField(exist = false)
+    private Integer alertNum;
 
-	@TableField(exist = false)
-	private Map config;
+    @TableField(exist = false)
+    private Agent agent;
 
-	@TableField(exist = false)
-	private MonitorEndpointConfig endpointConfig;
+    @TableField(exist = false)
+    private Map config;
 
-	@TableField(exist = false)
-	private List<MonitorEndpointConfig> endpointConfigList;
+    @TableField(exist = false)
+    private MonitorEndpointConfig endpointConfig;
 
-	@TableField(exist = false)
-	private List alert;
+    @TableField(exist = false)
+    private List<MonitorEndpointConfig> endpointConfigList;
 
-	/**
-	 * 是否收藏 0:未收藏 1:已收藏
-	 */
-	@TableField(exist = false)
-	private Integer starred;
+    @TableField(exist = false)
+    private List alert;
 
-	public void setName(String name) {
-		this.name = Tool.StrUtil.trim(name);
-	}
+    /**
+     * 是否收藏 0:未收藏 1:已收藏
+     */
+    @TableField(exist = false)
+    private Integer starred;
+
+    @TableField(exist = false)
+    private SoftwareAsset softwareAsset;
+
+    public void setName(String name) {
+        this.name = Tool.StrUtil.trim(name);
+    }
 }

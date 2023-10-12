@@ -30,6 +30,11 @@
 	    	<result column="model_id" property="modelId"/>
 	    	<result column="name" property="name"/>
 	    </association>
+
+		<association columnPrefix="s_" property="softwareAsset" javaType="com.nis.modules.asset.entity.SoftwareAsset">
+			<id column="id" property="id"/>
+			<result column="name" property="name"/>
+		</association>
     </resultMap>
 
 
@@ -112,6 +117,8 @@
 			a.NAME AS a_name,
 			p.id AS p_id,
 			p.NAME AS p_name,
+			sa.id AS s_id,
+			sa.NAME AS s_name,
 			IFNULL( msg.alertNum, 0 ) AS alertNum,
             IFNULL( sta.starred, 0 ) AS starred
 		FROM
@@ -171,6 +178,7 @@
 			LEFT JOIN monitor_module m ON e.module_id = m.id
 			LEFT JOIN monitor_project p ON m.project_id = p.id
 			LEFT JOIN asset_asset a ON e.asset_id = a.id
+			LEFT JOIN software_asset sa ON e.software_asset_id = sa.id
 			LEFT JOIN ( SELECT endpoint_id, count( 1 ) AS alertNum FROM alert_message_active WHERE endpoint_id IS NOT NULL GROUP BY endpoint_id ) msg ON e.id = msg.endpoint_id
             LEFT JOIN ( SELECT IF(COUNT(1) > 0, 1, 0) AS starred,tid FROM sys_user_starred WHERE TYPE = "endpoint" AND uid = #{params.uid} GROUP BY tid) sta ON e.id = sta.tid
         <where>
