@@ -658,7 +658,8 @@ public class VisualServiceImpl implements VisualService {
                 "--disable-cache",
                 "--disable-dev-shm-usage",
                 "--no-sandbox",
-                "--window-size=1920x1080"
+                "--window-size=1920x1080",
+                "--lang=zh-CN.UTF-8"
         );
         chromeOptions.setBinary("./lib/chrome-linux64/chrome");
 
@@ -695,7 +696,9 @@ public class VisualServiceImpl implements VisualService {
 
             PrintOptions printOptions = new PrintOptions();
             printOptions.setPageSize(new PageSize(21, 29.7)); // A4
-            printOptions.setScale(0.6);
+            printOptions.setOrientation(PrintOptions.Orientation.LANDSCAPE); // 纵向
+            printOptions.setScale(0.5);
+            printOptions.setBackground(true);
 //            printOptions.setPageSize(new PageSize(80D, 100D));
 
             Pdf pdf = ((PrintsPage) driver).print(printOptions);
