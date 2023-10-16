@@ -4,6 +4,8 @@ import cn.hutool.core.net.NetUtil;
 
 import java.io.File;
 import java.net.URL;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -490,5 +492,20 @@ public class CommonUtils {
             return false;
         }
         return true;
+    }
+
+
+    /**
+     * 根据系统配置时区偏移量 获取 SimpleDateFormat 对象
+     *
+     * @param offset
+     * @param format
+     * @return
+     */
+    public static DateFormat getDateFormatByOffset(Integer offset, String format) {
+        SimpleDateFormat dateformat = new SimpleDateFormat(format,  Locale.US);
+        TimeZone tz = new SimpleTimeZone(offset, "");
+        dateformat.setTimeZone(tz);
+        return dateformat;
     }
 }

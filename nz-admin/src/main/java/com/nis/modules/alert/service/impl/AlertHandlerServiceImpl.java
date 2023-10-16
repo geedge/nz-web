@@ -570,7 +570,7 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		List<List<String>> exportDataList = new ArrayList<>();
 
 		TimezoneController.Timezone sysTimezone = TimezoneController.queryTimezoneByName(sysConfigService.getValue("timezone"));
-		DateFormat dateformat = getISO8601DateFormatBySysTimeOffset(sysTimezone.getOffset());
+		DateFormat dateformat = CommonUtils.getDateFormatByOffset(sysTimezone.getOffset(), "yyyy-MM-dd'T'HH:mm:ssZ");
 
 		for (AlertMessageEntity alertMessage : list) {
 			List<String> tempList = new ArrayList<>();
@@ -618,18 +618,6 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
         }
         return result;
     }
-
-    /**
-	 * 根据系统配置时区偏移量 获取 SimpleDateFormat 对象，格式为 yyyy-MM-dd'T'HH:mm:ssZ
-	 * @param offset
-	 * @return
-	 */
-	private DateFormat getISO8601DateFormatBySysTimeOffset(Integer offset) {
-		TimeZone tz = new SimpleTimeZone(offset,"");
-		SimpleDateFormat dateformat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
-		dateformat.setTimeZone(tz);
-		return dateformat;
-	}
 
 	/**
 	 * @param time

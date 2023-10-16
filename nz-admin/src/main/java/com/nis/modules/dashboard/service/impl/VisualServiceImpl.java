@@ -31,6 +31,7 @@ import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.stat.service.impl.StatServiceImpl;
 import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysI18nService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.setup.controller.TimezoneController;
 import freemarker.template.Template;
@@ -54,6 +55,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.text.DateFormat;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
@@ -75,6 +77,9 @@ public class VisualServiceImpl implements VisualService {
      */
     @Value("${dashboard.snapshot.timeout:300000}")
     private Integer timeout;
+
+    @Autowired
+    private SysI18nService sysI18nService;
 
     @Autowired
     private SysConfigService sysConfigService;
@@ -623,8 +628,11 @@ public class VisualServiceImpl implements VisualService {
                 } else if (ObjectUtil.equal(format, "markdown")) {
                     // html
                     String snapshotHtmlContent = this.replaceSnapshotTemplate(resultMap);
+
+                    String timeRangeStr = this.getMdHeaderTimeRangeString((long) start, (long) end);
+                    String generateInfoStr = this.getMdHeaderGenerateInfoString(language);
                     // markDown
-                    String markDownContent = this.htmlToMarkdown(taskId, notebook, snapshotHtmlContent);
+                    String markDownContent = this.htmlToMarkdown(taskId, notebook, timeRangeStr, generateInfoStr, snapshotHtmlContent);
 
                     ResponseUtil.downloadFile(response, "notebookSnapshot.md", markDownContent.getBytes());
                 }
@@ -719,12 +727,14 @@ public class VisualServiceImpl implements VisualService {
      *
      * @param taskId
      * @param notebookMap
+     * @param timeRangeStr
+     * @param generateInfoStr
      * @param htmlContent
      * @return
      * @throws IOException
      * @throws TemplateException
      */
-    private String htmlToMarkdown(String taskId, Object notebookMap, String htmlContent) throws IOException, TemplateException {
+    private String htmlToMarkdown(String taskId, Object notebookMap, String timeRangeStr, String generateInfoStr, String htmlContent) throws IOException, TemplateException {
         log.info("[htmlToMarkdown] [begin] [taskId: {}] [htmlContent: {}]", taskId, StrUtil.length(htmlContent));
         StopWatch sw = new StopWatch();
         sw.start();
@@ -788,6 +798,9 @@ public class VisualServiceImpl implements VisualService {
 
             Map<Object, Object> templateDataParam = MapUtil.builder()
                     .put("paragraphList", paragraphList)
+                    .put("notebook", notebook)
+                    .put("timeRangeStr", timeRangeStr)
+                    .put("generateInfoStr", generateInfoStr)
                     .map();
 
             Template template = TemplateUtil.stringToTemplate(
@@ -804,6 +817,50 @@ public class VisualServiceImpl implements VisualService {
             }
             FileUtil.del(tempFile);
         }
+    }
+
+    private String getMdHeaderTimeRangeString(long startTimeSec, long endTimeSec) {
+        // timezone
+        String timezoneConfName = sysConfigService.getValue("timezone");
+        TimezoneController.Timezone timezone = TimezoneController.queryTimezoneByName(timezoneConfName);
+
+        // dateformat
+        DateFormat dateformat = CommonUtils.getDateFormatByOffset(timezone.getOffset(), "yyyy-MM-dd'T'HH:mm:ssZ");
+
+        String startDateStr = dateformat.format(new Date(startTimeSec * 1000));
+        startDateStr = Tool.StrUtil.builder(startDateStr).insert(startDateStr.length() - 2, ":").toString();
+
+        String endDateStr = dateformat.format(new Date(endTimeSec * 1000));
+        endDateStr = Tool.StrUtil.builder(endDateStr).insert(endDateStr.length() - 2, ":").toString();
+
+        // start - end (timezone.name)
+        Object timeRangeStr = Tool.StrUtil.concat(true, startDateStr, " - ", endDateStr, " (", timezone.getName(), ")");
+
+        // i18n
+        String timeRangeStrByI18n = sysI18nService.queryValue("notebook.markdown.timeRange.info", timeRangeStr);
+        return timeRangeStrByI18n;
+    }
+
+    private String getMdHeaderGenerateInfoString(String language) {
+        // user name
+        String userName = ShiroUtils.getUserEntity().getName();
+        String timezoneConfName = sysConfigService.getValue("timezone");
+        TimezoneController.Timezone timezone = TimezoneController.queryTimezoneByName(timezoneConfName);
+
+        String dateFromatPattern = "";
+        if (StrUtil.equalsIgnoreCase("en", language)) {
+            dateFromatPattern = "MMM dd yyyy";
+        } else if (StrUtil.equalsIgnoreCase("zh", language)) {
+            dateFromatPattern = "yyyy年MM月dd日";
+        }
+
+        // dateformat
+        DateFormat dateformat = CommonUtils.getDateFormatByOffset(timezone.getOffset(), dateFromatPattern);
+        String formatDateStr = dateformat.format(new Date());
+
+        // i18n
+        String generateInfoStrByI18n = sysI18nService.queryValue("notebook.markdown.generate.info", userName, formatDateStr);
+        return generateInfoStrByI18n;
     }
 
     @Override
