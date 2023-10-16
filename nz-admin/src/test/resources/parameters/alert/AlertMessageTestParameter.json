@@ -48,21 +48,27 @@
     "pageNo": null,
     "pageSize": null,
     "orderBy": "",
-    "ids": "211210040800001,211210040800002",
+    "body": {
+      "ruleId": [1]
+    },
     "format": 2
   },
   "messageExportFile_json": {
     "pageNo": null,
     "pageSize": null,
     "orderBy": "",
-    "ids": "211210040800001,211210040800002",
+    "body": {
+      "projectId": [2]
+    },
     "format": 3
   },
   "messageExportFile_excel": {
     "pageNo": null,
     "pageSize": null,
     "orderBy": "",
-    "ids": "211210040800001,211210040800002",
+    "body": {
+      "moduleId": [5]
+    },
     "format": 1
   },
   "------------------ put  /alert/message/ack---------------------": "note",

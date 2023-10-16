@@ -126,7 +126,7 @@ public class SnmpMibTest extends BaseTest<SnmpMib> {
                 result.getResponse().getContentAsByteArray());
 
         String contentType = result.getResponse().getContentType();
-        Assert.assertEquals("multipart/form-data",contentType);
+        Assert.assertEquals("multipart/form-data;charset=utf-8",contentType);
 
         MibLoader ml =new MibLoader();
         File mibFile = new File(Constant.TEMP_PATH + File.separator + "tempMibFile" + UUID.randomUUID());

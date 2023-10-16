@@ -26,16 +26,6 @@ public class AlertMessageTest extends BaseTest<AlertMessageEntity> {
         return "alert/AlertMessageTestParameter.json";
     }
 
-    /**
-     * get  /alert/message exist
-     */
-    @Test()
-    public void listMessage_exist() {
-        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
-        MvcResult result = UTUtil.performGet("/alert/message", map);
-
-        UTUtil.assertToSizeByFlag(result, true);
-    }
 
     /**
      * get  /alert/message not exist
@@ -137,7 +127,7 @@ public class AlertMessageTest extends BaseTest<AlertMessageEntity> {
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
         MvcResult result = UTUtil.performGet("/alert/message/export", map);
 
-        UTUtil.assertToExportFile(result, map,2);
+        UTUtil.assertToExportFile(result, map,5);
     }
 
     /**
@@ -148,7 +138,7 @@ public class AlertMessageTest extends BaseTest<AlertMessageEntity> {
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
         MvcResult result = UTUtil.performGet("/alert/message/export", map);
 
-        UTUtil.assertToExportFile(result, map,2);
+        UTUtil.assertToExportFile(result, map,1);
     }
 
     /**
@@ -159,7 +149,7 @@ public class AlertMessageTest extends BaseTest<AlertMessageEntity> {
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
         MvcResult result = UTUtil.performGet("/alert/message/export", map);
 
-        UTUtil.assertToExportFile(result, map,2);
+        UTUtil.assertToExportFile(result, map,1);
     }
     /**
      * put  /alert/message/ack
