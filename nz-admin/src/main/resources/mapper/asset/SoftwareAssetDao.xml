@@ -67,6 +67,12 @@
                     #{projectId}
                 </foreach>
             </if>
+            <if test="params.typeIds != null and params.typeIds != ''">
+                sa.type_id in
+                <foreach collection="params.typeIds.split(',')" item="typeId" open="(" separator="," close=")">
+                    #{typeId}
+                </foreach>
+            </if>
             <if test="params.name != null and params.name != ''">
                 AND locate(#{params.name} , sa.name)
             </if>
