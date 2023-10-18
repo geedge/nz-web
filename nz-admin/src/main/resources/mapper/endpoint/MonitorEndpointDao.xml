@@ -229,8 +229,13 @@
                     sta.starred IS NULL
                 </if>
             </if>
-
-       </where>
+			<if test="params.softwareAssetIds  != null and params.softwareAssetIds  != ''">
+				AND e.software_asset_id in
+				<foreach collection="params.softwareAssetIds.split(',')" item="softwareAssetId" open="(" separator="," close=")">
+					#{softwareAssetId}
+				</foreach>
+			</if>
+		</where>
         <if test="params.orderBy == null or params.orderBy == ''">
             ORDER BY e.id
         </if>
