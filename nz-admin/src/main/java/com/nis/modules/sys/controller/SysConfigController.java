@@ -40,6 +40,7 @@ public class SysConfigController extends AbstractController {
 	 * 所有配置列表
 	 */
 	@RequestMapping("/list")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYS_CONF)
 	public R list(@RequestParam Map<String, Object> params){
 		PageUtils page = sysConfigService.queryPage(params);
 
@@ -52,6 +53,7 @@ public class SysConfigController extends AbstractController {
 	 */
 	@RequestMapping("/info/{id}")
 	@ResponseBody
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYS_CONF)
 	public R info(@PathVariable("id") Long id){
 		SysConfigEntity config = sysConfigService.getById(id);
 		return R.ok().put("config", config);
@@ -60,8 +62,8 @@ public class SysConfigController extends AbstractController {
 	/**
 	 * 保存配置
 	 */
-	@SysLog
 	@RequestMapping("/save")
+	@SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.SYS_CONF)
 	public R save(@RequestBody SysConfigEntity config){
 		ValidatorUtils.validateEntity(config);
 
@@ -73,8 +75,8 @@ public class SysConfigController extends AbstractController {
 	/**
 	 * 修改配置
 	 */
-	@SysLog
 	@RequestMapping("/update")
+	@SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.SYS_CONF)
 	public R update(@RequestBody SysConfigEntity config){
 		ValidatorUtils.validateEntity(config);
 
@@ -86,7 +88,7 @@ public class SysConfigController extends AbstractController {
 	/**
 	 * 删除配置
 	 */
-	@SysLog
+	@SysLog(operation = OperationEnum.DELETE, type = TypeEnum.SYS_CONF)
 	@RequestMapping("/delete")
 	public R delete(@RequestBody Long[] ids){
 		sysConfigService.deleteBatch(ids);

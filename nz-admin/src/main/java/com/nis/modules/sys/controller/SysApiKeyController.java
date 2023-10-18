@@ -55,7 +55,7 @@ public class SysApiKeyController {
 
 	@PostMapping("/self")
 	@RequiresPermissions({"sys:apiKey:save"})
-	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYS_API_KEY)
+	@SysLog(operation = OperationEnum.ADD, type = TypeEnum.SYS_API_KEY)
 	public R addSelfApiKey(@RequestBody SysApiKey sysApiKey) {
 		ValidateUtils.is(sysApiKey.getName()).notNull(RCode.SYSAPIKEY_NAME_ISNULL).maxLength(64);
 

@@ -52,7 +52,7 @@ public class SysFileController {
      * @return
      */
     @PostMapping("/upload")
-    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.SYS_FILE)
+    @SysLog(operation = OperationEnum.UPLOAD, type = TypeEnum.SYS_FILE)
     @RequiresPermissions({"sysFile:upload"})
     public R sysFileUpload(@RequestParam("file") MultipartFile file) throws IOException {
         return R.ok(sysFileService.sysFileUpload(file));
@@ -65,6 +65,7 @@ public class SysFileController {
      */
     @RequestMapping("/download/{uuid}")
 //    @RequiresPermissions({"sysFile:download"})
+    @SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.SYS_FILE)
     public void sysFileDownload(@PathVariable("uuid") String uuid, HttpServletResponse response) throws IOException {
         sysFileService.sysFileDownload(uuid, response);
     }

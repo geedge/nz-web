@@ -13,7 +13,7 @@ public enum OperationEnum {
     CANCEL("cancel"),
     UPLOAD("upload"),
     DOWNLOAD("download"),
-    CREAT_TASK("create task"),
+    CREAT_TASK("createTask"),
     SYNC("sync"),
     DIAGNOSIS("diagnosis"),
     RESET("reset"),
