@@ -20,7 +20,7 @@ public class AssetFieldMetaController {
 	private AssetFieldMetaService assetFieldMetaService;
 	
 	@GetMapping("/{id}")
-	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSETFIELDMETA)
+	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSET_FIELD_META)
 	public R queryAssetFieldMetaById(@PathVariable Integer id) {
 		ValidateUtils.is(id).notNull(RCode.ASSET_FIELD_META_ID_ISNULL);
 		
@@ -29,7 +29,7 @@ public class AssetFieldMetaController {
 	}
 	
 	@GetMapping
-	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSETFIELDMETA)
+	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSET_FIELD_META)
 	public R queryAssetFieldMetaList(@RequestParam Map<String,Object> params) {
 		
 		PageUtils page = assetFieldMetaService.queryList(params);
@@ -37,7 +37,7 @@ public class AssetFieldMetaController {
 	}
 	
 	@PutMapping
-	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSETFIELDMETA)
+	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ASSET_FIELD_META)
 	@RequiresPermissions({"field:meta:update"})
 	public R modifyAssetFieldMeta(@RequestBody AssetFieldMeta assetFieldMeta) {
 		ValidateUtils.is(assetFieldMeta.getId()).notNull(RCode.ASSET_FIELD_META_ID_ISNULL)
@@ -54,7 +54,7 @@ public class AssetFieldMetaController {
 	}
 	
 	@PostMapping
-	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSETFIELDMETA)
+	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.ASSET_FIELD_META)
 	@RequiresPermissions({"field:meta:save"})
 	public R saveAssetFieldMeta(@RequestBody AssetFieldMeta assetFieldMeta) {
 		ValidateUtils.is(assetFieldMeta.getName()).notNull(RCode.ASSET_FIELD_META_NAME_ISNULL).maxLength(64)
@@ -70,7 +70,7 @@ public class AssetFieldMetaController {
 	}
 	
 	@DeleteMapping
-	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSETFIELDMETA)
+	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ASSET_FIELD_META)
 	@RequiresPermissions({"field:meta:delete"})
 	public R removeAssetFieldMeta(@RequestParam Map requestParam) {
 		String ids = (String)requestParam.get("ids");

@@ -32,7 +32,7 @@ public class LicenseManagementController {
     }
 
     @GetMapping("/license/downloadC2V")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.LICENSE)
+    @SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.LICENSE)
     public void downloadC2V(@RequestParam(value = "saId", required = false) Integer saId,
                             @RequestParam(value = "haspid", required = false) String haspid,
                             HttpServletResponse response)  throws Exception {
@@ -45,7 +45,7 @@ public class LicenseManagementController {
 
 
     @PostMapping("/license/uploadV2C")
-    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.LICENSE)
+    @SysLog(operation = OperationEnum.UPLOAD, type = TypeEnum.LICENSE)
     public R uploadV2C(@RequestParam(value = "file") MultipartFile file,
                        @RequestParam(value = "saId", required = false) Integer saId) throws Exception {
 

@@ -30,7 +30,7 @@ public class SysFileController {
      * @return
      */
     @GetMapping("/{id}")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSFILE)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYS_FILE)
     public R querySysFileInfo(@PathVariable("id") Integer id) {
         return R.ok(sysFileService.querySysFileInfo(id));
     }
@@ -41,7 +41,7 @@ public class SysFileController {
      * @return
      */
     @GetMapping
-    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYSFILE)
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYS_FILE)
     public R querySysFilePage(@RequestParam Map<String, Object> params) {
         return R.ok(sysFileService.querySysFilePage(params));
     }
@@ -52,7 +52,7 @@ public class SysFileController {
      * @return
      */
     @PostMapping("/upload")
-    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.SYSFILE)
+    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.SYS_FILE)
     @RequiresPermissions({"sysFile:upload"})
     public R sysFileUpload(@RequestParam("file") MultipartFile file) throws IOException {
         return R.ok(sysFileService.sysFileUpload(file));
@@ -75,7 +75,7 @@ public class SysFileController {
      * @return
      */
     @DeleteMapping
-    @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.SYSFILE)
+    @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.SYS_FILE)
     @RequiresPermissions({"sysFile:delete"})
     public R deleteSysFile(@RequestParam Integer... ids) {
         sysFileService.deleteSysFile(ids);

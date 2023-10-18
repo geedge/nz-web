@@ -36,7 +36,7 @@ public class MetricController {
      */
     @GetMapping("/metadata")
     @ResponseBody
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROMSERVER)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.AGENT)
     public R queryMetadata(Integer endpointId) throws IOException {
         ValidateUtils.is(endpointId).notNull(RCode.ENDPOINT_ID_ISNULL);
         List<MetadataMetric> metadata;

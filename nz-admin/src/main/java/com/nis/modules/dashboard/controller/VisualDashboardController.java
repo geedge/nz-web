@@ -105,7 +105,7 @@ public class VisualDashboardController {
 	}
 
 	@PostMapping("/import")
-    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.CHART)
+    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.DASHBOARD)
 	@RequiresPermissions({ "visual:dashboard:save"})
 	public R importChartData(@RequestParam(value = "file") MultipartFile excelFile, @RequestParam Map<String, Object> params) throws IOException {
 		Object type = params.get("type");
@@ -118,13 +118,13 @@ public class VisualDashboardController {
 	}
 
     @GetMapping("/export")
-    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.CHART)
+    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.DASHBOARD)
     public void export(HttpServletResponse response, @RequestParam Map<String, Object> params) throws IOException {
 	    dashboardService.export(response, params);
     }
 
     @DeleteMapping("/cancelImport")
-    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.CHART)
+    @SysLog(operation = OperationEnum.CANCEL, type = TypeEnum.DASHBOARD)
     public R cancelImport(String seq) {
         ValidateUtils.is(seq).notNull(RCode.UNDO_IMPORT_SEQ_ISNULL);
 
@@ -138,7 +138,7 @@ public class VisualDashboardController {
 	 * @return
 	 */
 	@PostMapping("/duplicate/{id}")
-	@SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.DASHBOARD)
+	@SysLog(operation = OperationEnum.ADD, type = TypeEnum.DASHBOARD)
 	public R duplicate(@PathVariable Integer id) {
 		ValidateUtils.is(id).notNull(RCode.DASHBOARD_ID_ISNULL);
 		dashboardService.duplicate(id);

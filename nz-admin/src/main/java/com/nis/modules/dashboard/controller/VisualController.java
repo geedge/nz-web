@@ -34,6 +34,7 @@ public class VisualController {
 	 * explore 快照
 	 */
 	@GetMapping("/explore/snapshot")
+	@SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.SNAPSHOT)
 	public void exploreSnapshot(HttpServletResponse response, HttpServletRequest request, String format, Integer type, Long start,
 								Long end, Integer unit, String limit, String direction, @RequestParam(value="expressions[]")String[] expressions) throws IOException {
 		ValidateUtils.is(type).notNull(RCode.AGENT_TYPE_ISNULL)
@@ -53,7 +54,7 @@ public class VisualController {
 	 * @return
 	 */
 	@PostMapping("/dashboard/snapshot/task")
-	@SysLog(operation = OperationEnum.ADD, type = TypeEnum.DASHBOARD)
+	@SysLog(operation = OperationEnum.CREAT_TASK, type = TypeEnum.SNAPSHOT)
 	public R snapshotTask(@RequestHeader(required = false, defaultValue = "en") String language,
 	                      @RequestBody Map<String, Object> requestody) {
 		String format = (String) requestody.get("format");
@@ -83,7 +84,7 @@ public class VisualController {
 	 * @return
 	 */
 	@GetMapping("/dashboard/snapshot/result/{tid}")
-	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.DASHBOARD)
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SNAPSHOT)
 	public R snapshotResultProcess(@PathVariable(required = true) String tid) {
 		return R.ok().putData("taskId", visualService.querySnapshotResultProcess(DashboardConstant.DASHBOARD_SNAPSHOT_TYPE, tid));
 	}
@@ -95,7 +96,7 @@ public class VisualController {
 	 * @return
 	 */
 	@GetMapping("/dashboard/snapshot/cancel/{tid}")
-	@SysLog(operation = OperationEnum.DELETE, type = TypeEnum.DASHBOARD)
+	@SysLog(operation = OperationEnum.CANCEL, type = TypeEnum.SNAPSHOT)
 	public R cancelSnapshotTask(@PathVariable(required = true) String tid) {
 		visualService.cancelSnapshotTask(DashboardConstant.DASHBOARD_SNAPSHOT_TYPE, tid);
 		return R.ok();
@@ -109,6 +110,7 @@ public class VisualController {
 	 * @param tid
 	 */
 	@GetMapping("/dashboard/snapshot/download/{tid}")
+	@SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.SNAPSHOT)
 	public void downloadSnapshotFile(HttpServletResponse response,
 	                                 @RequestHeader(required = false, defaultValue = "en") String language,
 	                                 @PathVariable(required = true) String tid) {
@@ -123,7 +125,7 @@ public class VisualController {
 	 * @return
 	 */
 	@PostMapping("/dashboard/syncTmpl")
-	@SysLog(operation = OperationEnum.ADD, type = TypeEnum.DASHBOARD)
+	@SysLog(operation = OperationEnum.SYNC, type = TypeEnum.DASHBOARD)
 	public R syncTemplateDashboard(@RequestBody(required = false) Map<String, Integer> requestBody) {
 		// validate param
 		requestBody = Tool.MapUtil.defaultIfEmpty(requestBody, Tool.MapUtil.empty());

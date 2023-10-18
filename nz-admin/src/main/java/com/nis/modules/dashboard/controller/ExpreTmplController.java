@@ -34,20 +34,20 @@ public class ExpreTmplController {
     private VisualExpreTmplService expreTmplService;
 
     @GetMapping("/{id}")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.EXPRESSIONTMPL)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.EXPRESSION_TMPL)
     public R queryTmplInfo(@PathVariable("id") Integer id) {
         return R.ok(expreTmplService.queryTmplInfoById(id));
     }
 
     @GetMapping
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.EXPRESSIONTMPL)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.EXPRESSION_TMPL)
     public R queryTmplPage(@RequestParam Map<String, Object> params) {
         PageUtils page = expreTmplService.queryPage(params);
         return R.ok(page);
     }
 
     @GetMapping("/gname")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.EXPRESSIONTMPL)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.EXPRESSION_TMPL)
     public R queryTmplsByGname(@RequestParam(value = "gname", required = false) String gname) {
         List<String> list = expreTmplService.queryTmplsByGname(gname);
         Map map = new HashMap(2);
@@ -56,7 +56,7 @@ public class ExpreTmplController {
     }
 
     @PostMapping
-    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.EXPRESSIONTMPL)
+    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.EXPRESSION_TMPL)
     @RequiresPermissions({"expression:tmpl:save"})
     public R saveTmpl(@RequestBody VisualExpressionTmpl tmpl) {
         ValidateUtils.is(tmpl.getName()).notNull(RCode.EXPRETMPL_NAME_ISNULL).maxLength(64)
@@ -69,7 +69,7 @@ public class ExpreTmplController {
     }
 
     @PutMapping
-    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.EXPRESSIONTMPL)
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.EXPRESSION_TMPL)
     @RequiresPermissions({"expression:tmpl:update"})
     public R editTmpl(@RequestBody VisualExpressionTmpl tmpl) {
         ValidateUtils.is(tmpl.getId()).notNull(RCode.EXPRETMPL_ID_ISNULL)
@@ -83,7 +83,7 @@ public class ExpreTmplController {
     }
 
     @DeleteMapping
-    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.EXPRESSIONTMPL)
+    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.EXPRESSION_TMPL)
     @RequiresPermissions({"expression:tmpl:delete"})
     public R deleteTmpls(@RequestParam Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.EXPRETMPL_ID_ISNULL);
@@ -93,7 +93,7 @@ public class ExpreTmplController {
     }
 
     @PostMapping("/render")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.EXPRESSIONTMPL)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.EXPRESSION_TMPL)
     public R renderExpressionContent(@RequestBody VisualExpressionTmpl tmpl) {
         ValidateUtils.is(tmpl.getExpression()).notNull(RCode.EXPRETMPL_EXPRESSION_ISNULL)
                 .and(tmpl.getVarsVal()).notNull(RCode.EXPRETMPL_RENDER_DATA_ISNULL);
@@ -122,7 +122,7 @@ public class ExpreTmplController {
     }
 
     @PostMapping("/import")
-    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.EXPRESSIONTMPL)
+    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.EXPRESSION_TMPL)
     @RequiresPermissions({"expression:tmpl:save"})
     public R importTmpls(@RequestParam(value = "file") MultipartFile excelFile,
                          HttpServletRequest request,
@@ -140,7 +140,7 @@ public class ExpreTmplController {
     }
 
     @GetMapping("/export")
-    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.EXPRESSIONTMPL)
+    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.EXPRESSION_TMPL)
     public void exportDataCenters(HttpServletResponse response, @RequestParam Map<String, Object> params) throws IOException {
         Object format = params.get("format");
         String formatStr = format == null ? "1" : format.toString();
@@ -155,7 +155,7 @@ public class ExpreTmplController {
     }
 
     @DeleteMapping("/cancelImport")
-    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.EXPRESSIONTMPL)
+    @SysLog(operation = OperationEnum.CANCEL, type = TypeEnum.EXPRESSION_TMPL)
     public R cancelImport(@RequestParam(value = "seq", required = false) String seq) {
         ValidateUtils.is(seq).notNull(RCode.UNDO_IMPORT_SEQ_ISNULL);
 

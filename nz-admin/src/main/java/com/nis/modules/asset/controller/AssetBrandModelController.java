@@ -38,21 +38,21 @@ public class AssetBrandModelController {
     private AssetModelService modelService;
 
     @GetMapping("/asset/brand/{id}")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSETBRAND)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET_BRAND)
     public R queryBrandInfo(@PathVariable("id") Integer id) {
         AssetBrand brand = brandService.queryBrandInfo(id);
         return R.ok(brand);
     }
 
     @GetMapping("/asset/brand")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSETBRAND)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET_BRAND)
     public R queryBrandList(@RequestParam Map<String, Object> params) {
         PageUtils page = brandService.queryPage(params);
         return R.ok(page);
     }
 
     @PostMapping("/asset/brand")
-    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.ASSETBRAND)
+    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.ASSET_BRAND)
     @RequiresPermissions({"asset:brand:save"})
     public R saveAssetBrand(@RequestBody AssetBrand brand) {
         ValidateUtils.is(brand.getName()).notNull(RCode.ASSET_BRAND_NAME_ISNULL);
@@ -62,7 +62,7 @@ public class AssetBrandModelController {
     }
 
     @PutMapping("/asset/brand")
-    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ASSETBRAND)
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ASSET_BRAND)
     @RequiresPermissions({"asset:brand:update"})
     public R editAssetBrand(@RequestBody AssetBrand brand) {
         ValidateUtils.is(brand.getId()).notNull(RCode.ASSET_BRAND_ID_ISNULL)
@@ -73,7 +73,7 @@ public class AssetBrandModelController {
     }
 
     @DeleteMapping("/asset/brand")
-    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ASSETBRAND)
+    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ASSET_BRAND)
     @RequiresPermissions({"asset:brand:delete"})
     public R deleteAssetBrands(@RequestParam(required = false, defaultValue = "0") Integer force, Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.ASSET_BRAND_ID_ISNULL);
@@ -82,21 +82,21 @@ public class AssetBrandModelController {
     }
 
     @GetMapping("/asset/model/{id}")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.MODEL)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET_MODEL)
     public R queryModelInfo(@PathVariable("id") Integer id) {
         AssetModel model = modelService.queryModelInfo(id);
         return R.ok(model);
     }
 
     @GetMapping("/asset/model")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.MODEL)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET_MODEL)
     public R queryModelList(@RequestParam Map<String, Object> params) {
         PageUtils page = modelService.queryPage(params);
         return R.ok(page);
     }
 
     @PostMapping("/asset/model")
-    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.MODEL)
+    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.ASSET_MODEL)
     @RequiresPermissions({"asset:model:save"})
     public R saveAssetModel(@RequestBody AssetModel model) {
         ValidateUtils.is(model.getName()).notNull(RCode.ASSET_MODELNAME_ISNULL).maxLength(64)
@@ -109,7 +109,7 @@ public class AssetBrandModelController {
     }
 
     @PutMapping("/asset/model")
-    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.MODEL)
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ASSET_MODEL)
     @RequiresPermissions({"asset:model:update"})
     public R editAssetModel(@RequestBody AssetModel model) {
         ValidateUtils.is(model.getId()).notNull(RCode.ASSET_MODELID_ISNULL)
@@ -123,7 +123,7 @@ public class AssetBrandModelController {
     }
 
     @DeleteMapping("/asset/model")
-    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.MODEL)
+    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ASSET_MODEL)
     @RequiresPermissions({"asset:model:delete"})
     public R deleteAssetModels(@RequestParam(required = false, defaultValue = "0") Integer force, Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.ASSET_MODELID_ISNULL);
@@ -152,7 +152,7 @@ public class AssetBrandModelController {
 
 
     @PostMapping("/asset/model/import")
-    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.MODEL)
+    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.ASSET_MODEL)
     @RequiresPermissions({"asset:model:save"})
     public R importAssetModelData(@RequestParam(value = "file") MultipartFile excelFile, HttpServletRequest request, @RequestParam Map<String, Object> params) throws IOException {
         String language = request.getHeader(Constant.LANGUAGE);
@@ -167,7 +167,7 @@ public class AssetBrandModelController {
     }
 
     @GetMapping("/asset/model/export")
-    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.MODEL)
+    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.ASSET_MODEL)
     public void exportAssetModels(HttpServletResponse response, @RequestParam Map<String, Object> params)  throws IOException {
         Object format = params.get("format");
         String formatStr = format == null ? "1" : format.toString();
@@ -182,7 +182,7 @@ public class AssetBrandModelController {
     }
 
     @DeleteMapping("/asset/model/cancelImport")
-    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.MODEL)
+    @SysLog(operation = OperationEnum.CANCEL, type = TypeEnum.ASSET_MODEL)
     public R cancelImport(@RequestParam(value = "seq", required = false) String seq) {
         ValidateUtils.is(seq).notNull(RCode.UNDO_IMPORT_SEQ_ISNULL);
 

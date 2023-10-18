@@ -5,6 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.JSONPath;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
@@ -127,7 +128,7 @@ public class SysLogAspect {
 
 			// 获取请求参数名
 			String oepraId = "";
-			if ("update".equals(operationType)) {
+			if (StrUtil.equalsIgnoreCase("update", operationType)) {
 				oepraId = getOpId(params);
 			}
 			sysLog.setOperaId(oepraId);
@@ -141,7 +142,7 @@ public class SysLogAspect {
 			sysLog.setParams(paramResult);
 
 			// 登录出现异常时
-			if ("login".equals(operationType)) {
+			if (StrUtil.equalsIgnoreCase("login", operationType)) {
 				sysLog.setUserId(null);
 				Map map = JSON.parseObject(JSON.toJSONString(params.get(0)), Map.class);
 				map.remove("pin");
@@ -191,8 +192,8 @@ public class SysLogAspect {
 		// 类型
 		sysLog.setType(syslog.type().getValue());
 		// 当 operation = query 时，只记录 code != 200 的内容
-		if (!"query".equals(operationType)) {
-			if ("login".equals(operationType)) {
+		if (! StrUtil.equalsIgnoreCase(operationType, "query")) {
+			if (StrUtil.equalsAnyIgnoreCase("login", operationType)) {
 				Map map = JSONObject.parseObject(JSONObject.toJSONString(r), Map.class);
 				map.remove("data");
 				sysLog.setResponse(JSON.toJSONString(map));
@@ -202,7 +203,7 @@ public class SysLogAspect {
 		}
 
 		// 由于 导出功能没有返回值 记录为 success , 原因为导出中若有异常会经过 saveExceptionLog（） 方法
-		if ("export".equals(operationType)) {
+		if (StrUtil.equalsIgnoreCase("export", operationType) || StrUtil.equalsIgnoreCase("download", operationType)) {
 			sysLog.setState("success");
 		} else {
 			String state = "200".equals(r.get("code").toString()) ? "success" : "fail";
@@ -219,10 +220,10 @@ public class SysLogAspect {
 		List<Object> params = this.getRecordParams(args);
 		// 获取请求参数名
 		String oepraId = "";
-		if ("add".equals(operationType) || "update".equals(operationType)) {
+		if (StrUtil.equalsIgnoreCase("add", operationType) || StrUtil.equalsIgnoreCase("update", operationType)) {
 			oepraId = getOpId(params);
 		}
-		if ("delete".equals(operationType)) {
+		if (StrUtil.equalsIgnoreCase("delete", operationType)) {
 			oepraId = JSON.toJSONString(params.get(0)).replace("\"", "");
 		}
 		if (oepraId.getBytes().length > Constant.MYSQL_TEXT_MAXLENGTH) {
@@ -261,7 +262,7 @@ public class SysLogAspect {
 
 		sysLog.setApiKeyId(apiKeyId);
 		// 保存系统日志 注： 查询操作若无异常不记录操作日志
-		if (!"query".equals(operationType)) {
+		if (! StrUtil.equalsIgnoreCase(operationType,"query")) {
 			sysLogService.save(sysLog);
 		}
 	}
@@ -419,17 +420,32 @@ public class SysLogAspect {
 			List<Object> list = this.getRecordParams(args);
 
 			String operationType = syslog.operation().getValue();
+			String type = syslog.type().getValue();
 			// 退出操作
-			if ("logout".equals(operationType)) {
+			if (StrUtil.equalsIgnoreCase("logout", operationType)) {
 				// 补全 params 为 当前退出者
 				Map map = new HashMap(2);
 				map.put("username", currentLoginUser.getName());
 				result = JSON.toJSONString(map);
-			} else if ("login".equals(operationType)) {
-				String params = JSON.toJSONString(list.get(0));
-				Map map = JSON.parseObject(params, Map.class);
-				map.remove("pin");
-				result = JSON.toJSONString(map);
+			} else if (StrUtil.equalsIgnoreCase("login", operationType)) {
+				if (StrUtil.equalsIgnoreCase("system", operationType)){
+					String params = JSON.toJSONString(list.get(0));
+					Map map = JSON.parseObject(params, Map.class);
+					map.remove("pin");
+					result = JSON.toJSONString(map);
+				}else {
+					Map map = new LinkedHashMap();
+					for (int i = 0; i < list.size(); i++) {
+						Object arg = list.get(i);
+						if (arg instanceof MultipartFile) {
+							String name = ((MultipartFile) arg).getOriginalFilename();
+							map.put("arg" + (i + 1), name);
+						} else {
+							map.put("arg" + (i + 1), list.get(i));
+						}
+					}
+					result = JSON.toJSONString(map);
+				}
 			} else {
 				if (ToolUtil.isNotEmpty(list)) {
 					Map map = new LinkedHashMap();
@@ -441,7 +457,6 @@ public class SysLogAspect {
 						} else {
 							map.put("arg" + (i + 1), list.get(i));
 						}
-
 					}
 					result = JSON.toJSONString(map);
 				}

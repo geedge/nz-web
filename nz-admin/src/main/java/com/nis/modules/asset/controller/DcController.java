@@ -171,7 +171,7 @@ public class DcController {
     }
 
     @DeleteMapping("/cancelImport")
-    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.DATACENTER)
+    @SysLog(operation = OperationEnum.CANCEL, type = TypeEnum.DATACENTER)
     public R cancelImport(@RequestParam(value = "seq", required = false) String seq) {
         ValidateUtils.is(seq).notNull(RCode.UNDO_IMPORT_SEQ_ISNULL);
 
@@ -299,7 +299,7 @@ public class DcController {
     }
 
     @PostMapping("/cabinet/import")
-    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.DATACENTER)
+    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.CABINET)
     @RequiresPermissions({"cabinet:save"})
     public R importCabinetsFromExcel(@RequestParam(value = "file") MultipartFile excelFile, HttpServletRequest request, @RequestParam Map<String, Object> params) throws IOException {
         String language = request.getHeader(Constant.LANGUAGE);
@@ -315,7 +315,7 @@ public class DcController {
     }
 
     @GetMapping("/cabinet/export")
-    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.DATACENTER)
+    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.CABINET)
     public void exportCabinets(HttpServletResponse response, @RequestParam Map<String, Object> params) throws IOException {
         Object format = params.get("format");
         String formatStr = format == null ? "1" : format.toString();
@@ -330,7 +330,7 @@ public class DcController {
     }
 
     @DeleteMapping("/cabinet/cancelImport")
-    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.DATACENTER)
+    @SysLog(operation = OperationEnum.CANCEL, type = TypeEnum.CABINET)
     public R cancelCabinetImport(@RequestParam(value = "seq", required = false) String seq) {
         ValidateUtils.is(seq).notNull(RCode.UNDO_IMPORT_SEQ_ISNULL);
 

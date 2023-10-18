@@ -28,7 +28,7 @@ public class IpamIpController {
     private IpamIpService ipamIpService;
 
     @GetMapping("/{id}")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.IPAMIP)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.IPAM_IP)
     public R ipamIpInfo(@PathVariable Integer id){
 
         ValidateUtils.is(id).notNull(RCode.IPAM_IP_ID_ISNULL);
@@ -38,7 +38,7 @@ public class IpamIpController {
     }
 
     @GetMapping
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.IPAMIP)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.IPAM_IP)
     public R ipamIpList(@RequestParam Map params){
 
         PageUtils page = ipamIpService.ipamIpList(params);
@@ -46,14 +46,14 @@ public class IpamIpController {
     }
 
     @RequestMapping(method = { RequestMethod.POST })
-    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.IPAMIP)
+    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.IPAM_IP)
     public R ipamIpSave(@RequestBody IpamIp ipamIp) throws IncompatibleAddressException, UnknownHostException {
         Integer id = ipamIpService.saveOrModifyIpamSubnet(ipamIp);
         return R.ok().putData("id", id);
     }
 
     @RequestMapping(method = { RequestMethod.PUT })
-    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.IPAMIP)
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.IPAM_IP)
     public R ipamIpModify(@RequestBody IpamIp ipamIp) throws IncompatibleAddressException, UnknownHostException {
         ValidateUtils.is(ipamIp.getId()).notNull(RCode.IPAM_IP_ID_ISNULL);
         Integer id = ipamIpService.saveOrModifyIpamSubnet(ipamIp);
@@ -61,7 +61,7 @@ public class IpamIpController {
     }
 
     @DeleteMapping
-    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.IPAMIP)
+    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.IPAM_IP)
     public R ipamIpDelete(@RequestParam Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.IPAM_IP_ID_ISNULL);
         ipamIpService.delIpamIps(Arrays.asList(ids));
@@ -87,7 +87,7 @@ public class IpamIpController {
     }
 
     @PostMapping("/import")
-    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.IPAMIP)
+    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.IPAM_IP)
     public R importIpamIpData(@RequestParam(value = "file") MultipartFile excelFile, HttpServletRequest request, @RequestParam Map<String, Object> params) throws IOException {
         String language = request.getHeader(Constant.LANGUAGE);
         ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL);
@@ -100,7 +100,7 @@ public class IpamIpController {
     }
 
     @GetMapping("/export")
-    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.IPAMIP)
+    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.IPAM_IP)
     public void export(HttpServletResponse response, @RequestParam Map<String, Object> params) throws IOException {
         Object format = params.get("format");
         String formatStr = format == null ? "1" : format.toString();
@@ -115,7 +115,7 @@ public class IpamIpController {
     }
 
     @DeleteMapping("/cancelImport")
-    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.IPAMIP)
+    @SysLog(operation = OperationEnum.CANCEL, type = TypeEnum.IPAM_IP)
     public R cancelImport(String seq) {
         ValidateUtils.is(seq).notNull(RCode.UNDO_IMPORT_SEQ_ISNULL);
         ipamIpService.cancelImport(seq);

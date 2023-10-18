@@ -19,7 +19,7 @@ public class AlertNotifyMethodController {
     private AlertNotifyMethodService alertNotifyMethodService;
 
     @GetMapping("/{id}")
-    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTNOTIFYMETHOD)
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERT_NOTIFY_METHOD)
     public R detail(@PathVariable(value = "id",required = true) Integer id){
         AlertNotifyMethod alertNotifyMethod = alertNotifyMethodService.getById(id);
 
@@ -27,7 +27,7 @@ public class AlertNotifyMethodController {
     }
 
     @GetMapping
-    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTNOTIFYMETHOD)
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERT_NOTIFY_METHOD)
     public R list(@RequestParam Map<String, Object> params ){
         PageUtils page = alertNotifyMethodService.queryPage(params);
 
@@ -35,7 +35,7 @@ public class AlertNotifyMethodController {
     }
 
     @PostMapping
-    @SysLog(operation = OperationEnum.ADD,type = TypeEnum.ALERTNOTIFYMETHOD)
+    @SysLog(operation = OperationEnum.ADD,type = TypeEnum.ALERT_NOTIFY_METHOD)
     @RequiresPermissions({"alert:notify:save"})
     public R save(@RequestBody AlertNotifyMethod alertNotifyMethod){
         alertNotifyMethod.setName(StrUtil.trim(alertNotifyMethod.getName()));
@@ -45,7 +45,7 @@ public class AlertNotifyMethodController {
         return R.ok();
     }
     @PutMapping
-    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERTNOTIFYMETHOD)
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERT_NOTIFY_METHOD)
     @RequiresPermissions({"alert:notify:update"})
     public R update(@RequestBody AlertNotifyMethod alertNotifyMethod){
         alertNotifyMethod.setName(StrUtil.trim(alertNotifyMethod.getName()));
@@ -55,7 +55,7 @@ public class AlertNotifyMethodController {
     }
 
     @DeleteMapping
-    @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ALERTNOTIFYMETHOD)
+    @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ALERT_NOTIFY_METHOD)
     @RequiresPermissions({"alert:notify:delete"})
     public R delete(@RequestParam(value = "ids",required = true)String ids){
         alertNotifyMethodService.deleteByIds(Tool.StrUtil.split(ids, ","));

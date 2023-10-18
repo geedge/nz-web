@@ -19,14 +19,14 @@ public class SysApiKeyController {
 	private SysApiKeyService sysApiKeyService;
 
 	@GetMapping
-	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYSTEMAPIKEY)
+	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYS_API_KEY)
 	public R queryCredentialList(@RequestParam Map<String,Object> params) {
 		PageUtils page = sysApiKeyService.queryPage(params);
 		return R.ok(page);
 	}
 
 	@PostMapping
-	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.SYSTEMAPIKEY)
+	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.SYS_API_KEY)
 	@RequiresPermissions({"sys:apiKey:save"})
 	public R addSysApiKey(@RequestBody SysApiKey sysApiKey) {
 		ValidateUtils.is(sysApiKey.getName()).notNull(RCode.SYSAPIKEY_NAME_ISNULL).maxLength(64)
@@ -37,7 +37,7 @@ public class SysApiKeyController {
 	}
 
 	@DeleteMapping
-	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.SYSTEMAPIKEY)
+	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.SYS_API_KEY)
 	@RequiresPermissions({"sys:apiKey:delete"})
 	public R removeSysApiKey(@RequestParam String ids) {
 		ValidateUtils.is(ids).notNull(RCode.SYSAPIKEY_ID_ISNULL);
@@ -47,7 +47,7 @@ public class SysApiKeyController {
 	}
 
 	@GetMapping("/self")
-	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEMAPIKEY)
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYS_API_KEY)
 	public R querySelfApiKeys(@RequestParam Map<String, Object> params) {
 		PageUtils page = sysApiKeyService.querySelfApiKeys(params);
 		return R.ok(page);
@@ -55,7 +55,7 @@ public class SysApiKeyController {
 
 	@PostMapping("/self")
 	@RequiresPermissions({"sys:apiKey:save"})
-	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEMAPIKEY)
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYS_API_KEY)
 	public R addSelfApiKey(@RequestBody SysApiKey sysApiKey) {
 		ValidateUtils.is(sysApiKey.getName()).notNull(RCode.SYSAPIKEY_NAME_ISNULL).maxLength(64);
 
@@ -63,7 +63,7 @@ public class SysApiKeyController {
 	}
 
 	@DeleteMapping("/self")
-	@SysLog(operation = OperationEnum.DELETE, type = TypeEnum.SYSTEMAPIKEY)
+	@SysLog(operation = OperationEnum.DELETE, type = TypeEnum.SYS_API_KEY)
 	@RequiresPermissions({"sys:apiKey:delete"})
 	public R removeSelfApiKeys(@RequestParam String ids) {
 		ValidateUtils.is(ids).notNull(RCode.SYSAPIKEY_ID_ISNULL);

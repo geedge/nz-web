@@ -53,7 +53,7 @@ public class AssetController {
      * @return
      */
     @GetMapping("/asset/{id}")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.HARDWARE_ASSET)
     public R queryAssetInfo(@PathVariable("id") Integer id) {
         return R.ok(assetAssetService.queryAssetInfo(id));
     }
@@ -64,7 +64,7 @@ public class AssetController {
      * @return
      */
     @GetMapping("/asset")
-    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSET)
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.HARDWARE_ASSET)
     public R queryAssetPage(@RequestParam Map<String, Object> params) {
         PageUtils page = assetAssetService.queryAssetPage(params);
         Object statFlag = params.getOrDefault("statistics", 0);
@@ -82,7 +82,7 @@ public class AssetController {
      * @return
      */
     @PostMapping("/asset")
-    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.ASSET)
+    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.HARDWARE_ASSET)
     @RequiresPermissions({"asset:save"})
     public R saveAsset(@RequestBody AssetAsset asset) {
         ValidateUtils.is(asset.getName()).notNull(RCode.ASSET_NAME_ISNULL).maxLength(128)
@@ -121,7 +121,7 @@ public class AssetController {
      * @return
      */
     @PutMapping("/asset")
-    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ASSET)
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.HARDWARE_ASSET)
     @RequiresPermissions({"asset:update"})
     public R updateAsset(@RequestBody AssetAsset asset) {
         ValidateUtils.is(asset.getId()).notNull(RCode.ASSET_ID_ISNULL)
@@ -157,7 +157,7 @@ public class AssetController {
      * @return
      */
     @DeleteMapping("/asset")
-    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ASSET)
+    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.HARDWARE_ASSET)
     @RequiresPermissions({"asset:delete"})
     public R deleteAsset(@RequestParam(required = false, defaultValue = "0") Integer force, Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.ASSET_ID_ISNULL);
@@ -170,7 +170,7 @@ public class AssetController {
      * @return
      */
     @GetMapping("/asset/stat/endpoint/{id}")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.HARDWARE_ASSET)
     public R endpointStatByAsset(@PathVariable Integer id) {
         return R.ok(assetAssetService.endpointStatByAsset(id));
     }
@@ -181,7 +181,7 @@ public class AssetController {
      * @return
      */
     @GetMapping("/asset/feature/{id}")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.HARDWARE_ASSET)
     public R featureStatByAsset(@PathVariable Integer id) {
         return R.ok(assetAssetService.featureStatByAsset(id));
     }
@@ -192,7 +192,7 @@ public class AssetController {
      * @return
      */
     @GetMapping("/asset/field/value")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.HARDWARE_ASSET)
     public R queryAssetFieldValue(Integer assetId,Integer metaId) {
         ValidateUtils.is(assetId).notNull(RCode.ASSET_ID_ISNULL)
                 .and(metaId).notNull(RCode.ASSET_FIELD_META_ID_ISNULL);
@@ -209,7 +209,7 @@ public class AssetController {
      * @return
      */
     @GetMapping("/asset/queryParams")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.HARDWARE_ASSET)
     public R queryParams() {
         return R.ok(assetAssetService.queryParams());
     }
@@ -243,7 +243,7 @@ public class AssetController {
      * @return
      */
     @PostMapping("/asset/import")
-    @SysLog(operation = OperationEnum.IMPORT,type = TypeEnum.ASSET)
+    @SysLog(operation = OperationEnum.IMPORT,type = TypeEnum.HARDWARE_ASSET)
     @RequiresPermissions({"asset:save"})
     public R importAssetsData(@RequestParam(value = "file") MultipartFile excelFile, HttpServletRequest request, @RequestParam Map<String, Object> params) throws IOException {
         String language = request.getHeader(Constant.LANGUAGE);
@@ -263,7 +263,7 @@ public class AssetController {
      * @return
      */
     @DeleteMapping("/asset/cancelImport")
-    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ASSET)
+    @SysLog(operation = OperationEnum.CANCEL, type = TypeEnum.HARDWARE_ASSET)
     public R cancelImportAssetData(String seq) {
         ValidateUtils.is(seq).notNull(RCode.UNDO_IMPORT_SEQ_ISNULL);
 
@@ -278,7 +278,7 @@ public class AssetController {
      * @param params
      */
     @GetMapping("/asset/export")
-    @SysLog(operation = OperationEnum.EXPORT,type = TypeEnum.ASSET)
+    @SysLog(operation = OperationEnum.EXPORT,type = TypeEnum.HARDWARE_ASSET)
     public void exportAssets(HttpServletResponse response, @RequestParam Map<String, Object> params)  throws IOException {
         Object format = params.get("format");
         String formatStr = format == null ? "1" : format.toString();
@@ -297,7 +297,7 @@ public class AssetController {
      * asset资产批量修改
      */
     @PutMapping("/asset/bulkEdit")
-    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ASSET)
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.HARDWARE_ASSET)
     @RequiresPermissions({"asset:update"})
     public R bulkEdit(@RequestBody Map<String,Object> params) {
     	assetAssetService.bulkEdit(params);
@@ -311,7 +311,7 @@ public class AssetController {
      * @return
      */
     @RequestMapping(value = "/asset/sync", method = {RequestMethod.POST, RequestMethod.PUT})
-    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ASSET)
+    @SysLog(operation = OperationEnum.SYNC, type = TypeEnum.HARDWARE_ASSET)
     public R syncAssetEndpointAndDashboard(@RequestBody(required = false) Map<String, Object> requestParam) {
         // validate param
         requestParam = Tool.MapUtil.defaultIfEmpty(requestParam, Tool.MapUtil.empty());
@@ -328,21 +328,21 @@ public class AssetController {
 
     
     @GetMapping("/stateConf")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSETSTATECONF)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET_STATE_CONF)
     public R queryStateConfList(@RequestParam Map<String, Object> params) {
         PageUtils page = stateConfService.queryPage(params);
         return R.ok(page);
     }
 
     @GetMapping("/stateConf/{id}")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSETSTATECONF)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET_STATE_CONF)
     public R queryStateConfInfo(@PathVariable("id") Integer id) {
         AssetStateConf assetStateConf = stateConfService.queryConfInfo(id);
         return R.ok(assetStateConf);
     }
 
     @PostMapping("/stateConf")
-    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.ASSETSTATECONF)
+    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.ASSET_STATE_CONF)
     @RequiresPermissions({"asset:state:save"})
     public R saveAssetStateConf(@RequestBody AssetStateConf conf) {
         ValidateUtils.is(conf.getName()).notNull(RCode.STATECONF_NAME_ISNULL)
@@ -356,7 +356,7 @@ public class AssetController {
     }
 
     @PutMapping("/stateConf")
-    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ASSETSTATECONF)
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ASSET_STATE_CONF)
     @RequiresPermissions({"asset:state:update"})
     public R editAssetStateConf(@RequestBody AssetStateConf conf) {
         ValidateUtils.is(conf.getId()).notNull(RCode.STATECONF_ID_ISNULL)
@@ -371,7 +371,7 @@ public class AssetController {
     }
 
     @DeleteMapping("/stateConf")
-    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ASSETSTATECONF)
+    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ASSET_STATE_CONF)
     @RequiresPermissions({"asset:state:delete"})
     public R deleteAssetStateConf(@RequestParam Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.STATECONF_ID_ISNULL);
@@ -382,21 +382,21 @@ public class AssetController {
 
 
     @GetMapping("/typeConf/{id}")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSETTYPECONF)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET_TYPE_CONF)
     public R queryTypeConfInfo(@PathVariable("id") Integer id) {
         AssetTypeConf assetTypeConf = typeConfService.queryConfInfo(id);
         return R.ok(assetTypeConf);
     }
 
     @GetMapping("/typeConf")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSETTYPECONF)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET_TYPE_CONF)
     public R queryTypeConfList(@RequestParam Map<String, Object> params) {
         PageUtils page = typeConfService.queryPage(params);
         return R.ok(page);
     }
 
     @GetMapping("/typeConf/tree")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSETTYPECONF)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET_TYPE_CONF)
     public R queryTypeConfTree(Integer pid) {
         List<AssetTypeConf> typeConfTreeList = typeConfService.queryTypeConfTree(pid);
         Map map = new HashMap(2);
@@ -405,7 +405,7 @@ public class AssetController {
     }
 
     @PostMapping("/typeConf")
-    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.ASSETTYPECONF)
+    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.ASSET_TYPE_CONF)
     @RequiresPermissions({"asset:type:save"})
     public R saveAssetTypeConf(@RequestBody AssetTypeConf conf) {
         ValidateUtils.is(conf.getName()).notNull(RCode.TYPECONF_NAME_ISNULL)
@@ -425,7 +425,7 @@ public class AssetController {
     }
 
     @PutMapping("/typeConf")
-    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ASSETTYPECONF)
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ASSET_TYPE_CONF)
     @RequiresPermissions({"asset:type:update"})
     public R editAssetTypeConf(@RequestBody AssetTypeConf conf) {
         ValidateUtils.is(conf.getId()).notNull(RCode.TYPECONF_ID_ISNULL)
@@ -447,7 +447,7 @@ public class AssetController {
     }
 
     @DeleteMapping("/typeConf")
-    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ASSETTYPECONF)
+    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ASSET_TYPE_CONF)
     @RequiresPermissions({"asset:type:delete"})
     public R deleteAssetTypeConf(@RequestParam Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.TYPECONF_ID_ISNULL);
@@ -462,7 +462,7 @@ public class AssetController {
      * @return
      */
     @GetMapping("/comment/{id}")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSETCOMMENT)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET_COMMENT)
     public R queryAssetCommentInfo(@PathVariable("id") Integer id) {
         return R.ok(assetCommentService.queryCommentInfo(id));
     }
@@ -473,7 +473,7 @@ public class AssetController {
      * @return
      */
     @GetMapping("/comment")
-    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSETCOMMENT)
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSET_COMMENT)
     public R queryAssetCommentPage(@RequestParam Map<String, Object> params) {
         return R.ok(assetCommentService.queryCommentPage(params));
     }
@@ -484,7 +484,7 @@ public class AssetController {
      * @return
      */
     @PostMapping("/comment")
-    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.ASSETCOMMENT)
+    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.ASSET_COMMENT)
     @RequiresPermissions({"assetComment:save"})
     public R saveAssetComment(@RequestBody AssetComment AssetComment) {
         return R.ok().putData("id", assetCommentService.saveComment(AssetComment));
@@ -496,7 +496,7 @@ public class AssetController {
      * @return
      */
     @PutMapping("/comment")
-    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ASSETCOMMENT)
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ASSET_COMMENT)
     @RequiresPermissions({"assetComment:update"})
     public R updateAssetComment(@RequestBody AssetComment AssetComment) {
         ValidateUtils.is(AssetComment.getId()).notNull(RCode.ASSET_COMMENT_ID_ISNULL);
@@ -509,7 +509,7 @@ public class AssetController {
      * @return
      */
     @DeleteMapping("/comment")
-    @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ASSETCOMMENT)
+    @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ASSET_COMMENT)
     @RequiresPermissions({"assetComment:delete"})
     public R deleteAssetComment(@RequestParam Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.ASSET_COMMENT_ID_ISNULL);

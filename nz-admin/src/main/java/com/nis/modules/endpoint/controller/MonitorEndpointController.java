@@ -131,7 +131,7 @@ public class MonitorEndpointController {
      * @return
      */
     @DeleteMapping("/endpoint/cancelImport")
-    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ENDPOINT)
+    @SysLog(operation = OperationEnum.CANCEL, type = TypeEnum.ENDPOINT)
     public R cancelImport(String seq) {
         ValidateUtils.is(seq).notNull(RCode.UNDO_IMPORT_SEQ_ISNULL);
 
@@ -187,7 +187,7 @@ public class MonitorEndpointController {
      * endpoint配置同步接口
      */
     //@PutMapping( "/endpoint/syncTmpl")
-    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ENDPOINT)
+    @SysLog(operation = OperationEnum.SYNC, type = TypeEnum.ENDPOINT)
     public R syncTmpl(@RequestBody Map<String, List<Integer>> params) {
         ValidateUtils.notAllNull(RCode.ENDPOINT_MODULE_ASSET_ID_ISALLNULL, params.get("moduleIds"), params.get("endpointIds"), params.get("assetIds"));
         monitorEndpointService.syncTmpl(params.get("moduleIds"), params.get("endpointIds"), params.get("assetIds"));
@@ -224,7 +224,7 @@ public class MonitorEndpointController {
      * @return
      */
     @RequestMapping(value = "/endpoint/sync", method = {RequestMethod.POST, RequestMethod.PUT})
-    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ENDPOINT)
+    @SysLog(operation = OperationEnum.SYNC, type = TypeEnum.ENDPOINT)
     public R syncEndpointConfigAndDashboard(@RequestBody(required = false) Map<String, Object> requestParam) {
         // validate param
         requestParam = Tool.MapUtil.defaultIfEmpty(requestParam, Tool.MapUtil.empty());

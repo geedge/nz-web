@@ -20,7 +20,7 @@ public class SnmpCredentialController {
 	private SnmpCredentialService snmpCredentialService;
 	
 	@GetMapping("/{id}")
-	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SNMPCREDENTIAL)
+	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SNMP_CREDENTIAL)
 	public R queryCredentialById(@PathVariable Integer id) {
 		ValidateUtils.is(id).notNull(RCode.SNMP_CREDENTIAL_ID_ISNULL);
 		SnmpCredential result = snmpCredentialService.getById(id);
@@ -28,14 +28,14 @@ public class SnmpCredentialController {
 	}
 	
 	@GetMapping
-	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SNMPCREDENTIAL)
+	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SNMP_CREDENTIAL)
 	public R queryCredentialList(@RequestParam Map<String,Object> params) {
 		PageUtils page = snmpCredentialService.queryPage(params);
 		return R.ok(page);
 	}
 	
 	@PutMapping
-	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SNMPCREDENTIAL)
+	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.SNMP_CREDENTIAL)
 	@RequiresPermissions({"snmp:credential:update"})
 	public R modifyCredential(@RequestBody SnmpCredential snmpCredential) {
 		Integer id = snmpCredentialService.modifySnmpCredential(snmpCredential);
@@ -43,7 +43,7 @@ public class SnmpCredentialController {
 	}
 	
 	@PostMapping
-	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SNMPCREDENTIAL)
+	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.SNMP_CREDENTIAL)
 	@RequiresPermissions({"snmp:credential:save"})
 	public R saveCredential(@RequestBody SnmpCredential snmpCredential) {
 		Integer id = snmpCredentialService.saveSnmpCredential(snmpCredential);
@@ -51,7 +51,7 @@ public class SnmpCredentialController {
 	}
 	
 	@DeleteMapping
-	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SNMPCREDENTIAL)
+	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.SNMP_CREDENTIAL)
 	@RequiresPermissions({"snmp:credential:delete"})
 	public R deleteCredential(@RequestParam String ids) {
 		ValidateUtils.is(ids).notNull(RCode.SNMP_CREDENTIAL_ID_ISNULL);

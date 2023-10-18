@@ -64,19 +64,20 @@ public class AgentController {
 	 * @return
 	 */
 	@GetMapping("/{id}")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.AGENT)
 	public R agentDetails(@PathVariable("id") Integer id) {
 		return R.ok(agentService.queryAgentDetails(id));
 	}
 
 	@GetMapping
-	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROMSERVER)
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.AGENT)
 	public R list(@RequestParam Map<String, Object> params) {
 		PageUtils page = agentService.queryPage(params);
 		return R.ok(page);
 	}
 
 	@PostMapping
-	@SysLog(operation = OperationEnum.ADD, type = TypeEnum.PROMSERVER)
+	@SysLog(operation = OperationEnum.ADD, type = TypeEnum.AGENT)
 	@RequiresPermissions({"agent:save"})
 	public R save(@RequestBody Agent agent) {
 
@@ -86,7 +87,7 @@ public class AgentController {
 	}
 
 	@PutMapping
-	@SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.PROMSERVER)
+	@SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.AGENT)
 	@RequiresPermissions({"agent:update"})
 	public R modify(@RequestBody Agent agent) {
 		ValidateUtils.is(agent.getId()).notNull(RCode.AGENT_ID_ISNULL);
@@ -97,7 +98,7 @@ public class AgentController {
 	}
 
 	@DeleteMapping
-	@SysLog(operation = OperationEnum.DELETE, type = TypeEnum.PROMSERVER)
+	@SysLog(operation = OperationEnum.DELETE, type = TypeEnum.AGENT)
 	@RequiresPermissions({"agent:delete"})
 	public R remove(String ids) {
 		ValidateUtils.is(ids).notNull(RCode.AGENT_ID_ISNULL);
@@ -153,6 +154,7 @@ public class AgentController {
 	 * @Date 2021/4/2
 	 */
 	@GetMapping("/download")
+	@SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.AGENT)
 	public void downloadAgent(HttpServletResponse response,
 			@RequestParam(defaultValue = "centos", required = false) String os) {
 		log.info("download agent package to {}", os);
@@ -172,6 +174,7 @@ public class AgentController {
 	 */
 	@PostMapping("/register")
 	@RequiresPermissions({ "agent:save" })
+	@SysLog(operation = OperationEnum.ADD, type = TypeEnum.AGENT)
 	public R autoRegister(HttpServletRequest request, @RequestBody Agent agent) {
 		if (Tool.StrUtil.isEmpty(agent.getHost())) {
 			agent.setHost(request.getRemoteAddr());
@@ -187,6 +190,7 @@ public class AgentController {
 	 * @Date 2021/4/2
 	 */
 	@PostMapping("/token/refresh")
+	@SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.AGENT)
 	public R refreshToken(HttpServletResponse response, @RequestBody Map<String, Object> params) {
 		String protocol = (String) params.get("protocol");
 		String host = (String) params.get("host");

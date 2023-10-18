@@ -35,7 +35,7 @@ public class IssueController {
      * @return
      */
     @GetMapping("/{id}")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ISSUERECORD)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ISSUE_RECORD)
     public R queryIssueInfo(@PathVariable("id") Integer id) {
         return R.ok(issueRecordService.queryIssueInfo(id));
     }
@@ -46,7 +46,7 @@ public class IssueController {
      * @return
      */
     @GetMapping
-    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ISSUERECORD)
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ISSUE_RECORD)
     public R queryIssuePage(@RequestParam Map<String, Object> params) { return R.ok(issueRecordService.queryIssuePage(params)); }
 
     /**
@@ -55,7 +55,7 @@ public class IssueController {
      * @return
      */
     @PostMapping
-    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.ISSUERECORD)
+    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.ISSUE_RECORD)
     @RequiresPermissions({"issueRecord:save"})
     public R saveIssue(@RequestBody IssueRecord issueRecord) { return R.ok().putData("id", issueRecordService.saveIssue(issueRecord)); }
 
@@ -65,7 +65,7 @@ public class IssueController {
      * @return
      */
     @PutMapping
-    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ISSUERECORD)
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ISSUE_RECORD)
     @RequiresPermissions({"issueRecord:update"})
     public R updateIssue(@RequestBody IssueRecord issueRecord) {
         ValidateUtils.is(issueRecord.getId()).notNull(RCode.ISSUE_ID_ISNULL);
@@ -78,7 +78,7 @@ public class IssueController {
      * @return
      */
     @DeleteMapping
-    @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ISSUERECORD)
+    @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ISSUE_RECORD)
     @RequiresPermissions({"issueRecord:delete"})
     public R deleteIssue(@RequestParam Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.ISSUE_ID_ISNULL);
@@ -92,7 +92,7 @@ public class IssueController {
      * @return
      */
     @GetMapping("/type")
-    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ISSUERECORD)
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ISSUE_RECORD)
     public R queryType(String name) {
         return R.ok().putData("list", issueRecordService.queryType(name));
     }
@@ -103,7 +103,7 @@ public class IssueController {
      * @return
      */
     @GetMapping("/activity")
-    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ISSUEACTIVITY)
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ISSUE_ACTIVITY)
     public R queryIssueActivityPage(@RequestParam Map<String, Object> params) { return R.ok(issueActivityService.queryIssueActivityPage(params)); }
 
     /**
@@ -112,7 +112,7 @@ public class IssueController {
      * @return
      */
     @PostMapping("/activity")
-    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.ISSUEACTIVITY)
+    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.ISSUE_ACTIVITY)
     @RequiresPermissions({"issueActivity:save"})
     public R saveIssueActivity(@RequestBody IssueActivity issueActivity) { return R.ok().putData("id", issueActivityService.saveIssueActivity(issueActivity)); }
 
@@ -122,7 +122,7 @@ public class IssueController {
      * @return
      */
     @PutMapping("/activity")
-    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ISSUEACTIVITY)
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ISSUE_ACTIVITY)
     @RequiresPermissions({"issueActivity:update"})
     public R updateIssueActivity(@RequestBody IssueActivity issueActivity) { return R.ok().putData("id", issueActivityService.updateIssueActivity(issueActivity)); }
 
@@ -132,7 +132,7 @@ public class IssueController {
      * @return
      */
     @DeleteMapping("/activity")
-    @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ISSUEACTIVITY)
+    @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ISSUE_ACTIVITY)
     @RequiresPermissions({"issueActivity:delete"})
     public R deleteIssueActivity(@RequestParam Integer... ids) {
         issueActivityService.deleteIssueActivity(ids);

@@ -39,7 +39,7 @@ public class AlertMessageController {
      * 列表
      */
     @RequestMapping(method = RequestMethod.GET)
-	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTMESSAGE)
+	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERT_MESSAGE)
     public R list(@RequestParam Map<String, Object> params){
     	logger.debug("query param : {}", Tool.JSONUtil.toJsonStr(params));
     	//state不能为空
@@ -62,7 +62,7 @@ public class AlertMessageController {
      * 删除
      */
     @RequestMapping( method = RequestMethod.DELETE)
-	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ALERTMESSAGE)
+	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ALERT_MESSAGE)
     @RequiresPermissions({"alert:message:delete"})
     public R delete(Long[] ids) {
     	ValidateUtils.is(ids).notNull();
@@ -78,7 +78,7 @@ public class AlertMessageController {
 	 * alert message导出
 	 */
 	@GetMapping(value = "/export")
-	@SysLog(operation = OperationEnum.EXPORT,type = TypeEnum.ALERTMESSAGE)
+	@SysLog(operation = OperationEnum.EXPORT,type = TypeEnum.ALERT_MESSAGE)
 	public void export(HttpServletResponse response, @RequestParam Map<String, Object> params) throws IOException {
 		Object format = params.get("format");
 		String formatStr = format == null ? "1" : format.toString();
@@ -96,7 +96,7 @@ public class AlertMessageController {
 	 * alert message详情
 	 */
 	@GetMapping("/{id}")
-	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTMESSAGE)
+	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERT_MESSAGE)
 	public R queryInfo(@PathVariable("id") Long id){
 		ValidateUtils.is(id).notNull(RCode.ALERTMSG_IDS_ISNULL);
 		AlertMessageEntity alertMessageEntity = handlerService.queryInfo(id);
@@ -107,7 +107,7 @@ public class AlertMessageController {
 	 * alert message相关查询
 	 */
 	@GetMapping("/rel")
-	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTMESSAGE)
+	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERT_MESSAGE)
 	public R queryAlertMessageRelList(@RequestParam Map params){
 
 		PageUtils page = handlerService.queryAlertMessageRelList(params);
@@ -118,7 +118,7 @@ public class AlertMessageController {
 	 * alert message告警信息确认
 	 */
 	@PutMapping("/ack")
-	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERTMESSAGE)
+	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERT_MESSAGE)
 	public R alertMessageAck(@RequestBody List<Map<String,Object>> mapList){
 		handlerService.alertMessageAck(mapList);
 		return R.ok();

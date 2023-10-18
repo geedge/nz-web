@@ -60,7 +60,7 @@ public class FullTextSearchController {
 
 
     @GetMapping("/alert/message/query")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ALERTMESSAGE)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ALERT_MESSAGE)
     public R alertMessageFullTextSearchQuery(@RequestParam Map<String, Object> params) {
         PageUtils page = fullTextSearchService.queryAlertMessageFullTextPage(params);
         return R.ok(page);

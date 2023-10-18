@@ -9,6 +9,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
@@ -95,6 +96,7 @@ public class AssetDiscoveryController {
      * @return
      */
     @PostMapping("/discovery")
+    @SysLog(operation = OperationEnum.CREAT_TASK, type = TypeEnum.ASSET_DISCOVERY)
     public R createDiscoveryTask(@RequestBody Map<String, Object> requestBody) {
         requestBody = Tool.MapUtil.defaultIfEmpty(requestBody, Tool.MapUtil.newHashMap());
         log.info("[createDiscoveryTask] [begin] [body: {}]", JSONUtil.toJsonStr(requestBody));
@@ -176,6 +178,7 @@ public class AssetDiscoveryController {
      * @return
      */
     @GetMapping("/discovery/{tid}")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET_DISCOVERY)
     public R queryResult(@PathVariable(value = "tid", required = true) String tid) {
         String discoveryResultKey = StrUtil.concat(true, "discovery_result_", tid);
         List<String> discoveryResultList = Tool.ListUtil.list(false);
@@ -226,6 +229,7 @@ public class AssetDiscoveryController {
      * @return
      */
     @DeleteMapping("/discovery/{tid}")
+    @SysLog(operation = OperationEnum.CANCEL, type = TypeEnum.ASSET_DISCOVERY)
     public R cancelTask(@PathVariable(value = "tid", required = false) String tid) {
         ExecutorService taskExecutor = TASK_EXECUTOR_MAP.get(tid);
         if (Tool.ObjectUtil.isNull(taskExecutor)) {

@@ -39,6 +39,7 @@ public class SysBackupController {
      * 查询列表
      */
     @GetMapping
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYS_BACKUP)
     public R info(@RequestParam Map<String, Object> params) {
         Object result = sysBackupService.queryInfo();
         return R.ok(result);
@@ -48,20 +49,21 @@ public class SysBackupController {
      * 修改备份
      */
     @PutMapping
-    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.SYSTEM)
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.SYS_BACKUP)
     public R modify(@RequestBody Map<String, Object> params) {
         sysBackupService.save(params);
         return R.ok();
     }
 
     @GetMapping("/list")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYS_BACKUP)
     public R backupList() {
         List<Object> result = sysBackupService.queryBackupList();
         return R.ok(result);
     }
 
     @PostMapping
-    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.SYSTEM)
+    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.SYS_BACKUP)
     public R backupData(@RequestParam(required = false) String remark) {
         // get lock
         String uuid = Tool.StrUtil.uuid();
@@ -97,7 +99,7 @@ public class SysBackupController {
      * @return
      */
     @PutMapping("/restore")
-    @SysLog(operation = OperationEnum.RESET, type = TypeEnum.SYSTEM)
+    @SysLog(operation = OperationEnum.RESET, type = TypeEnum.SYS_BACKUP)
     public R restore(@RequestBody(required = false) Map<String, Object> params) {
         ValidateUtils.is(params).notNull(RCode.SYS_BACKUP_FILENAME_ISNULL);
         String filename = (String) params.get("filename");
@@ -118,6 +120,7 @@ public class SysBackupController {
      * @return
      */
     @DeleteMapping
+    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.SYS_BACKUP)
     public R delete(String filename) {
         if (Tool.StrUtil.isEmpty(filename)) throw new NZException(RCode.SYS_BACKUP_FILENAME_ISNULL);
 
@@ -131,6 +134,7 @@ public class SysBackupController {
      * @param filename
      */
     @GetMapping("/download")
+    @SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.SYS_BACKUP)
     public void download(HttpServletResponse response, String filename) throws IOException {
         if (Tool.StrUtil.isEmpty(filename)) throw new NZException(RCode.SYS_BACKUP_FILENAME_ISNULL);
         sysBackupService.downloadBackFileByFilename(response, filename);
@@ -141,7 +145,7 @@ public class SysBackupController {
      * unpack backup file
      */
     @PostMapping("/unpack")
-    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.SYSTEM)
+    @SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.SYS_BACKUP)
     public void unpackBackupFile(@RequestParam(value = "file") MultipartFile file, HttpServletResponse response) {
         // validate file format
         String filename = file.getOriginalFilename();
@@ -163,6 +167,7 @@ public class SysBackupController {
      * @param response
      */
     @GetMapping("/sync")
+    @SysLog(operation = OperationEnum.SYNC, type = TypeEnum.SYS_BACKUP)
     public void syncBackupFile(@RequestParam(required = false) String serverid,
                                @RequestParam(required = false) String type,
                                @RequestParam(required = false) String filename,

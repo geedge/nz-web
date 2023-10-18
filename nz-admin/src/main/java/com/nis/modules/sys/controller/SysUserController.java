@@ -32,7 +32,7 @@ public class SysUserController extends AbstractController {
 	 * 所有用户列表
 	 */
 	@RequestMapping
-	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ACCOUNT)
+	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.USER)
 	public R list(@RequestParam Map<String, Object> params){
 		PageUtils page = sysUserService.queryPage(params);
 		return R.ok(page);
@@ -43,7 +43,7 @@ public class SysUserController extends AbstractController {
 	 * 修改登录用户密码
 	 */
 	@PutMapping("/pin")
-	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ACCOUNT)
+	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.USER)
 	public R password(@RequestBody Map<String,Object> params){
 		Integer id = (Integer) params.get("id");
 		String newPin = (String) params.get("newPin");
@@ -91,7 +91,7 @@ public class SysUserController extends AbstractController {
 	 * @return
 	 */
 	@PutMapping("/profile")
-	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ACCOUNT)
+	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.USER)
 	public R profile(@RequestBody SysUserEntity user) {
 		Integer id = sysUserService.update(user);
 		return R.ok().putData("id", id);
@@ -117,7 +117,7 @@ public class SysUserController extends AbstractController {
 	}
 
 	@DeleteMapping("/resetMfa")
-	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ACCOUNT)
+	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.USER)
     @RequiresPermissions("sys:user:update")
 	public R resetMfa(String[] ids) {
 		if (Tool.StrUtil.isAllNotBlank(ids)) {
@@ -134,7 +134,7 @@ public class SysUserController extends AbstractController {
 	 * 保存用户
 	 */
 	@PostMapping
-	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.ACCOUNT)
+	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.USER)
     @RequiresPermissions("sys:user:save")
 	public R save(@RequestBody SysUserEntity user){
 		Integer id = sysUserService.saveUser(user);
@@ -145,7 +145,7 @@ public class SysUserController extends AbstractController {
 	 * 修改用户
 	 */
 	@PutMapping
-	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ACCOUNT)
+	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.USER)
     @RequiresPermissions("sys:user:update")
 	public R update(@RequestBody SysUserEntity user){
 		ValidateUtils.is(user.getId()).notNull(RCode.SYS_USER_ID_ISNULL);
@@ -158,7 +158,7 @@ public class SysUserController extends AbstractController {
 	 * 删除用户
 	 */
 	@DeleteMapping
-	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ACCOUNT)
+	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.USER)
     @RequiresPermissions("sys:user:delete")
 	public R delete(String ids) {
 		sysUserService.deleteUsers(ids);

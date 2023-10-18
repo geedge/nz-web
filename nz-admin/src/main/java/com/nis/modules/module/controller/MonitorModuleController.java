@@ -159,7 +159,7 @@ public class MonitorModuleController {
 
 
     @DeleteMapping("/module/cancelImport")
-    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.MODULE)
+    @SysLog(operation = OperationEnum.CANCEL, type = TypeEnum.MODULE)
     public R cancelImport(@RequestParam(value = "seq", required = false) String seq) {
         ValidateUtils.is(seq).notNull(RCode.UNDO_IMPORT_SEQ_ISNULL);
 
@@ -173,7 +173,7 @@ public class MonitorModuleController {
      * @return
      */
     @RequestMapping(value = "/module/sync", method = {RequestMethod.POST, RequestMethod.PUT})
-    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.MODULE)
+    @SysLog(operation = OperationEnum.SYNC, type = TypeEnum.MODULE)
     public R syncModuleEndpointAndDashboard(@RequestBody(required = false) Map<String, Object> requestParam) {
         // validate param
         requestParam = Tool.MapUtil.defaultIfEmpty(requestParam, Tool.MapUtil.empty());

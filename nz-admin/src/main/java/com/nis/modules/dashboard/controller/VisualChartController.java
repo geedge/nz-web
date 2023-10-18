@@ -24,21 +24,21 @@ public class VisualChartController {
 	private VisualChartService visualChartService;
 
 	@GetMapping(value={"/{id}"})
-    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.VISUALCHART)
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.VISUAL_CHART)
     public R chartInfo(@PathVariable Integer id){
 		VisualChart visualChart = visualChartService.queryInfo(id);
         return R.ok(visualChart);
     }
 
 	@GetMapping
-    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.VISUALCHART)
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.VISUAL_CHART)
     public R chartList(@RequestParam Map<String,Object> params){
 		PageUtils page = visualChartService.queryPage(params);
         return R.ok(page);
     }
 
     @PostMapping
-    @SysLog(operation = OperationEnum.ADD,type = TypeEnum.VISUALCHART)
+    @SysLog(operation = OperationEnum.ADD,type = TypeEnum.VISUAL_CHART)
     @RequiresPermissions({"visual:chart:save"})
     public R chartSave(@RequestBody VisualChart chart){
     	Integer id = visualChartService.saveChart(chart);
@@ -46,7 +46,7 @@ public class VisualChartController {
     }
 
     @PutMapping
-    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.VISUALCHART)
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.VISUAL_CHART)
     @RequiresPermissions({"visual:chart:update"})
     public R chartUpdate(@RequestBody VisualChart chart){
         ValidateUtils.is(chart.getId()).notNull(RCode.CHART_ID_ISNULL);
@@ -56,7 +56,7 @@ public class VisualChartController {
     }
 
     @DeleteMapping
-    @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.VISUALCHART)
+    @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.VISUAL_CHART)
     @RequiresPermissions({"visual:chart:delete"})
     public R chartDelete(@RequestParam Integer[] ids, Integer sync){
         ValidateUtils.is(ids).notNull(RCode.CHART_ID_ISNULL);
@@ -72,7 +72,7 @@ public class VisualChartController {
      * @return
      */
     @PutMapping(value = {"/modify"})
-    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.VISUALCHART)
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.VISUAL_CHART)
     public R modify(@RequestBody VisualChart chart) {
         ValidateUtils.is(chart.getId()).notNull(RCode.CHART_ID_ISNULL)
                 .and(chart.getSpan()).notNull(RCode.CHART_SPAN_ISNULL)
@@ -91,7 +91,7 @@ public class VisualChartController {
      * @return
      */
     @PutMapping(value = {"/weights"})
-    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.VISUALCHART)
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.VISUAL_CHART)
     public R weights(@RequestBody Map<String,Object> params) {
     	Integer dashboardId = (Integer)params.get("dashboardId");
     	Object data = params.get("charts");
@@ -112,7 +112,7 @@ public class VisualChartController {
      * @return
      */
     @PostMapping(value = {"/syncTmpl"})
-    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.VISUALCHART)
+    @SysLog(operation = OperationEnum.SYNC, type = TypeEnum.VISUAL_CHART)
     @RequiresPermissions({"visual:chart:save"})
     public synchronized R syncTmpl(@RequestBody Map<String, Object> params) {
         // validate

@@ -52,7 +52,7 @@ public class SnmpMibController extends AbstractController {
      * @return
      */
     @GetMapping
-    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.MIB)
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.MIB_FILE)
     public R list(@RequestParam Map<String, Object> params) {
         PageUtils page = snmpMibService.queryPage(params);
         return R.ok(page);
@@ -66,7 +66,7 @@ public class SnmpMibController extends AbstractController {
      * @return
      */
     @PostMapping
-    @SysLog(operation = OperationEnum.ADD,type = TypeEnum.MIB)
+    @SysLog(operation = OperationEnum.ADD,type = TypeEnum.MIB_FILE)
     @RequiresPermissions({"sys:mib:save"})
     public R save(SnmpMib snmpMib, @RequestParam(value = "file", required = false) MultipartFile file) {
         ValidateUtils.is(file).notNull(RCode.SNMP_MIB_FILE_ISNULL).and(snmpMib.getRemark()).maxLength(256);
@@ -84,7 +84,7 @@ public class SnmpMibController extends AbstractController {
      * @return
      */
     @PutMapping
-    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.MIB)
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.MIB_FILE)
     @RequiresPermissions({"sys:mib:update"})
     public R update(SnmpMib snmpMib, @RequestParam(value = "file", required = false) MultipartFile file) {
         ValidateUtils.is(snmpMib.getId()).notNull(RCode.SNMP_MIB_ID_ISNULL).and(snmpMib.getRemark()).maxLength(256);
@@ -100,7 +100,7 @@ public class SnmpMibController extends AbstractController {
      * @return
      */
     @DeleteMapping
-    @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.MIB)
+    @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.MIB_FILE)
     @RequiresPermissions({"sys:mib:delete"})
     public R delete(@RequestParam Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.SNMP_MIB_ID_ISNULL);
@@ -117,6 +117,7 @@ public class SnmpMibController extends AbstractController {
      * @param response
      */
     @GetMapping("/download")
+    @SysLog(operation = OperationEnum.DOWNLOAD,type = TypeEnum.MIB_FILE)
     public void download(Integer id, HttpServletResponse response) {
         ValidateUtils.is(id).notNull(RCode.SNMP_MIB_ID_ISNULL);
 

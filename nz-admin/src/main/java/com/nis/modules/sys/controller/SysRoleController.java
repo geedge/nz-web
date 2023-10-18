@@ -27,7 +27,7 @@ public class SysRoleController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping
-	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYSTEM)
+	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ROLE)
 	public R list(@RequestParam Map<String, Object> params){
 		PageUtils page = sysRoleService.queryPage(params);
 
@@ -40,7 +40,7 @@ public class SysRoleController extends AbstractController {
      * @return
      */
     @GetMapping("/menu/{id}")
-    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYSTEM)
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ROLE)
     public R list(@PathVariable("id") Integer roleId) {
         ValidateUtils.is(roleId).notNull(RCode.SYS_ROLE_ID_ISNULL);
 
@@ -54,7 +54,7 @@ public class SysRoleController extends AbstractController {
      * @return
      */
 	@PostMapping
-	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.SYSTEM)
+	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.ROLE)
 	@RequiresPermissions("sys:role:save")
 	public R save(@RequestBody SysRoleEntity role){
 		sysRoleService.saveRole(role);
@@ -67,7 +67,7 @@ public class SysRoleController extends AbstractController {
 	 * @return
 	 */
 	@PutMapping
-	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.SYSTEM)
+	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ROLE)
 	@RequiresPermissions("sys:role:update")
 	public R update(@RequestBody SysRoleEntity role){
 		ValidateUtils.is(role.getId()).notNull(RCode.SYS_ROLE_ID_ISNULL);
@@ -82,7 +82,7 @@ public class SysRoleController extends AbstractController {
 	 * @return
 	 */
 	@DeleteMapping
-	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.SYSTEM)
+	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ROLE)
 	@RequiresPermissions("sys:role:delete")
 	public R delete(@RequestParam(required = false, defaultValue = "0") Integer force, Integer... ids) {
 		ValidateUtils.is(ids).notNull(RCode.SYS_ROLE_ID_ISNULL);

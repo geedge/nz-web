@@ -44,7 +44,7 @@ public class AlertRuleController {
      * @return
      */
     @GetMapping("/{id}")
-    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTRULE)
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERT_RULE)
     public R queryAlertRule(@PathVariable Integer id) {
         ValidateUtils.is(id).notNull(RCode.ALERTRULE_ID_ISNULL);
 
@@ -57,7 +57,7 @@ public class AlertRuleController {
      * 列表
      */
     @RequestMapping(value = "", method = RequestMethod.GET)
-	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTRULE)
+	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERT_RULE)
     public R list(@RequestParam Map<String, Object> params){
         PageUtils page = alertRuleService.queryPage(params);
 
@@ -68,7 +68,7 @@ public class AlertRuleController {
      * 保存
      */
     @RequestMapping(value = "", method = RequestMethod.POST)
-	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.ALERTRULE)
+	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.ALERT_RULE)
     @RequiresPermissions({"alert:rule:save"})
     public R save(@RequestBody AlertRuleEntity alertRule) {
         ValidateUtils.is(alertRule.getName()).notNull(RCode.ALERTRULE_NAME_ISNULL).maxLength(64)
@@ -85,7 +85,7 @@ public class AlertRuleController {
      * 修改
      */
     @RequestMapping(value = "", method = RequestMethod.PUT)
-	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERTRULE)
+	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERT_RULE)
     @RequiresPermissions({"alert:rule:update"})
     public R update(@RequestBody AlertRuleEntity alertRule){
         ValidateUtils.is(alertRule.getId()).notNull(RCode.ALERTRULE_ID_ISNULL)
@@ -103,7 +103,7 @@ public class AlertRuleController {
      * 删除
      */
     @RequestMapping(value = "", method = RequestMethod.DELETE)
-	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ALERTRULE)
+	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ALERT_RULE)
     @RequiresPermissions({"alert:rule:delete"})
     public R delete(@RequestParam Integer ... ids){
 
@@ -131,7 +131,7 @@ public class AlertRuleController {
     }
 
     @PostMapping("/import")
-    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.ALERTRULE)
+    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.ALERT_RULE)
     @RequiresPermissions({"alert:rule:save"})
     public R importAlertFromExcelFile(@RequestParam(value = "file") MultipartFile excelFile, HttpServletRequest request, @RequestParam Map<String, Object> params) throws IOException {
         String language = request.getHeader(Constant.LANGUAGE);
@@ -145,7 +145,7 @@ public class AlertRuleController {
     }
 
     @GetMapping("/export")
-    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.ALERTRULE)
+    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.ALERT_RULE)
     public void export(HttpServletResponse response, @RequestParam Map<String, Object> params) throws IOException {
         Object format = params.get("format");
         String formatStr = format == null ? "1" : format.toString();
@@ -160,7 +160,7 @@ public class AlertRuleController {
     }
 
     @DeleteMapping("/cancelImport")
-    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ALERTRULE)
+    @SysLog(operation = OperationEnum.CANCEL, type = TypeEnum.ALERT_RULE)
     public R cancelImport(String seq) {
         ValidateUtils.is(seq).notNull(RCode.UNDO_IMPORT_SEQ_ISNULL);
 

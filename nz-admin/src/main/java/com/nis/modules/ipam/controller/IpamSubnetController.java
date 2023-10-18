@@ -28,28 +28,28 @@ public class IpamSubnetController {
     private IpamSubnetService ipamSubnetService;
     
     @GetMapping("/{id}")
-	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.IPAMSUBNET)
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.IPAM_SUBNET)
 	public R ipamSubnetInfo(@PathVariable Integer id) {
     	IpamSubnet ipamSubnet = ipamSubnetService.queryInfo(id);
 		return R.ok(ipamSubnet);
 	}
 
 	@GetMapping
-	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.IPAMSUBNET)
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.IPAM_SUBNET)
 	public R ipamSubnetList(@RequestParam Map<String, Object> params) {
 		PageUtils page = ipamSubnetService.queryPage(params);
 		return R.ok(page);
 	}
 
 	@RequestMapping(method = { RequestMethod.POST })
-	@SysLog(operation = OperationEnum.ADD, type = TypeEnum.IPAMSUBNET)
+	@SysLog(operation = OperationEnum.ADD, type = TypeEnum.IPAM_SUBNET)
 	public R ipamSubnetSave(@RequestBody IpamSubnet ipamSubnet) throws AddressStringException, IncompatibleAddressException {
 		Integer id = ipamSubnetService.saveOrModifyIpamSubnet(ipamSubnet);
 		return R.ok().putData("id", id);
 	}
 
 	@RequestMapping(method = { RequestMethod.PUT })
-	@SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.IPAMSUBNET)
+	@SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.IPAM_SUBNET)
 	public R ipamSubnetModify(@RequestBody IpamSubnet ipamSubnet) throws AddressStringException, IncompatibleAddressException {
 		ValidateUtils.is(ipamSubnet.getId()).notNull(RCode.IPAM_SUBNET_ID_ISNULL);
 		Integer id = ipamSubnetService.saveOrModifyIpamSubnet(ipamSubnet);
@@ -57,7 +57,7 @@ public class IpamSubnetController {
 	}
 
 	@DeleteMapping
-	@SysLog(operation = OperationEnum.DELETE, type = TypeEnum.IPAMSUBNET)
+	@SysLog(operation = OperationEnum.DELETE, type = TypeEnum.IPAM_SUBNET)
 	public R ipamSubnetDelete(@RequestParam(required = false, defaultValue = "0") Integer force, Integer... ids) {
 		ValidateUtils.is(ids).notNull(RCode.IPAM_SUBNET_ID_ISNULL);
 
@@ -83,7 +83,7 @@ public class IpamSubnetController {
 	}
 
 	@PostMapping("/import")
-    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.CHART)
+    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.IPAM_SUBNET)
 	public R importIpamSubnetData(@RequestParam(value = "file") MultipartFile excelFile, HttpServletRequest request, @RequestParam Map<String, Object> params) throws IOException, AddressStringException, IncompatibleAddressException {
 		String language = request.getHeader(Constant.LANGUAGE);
 		ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL);
@@ -96,7 +96,7 @@ public class IpamSubnetController {
 	}
 
     @GetMapping("/export")
-    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.CHART)
+    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.IPAM_SUBNET)
     public void export(HttpServletResponse response, @RequestParam Map<String, Object> params) throws IOException {
 	    Object format = params.get("format");
 	    String formatStr = format == null ? "1" : format.toString();
@@ -111,7 +111,7 @@ public class IpamSubnetController {
     }
 
     @DeleteMapping("/cancelImport")
-    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.CHART)
+    @SysLog(operation = OperationEnum.CANCEL, type = TypeEnum.IPAM_SUBNET)
     public R cancelImport(String seq) {
         ValidateUtils.is(seq).notNull(RCode.UNDO_IMPORT_SEQ_ISNULL);
         ipamSubnetService.cancelImport(seq);

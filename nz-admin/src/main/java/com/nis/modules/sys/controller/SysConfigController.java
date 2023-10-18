@@ -101,7 +101,7 @@ public class SysConfigController extends AbstractController {
      * @return
      */
     @GetMapping
-	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYSTEM)
+	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYS_CONF)
     public R getConfigList(String[] type, String[] paramKey) {
     	// 查询参数不能同时为空
 		if((type == null || type.length == 0) && (paramKey == null || paramKey.length == 0)){
@@ -137,7 +137,7 @@ public class SysConfigController extends AbstractController {
      * @return
      */
     @PutMapping
-	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.SYSTEM)
+	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.SYS_CONF)
     @RequiresPermissions({"sys:config:update"})
     public R updateConfig(@RequestBody Map<String, Object> param) {
         ValidateUtils.is(param).notNull(RCode.SYS_CONFIG_SAVEENTITY_ISNULL);
@@ -163,7 +163,7 @@ public class SysConfigController extends AbstractController {
 	 * @return
 	 */
 	@PutMapping("/reset")
-	@SysLog(operation = OperationEnum.RESET,type = TypeEnum.SYSTEM)
+	@SysLog(operation = OperationEnum.RESET,type = TypeEnum.SYS_CONF)
 	@RequiresPermissions({"sys:config:reset"})
 	public R resetConfig(@RequestBody Map<String, Object> param) throws IOException,RuntimeException{
 		try {

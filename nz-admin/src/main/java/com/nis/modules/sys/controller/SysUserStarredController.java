@@ -19,7 +19,7 @@ public class SysUserStarredController {
     private SysUserStarredService sysUserStarredService;
 
     @GetMapping("/starred")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.USER_STARRED)
     public R queryStarred(String type) {
         List<SysUserStarredEntity> sysUserStarredEntityList = sysUserStarredService.queryStarred(type);
         Map<String, Object> starredMap = Tool.MapUtil.newConcurrentHashMap();
@@ -29,7 +29,7 @@ public class SysUserStarredController {
     }
 
     @PostMapping("/starred")
-    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.SYSTEM)
+    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.USER_STARRED)
     @RequiresPermissions("sys:user:save")
     public R addStarred(@RequestBody SysUserStarredEntity sysUserStarredEntity) {
         sysUserStarredService.addStarred(sysUserStarredEntity);
@@ -37,7 +37,7 @@ public class SysUserStarredController {
     }
 
     @DeleteMapping("/starred")
-    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.SYSTEM)
+    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.USER_STARRED)
     @RequiresPermissions("sys:user:delete")
     public R delete(@RequestParam Map<String, Object> params) {
         sysUserStarredService.deleteStarred(params);

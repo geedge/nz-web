@@ -21,14 +21,14 @@ public class SysConfController {
     private SysConfService sysConfService;
 
     @GetMapping("/basic")
-    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYSTEM)
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYS_CONF)
     public R basic(){
         Map<String,String> result = sysConfService.batchQuery(SysConfServiceImpl.BASIC_KEYS);
         return R.ok(result);
     }
 
     @PutMapping("/basic")
-    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.SYSTEM)
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.SYS_CONF)
     @RequiresPermissions({"sys:config:update"})
     public R saveBasic(@RequestBody Map<String,String> params){
 
@@ -37,7 +37,7 @@ public class SysConfController {
     }
 
     @GetMapping("/monitor")
-    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYSTEM)
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYS_CONF)
     public R monitor(){
         Map<String,String> result = sysConfService.batchQuery(SysConfServiceImpl.MONITOR_KEYS);
         result = new TreeMap<>(result);
@@ -45,7 +45,7 @@ public class SysConfController {
     }
 
     @PutMapping("/monitor")
-    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.SYSTEM)
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.SYS_CONF)
     @RequiresPermissions({"sys:config:update"})
     public R saveMonitor(@RequestBody Map<String,String> params){
 
@@ -54,7 +54,7 @@ public class SysConfController {
     }
 
     @GetMapping("/email")
-    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYSTEM)
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYS_CONF)
     public R email(){
         Map<String,String> result = sysConfService.batchQuery(SysConfServiceImpl.EMAIL_KEYS);
 
@@ -62,7 +62,7 @@ public class SysConfController {
     }
 
     @PutMapping("/email")
-    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.SYSTEM)
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.SYS_CONF)
     @RequiresPermissions({"sys:config:update"})
     public R saveEmail(@RequestBody Map<String,String> params){
         sysConfService.saveEmail(params);
@@ -70,7 +70,7 @@ public class SysConfController {
     }
 
     @GetMapping("/terminal")
-    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYSTEM)
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYS_CONF)
     public R terminal(){
         Map<String,String> result = sysConfService.batchQuery(SysConfServiceImpl.TERMINAL_KEYS);
 
@@ -78,14 +78,14 @@ public class SysConfController {
     }
 
     @PutMapping("/terminal")
-    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.SYSTEM)
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.SYS_CONF)
     @RequiresPermissions({"sys:config:update"})
     public R saveTerminal(@RequestBody Map<String,String> params){
         sysConfService.saveTerminal(params);
         return R.ok();
     }
     @GetMapping("/ldap")
-    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYSTEM)
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYS_CONF)
     public R ldap(){
         Map<String,String> result = sysConfService.batchQuery(SysConfServiceImpl.LDAP_KEYS);
         //不将密码传递到前端
@@ -94,7 +94,7 @@ public class SysConfController {
     }
 
     @PutMapping("/ldap")
-    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.SYSTEM)
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.SYS_CONF)
     @RequiresPermissions({"sys:config:update"})
     public R saveLdap(@RequestBody Map<String,String> params){
         sysConfService.saveLdap(params);
@@ -107,7 +107,7 @@ public class SysConfController {
      * @return
      */
     @PutMapping("/reset")
-    @SysLog(operation = OperationEnum.RESET,type = TypeEnum.SYSTEM)
+    @SysLog(operation = OperationEnum.RESET,type = TypeEnum.SYS_CONF)
     @RequiresPermissions({"sys:config:reset"})
     public R resetConfig(@RequestBody Map<String, Object> param) throws IOException,RuntimeException{
         try {
@@ -119,7 +119,7 @@ public class SysConfController {
     }
 
     @GetMapping("/key/{configKey}")
-    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYSTEM)
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYS_CONF)
     public R querySysConfig(@PathVariable("configKey") String configKey){
         Map<String ,Object> result = sysConfService.querySysConfig(configKey);
         return R.ok(result);

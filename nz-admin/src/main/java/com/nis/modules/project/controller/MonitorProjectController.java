@@ -115,7 +115,7 @@ public class MonitorProjectController extends AbstractController {
      * icon unit 查询
      */
     @GetMapping("/project/topo/iconUnit")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.TOPO)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROJECT_TOPO)
     public R queryTopoUnit(String name) {
         List<String> result = topoIconService.queryUnitList(name);
         return R.ok(result);
@@ -128,7 +128,7 @@ public class MonitorProjectController extends AbstractController {
      * @return
      */
     @DeleteMapping("/project/topo/iconUnit")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.TOPO)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROJECT_TOPO)
     @RequiresPermissions({"project:topo:icon:delete"})
     public R deleteTopoUnit(String unit) {
         ValidateUtils.is(unit).notNull(RCode.PROJECT_TOPOICON_UNIT_ISNULL);
@@ -212,7 +212,7 @@ public class MonitorProjectController extends AbstractController {
      * @param projectId
      */
     @GetMapping("/project/topo")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.TOPO)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROJECT_TOPO)
     public R queryTopo(Integer projectId) {
         ValidateUtils.is(projectId).notNull(RCode.PROJECT_ID_ISNULL);
 
@@ -228,7 +228,7 @@ public class MonitorProjectController extends AbstractController {
      * @return
      */
     @PutMapping("/project/topo")
-    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.TOPO)
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.PROJECT_TOPO)
     @RequiresPermissions({"project:topo:update"})
     public R updateProjectTopo(@RequestBody Map<String, Object> params) {
         Integer projectId = (Integer) params.get("projectId");
@@ -243,7 +243,7 @@ public class MonitorProjectController extends AbstractController {
 
 
     @PostMapping("/project/topo/{projectId}/import")
-    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.TOPO)
+    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.PROJECT_TOPO)
     @RequiresPermissions({"project:topo:update"})
     public R topoImport(@PathVariable(required = false) Integer projectId,
                         @RequestBody(required = false) Map<String, Object> requestBody) {
@@ -279,7 +279,7 @@ public class MonitorProjectController extends AbstractController {
     }
 
     @GetMapping("/project/topo/{projectId}/export")
-    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.TOPO)
+    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.PROJECT_TOPO)
     public void topoExport(@PathVariable(required = false) Integer projectId,
                            HttpServletResponse response) {
         ValidateUtils.is(projectId).notNull(RCode.PROJECT_ID_ISNULL);

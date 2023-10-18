@@ -25,7 +25,7 @@ public class TopologyController extends AbstractController {
      * unit 查询
      */
     @GetMapping("/topology/unit")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.TOPO)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROJECT_UNIT)
     public R queryUnit(String name) {
         List<String> result = topoIconService.queryUnitList(name);
         return R.ok(result);
@@ -36,7 +36,7 @@ public class TopologyController extends AbstractController {
      * unit 修改
      */
     @PutMapping("/topology/unit")
-    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.TOPO)
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.PROJECT_UNIT)
     public R updateUnit(@RequestBody(required = false) Map<String, String> requestBody) {
         // validate param
         requestBody = Tool.MapUtil.defaultIfEmpty(requestBody, Tool.MapUtil.empty());
@@ -56,7 +56,7 @@ public class TopologyController extends AbstractController {
      * unit 删除
      */
     @DeleteMapping("/topology/unit")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.TOPO)
+    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.PROJECT_UNIT)
     public R deleteUnit(String unit) {
         ValidateUtils.is(unit).notNull(RCode.PROJECT_TOPOICON_UNIT_ISNULL);
 
@@ -69,7 +69,7 @@ public class TopologyController extends AbstractController {
      * icon 查询
      */
     @GetMapping("/topology/icon")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.TOPO)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROJECT_ICON)
     public R queryIcon(@RequestParam Map<String, Object> params) {
         Map result = new HashMap(2);
         List<TopoIcon> topoIcons = topoIconService.queryIconList(params);
@@ -81,7 +81,7 @@ public class TopologyController extends AbstractController {
      * icon 新增
      */
     @PostMapping("/topology/icon")
-    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.TOPO)
+    @SysLog(operation = OperationEnum.UPLOAD, type = TypeEnum.PROJECT_ICON)
     public R saveIcon(TopoIcon icon, @RequestParam(value = "file", required = false) MultipartFile file) {
         ValidateUtils.is(icon.getName()).notNull(RCode.PROJECT_TOPOICON_NAME_ISNULL).maxLength(64)
                 .and(icon.getUnit()).notNull(RCode.PROJECT_TOPOICON_UNIT_ISNULL).maxLength(64)
@@ -95,7 +95,7 @@ public class TopologyController extends AbstractController {
      * icon 删除
      */
     @DeleteMapping("/topology/icon")
-    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.TOPO)
+    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.PROJECT_ICON)
     public R removeIcon(@RequestParam Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.PROJECT_ID_ISNULL);
 
@@ -110,6 +110,7 @@ public class TopologyController extends AbstractController {
      * @param base64 1: base64格式  0：非base64格式
      */
     @GetMapping("/topology/icon/{base64}/{unit}/{name}")
+    @SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.PROJECT_ICON)
     public void downloadIconFile(
             @PathVariable(value = "base64") Integer base64,
             @PathVariable(value = "unit") String unit,

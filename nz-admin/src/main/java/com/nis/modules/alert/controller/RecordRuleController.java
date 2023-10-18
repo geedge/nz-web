@@ -132,7 +132,7 @@ public class RecordRuleController {
     }
 
     @GetMapping("/export")
-    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.ALERTRULE)
+    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.RECORD_RULE)
     public void export(HttpServletResponse response, @RequestParam Map<String, Object> params) throws IOException {
         Object format = params.get("format");
         String formatStr = format == null ? "1" : format.toString();
@@ -148,7 +148,7 @@ public class RecordRuleController {
 
 
     @PostMapping("/import")
-    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.ALERTRULE)
+    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.RECORD_RULE)
     @RequiresPermissions({"record:rule:save"})
     public R importDate(@RequestParam(value = "file") MultipartFile excelFile, HttpServletRequest request, @RequestParam Map<String, Object> params) throws IOException {
         String language = request.getHeader(Constant.LANGUAGE);

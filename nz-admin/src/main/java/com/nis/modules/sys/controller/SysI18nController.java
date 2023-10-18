@@ -30,12 +30,14 @@ public class SysI18nController {
      * 列表
      */
     @GetMapping
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.I18N)
     public R list(@RequestParam Map<String, Object> params){
         PageUtils page = sysI18nService.queryPage(params);
         return R.ok(page);
     }
 
     @GetMapping("/{id}")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.I18N)
     public R detail(@PathVariable("id")Long id) {
     	ValidateUtils.is(id).notNull();
     	SysI18nEntity byId = sysI18nService.queryInfo(id);
@@ -74,6 +76,7 @@ public class SysI18nController {
     }
     
     @GetMapping("/lang")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.I18N)
     public R lang(@RequestParam(required = false) String l) {
     	Map result = sysI18nService.selectLang(l);
     	return R.ok(result);

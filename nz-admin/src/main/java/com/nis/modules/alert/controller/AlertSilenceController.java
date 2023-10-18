@@ -24,7 +24,7 @@ public class AlertSilenceController {
 	private AlertSilenceService alertSilenceService;
 	
 	@GetMapping
-	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTSILENCE)
+	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERT_SILENCE)
 	public R list(@RequestParam Map<String,Object> params) {
 		logger.debug("alertsilence query params is {}",JSON.toJSONString(params));
 		PageUtils page = alertSilenceService.queryPage(params);
@@ -32,14 +32,14 @@ public class AlertSilenceController {
 	}
 	
 	@GetMapping("/{id}")
-	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTSILENCE)
+	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERT_SILENCE)
 	public R queryAlertSilenceConf(@PathVariable("id") Integer id) {
 		AlertSilenceConf result = alertSilenceService.queryAlertSilence(id);
 		return R.ok(result);
 	}
 	
 	@PostMapping
-	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.ALERTSILENCE)
+	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.ALERT_SILENCE)
 	@RequiresPermissions({"alert:silence:save"})
 	public R save(@RequestBody AlertSilenceConf alertSilenceConf) {
 		ValidateUtils.is(alertSilenceConf.getStartAt()).notNull(RCode.ALERTSILENCE_STARTTIME_ISNULL)
@@ -54,7 +54,7 @@ public class AlertSilenceController {
 	
 	
 	@PutMapping
-	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERTSILENCE)
+	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERT_SILENCE)
 	@RequiresPermissions({"alert:silence:update"})
 	public R modify(@RequestBody AlertSilenceConf alertSilenceConf) {
 		ValidateUtils.is(alertSilenceConf.getStartAt()).notNull(RCode.ALERTSILENCE_STARTTIME_ISNULL)
@@ -70,7 +70,7 @@ public class AlertSilenceController {
 	
 	
 	@DeleteMapping
-	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ALERTSILENCE)
+	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ALERT_SILENCE)
 	@RequiresPermissions({"alert:silence:delete"})
 	public R remove(@RequestParam Integer... ids) {
 		if(Tool.ArrayUtil.isAllNull(ids)) {
@@ -81,7 +81,7 @@ public class AlertSilenceController {
 	}
 
 	@GetMapping("/{id}/rel")
-	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ALERTSILENCE)
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ALERT_SILENCE)
 	public R rel(@PathVariable("id") Integer silenceId, @RequestParam Map<String, Object> params) {
 		ValidateUtils.is(silenceId).notNull(RCode.ALERTSILENCE_ID_IS_NOT_NULL);
 

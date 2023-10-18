@@ -9,10 +9,9 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
+import com.nis.common.utils.*;
 import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.service.AgentService;
 import com.nis.modules.agent.util.AgentUtil;
@@ -54,6 +53,7 @@ public class TracerouteController {
     static final List<Thread> ACTIVE_TASKS = Collections.synchronizedList(new ArrayList<>());
 
     @GetMapping("/traceroute")
+    @SysLog(operation = OperationEnum.CREAT_TASK, type = TypeEnum.TRACE_ROUTE)
     public R traceroute(@RequestParam Map<String, Object> params) {
         String ips = (String) params.get("ips");
         if (Tool.StrUtil.isEmpty(ips)) throw new NZException(RCode.TOOL_TRACEROUTE_IP_ISNULL);
@@ -114,6 +114,7 @@ public class TracerouteController {
     }
 
     @GetMapping("/traceroute/result/{tid}")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.TRACE_ROUTE)
     public R tracerouteResult(@PathVariable(value = "tid", required = true) String tid) {
         String tracerouteResultKey = Tool.StrUtil.concat(true, "test_traceroute_result_", tid);
 //        List<String> tracerouteResultList = redisTemplate.opsForList().range(tracerouteResultKey, 0, -1);
@@ -158,6 +159,7 @@ public class TracerouteController {
     }
 
     @GetMapping("/traceroute/cancel/{tid}")
+    @SysLog(operation = OperationEnum.CANCEL, type = TypeEnum.TRACE_ROUTE)
     public R tracerouteCancel(@PathVariable(value = "tid", required = false) String tid) {
         if (Tool.CollectionUtil.isNotEmpty(ACTIVE_TASKS)) {
             ACTIVE_TASKS.stream().filter(thread -> Tool.StrUtil.startWith(thread.getName(), tid)).forEach(thread -> {

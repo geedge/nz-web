@@ -21,7 +21,7 @@ public class AlertSeverityController {
     private AlertSeverityService alertSeverityService;
 
     @GetMapping
-    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTSEVERITY)
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERT_SEVERITY)
     public R list(@RequestParam Map<String, Object> params ){
         log.info("query alert severity with parameter: {}", Tool.JSONUtil.toJsonStr(params));
 
@@ -31,14 +31,14 @@ public class AlertSeverityController {
     }
 
     @GetMapping("/{id}")
-    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTSEVERITY)
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERT_SEVERITY)
     public R detail(@PathVariable(value = "id",required = true) Integer id){
         AlertSeverityConf alertSeverityConf = alertSeverityService.getSeverityById(id);
         return R.ok(alertSeverityConf);
     }
 
     @PostMapping
-    @SysLog(operation = OperationEnum.ADD,type = TypeEnum.ALERTSEVERITY)
+    @SysLog(operation = OperationEnum.ADD,type = TypeEnum.ALERT_SEVERITY)
     @RequiresPermissions({"alert:severity:save"})
     public R save(@RequestBody AlertSeverityConf alertSeverityConf){
         alertSeverityConf.setName(Tool.StrUtil.trim(alertSeverityConf.getName()));
@@ -48,7 +48,7 @@ public class AlertSeverityController {
     }
 
     @PutMapping
-    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERTSEVERITY)
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERT_SEVERITY)
     @RequiresPermissions({"alert:severity:update"})
     public R update(@RequestBody AlertSeverityConf alertSeverityConf){
         alertSeverityConf.setName(Tool.StrUtil.trim(alertSeverityConf.getName()));
@@ -58,7 +58,7 @@ public class AlertSeverityController {
     }
 
     @PutMapping("/weight")
-    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERTSEVERITY)
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERT_SEVERITY)
     public R weight(@RequestBody List<AlertSeverityConf> alertSeverityConfs){
         alertSeverityService.saveWeights(alertSeverityConfs);
         return R.ok();
@@ -66,7 +66,7 @@ public class AlertSeverityController {
 
 
     @DeleteMapping
-    @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ALERTSEVERITY)
+    @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ALERT_SEVERITY)
     @RequiresPermissions({"alert:severity:delete"})
     public R delete(@RequestParam(value = "ids",required = true)String ids){
         alertSeverityService.removeByIds(Tool.StrUtil.split(ids, ","));

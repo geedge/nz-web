@@ -105,7 +105,7 @@ public class TerminalHandlerController {
 
     @PutMapping("/kill")
     @RequiresPermissions({"terminal:kill"})
-    @SysLog(operation = OperationEnum.UNKNOWN, type = TypeEnum.TERMINAL)
+    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.TERMINAL)
     public R killTerminal(@RequestBody Map<String, String> params) {
         ValidateUtils.is(params.get("uuid")).notNull(RCode.TERMINAL_UUID_ISNULL);
 
@@ -122,7 +122,7 @@ public class TerminalHandlerController {
     }
 
     @PostMapping("/login")
-    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.TERMINAL)
+    @SysLog(operation = OperationEnum.LOGIN, type = TypeEnum.TERMINAL)
     public Map<Object, Object> login(@RequestHeader(name = "Authorization") String token,
                                      @RequestBody TerminalConfigDto configEntity) {
         Map<Object, Object> map = terminalSessionService.login(token, configEntity);
@@ -147,7 +147,7 @@ public class TerminalHandlerController {
     }
 
     @PostMapping("/sftp/ls")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.TERMINAL)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SFTP)
     public R ls(@RequestBody Map<String, String> param) {
         String uuid = param.get("uuid");
         String path = param.get("path");
@@ -158,7 +158,7 @@ public class TerminalHandlerController {
     }
 
     @PostMapping("/sftp/mkdir")
-    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.TERMINAL)
+    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.SFTP)
     public R mkdir(@RequestBody Map<String, String> param) {
         String uuid = param.get("uuid");
         String path = param.get("path");
@@ -170,7 +170,7 @@ public class TerminalHandlerController {
     }
 
     @PostMapping("/sftp/rm")
-    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.TERMINAL)
+    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.SFTP)
     public R rm(@RequestBody Map<String, String> param) {
         String uuid = param.get("uuid");
         String path = param.get("path");
@@ -182,7 +182,7 @@ public class TerminalHandlerController {
     }
 
     @PutMapping("/sftp/upload")
-    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.TERMINAL)
+    //@SysLog(operation = OperationEnum.UPLOAD, type = TypeEnum.SFTP)
     public R upload(@RequestParam(value = "chunkFile") MultipartFile file,
                     @RequestParam String uuid, @RequestParam String path, @RequestParam String fileName, @RequestParam Integer replace, @RequestParam Long totalSize, @RequestParam Long chunkSize, @RequestParam Long chunkStart) {
         ValidateUtils.is(uuid).notNull(RCode.TERMINAL_UUID_ISNULL)
@@ -199,7 +199,7 @@ public class TerminalHandlerController {
 
 
     @GetMapping("/sftp/process/{tid}")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.TERMINAL)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SFTP)
     public R querySftpUploadProcess(@PathVariable("tid") String tid) {
         return R.ok(
                 terminalSessionService.querySftpUploadProcess(tid)
@@ -207,14 +207,14 @@ public class TerminalHandlerController {
     }
 
     @DeleteMapping("/sftp/cancel/{tid}")
-    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.TERMINAL)
+    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.SFTP)
     public R cancelUpload(@PathVariable("tid") String tid) {
         terminalSessionService.cancelUpload(tid);
         return R.ok();
     }
 
     @PostMapping("/sftp/download")
-    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.TERMINAL)
+    @SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.SFTP)
     public void download(@RequestBody Map<String, String> param, HttpServletResponse response) {
         String uuid = param.get("uuid");
         String path = param.get("path");
@@ -225,7 +225,7 @@ public class TerminalHandlerController {
     }
 
     @PutMapping("/sftp/rename")
-    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.TERMINAL)
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.SFTP)
     public R rename(@RequestBody Map<String, String> param) {
         String uuid = param.get("uuid");
         String oldPath = param.get("oldPath");
@@ -241,14 +241,14 @@ public class TerminalHandlerController {
 
 
     @GetMapping("/sftp/log")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.TERMINAL)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SFTP)
     public R querySftpLog(@RequestParam Map<String, Object> params) {
         PageUtils page = terminalSftpLogService.querySftpLogPage(params);
         return R.ok(page);
     }
 
     @GetMapping("/sftp/upload/check")
-    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.TERMINAL)
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.SFTP)
     public R uploadCheck(@RequestParam String uuid, @RequestParam String path, @RequestParam String fileName) {
 
         ValidateUtils.is(uuid).notNull(RCode.TERMINAL_UUID_ISNULL)

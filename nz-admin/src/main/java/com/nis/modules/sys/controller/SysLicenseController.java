@@ -71,6 +71,7 @@ public class SysLicenseController extends AbstractController {
 	}
 
 	@GetMapping("/token")
+	@SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.LICENSE)
 	public R getLicenseToken(@RequestParam(required = false) String scope, HttpServletResponse response)
 			throws IOException, DocumentException {
 		if (!Tool.StrUtil.equalsIgnoreCase("local", scope)) {
@@ -213,7 +214,7 @@ public class SysLicenseController extends AbstractController {
 	 * @throws IOException 上传license @throws
 	 */
 	@PostMapping("/upload")
-	@SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.LICENSE)
+	@SysLog(operation = OperationEnum.UPLOAD, type = TypeEnum.LICENSE)
 	public R uploadLicense(@RequestParam(name = "file", required = false) MultipartFile file,
 			@RequestParam(required = false) String scope) throws Exception {
 		if (!Tool.StrUtil.equalsIgnoreCase("local", scope)) {
@@ -264,6 +265,7 @@ public class SysLicenseController extends AbstractController {
 	 * 下载license @throws IOException @throws UnsupportedEncodingException @throws
 	 */
 	@GetMapping("/download")
+	@SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.LICENSE)
 	public void download(HttpServletResponse response) throws IOException {
 		String license = licenseService.getLicense();
 		if (license == null) {

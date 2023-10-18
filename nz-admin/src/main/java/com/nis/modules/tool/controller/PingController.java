@@ -9,10 +9,9 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
+import com.nis.common.utils.*;
 import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.service.AgentService;
 import com.nis.modules.agent.util.AgentUtil;
@@ -54,6 +53,7 @@ public class PingController {
     static final List<Thread> ACTIVE_TASKS = Collections.synchronizedList(new ArrayList<>());
 
     @GetMapping("/ping")
+    @SysLog(operation = OperationEnum.CREAT_TASK, type = TypeEnum.PING)
     public R ping(@RequestParam Map<String, Object> params) {
         String ips = (String) params.get("ips");
         if (Tool.StrUtil.isEmpty(ips)) throw new NZException(RCode.TOOL_PING_IP_ISNULL);
@@ -114,6 +114,7 @@ public class PingController {
     }
 
     @GetMapping("/ping/result/{tid}")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PING)
     public R pingResult(@PathVariable(value = "tid", required = true) String tid) {
         String pingResultKey = Tool.StrUtil.concat(true, "test_ping_result_", tid);
 //        List<String> pingResultList = redisTemplate.opsForList().range(pingResultKey, 0, -1);
@@ -158,6 +159,7 @@ public class PingController {
     }
 
     @GetMapping("/ping/cancel/{tid}")
+    @SysLog(operation = OperationEnum.CANCEL, type = TypeEnum.PING)
     public R pingCancel(@PathVariable(value = "tid", required = false) String tid) {
         if (Tool.CollectionUtil.isNotEmpty(ACTIVE_TASKS)) {
             ACTIVE_TASKS.stream().filter(thread -> Tool.StrUtil.startWith(thread.getName(), tid)).forEach(thread -> {

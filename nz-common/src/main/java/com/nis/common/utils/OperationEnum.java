@@ -4,17 +4,22 @@ package com.nis.common.utils;
  *操作日志相关枚举类型
  */
 public enum OperationEnum {
-    // 操作方式operation
     QUERY("query"),
     ADD("add"),
     UPDATE("update"),
+    DELETE("delete"),
     IMPORT("import"),
     EXPORT("export"),
-    DELETE("delete"),
+    CANCEL("cancel"),
+    UPLOAD("upload"),
+    DOWNLOAD("download"),
+    CREAT_TASK("create task"),
+    SYNC("sync"),
+    DIAGNOSIS("diagnosis"),
     RESET("reset"),
-    UNKNOWN("unknown"),
     LOGIN("login"),
-    LOGOUT("logout");
+    LOGOUT("logout"),
+    UNKNOWN("unknown");
 
 
     private String value;
