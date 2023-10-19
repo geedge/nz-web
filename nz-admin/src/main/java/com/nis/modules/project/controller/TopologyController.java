@@ -110,7 +110,7 @@ public class TopologyController extends AbstractController {
      * @param base64 1: base64格式  0：非base64格式
      */
     @GetMapping("/topology/icon/{base64}/{unit}/{name}")
-    @SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.PROJECT_ICON)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROJECT_ICON)
     public void downloadIconFile(
             @PathVariable(value = "base64") Integer base64,
             @PathVariable(value = "unit") String unit,
