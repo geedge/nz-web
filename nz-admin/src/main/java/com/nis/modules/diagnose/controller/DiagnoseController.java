@@ -29,7 +29,6 @@ public class DiagnoseController {
     private DiagnoseService diagnoseService;
 
     @GetMapping("/asset/diagnose/{id}")
-    @SysLog(operation = OperationEnum.DIAGNOSIS, type = TypeEnum.HARDWARE_ASSET)
     public R assetDiagnose(@PathVariable(value = "id", required = false) Integer assetId,
                            @RequestHeader(required = false, defaultValue = "en") String language) {
         ValidateUtils.is(assetId).notNull(RCode.ASSET_ID_ISNULL);
@@ -39,7 +38,6 @@ public class DiagnoseController {
     }
 
     @GetMapping("/agent/diagnose/{id}")
-    @SysLog(operation = OperationEnum.DIAGNOSIS, type = TypeEnum.AGENT)
     public R agentDiagnose(@PathVariable(value = "id", required = false) Integer agentId,
                            @RequestHeader(required = false, defaultValue = "en") String language) {
         ValidateUtils.is(agentId).notNull(RCode.AGENT_ID_ISNULL);
@@ -49,7 +47,6 @@ public class DiagnoseController {
     }
 
     @GetMapping("/monitor/endpoint/diagnose/{id}")
-    @SysLog(operation = OperationEnum.DIAGNOSIS, type = TypeEnum.ENDPOINT)
     public R endpointDiagnose(@PathVariable(value = "id", required = false) Integer endpointId,
                               @RequestHeader(required = false, defaultValue = "en") String language) {
         ValidateUtils.is(endpointId).notNull(RCode.ENDPOINT_ID_ISNULL);

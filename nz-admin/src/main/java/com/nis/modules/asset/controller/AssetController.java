@@ -311,7 +311,6 @@ public class AssetController {
      * @return
      */
     @RequestMapping(value = "/asset/sync", method = {RequestMethod.POST, RequestMethod.PUT})
-    @SysLog(operation = OperationEnum.SYNC, type = TypeEnum.HARDWARE_ASSET)
     public R syncAssetEndpointAndDashboard(@RequestBody(required = false) Map<String, Object> requestParam) {
         // validate param
         requestParam = Tool.MapUtil.defaultIfEmpty(requestParam, Tool.MapUtil.empty());

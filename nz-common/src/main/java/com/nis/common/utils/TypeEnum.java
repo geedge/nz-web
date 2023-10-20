@@ -34,7 +34,7 @@ public enum TypeEnum {
 	ALERT_MESSAGE("Alert Message"),
 	ALERT_SILENCE("Alert Silence"),
 	ALERT_SEVERITY("Alert Severity"),
-	ALERT_NOTIFY_METHOD("Alert Notify Method"),
+	ALERT_NOTIFY_METHOD("Notify Method"),
 
 	// dc 相关
 	DATACENTER("Datacenter"),
@@ -45,14 +45,14 @@ public enum TypeEnum {
 	DASHBOARD("Dashboard"),
 	SNAPSHOT("Snapshot"),
 	PLAYLIST("Dashboard Playlist"),
-	VISUAL_CHART("Visual Chart"),
+	VISUAL_CHART("Chart"),
 
 
 	// user 相关
 	USER("User"),
 	ROLE("Role"),
-	USER_STARRED("User Starred"),
-	SYS_USER_PREFERENCE("User Preference"),
+	USER_STARRED("Starred"),
+	SYS_USER_PREFERENCE("Preference"),
 	SYS_API_KEY("Api Key"),
 
 	// tool
@@ -64,7 +64,7 @@ public enum TypeEnum {
 	// system 相关
 	AGENT("Agent"),
 	MIB_FILE("Mib File"),
-	SYS_BACKUP("System Backup"),
+	SYS_BACKUP("Backup"),
 	SYS_CONF("System Config"),
 	SYSTEM("System"),
 	LINK("Link"),

@@ -152,7 +152,6 @@ public class VisualNotebookController {
      * @return
      */
     @PostMapping("/notebook/snapshot/task")
-    @SysLog(operation = OperationEnum.CREAT_TASK, type = TypeEnum.NOTEBOOK)
     public R createNotebookSnapshotTask(@RequestBody Map<String, Object> requestody) {
         String format = (String) requestody.get("format");
         format = Tool.StrUtil.emptyToDefault(format, "html");
@@ -177,7 +176,6 @@ public class VisualNotebookController {
      * @return
      */
     @GetMapping("/notebook/snapshot/result/{tid}")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.NOTEBOOK)
     public R queryNotebookSnapshotResultProcess(@PathVariable(required = true) String tid) {
         return R.ok().putData("taskId", visualService.querySnapshotResultProcess(DashboardConstant.NOTEBOOK_SNAPSHOT_TYPE, tid));
     }
@@ -190,7 +188,6 @@ public class VisualNotebookController {
      * @return
      */
     @GetMapping("/notebook/snapshot/cancel/{tid}")
-    @SysLog(operation = OperationEnum.CANCEL, type = TypeEnum.NOTEBOOK)
     public R cancelNotebookSnapshotTask(@PathVariable(required = true) String tid) {
         visualService.cancelSnapshotTask(DashboardConstant.NOTEBOOK_SNAPSHOT_TYPE, tid);
         return R.ok();

@@ -167,7 +167,6 @@ public class SysBackupController {
      * @param response
      */
     @GetMapping("/sync")
-    @SysLog(operation = OperationEnum.SYNC, type = TypeEnum.SYS_BACKUP)
     public void syncBackupFile(@RequestParam(required = false) String serverid,
                                @RequestParam(required = false) String type,
                                @RequestParam(required = false) String filename,

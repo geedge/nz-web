@@ -54,7 +54,6 @@ public class VisualController {
 	 * @return
 	 */
 	@PostMapping("/dashboard/snapshot/task")
-	@SysLog(operation = OperationEnum.CREAT_TASK, type = TypeEnum.SNAPSHOT)
 	public R snapshotTask(@RequestHeader(required = false, defaultValue = "en") String language,
 	                      @RequestBody Map<String, Object> requestody) {
 		String format = (String) requestody.get("format");
@@ -84,7 +83,6 @@ public class VisualController {
 	 * @return
 	 */
 	@GetMapping("/dashboard/snapshot/result/{tid}")
-	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SNAPSHOT)
 	public R snapshotResultProcess(@PathVariable(required = true) String tid) {
 		return R.ok().putData("taskId", visualService.querySnapshotResultProcess(DashboardConstant.DASHBOARD_SNAPSHOT_TYPE, tid));
 	}
@@ -96,7 +94,6 @@ public class VisualController {
 	 * @return
 	 */
 	@GetMapping("/dashboard/snapshot/cancel/{tid}")
-	@SysLog(operation = OperationEnum.CANCEL, type = TypeEnum.SNAPSHOT)
 	public R cancelSnapshotTask(@PathVariable(required = true) String tid) {
 		visualService.cancelSnapshotTask(DashboardConstant.DASHBOARD_SNAPSHOT_TYPE, tid);
 		return R.ok();
@@ -125,7 +122,6 @@ public class VisualController {
 	 * @return
 	 */
 	@PostMapping("/dashboard/syncTmpl")
-	@SysLog(operation = OperationEnum.SYNC, type = TypeEnum.DASHBOARD)
 	public R syncTemplateDashboard(@RequestBody(required = false) Map<String, Integer> requestBody) {
 		// validate param
 		requestBody = Tool.MapUtil.defaultIfEmpty(requestBody, Tool.MapUtil.empty());

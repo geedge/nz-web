@@ -112,7 +112,6 @@ public class VisualChartController {
      * @return
      */
     @PostMapping(value = {"/syncTmpl"})
-    @SysLog(operation = OperationEnum.SYNC, type = TypeEnum.VISUAL_CHART)
     @RequiresPermissions({"visual:chart:save"})
     public synchronized R syncTmpl(@RequestBody Map<String, Object> params) {
         // validate

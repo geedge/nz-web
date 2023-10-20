@@ -53,7 +53,6 @@ public class PingController {
     static final List<Thread> ACTIVE_TASKS = Collections.synchronizedList(new ArrayList<>());
 
     @GetMapping("/ping")
-    @SysLog(operation = OperationEnum.CREAT_TASK, type = TypeEnum.PING)
     public R ping(@RequestParam Map<String, Object> params) {
         String ips = (String) params.get("ips");
         if (Tool.StrUtil.isEmpty(ips)) throw new NZException(RCode.TOOL_PING_IP_ISNULL);
@@ -114,7 +113,6 @@ public class PingController {
     }
 
     @GetMapping("/ping/result/{tid}")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PING)
     public R pingResult(@PathVariable(value = "tid", required = true) String tid) {
         String pingResultKey = Tool.StrUtil.concat(true, "test_ping_result_", tid);
 //        List<String> pingResultList = redisTemplate.opsForList().range(pingResultKey, 0, -1);
@@ -159,7 +157,6 @@ public class PingController {
     }
 
     @GetMapping("/ping/cancel/{tid}")
-    @SysLog(operation = OperationEnum.CANCEL, type = TypeEnum.PING)
     public R pingCancel(@PathVariable(value = "tid", required = false) String tid) {
         if (Tool.CollectionUtil.isNotEmpty(ACTIVE_TASKS)) {
             ACTIVE_TASKS.stream().filter(thread -> Tool.StrUtil.startWith(thread.getName(), tid)).forEach(thread -> {

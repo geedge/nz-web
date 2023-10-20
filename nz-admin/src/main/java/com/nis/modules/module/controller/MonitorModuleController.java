@@ -173,7 +173,6 @@ public class MonitorModuleController {
      * @return
      */
     @RequestMapping(value = "/module/sync", method = {RequestMethod.POST, RequestMethod.PUT})
-    @SysLog(operation = OperationEnum.SYNC, type = TypeEnum.MODULE)
     public R syncModuleEndpointAndDashboard(@RequestBody(required = false) Map<String, Object> requestParam) {
         // validate param
         requestParam = Tool.MapUtil.defaultIfEmpty(requestParam, Tool.MapUtil.empty());
