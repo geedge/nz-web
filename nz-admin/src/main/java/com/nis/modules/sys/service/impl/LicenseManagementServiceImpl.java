@@ -26,6 +26,7 @@ import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.SoftwareAssetService;
 import com.nis.modules.asset.service.SoftwareTypeService;
 import com.nis.modules.sys.service.LicenseManagementService;
+import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.utils.AdminStatusEnum;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FileUtils;
@@ -50,6 +51,9 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
     private String vendorId;
 
     @Autowired
+    private SysConfService sysConfService;
+
+    @Autowired
     private AssetAssetService assetService;
 
     @Autowired
@@ -68,6 +72,10 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
         List<JSONObject> haspKeyList = this.queryHaspKeyByVendorId(adminApi, vendorId);
         log.info("[queryLicenseProductList] [saId: {}] [haspKeyList size: {}]", saId, haspKeyList.size());
 
+        // feature name map
+        String featureNameMappingStr = sysConfService.getValue("license_feature_name_mapping");
+        Map<String, String> featureNameMap = JSONUtil.toBean(featureNameMappingStr, Map.class);
+
         List<JSONObject> productList = Tool.ListUtil.list(true);
         for (JSONObject haspKey : haspKeyList) {
             String haspKeyId = StrUtil.toString(haspKey.get("haspid"));
@@ -77,26 +85,59 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
 
             // query hasp product list
             List<JSONObject> productListByhaspKeyId = this.queryHaspProductList(adminApi, haspKeyId);
-            for (JSONObject product : productListByhaspKeyId) {
-                if (ObjectUtil.isEmpty(product)) {
+            for (JSONObject productJsonObject : productListByhaspKeyId) {
+                if (ObjectUtil.isEmpty(productJsonObject)) {
                     continue;
                 }
 
                 // hasp
-                product.set("hasp", haspKey);
+                productJsonObject.set("hasp", haspKey);
 
-                String productId = StrUtil.toString(product.get("productid"));
-                Object featureId = JSONUtil.getByPath(product, "productdetails.feature.id");
+                String productId = StrUtil.toString(productJsonObject.get("productid"));
+                Object featureIdObject = JSONUtil.getByPath(productJsonObject, "productdetails.feature.id");
 
                 // query product feature list
-                List<JSONObject> featureList = this.queryProductFeatureList(adminApi, haspKeyId, productId, featureId);
-                product.set("features", featureList);
+                List<JSONObject> featureList = this.queryProductFeatureList(adminApi, haspKeyId, productId, featureIdObject);
+                for (JSONObject feature : featureList) {
+                    productJsonObject.set("features", Tool.ListUtil.of(feature));
 
-                // query product session list
-                List<JSONObject> sessionList = this.queryProductSessionList(adminApi, haspKeyId, productId);
-                product.set("sessions", sessionList);
+                    Map<String, Object> productFlatMap = productJsonObject.entrySet()
+                            .stream()
+                            .map(entry -> {
+                                if (feature.containsKey(entry.getKey())) {
+                                    entry.setValue(feature.get(entry.getKey()));
+                                }
+                                return entry;
+                            })
+                            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-                productList.add(product);
+                    String featureId = Tool.MapUtil.getStr(feature, "featureid");
+
+                    // query product session list
+                    List<JSONObject> sessionList = this.queryProductSessionList(adminApi, haspKeyId, productId, featureId);
+                    productFlatMap.put("sessions", sessionList);
+
+
+                    // get product name
+                    String productName = featureNameMap.get(featureId);
+                    productFlatMap.put("name", productName);
+
+                    // handle required param
+                    Object haspTypename = JSONUtil.getByPath(productJsonObject, "hasp.typename");
+                    productFlatMap.put("typename", haspTypename);
+
+                    Object haspProddate = JSONUtil.getByPath(productJsonObject, "hasp.proddate");
+                    SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH);
+                    DateTime tempProddate = DateUtil.parse(haspProddate.toString(), dateFormat);
+                    productFlatMap.put("production_date", tempProddate.getTime());
+                    productFlatMap.put("licenseType", feature.get("licenseType"));
+                    Object expDate = feature.get("expDate");
+                    if (expDate != null) {
+                        productFlatMap.put("expiration_date", expDate);
+                    }
+
+                    productList.add(new JSONObject(productFlatMap));
+                }
             }
         }
 
@@ -396,12 +437,9 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
                 expDate = JSONUtil.getByPath((JSON) licenserestrictions, "exp_date");
             }
 
-            JSONObject featureInfo = new JSONObject();
-            featureInfo.set("featureid", tempFeatureNode.get("featureid"));
-            featureInfo.set("featurename", tempFeatureNode.get("featurename"));
-            featureInfo.set("licenseType", licenseType);
-            featureInfo.set("expDate", expDate);
-            featureList.add(featureInfo);
+            tempFeatureNode.set("licenseType", licenseType);
+            tempFeatureNode.set("expDate", expDate);
+            featureList.add(tempFeatureNode);
         }
         featureList = featureList.stream().distinct().collect(Collectors.toList());
         log.info("[queryProductFeatureList] [finshed] [haspKeyId: {}] [productId: {}] [featureList size: {}]", haspKeyId, productId, featureList.size());
@@ -415,13 +453,15 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
      * @param adminApi
      * @param haspKeyId
      * @param productId
+     * @param featureId
      * @return
      */
-    private List<JSONObject> queryProductSessionList(AdminApi adminApi, String haspKeyId, String productId) {
+    private List<JSONObject> queryProductSessionList(AdminApi adminApi, String haspKeyId, String productId, String featureId) {
         log.info("[queryProductSessionList] [begin] [haspKeyId: {}] [productId: {}]", haspKeyId, productId);
         String scopeXml = StrUtil.concat(true, "<haspscope>",
                 "<hasp><id>", haspKeyId, "</id></hasp>",
                 "<product><id>", productId, "</id></product>",
+                "<feature><id>", featureId, "</id></feature>",
                 "</haspscope>");
         String formatXml = StrUtil.concat(true, "<admin><session>",
                 "<element name=\"machine\"/>",
@@ -466,12 +506,12 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
         log.info("[filterExpiredProduct] [begin] [productList size: {}]", productList.size());
         List<JSONObject> activationProductList = Tool.ListUtil.list(true);
 
-        Map<Object, List<JSONObject>> productListGroupById = productList.stream()
-                .collect(Collectors.groupingBy(product -> product.get("productid")));
+        Map<Object, List<JSONObject>> productListGroupByName = productList.stream()
+                .collect(Collectors.groupingBy(product -> product.get("name")));
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH);
-        for (Map.Entry<Object, List<JSONObject>> entry : productListGroupById.entrySet()) {
-            Object productId = entry.getKey();
+        for (Map.Entry<Object, List<JSONObject>> entry : productListGroupByName.entrySet()) {
+            Object productName = entry.getKey();
             List<JSONObject> tempProductList = entry.getValue();
 
             // 永久证书
@@ -479,7 +519,7 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
                 List<String> licenseTypeList = (List<String>) JSONUtil.getByPath(product, "features.licenseType");
                 return licenseTypeList.contains("Perpetual");
             }).collect(Collectors.toList());
-            log.info("[filterExpiredProduct] [productId: {}] [has perpetual]", productId, Tool.CollUtil.isNotEmpty(perpetualTypeProductList));
+            log.info("[filterExpiredProduct] [productName: {}] [has perpetual: {}]", productName, Tool.CollUtil.isNotEmpty(perpetualTypeProductList));
 
             // 不存在永久证书
             if (CollUtil.isEmpty(perpetualTypeProductList)) {
@@ -509,10 +549,10 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
                         .orElse(null);
 
                 if (ObjectUtil.isNotNull(largestActivationRange)) {
-                    log.info("[filterExpiredProduct] [has activation] [productId: {}]", productId);
+                    log.info("[filterExpiredProduct] [has activation] [productName: {}]", productName);
                     activationProductList.add(largestActivationRange);
                 } else {
-                    log.warn("[filterExpiredProduct] [no activation] [productId: {}]", productId);
+                    log.warn("[filterExpiredProduct] [no activation] [productName: {}]", productName);
                 }
             } else {
                 // 获取签发时间最后的一个 永久 证书
