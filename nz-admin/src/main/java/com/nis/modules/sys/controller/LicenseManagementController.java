@@ -1,12 +1,11 @@
 package com.nis.modules.sys.controller;
 
 import cn.hutool.json.JSONObject;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONWriter;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.OperationEnum;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.TypeEnum;
+import com.nis.common.utils.*;
 import com.nis.modules.sys.service.LicenseManagementService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping
@@ -28,7 +28,12 @@ public class LicenseManagementController {
         ValidateUtils.is(saId).notNull(RCode.SOFTWARE_ASSET_ID_ISNULL);
 
         List<JSONObject> productList = licenseManagementService.queryLicenseProductList(saId);
-        return R.ok().putData("list", productList);
+
+        // value as string
+        String jsonString = JSON.toJSONString(productList, JSONWriter.Feature.WriteNonStringValueAsString);
+        List<Map> returnData = JSONUtil.toList(jsonString, Map.class);
+
+        return R.ok().putData("list", returnData);
     }
 
     @GetMapping("/license/downloadC2V")
@@ -37,8 +42,7 @@ public class LicenseManagementController {
                             @RequestParam(value = "haspid", required = false) String haspid,
                             HttpServletResponse response)  throws Exception {
 
-        ValidateUtils.is(saId).notNull(RCode.SOFTWARE_ASSET_ID_ISNULL)
-                        .and(haspid).notNull(RCode.LICENSE_DOWNLOAD_C2VFILE_HASPID_ISNULL);
+        ValidateUtils.is(saId).notNull(RCode.SOFTWARE_ASSET_ID_ISNULL);
 
         licenseManagementService.downloadC2V(saId, haspid, response);
     }

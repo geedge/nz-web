@@ -159,37 +159,72 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
         // build adminapi
         AdminApi adminApi = this.buildAdminApi(saId);
 
-        String scopeXml = StrUtil.concat(true, "<haspscope>",
-                "<hasp><id>", haspid, "</id></hasp>",
-                "</haspscope>");
-        String formatXml = StrUtil.concat(true, "<admin>",
-                "<hasp><element name=\"c2v_file\"/></hasp>",
-                "</admin>");
+        if (StrUtil.isEmpty(haspid)) {
+            log.info("[downloadC2V] [download fingerprint_vendorId.c2v file]");
+            String formatXml = """
+                        <admin>
+                          <license_manager>
+                            <element name="fingerprint_file" />
+                          </license_manager>
+                        </admin>
+                    """;
 
-        String configXmlStr = adminApi.getConfig(scopeXml, formatXml);
-        int lastApiErrorCode = adminApi.getLastApiError();
-        log.info("[downloadC2V] [haspid: {}] [getLastApiError: {}]", haspid, lastApiErrorCode);
+            String configXmlStr = adminApi.getConfig("", formatXml);
+            int lastApiErrorCode = adminApi.getLastApiError();
+            log.info("[downloadC2V] [getLastApiError: {}]", lastApiErrorCode);
 
-        AdminStatusEnum adminStatus = AdminStatusEnum.getAdminStatusByCode(lastApiErrorCode);
-        if (ObjectUtil.notEqual(AdminStatusEnum.SNTL_ADMIN_STATUS_OK, adminStatus)) {
-            log.error("[downloadC2V] [error] [haspid: {}] [code: {}] [status: {}]", haspid, lastApiErrorCode, adminStatus);
-            throw new NZException(RCode.LICENSE_REQUEST_ADMINAPI_ERROR.setParam(adminStatus));
+            AdminStatusEnum adminStatus = AdminStatusEnum.getAdminStatusByCode(lastApiErrorCode);
+            if (ObjectUtil.notEqual(AdminStatusEnum.SNTL_ADMIN_STATUS_OK, adminStatus)) {
+                log.error("[downloadC2V] [error] [code: {}] [status: {}]", lastApiErrorCode, adminStatus);
+                throw new NZException(RCode.LICENSE_REQUEST_ADMINAPI_ERROR.setParam(adminStatus));
+            }
+
+            if (log.isDebugEnabled()) {
+                log.debug("[downloadC2V] [result: {}]", configXmlStr);
+            }
+
+            JSONObject resultJsonObject = JSONUtil.xmlToJson(configXmlStr);
+            Object c2vFileJsonObject = JSONUtil.getByPath(resultJsonObject, "admin_response.license_manager.fingerprint_file");
+            String c2vXmlFileStr = JSONUtil.toXmlStr((JSONObject) c2vFileJsonObject);
+
+            String filename = StrUtil.concat(true, "fingerprint_", vendorId, ".c2v");
+            byte[] c2vXmlFileStrBytes = c2vXmlFileStr.getBytes();
+            int c2vXmlFileStrBytesLength = c2vXmlFileStrBytes.length;
+            ResponseUtil.downloadFile(response, filename, c2vXmlFileStrBytes);
+            log.info("[downloadC2V] [finshed] [saId: {}] [bytesize: {}]", saId, c2vXmlFileStrBytesLength);
+        } else {
+            log.info("[downloadC2V] [download haspid_timestamp.c2v file]");
+            String scopeXml = StrUtil.concat(true, "<haspscope>",
+                    "<hasp><id>", haspid, "</id></hasp>",
+                    "</haspscope>");
+            String formatXml = StrUtil.concat(true, "<admin>",
+                    "<hasp><element name=\"c2v_file\"/></hasp>",
+                    "</admin>");
+
+            String configXmlStr = adminApi.getConfig(scopeXml, formatXml);
+            int lastApiErrorCode = adminApi.getLastApiError();
+            log.info("[downloadC2V] [haspid: {}] [getLastApiError: {}]", haspid, lastApiErrorCode);
+
+            AdminStatusEnum adminStatus = AdminStatusEnum.getAdminStatusByCode(lastApiErrorCode);
+            if (ObjectUtil.notEqual(AdminStatusEnum.SNTL_ADMIN_STATUS_OK, adminStatus)) {
+                log.error("[downloadC2V] [error] [haspid: {}] [code: {}] [status: {}]", haspid, lastApiErrorCode, adminStatus);
+                throw new NZException(RCode.LICENSE_REQUEST_ADMINAPI_ERROR.setParam(adminStatus));
+            }
+
+            if (log.isDebugEnabled()) {
+                log.debug("[downloadC2V] [haspid: {}] [result: {}]", haspid, configXmlStr);
+            }
+
+            JSONObject resultJsonObject = JSONUtil.xmlToJson(configXmlStr);
+            Object c2vFileJsonObject = JSONUtil.getByPath(resultJsonObject, "admin_response.hasp.c2v_file");
+            String c2vXmlFileStr = JSONUtil.toXmlStr((JSONObject) c2vFileJsonObject);
+
+            String filename = StrUtil.concat(true, haspid.toString(), "_", System.currentTimeMillis() + "", ".c2v");
+            byte[] c2vXmlFileStrBytes = c2vXmlFileStr.getBytes();
+            int c2vXmlFileStrBytesLength = c2vXmlFileStrBytes.length;
+            ResponseUtil.downloadFile(response, filename, c2vXmlFileStrBytes);
+            log.info("[downloadC2V] [finshed] [saId: {}] [haspid: {}] [bytesize: {}]", saId, haspid, c2vXmlFileStrBytesLength);
         }
-
-        if (log.isDebugEnabled()) {
-            log.debug("[downloadC2V] [haspid: {}] [result: {}]", haspid, configXmlStr);
-        }
-
-        JSONObject resultJsonObject = JSONUtil.xmlToJson(configXmlStr);
-        Object c2vFileJsonObject = JSONUtil.getByPath(resultJsonObject, "admin_response.hasp.c2v_file");
-        String c2vXmlFileStr = JSONUtil.toXmlStr((JSONObject) c2vFileJsonObject);
-
-        String filename = StrUtil.concat(true, haspid.toString(), ".c2v");
-        byte[] c2vXmlFileStrBytes = c2vXmlFileStr.getBytes();
-        int c2vXmlFileStrBytesLength = c2vXmlFileStrBytes.length;
-        ResponseUtil.downloadFile(response, filename, c2vXmlFileStrBytes);
-
-        log.info("[downloadC2V] [finshed] [saId: {}] [haspid: {}] [bytesize: {}]", saId, haspid, c2vXmlFileStrBytesLength);
     }
 
     @Override
