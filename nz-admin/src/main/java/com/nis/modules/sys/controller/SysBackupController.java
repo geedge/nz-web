@@ -64,7 +64,7 @@ public class SysBackupController {
 
     @PostMapping
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.SYS_BACKUP)
-    public R backupData(@RequestParam(required = false) String remark) {
+    public R backupData(@RequestBody(required = false) Map<String, String> requestBody) {
         // get lock
         String uuid = Tool.StrUtil.uuid();
         try {
@@ -74,6 +74,7 @@ public class SysBackupController {
                 StopWatch sw = new StopWatch();
                 sw.start();
 
+                String remark = requestBody.get("remark");
                 sysBackupService.backupData(remark);
                 sw.stop();
                 log.info("[backupData] [System data backup finished] [Run time: {}]", sw.toString());
