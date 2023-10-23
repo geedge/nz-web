@@ -187,6 +187,9 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
             Object c2vFileJsonObject = JSONUtil.getByPath(resultJsonObject, "admin_response.license_manager.fingerprint_file");
             String c2vXmlFileStr = JSONUtil.toXmlStr((JSONObject) c2vFileJsonObject);
 
+            String xmlTitle = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n";
+            c2vXmlFileStr = StrUtil.concat(true, xmlTitle, c2vXmlFileStr);
+
             String filename = StrUtil.concat(true, "fingerprint_", vendorId, ".c2v");
             byte[] c2vXmlFileStrBytes = c2vXmlFileStr.getBytes();
             int c2vXmlFileStrBytesLength = c2vXmlFileStrBytes.length;
@@ -218,6 +221,9 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
             JSONObject resultJsonObject = JSONUtil.xmlToJson(configXmlStr);
             Object c2vFileJsonObject = JSONUtil.getByPath(resultJsonObject, "admin_response.hasp.c2v_file");
             String c2vXmlFileStr = JSONUtil.toXmlStr((JSONObject) c2vFileJsonObject);
+
+            String xmlTitle = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n";
+            c2vXmlFileStr = StrUtil.concat(true, xmlTitle, c2vXmlFileStr);
 
             String filename = StrUtil.concat(true, haspid.toString(), "_", System.currentTimeMillis() + "", ".c2v");
             byte[] c2vXmlFileStrBytes = c2vXmlFileStr.getBytes();
