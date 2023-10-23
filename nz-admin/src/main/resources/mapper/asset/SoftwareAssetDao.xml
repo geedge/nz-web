@@ -56,19 +56,19 @@
                 </foreach>
             </if>
             <if test="params.assetIds != null and params.assetIds != ''">
-                sa.asset_id in
+                AND sa.asset_id in
                 <foreach collection="params.assetIds.split(',')" item="assetId" open="(" separator="," close=")">
                     #{assetId}
                 </foreach>
             </if>
             <if test="params.projectIds != null and params.projectIds != ''">
-                sa.project_id in
+                AND sa.project_id in
                 <foreach collection="params.projectIds.split(',')" item="projectId" open="(" separator="," close=")">
                     #{projectId}
                 </foreach>
             </if>
             <if test="params.typeIds != null and params.typeIds != ''">
-                sa.type_id in
+                AND sa.type_id in
                 <foreach collection="params.typeIds.split(',')" item="typeId" open="(" separator="," close=")">
                     #{typeId}
                 </foreach>
