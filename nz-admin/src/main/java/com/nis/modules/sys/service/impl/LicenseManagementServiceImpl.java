@@ -129,7 +129,7 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
                     Object haspProddate = JSONUtil.getByPath(productJsonObject, "hasp.proddate");
                     SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH);
                     DateTime tempProddate = DateUtil.parse(haspProddate.toString(), dateFormat);
-                    productFlatMap.put("production_date", tempProddate.getTime());
+                    productFlatMap.put("production_date", tempProddate.getTime() / 1000);
                     productFlatMap.put("licenseType", feature.get("licenseType"));
                     Object expDate = feature.get("expDate");
                     if (expDate != null) {
