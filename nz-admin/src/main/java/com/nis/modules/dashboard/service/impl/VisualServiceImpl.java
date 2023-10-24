@@ -766,7 +766,10 @@ public class VisualServiceImpl implements VisualService {
                     continue;
                 }
                 String chartId = id.replaceAll("chart-local-", "");
-                VisualChart visualChart = chartsList.stream().filter(chart -> ObjectUtil.equal(chart.getId().toString(), chartId)).findFirst().orElse(new VisualChart());
+                VisualChart visualChart = chartsList.stream().filter(chart -> ObjectUtil.equal(chart.getId().toString(), chartId)).findFirst().orElse(null);
+                if (ObjectUtil.isNull(visualChart)) {
+                    continue;
+                }
                 if (ObjectUtil.isNotEmpty(visualChart.getParam())) {
                     Map paramObject = JSONUtil.toBean(StrUtil.utf8Str(visualChart.getParam()), Map.class);
                     visualChart.setParam(paramObject);
