@@ -63,13 +63,13 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
     private SoftwareAssetService softwareAssetService;
 
     @Override
-    public List<JSONObject> queryLicenseProductList(Integer saId) {
-        log.info("[queryLicenseProductList] [begin] [saId: {}]", saId);
+    public List<JSONObject> queryLicenseProductList(Integer saId, Integer islocal) {
+        log.info("[queryLicenseProductList] [begin] [saId: {}] [islocal: {}]", saId, islocal);
         // build adminapi
         AdminApi adminApi = this.buildAdminApi(saId);
 
         // query haspkey by vendorid
-        List<JSONObject> haspKeyList = this.queryHaspKeyByVendorId(adminApi, vendorId);
+        List<JSONObject> haspKeyList = this.queryHaspKeyByVendorId(adminApi, vendorId, islocal);
         log.info("[queryLicenseProductList] [saId: {}] [haspKeyList size: {}]", saId, haspKeyList.size());
 
         // feature name map
@@ -324,10 +324,11 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
      *
      * @param adminApi
      * @param vendorId
+     * @param islocal
      * @return
      */
-    private List<JSONObject> queryHaspKeyByVendorId(AdminApi adminApi, String vendorId) {
-        log.info("[queryHaspKeyByVendorId] [begin] [vendorId: {}]", vendorId);
+    private List<JSONObject> queryHaspKeyByVendorId(AdminApi adminApi, String vendorId, Integer islocal) {
+        log.info("[queryHaspKeyByVendorId] [begin] [vendorId: {}] [islocal: {}]", vendorId, islocal);
         String scopeXml = StrUtil.concat(true, "<haspscope>",
                 "<vendor><id>", vendorId, "</id></vendor>",
                 "</haspscope>");
@@ -357,6 +358,13 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
             haspKeyList.add((JSONObject) haspObject);
         } else if (haspObject instanceof JSONArray) {
             haspKeyList.addAll((List) haspObject);
+        }
+
+        // 仅查询本地
+        if (ObjectUtil.equal(1, islocal)) {
+            haspKeyList = haspKeyList.parallelStream()
+                    .filter(jsonObject -> ObjectUtil.equal(islocal, jsonObject.get("islocal")))
+                    .toList();
         }
 
         log.info("[queryHaspKeyByVendorId] [finshed] [vendorId: {}] [haspKeyList size: {}]", vendorId, haspKeyList.size());

@@ -24,10 +24,11 @@ public class LicenseManagementController {
 
     @GetMapping("/license/product")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.LICENSE)
-    public R queryLicenseProductList(@RequestParam(value = "saId", required = false) Integer saId) {
+    public R queryLicenseProductList(@RequestParam(value = "saId", required = false) Integer saId,
+                                     @RequestParam(value = "islocal", required = false, defaultValue = "1") Integer islocal) {
         ValidateUtils.is(saId).notNull(RCode.SOFTWARE_ASSET_ID_ISNULL);
 
-        List<JSONObject> productList = licenseManagementService.queryLicenseProductList(saId);
+        List<JSONObject> productList = licenseManagementService.queryLicenseProductList(saId, islocal);
 
         // value as string
         String jsonString = JSON.toJSONString(productList, JSONWriter.Feature.WriteNonStringValueAsString);

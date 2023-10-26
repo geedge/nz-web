@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface LicenseManagementService {
 
-	List<JSONObject> queryLicenseProductList(Integer saId);
+	List<JSONObject> queryLicenseProductList(Integer saId, Integer islocal);
 
 	void downloadC2V(Integer saId, String haspid, HttpServletResponse response) throws Exception;
 
