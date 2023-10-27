@@ -153,6 +153,10 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
         	throw new NZException(RCode.SYS_USER_NAME_DUPLICATE);
         }
 
+		List<SysUserEntity> listByUserName = this.list(new QueryWrapper<SysUserEntity>().lambda().eq(SysUserEntity::getUsername, user.getUsername()).ne(ObjectUtil.isNotEmpty(user.getId()),SysUserEntity::getId, user.getId()));
+		if(ObjectUtil.isNotEmpty(listByUserName)) {
+			throw new NZException(RCode.SYS_USER_USERNAME_DUPLICATE);
+		}
 	    if(status != 0 && status != 1){
 	    	throw new NZException(RCode.SYS_USER_STATUS_INVALIDE);
 	    }
