@@ -25,4 +25,6 @@ public class SysComponent {
 	
 	@TableField(exist = false)
 	private Integer status;
+
+	private String hostname;
 }

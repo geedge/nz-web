@@ -17,6 +17,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 /**
  * 系统组件 状态检查线程 1、更新当前组件的状态 a、当设置了host时，直接使用 host b、没有设置host时，通过socket 连接 数据库
  * 获取local address 2、主进程 a、清除超过两个周期没有更新的记录 b、检查 sys_config 表 alert_api
@@ -61,7 +64,13 @@ public class SysComponentJob extends QuartzJobBean {
 			component.setPort(port);
 			component.setProtocol(protocol);
 			component.setComponent(Constant.NZ_WEB_COMPONENT_NAME);
-			
+			String hostName = StrUtil.EMPTY;
+			try {
+				hostName = InetAddress.getLocalHost().getHostName();
+			} catch (UnknownHostException e) {
+				log.warn("Failed to get hostname, host: {}", host);
+			}
+			component.setHostname(hostName);
 			SysComponent sysComponent = sysComponentService.getOne(Wrappers.lambdaQuery(component));
 			component.setServerid(Constant.SERVER_ID);
 			component.setUtime(System.currentTimeMillis());
