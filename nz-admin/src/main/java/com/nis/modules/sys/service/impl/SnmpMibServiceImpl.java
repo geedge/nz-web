@@ -11,8 +11,12 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
+import com.nis.modules.asset.entity.AssetBrand;
 import com.nis.modules.asset.entity.AssetModel;
+import com.nis.modules.asset.entity.AssetTypeConf;
+import com.nis.modules.asset.service.AssetBrandService;
 import com.nis.modules.asset.service.AssetModelService;
+import com.nis.modules.asset.service.AssetTypeConfService;
 import com.nis.modules.sys.dao.SnmpMibDao;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.MmMib;
@@ -52,6 +56,12 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
     @Autowired
     private AssetModelService assetModelService;
 
+    @Autowired
+    private AssetTypeConfService assetTypeConfService;
+
+    @Autowired
+    private AssetBrandService brandService;
+
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         String ids = (String) params.get("ids");
@@ -67,6 +77,13 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
         List<AssetModel> assetModelList = assetModelService.list();
         Map<Integer, AssetModel> modelsDetailIdAndEntity = assetModelList.stream().collect(Collectors.toMap(AssetModel::getId, Function.identity()));
 
+        // 获取所有的 asset type
+        List<AssetTypeConf> typeConfs = assetTypeConfService.list();
+        Map<Integer, AssetTypeConf> assetTypeConfMap = typeConfs.stream().collect(Collectors.toMap(AssetTypeConf::getId, Function.identity()));
+
+        List<AssetBrand> brands = brandService.list();
+        Map<Integer, AssetBrand> brandMap = brands.stream().collect(Collectors.toMap(AssetBrand::getId, Function.identity()));
+
 
         // 处理 modelDetail 信息
         List<AssetModel> modelsDetail = null;
@@ -76,8 +93,11 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
                 modelsDetail = new ArrayList<>();
                 int[] ints = Arrays.asList(snmpMib.getModels().split(",")).stream().mapToInt(Integer::parseInt).toArray();
                 for (int i = 0; i < ints.length; i++) {
-                    if (Tool.ObjectUtil.isNotEmpty(modelsDetailIdAndEntity.get(ints[i]))){
-                        modelsDetail.add(modelsDetailIdAndEntity.get(ints[i]));
+                    AssetModel assetModel = modelsDetailIdAndEntity.get(ints[i]);
+                    if (Tool.ObjectUtil.isNotEmpty(assetModel)) {
+                        assetModel.setBrand(brandMap.get(assetModel.getBrandId()));
+                        assetModel.setType(assetTypeConfMap.get(assetModel.getTypeId()));
+                        modelsDetail.add(assetModel);
                     }
                 }
                 snmpMib.setModelsDetail(modelsDetail);
