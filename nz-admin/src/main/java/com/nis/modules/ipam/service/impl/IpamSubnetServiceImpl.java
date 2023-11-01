@@ -29,10 +29,7 @@ import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-import inet.ipaddr.AddressStringException;
-import inet.ipaddr.IPAddress;
-import inet.ipaddr.IPAddressString;
-import inet.ipaddr.IncompatibleAddressException;
+import inet.ipaddr.*;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -182,16 +179,10 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 		if(ToolUtil.isNotAllEmpty(ips)) {
 			for(String p : ips) {
 				IPAddress ipAddr = new IPAddressString(p).toAddress();
-				if (ipamSubnet.getType().equals(4)){
-					if(ipAddr.contains(ipAddress) || ipAddress.contains(ipAddr)) {
-						throw new NZException(RCode.IPAM_SUBNET_NETWORK_SEGMENT_OVERLAP.setParam(p));
-					}
-				}else {
-					IPAddress currentIpAddress = ipAddress.toPrefixBlock();
-					IPAddress historyIpAddress = ipAddr.toPrefixBlock();
-					if(currentIpAddress.contains(historyIpAddress) || historyIpAddress.contains(currentIpAddress)) {
-						throw new NZException(RCode.IPAM_SUBNET_NETWORK_SEGMENT_OVERLAP.setParam(p));
-					}
+				IPAddress currentIpAddress = ipAddress.toPrefixBlock();
+				IPAddress historyIpAddress = ipAddr.toPrefixBlock();
+				if(currentIpAddress.contains(historyIpAddress) || historyIpAddress.contains(currentIpAddress)) {
+					throw new NZException(RCode.IPAM_SUBNET_NETWORK_SEGMENT_OVERLAP.setParam(p));
 				}
 			}
 		}		
@@ -352,22 +343,15 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 			String cidr = StrUtil.concat(true, addr, StrUtil.SLASH, mask);
 			IPAddress ipAddress = new IPAddressString(cidr).toAddress();
 			Map<String, String> cidrByName = ipamSubnets.stream().collect(Collectors.toMap(subnet -> subnet.getName(), subnet -> StrUtil.concat(true, subnet.getAddr(), StrUtil.SLASH, subnet.getMask().toString()).toString()));
-			if(ToolUtil.isNotAllEmpty(cidrByName)) {
+			if (ToolUtil.isNotAllEmpty(cidrByName)) {
 				for (String subnetName : cidrByName.keySet()) {
 					String historyCidr = cidrByName.get(subnetName);
 					IPAddress ipAddr = new IPAddressString(historyCidr).toAddress();
-					if (type.equals("4")){
-						if((ipAddr.contains(ipAddress) || ipAddress.contains(ipAddr)) && !subnetName.equalsIgnoreCase(name)) {
-							validateUtil.recordImportAttrErr(lineNum,RCode.IPAM_SUBNET_NETWORK_SEGMENT_OVERLAP.setParam(historyCidr));
-						}
-					}else {
-						IPAddress currentIpAddress = ipAddress.toPrefixBlock();
-						IPAddress historyIpAddress = ipAddr.toPrefixBlock();
-						if((currentIpAddress.contains(historyIpAddress) || historyIpAddress.contains(currentIpAddress)) && !subnetName.equalsIgnoreCase(name)) {
-							validateUtil.recordImportAttrErr(lineNum,RCode.IPAM_SUBNET_NETWORK_SEGMENT_OVERLAP.setParam(historyCidr));
-						}
+					IPAddress currentIpAddress = ipAddress.toPrefixBlock();
+					IPAddress historyIpAddress = ipAddr.toPrefixBlock();
+					if ((currentIpAddress.contains(historyIpAddress) || historyIpAddress.contains(currentIpAddress)) && !subnetName.equalsIgnoreCase(name)) {
+						validateUtil.recordImportAttrErr(lineNum, RCode.IPAM_SUBNET_NETWORK_SEGMENT_OVERLAP.setParam(historyCidr));
 					}
-
 				}
 			}
             //dc相关校验
