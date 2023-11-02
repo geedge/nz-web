@@ -508,6 +508,7 @@ public enum RCode {
     ALERTRULE_SNMPTRAP_OPERATOR_ERROR(423049, "The SNMP trap type operator only supports regex"),
     ALERTRULE_SELECT_DASHBOARD_TYPE_INCORRECT(424050,"Incorrect type selection, only `dashboard` type dashboard is supported"),
     ALERTRULE_PARAM_FORMAT_ERROR(423051, "Parameter format error"),
+    ALERTRULE_EXPR_DUPLICATE(423052, "Alert rule oid already exists"),
 
 
 

@@ -181,6 +181,17 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         // 校验参数
         this.validateParam(alertRule);
 
+        // 校验 oid 是否重复
+        if (AlertRuleType.SNMP_TRAP.getValue().equals(alertRule.getType())) {
+            List<AlertRuleEntity> alertRuleEntitys = this.list(new LambdaQueryWrapper<AlertRuleEntity>()
+                    .eq(AlertRuleEntity::getExpr, alertRule.getExpr())
+                    .eq(AlertRuleEntity::getType, AlertRuleType.SNMP_TRAP.getValue())
+                    .ne(ObjectUtil.isNotEmpty(alertRule.getId()), AlertRuleEntity::getId, alertRule.getId()));
+            if (CollectionUtils.isNotEmpty(alertRuleEntitys)) {
+                throw new NZException(RCode.ALERTRULE_EXPR_DUPLICATE);
+            }
+        }
+
         // 校验名称重复
         if (!this.checkName(alertRule)) {
             throw new NZException(RCode.ALERTRULE_NAME_DUPLICATE);
