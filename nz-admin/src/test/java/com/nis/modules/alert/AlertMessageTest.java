@@ -137,7 +137,7 @@ public class AlertMessageTest extends BaseTest<AlertMessageEntity> {
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
         MvcResult result = UTUtil.performGet("/alert/message/export", map);
 
-        UTUtil.assertToExportFile(result, map,2);
+        UTUtil.assertToExportFile(result, map,10);
     }
 
     /**
@@ -148,7 +148,7 @@ public class AlertMessageTest extends BaseTest<AlertMessageEntity> {
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
         MvcResult result = UTUtil.performGet("/alert/message/export", map);
 
-        UTUtil.assertToExportFile(result, map,2);
+        UTUtil.assertToExportFile(result, map,10);
     }
 
     /**
@@ -159,7 +159,7 @@ public class AlertMessageTest extends BaseTest<AlertMessageEntity> {
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
         MvcResult result = UTUtil.performGet("/alert/message/export", map);
 
-        UTUtil.assertToExportFile(result, map,2);
+        UTUtil.assertToExportFile(result, map,10);
     }
     /**
      * put  /alert/message/ack
