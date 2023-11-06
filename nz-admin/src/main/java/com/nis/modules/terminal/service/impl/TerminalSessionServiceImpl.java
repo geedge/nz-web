@@ -614,6 +614,10 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
             try {
                 // append
                 sftp.put(multipartFile.getInputStream(), newFilePath, sftpUploadMonitor, Sftp.Mode.APPEND);
+
+                // record log
+                String fullName = FileUtil.file(path, fileName).toString();
+                sftpLogService.saveUploadFileSftpLog(uuid, fullName, TerminalConstant.SftpOperType.UPLOAD.getValue(), chunkStart);
             } catch (Exception e) {
                 log.error(e);
             } finally {

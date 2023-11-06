@@ -1,5 +1,6 @@
 package com.nis.modules.terminal.service.impl;
 
+import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -41,5 +42,33 @@ public class TerminalSftpLogServiceImpl extends ServiceImpl<TerminalSftpLogDao, 
                 path,
                 System.currentTimeMillis());
         this.save(sftpLog);
+    }
+
+    @Override
+    public void saveUploadFileSftpLog(String uuid, String path, Integer sftpOperType, Long chunkStart) {
+        if (ObjectUtil.equal(0L, chunkStart)) {
+            TerminalSftpLog sftpLog = new TerminalSftpLog(
+                    uuid,
+                    sftpOperType,
+                    path,
+                    System.currentTimeMillis());
+            this.save(sftpLog);
+        } else {
+            TerminalSftpLog lastUploadFileLogForThisSession = this.getOne(new LambdaQueryWrapper<TerminalSftpLog>()
+                    .eq(TerminalSftpLog::getUuid, uuid)
+                    .eq(TerminalSftpLog::getType, sftpOperType)
+                    .eq(TerminalSftpLog::getName, path)
+                    .orderByDesc(TerminalSftpLog::getId)
+                    .last("limit 1"));
+            if (lastUploadFileLogForThisSession == null) {
+                lastUploadFileLogForThisSession = new TerminalSftpLog(
+                        uuid,
+                        sftpOperType,
+                        path,
+                        System.currentTimeMillis());
+            }
+            lastUploadFileLogForThisSession.setTs(System.currentTimeMillis());
+            this.saveOrUpdate(lastUploadFileLogForThisSession);
+        }
     }
 }

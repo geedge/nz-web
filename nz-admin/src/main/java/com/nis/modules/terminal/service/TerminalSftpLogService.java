@@ -12,4 +12,6 @@ public interface TerminalSftpLogService extends IService<TerminalSftpLog> {
 
     void saveSftpLog(String uuid, String path, Integer sftpOperType);
 
+    void saveUploadFileSftpLog(String uuid, String path, Integer sftpOperType, Long chunkStart);
+
 }
