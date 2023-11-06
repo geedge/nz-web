@@ -397,7 +397,8 @@ public class TerminalHandler extends TextWebSocketHandler {
      */
     public static synchronized void updateSessionStatusAfterClientClosed(String clientId) {
         log.info("[updateSessionStatusAfterClientClosed] [begin] [clientId: {}]", clientId);
-        TerminalSessionEntity sessionEntity = (TerminalSessionEntity) TerminalSession.getTerminalAttributeInfo(clientId).get("terminalSessionEntity");
+        TerminalSessionService terminalSessionService = (TerminalSessionService) TerminalSession.CLIENT_ATTRIBUTE_INFO.get("terminalSessionService");
+        TerminalSessionEntity sessionEntity = terminalSessionService.getOne(new LambdaQueryWrapper<TerminalSessionEntity>().eq(TerminalSessionEntity::getUuid, clientId));
         log.info("[updateSessionStatusAfterClientClosed] [update session entity] [clientId: {}] [exist: {}]", clientId, Tool.ObjectUtil.isNotNull(sessionEntity));
 
         if (Tool.ObjectUtil.isNotNull(sessionEntity)) {
@@ -412,7 +413,6 @@ public class TerminalHandler extends TextWebSocketHandler {
             }
 
             sessionEntity.setEndTime(new Date());
-            TerminalSessionService terminalSessionService = (TerminalSessionService) TerminalSession.CLIENT_ATTRIBUTE_INFO.get("terminalSessionService");
             terminalSessionService.saveOrUpdate(sessionEntity);
         } else {
             log.warn("[updateSessionStatusAfterClientClosed] [not found TerminalSessionEntity through client id.] [clientId: {}]", clientId);

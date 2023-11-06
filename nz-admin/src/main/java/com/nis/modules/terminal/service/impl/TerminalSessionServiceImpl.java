@@ -171,7 +171,6 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
                 String clientId = terminalClient.getClientId();
                 TerminalSessionEntity sessionEntity = this.getOne(new LambdaQueryWrapper<TerminalSessionEntity>().eq(TerminalSessionEntity::getUuid, clientId));
 
-                // TerminalSessionEntity sessionEntity = (TerminalSessionEntity) TerminalSession.getTerminalAttributeInfo(uuid).get("terminalSessionEntity");
                 if (sessionEntity.getStartTime() == null) {
                     sessionEntity.setStartTime(new Date());
                 }
