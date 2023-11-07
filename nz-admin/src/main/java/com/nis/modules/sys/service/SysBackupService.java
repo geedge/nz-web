@@ -29,4 +29,6 @@ public interface SysBackupService {
 
 	void restore(String filename);
 
+	Boolean checkRestoreFileExists(String filename);
+
 }

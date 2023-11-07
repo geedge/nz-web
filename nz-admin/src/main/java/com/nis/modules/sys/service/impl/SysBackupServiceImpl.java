@@ -389,6 +389,15 @@ public class SysBackupServiceImpl implements SysBackupService {
         }
     }
 
+    @Override
+    public Boolean checkRestoreFileExists(String filename) {
+        String path = sysConfService.getValueOrDefault("backup_file_path", Constant.BACKUP_ROOT_PATH);
+        String sqlFilePath = Tool.StrUtil.concat(true, path, File.separator, filename);
+        boolean exist = FileUtil.exist(sqlFilePath);
+        log.info("[checkRestoreFileExists] [filename: {}] [exist: {}]", filename, exist);
+        return exist;
+    }
+
     /**
      * export db to sql file
      *

@@ -1,5 +1,6 @@
 package com.nis.common.config;
 
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.log.Log;
 import com.nis.common.utils.Constant;
@@ -108,38 +109,55 @@ public class FlywayConfig implements ApplicationContextAware {
             }
             log.info("[restoreSystemData] [restore filename: {}]", restoreFilename);
 
-            // get lock
-            String uuid = Tool.StrUtil.uuid();
-            try {
-                if (redisLock.lock(SYS_RESTORE_LOCK_KEY, uuid, -1L)) {
-                    log.info("[restoreSystemData] [begin] [get lock]");
-
-                    // restore
-                    sysBackupService.restore(restoreFilename);
-
-                    // unlock
-                    redisLock.unlock(SYS_RESTORE_LOCK_KEY, uuid);
-                    // del sys_restore_filename key
-                    redisTemplate.delete("sys_restore_filename");
-
-                    log.info("[restoreSystemData] [finshed]");
-                } else {
-                    log.warn("[restoreSystemData] [unable to get the lock] [waiting for lock release...]");
-                    while (true) {
-                        Boolean hasKey = redisTemplate.hasKey(SYS_RESTORE_LOCK_KEY);
-                        log.warn("[restoreSystemData] [sys_restore_lock] [release: {}]", !hasKey);
-                        if (hasKey) {
-                            Tool.ThreadUtil.sleep(10, TimeUnit.SECONDS);
-                        } else {
-                            log.info("[restoreSystemData] [lock release and start web service]");
-                            break;
-                        }
+            // check restore file exists
+            Boolean fileExists = sysBackupService.checkRestoreFileExists(restoreFilename);
+            if (BooleanUtil.negate(fileExists)) {
+                log.warn("[restoreSystemData] [no restore file in this server] [sleep 5 minutes]");
+                Tool.ThreadUtil.sleep(5, TimeUnit.MINUTES);
+                while (true) {
+                    Boolean hasKey = redisTemplate.hasKey(SYS_RESTORE_LOCK_KEY);
+                    log.warn("[restoreSystemData] [sys_restore_lock] [release: {}]", !hasKey);
+                    if (hasKey) {
+                        Tool.ThreadUtil.sleep(10, TimeUnit.SECONDS);
+                    } else {
+                        log.info("[restoreSystemData] [lock release and start web service]");
+                        break;
                     }
                 }
-            } catch (Exception e) {
-                log.error(e, "[restoreSystemData] [error]");
-                // 还原失败，停止服务
-                Tool.RuntimeUtil.exec("systemctl stop nz-web.service");
+            } else {
+                // get lock
+                String uuid = Tool.StrUtil.uuid();
+                try {
+                    if (redisLock.lock(SYS_RESTORE_LOCK_KEY, uuid, -1L)) {
+                        log.info("[restoreSystemData] [begin] [get lock]");
+
+                        // restore
+                        sysBackupService.restore(restoreFilename);
+
+                        // unlock
+                        redisLock.unlock(SYS_RESTORE_LOCK_KEY, uuid);
+                        // del sys_restore_filename key
+                        redisTemplate.delete("sys_restore_filename");
+
+                        log.info("[restoreSystemData] [finshed]");
+                    } else {
+                        log.warn("[restoreSystemData] [unable to get the lock] [waiting for lock release...]");
+                        while (true) {
+                            Boolean hasKey = redisTemplate.hasKey(SYS_RESTORE_LOCK_KEY);
+                            log.warn("[restoreSystemData] [sys_restore_lock] [release: {}]", !hasKey);
+                            if (hasKey) {
+                                Tool.ThreadUtil.sleep(10, TimeUnit.SECONDS);
+                            } else {
+                                log.info("[restoreSystemData] [lock release and start web service]");
+                                break;
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error(e, "[restoreSystemData] [error]");
+                    // 还原失败，停止服务
+                    Tool.RuntimeUtil.exec("systemctl stop nz-web.service");
+                }
             }
         } else {
             log.info("[restoreSystemData] [no need to restore]");
