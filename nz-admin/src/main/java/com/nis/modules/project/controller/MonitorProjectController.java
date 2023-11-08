@@ -128,7 +128,7 @@ public class MonitorProjectController extends AbstractController {
      * @return
      */
     @DeleteMapping("/project/topo/iconUnit")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROJECT_TOPO)
+    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.PROJECT_TOPO)
     @RequiresPermissions({"project:topo:icon:delete"})
     public R deleteTopoUnit(String unit) {
         ValidateUtils.is(unit).notNull(RCode.PROJECT_TOPOICON_UNIT_ISNULL);
@@ -199,6 +199,7 @@ public class MonitorProjectController extends AbstractController {
      * @param response
      */
     @GetMapping("/project/topo/icon/{id}/{base64}")
+    @SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.PROJECT_ICON)
     public void downloadIconFile(@PathVariable("id") Integer id, @PathVariable("base64") Integer base64, HttpServletResponse response) {
         ValidateUtils.is(id).notNull(RCode.PROJECT_ICONID_ISNULL);
 

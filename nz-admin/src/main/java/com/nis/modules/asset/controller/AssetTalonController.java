@@ -8,6 +8,7 @@ import cn.hutool.http.HttpStatus;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONPath;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
@@ -59,6 +60,7 @@ public class AssetTalonController {
      * @return
      */
     @GetMapping("/asset/talon/{assetId}/install.sh")
+    @SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.HARDWARE_ASSET)
     public String getTalonInstallScript(HttpServletRequest request,
                                         @PathVariable("assetId") Integer assetId,
                                         @RequestHeader(name = "Authorization") String token) {
@@ -118,6 +120,7 @@ public class AssetTalonController {
      * @param os
      */
     @GetMapping("/asset/talon/download")
+    @SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.HARDWARE_ASSET)
     public void talonInstallPackageDownload(HttpServletResponse response,
                                             @RequestParam(defaultValue = "centos", required = false) String os) {
         log.info("[talonInstallPackageDownload] [begin] [os: {}]", os);
@@ -142,6 +145,7 @@ public class AssetTalonController {
      */
     @PostMapping("/asset/talon/register")
     @RequiresPermissions({"asset:update"})
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.HARDWARE_ASSET)
     public R talonAutoRegister(@RequestBody Map<String, Object> requestBody) {
         requestBody = Tool.MapUtil.defaultIfEmpty(requestBody, Tool.MapUtil.newHashMap());
 
@@ -193,6 +197,7 @@ public class AssetTalonController {
      */
     @PostMapping("/asset/talon/token/refresh")
     @RequiresPermissions({"asset:update"})
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.HARDWARE_ASSET)
     public R refreshTalonToken(@RequestBody Map<String, Object> requestBody) {
         requestBody = Tool.MapUtil.defaultIfEmpty(requestBody, Tool.MapUtil.newHashMap());
 

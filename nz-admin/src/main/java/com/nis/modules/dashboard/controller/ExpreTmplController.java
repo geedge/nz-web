@@ -104,6 +104,7 @@ public class ExpreTmplController {
     }
 
     @GetMapping("/template")
+    @SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.EXPRESSION_TMPL)
     public void getTemplateByLanguage(HttpServletResponse response,
                                       @RequestParam(required = false, defaultValue = "en") String language,
                                       @RequestParam(required = false, defaultValue = "1") String format) throws IOException {

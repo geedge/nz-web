@@ -13,6 +13,7 @@ public enum TypeEnum {
 	ASSET_TYPE_CONF("Hardware Asset Type Conf"),
 	ASSET_BRAND("Hardware Asset Brand"),
 	ASSET_MODEL("Hardware Asset Model"),
+	ASSET_MAINTENANCE("Hardware Asset Maintenance"),
 	SOFTWARE_ASSET("Software Asset"),
 	SOFTWARE_TYPE("Software Type"),
 	VSYS("Vsys"),
@@ -55,6 +56,8 @@ public enum TypeEnum {
 	SYS_USER_PREFERENCE("Preference"),
 	SYS_API_KEY("Api Key"),
 
+	// Diagnose
+	DIAGNOSE("Diagnose"),
 	// tool
 	PING("Ping"),
 	TRACE_ROUTE("Trace Route"),

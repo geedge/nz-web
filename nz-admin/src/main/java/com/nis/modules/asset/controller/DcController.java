@@ -122,6 +122,7 @@ public class DcController {
 
 
     @GetMapping("/template")
+    @SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.DATACENTER)
     public void getTemplateByLanguage(HttpServletResponse response,
                                       @RequestParam(required = false, defaultValue = "en") String language,
                                       @RequestParam(required = false, defaultValue = "1") String format) throws IOException {
@@ -281,6 +282,7 @@ public class DcController {
 
 
     @GetMapping("/cabinet/template")
+    @SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.CABINET)
     public void getCabinetTemplateByLanguage(HttpServletResponse response,
                                              @RequestParam(required = false, defaultValue = "en") String language,
                                              @RequestParam(required = false, defaultValue = "1") String format) throws IOException {

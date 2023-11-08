@@ -65,7 +65,7 @@ public class VisualDashboardController {
 	@DeleteMapping
 	@SysLog(operation = OperationEnum.DELETE, type = TypeEnum.DASHBOARD)
 	@RequiresPermissions({ "visual:dashboard:delete" })
-	public R panleDelete(@RequestParam Integer... ids) {
+	public R dashboardDelete(@RequestParam Integer... ids) {
 		ValidateUtils.is(ids).notNull(RCode.DASHBOARD_ID_ISNULL);
 
 		dashboardService.delDashboards(ids);
@@ -86,6 +86,7 @@ public class VisualDashboardController {
 	}
 
 	@GetMapping("/template")
+	@SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.DASHBOARD)
 	public void getTemplateByLanguage(HttpServletResponse response,
 	                                  @RequestParam(required = false, defaultValue = "dashboard") String type,
 	                                  @RequestParam(required = false, defaultValue = "en") String language,
@@ -156,6 +157,7 @@ public class VisualDashboardController {
 	 * @param vars
 	 */
 	@GetMapping("/snapshot")
+	@SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.SNAPSHOT)
 	public void snapshot(HttpServletResponse response, HttpServletRequest request, String format, Integer dashboardId, Long start, Long end, String vars) throws IOException {
 		ValidateUtils.is(dashboardId).notNull(RCode.DASHBOARD_ID_ISNULL)
 				.and(start).notNull(RCode.AGENT_PARAM_START_ISNULL)

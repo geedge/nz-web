@@ -101,6 +101,7 @@ public class RecordRuleController {
      * @return
      */
     @GetMapping("/{id}/evalLog")
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.RECORD_RULE)
     public R queryEvalLog(@PathVariable Integer id) {
         ValidateUtils.is(id).notNull(RCode.RECORD_RULE_ID_ISNULL);
         List<RecordRuleEvalLog> recordRuleEvalLogs = recordRuleEvalLogService.queryListByRuleId(id);
@@ -114,6 +115,7 @@ public class RecordRuleController {
      * @return
      */
     @GetMapping("/template")
+    @SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.RECORD_RULE)
     public void getTemplate(HttpServletResponse response,
                          @RequestParam(required = false, defaultValue = "en") String language,
                          @RequestParam(required = false, defaultValue = "1") String format) throws IOException {

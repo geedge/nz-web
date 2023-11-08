@@ -166,6 +166,7 @@ public class SnmpMibController extends AbstractController {
      * @return
      */
     @GetMapping("/tree")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.MIB_FILE)
     public R mibTree(String[] ids, String[] models) {
         String mibTrees = snmpMibService.getMibTrees(ids, models);
         return R.ok((Object) mibTrees);

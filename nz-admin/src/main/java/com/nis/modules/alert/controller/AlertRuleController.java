@@ -113,6 +113,7 @@ public class AlertRuleController {
 
 
     @GetMapping("/template")
+    @SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.ALERT_RULE)
     public void getTemplateByLanguage(HttpServletResponse response,
                                       @RequestParam(required = false, defaultValue = "en") String language,
                                       @RequestParam(required = false, defaultValue = "1") String format) throws IOException {
@@ -169,6 +170,7 @@ public class AlertRuleController {
     }
     
     @GetMapping("/{id}/evalLog")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ALERT_RULE)
     public R queryEvalLog(@PathVariable Integer id) {
     	ValidateUtils.is(id).notNull(RCode.ALERTRULE_ID_ISNULL);
     	List<AlertRuleEvalLog> alertRuleEvalLogs = alertRuleEvalLogService.queryListByRuleId(id);
@@ -176,6 +178,7 @@ public class AlertRuleController {
     }
     
     @GetMapping("/{id}/schedLog")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ALERT_RULE)
     public R querySchedLog(@PathVariable Integer id) {
     	ValidateUtils.is(id).notNull(RCode.ALERTRULE_ID_ISNULL);
     	List<AlertRuleSchedLog> alertRuleSchedLogs = alertRuleSchedLogService.queryListByRuleId(id);

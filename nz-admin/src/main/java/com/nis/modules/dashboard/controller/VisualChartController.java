@@ -113,6 +113,7 @@ public class VisualChartController {
      */
     @PostMapping(value = {"/syncTmpl"})
     @RequiresPermissions({"visual:chart:save"})
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.VISUAL_CHART)
     public synchronized R syncTmpl(@RequestBody Map<String, Object> params) {
         // validate
         // pid and chartIds cannot be empty at the same time

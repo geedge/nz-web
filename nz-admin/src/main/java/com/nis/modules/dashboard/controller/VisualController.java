@@ -34,7 +34,7 @@ public class VisualController {
 	 * explore 快照
 	 */
 	@GetMapping("/explore/snapshot")
-	@SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.SNAPSHOT)
+	@SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.SNAPSHOT)
 	public void exploreSnapshot(HttpServletResponse response, HttpServletRequest request, String format, Integer type, Long start,
 								Long end, Integer unit, String limit, String direction, @RequestParam(value="expressions[]")String[] expressions) throws IOException {
 		ValidateUtils.is(type).notNull(RCode.AGENT_TYPE_ISNULL)
@@ -122,6 +122,7 @@ public class VisualController {
 	 * @return
 	 */
 	@PostMapping("/dashboard/syncTmpl")
+	@SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.DASHBOARD)
 	public R syncTemplateDashboard(@RequestBody(required = false) Map<String, Integer> requestBody) {
 		// validate param
 		requestBody = Tool.MapUtil.defaultIfEmpty(requestBody, Tool.MapUtil.empty());

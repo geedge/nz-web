@@ -1,5 +1,6 @@
 package com.nis.modules.stat.controller;
 
+import com.nis.common.annotation.SysLog;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.stat.entity.StatAnalysis;
@@ -28,6 +29,7 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R queryAnalyse(@RequestParam Map<String, Object> params) {
 		Map<String, Object> result = statService.queryAnalyse(params);
 		return R.ok(result);
@@ -36,10 +38,10 @@ public class StatController extends AbstractController {
 	/**
 	 * 用户统计接口
 	 * 
-	 * @param params
 	 * @return
 	 */
 	@GetMapping("/user/total")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R userTotal() {
 		StatAnalysis result = statService.queryUserTotal();
 		return R.ok(result);
@@ -52,6 +54,7 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping("/asset/total")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R assetTotal(@RequestParam Map<String, Object> params) {
 		StatAnalysis result = statService.queryAssetTotal(params);
 		return R.ok(result);
@@ -64,6 +67,7 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping("/asset/dc")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R assetDc(@RequestParam Map<String, Object> params) {
 		List<StatAnalysis> result = statService.queryAssetDc(params);
 		return R.ok().putData("list", result);
@@ -76,6 +80,7 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping("/asset/type")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R assetType(@RequestParam Map<String, Object> params) {
 		List<StatAnalysis> result = statService.queryAssetType(params);
 		return R.ok().putData("list", result);
@@ -88,6 +93,7 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping("/asset/state")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R assetState(@RequestParam Map<String, Object> params) {
 		List<StatAnalysis> result = statService.queryAssetState(params);
 		return R.ok().putData("list", result);
@@ -100,6 +106,7 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping("/asset/model")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R assetModel(@RequestParam Map<String, Object> params) {
 		List<StatAnalysis> result = statService.queryAssetModel(params);
 		return R.ok().putData("list", result);
@@ -112,6 +119,7 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping("/asset/ping")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R assetPing(@RequestParam Map<String, Object> params) {
 		List<StatAnalysis> result = statService.queryAssetPing(params);
 		return R.ok().putData("list", result);
@@ -124,6 +132,7 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping("/asset/field")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R assetField(@RequestParam Map<String, Object> params) {
 		List<StatAnalysis> result = statService.queryAssetField(params);
 		return R.ok().putData("list", result);
@@ -136,6 +145,7 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping("/asset/topN")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R assetTopN(@RequestParam Map<String, Object> params) {
 		ValidateUtils.is(params.get("dimension")).notNull(RCode.DIMENSION_IS_NULL);
 		List<StatAnalysis> result = statService.queryAssetTopN(params);
@@ -145,10 +155,10 @@ public class StatController extends AbstractController {
 	/**
 	 * Project 总数统计接口
 	 * 
-	 * @param params
 	 * @return
 	 */
 	@GetMapping("/project/total")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R projectTotal() {
 		StatAnalysis result = statService.queryProjectTotal();
 		return R.ok(result);
@@ -161,6 +171,7 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping("/module/total")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R moduleTotal(@RequestParam Map<String, Object> params) {
 		StatAnalysis result = statService.queryModuleTotal(params);
 		return R.ok(result);
@@ -173,6 +184,7 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping("/module/topN")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R moduleTopN(@RequestParam Map<String, Object> params) {
 		ValidateUtils.is(params.get("dimension")).notNull(RCode.DIMENSION_IS_NULL);
 		List<StatAnalysis> result = statService.queryModuleTopN(params);
@@ -186,6 +198,7 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping("/endpoint/total")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R endpointTotal(@RequestParam Map<String, Object> params) {
 		StatAnalysis result = statService.queryEndpointTotal(params);
 		return R.ok(result);
@@ -198,6 +211,7 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping("/endpoint/type")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R endpointType(@RequestParam Map<String, Object> params) {
 		List<StatAnalysis> result = statService.queryEndpointType(params);
 		return R.ok().putData("list", result);
@@ -210,6 +224,7 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping("/endpoint/state")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R endpointState(@RequestParam Map<String, Object> params) {
 		List<StatAnalysis> result = statService.queryEndpointState(params);
 		return R.ok().putData("list", result);
@@ -222,6 +237,7 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping("/alertRule/total")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R alertRuleTotal(@RequestParam Map<String, Object> params) {
 		List<StatAnalysis> result = statService.queryAlertRuleTotal(params);
 		return R.ok().putData("list", result);
@@ -234,6 +250,7 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping("/alertMessage/total")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R alertMessageTotal(@RequestParam Map<String, Object> params) {
 		StatAnalysis result = statService.queryAlertMessageTotal(params);
 		return R.ok(result);
@@ -246,6 +263,7 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping("/alertMessage/state")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R alertMessageState(@RequestParam Map<String, Object> params) {
 		List<StatAnalysis> result = statService.queryAlertMessageState(params);
 		return R.ok().putData("list", result);
@@ -258,6 +276,7 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping("/alertMessage/severity")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R alertMessageSeverity(@RequestParam Map<String, Object> params) {
 		List<StatAnalysis> result = statService.queryAlertMessageSeverity(params);
 		return R.ok().putData("list", result);
@@ -270,6 +289,7 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping("/alertMessage/topN")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R alertMessageTopN(@RequestParam Map<String, Object> params) {
 		ValidateUtils.is(params.get("dimension")).notNull(RCode.DIMENSION_IS_NULL);
 		List<StatAnalysis> result = statService.queryAlertMessageTopN(params);
@@ -279,10 +299,10 @@ public class StatController extends AbstractController {
 	/**
 	 * datacenter 总数统计接口
 	 * 
-	 * @param params
 	 * @return
 	 */
 	@GetMapping("/dc/total")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R dcTotal() {
 		StatAnalysis result = statService.queryDcTotal();
 		return R.ok(result);
@@ -294,6 +314,7 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping("/dc/state")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R dcState() {
 		List<StatAnalysis> result = statService.queryDcState();
 		return R.ok().putData("list", result);
@@ -306,6 +327,7 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping("/agent/total")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R agentTotal(@RequestParam Map<String, Object> params) {
 		StatAnalysis result = statService.queryAgentTotal(params);
 		return R.ok(result);
@@ -318,6 +340,7 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping("/agent/state")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R agentState(@RequestParam Map<String, Object> params) {
 		List<StatAnalysis> result = statService.queryAgentState(params);
 		return R.ok().putData("list", result);
@@ -330,6 +353,7 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping("/agent/type")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R agentType(@RequestParam Map<String, Object> params) {
 		List<StatAnalysis> result = statService.queryAgentType(params);
 		return R.ok().putData("list", result);
@@ -342,6 +366,7 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping("/asset/healthy")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R assetHealthy(@RequestParam Map<String, Object> params) {
 		StatAnalysis result = statService.queryAssetHealthy(params);
 		return R.ok(result);
@@ -349,11 +374,11 @@ public class StatController extends AbstractController {
 
 	/**
 	 * OVERVIEW map数据接口
-	 * 
-	 * @param params
+	 *
 	 * @return
 	 */
 	@GetMapping("/overview/map")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R overviewMap() {
 		List<Map> result = statService.queryOverviewMap();
 		return R.ok().putData("list", result);
@@ -365,12 +390,14 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping("/module/abnormal")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R moduleAbnormal(@RequestParam Map<String, Object> params) {
 		List<StatAnalysis> result = statService.queryModuleAbnormal(params);
 		return R.ok().putData("list", result);
 	}
 
 	@GetMapping("/alertMessage/trend")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R alertMessageTrend(@RequestParam Map<String, Object> params) {
 		Map<String, Object> result = statService.queryAlertMessageTrend(params);
 		return R.ok(result);
@@ -383,6 +410,7 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping("/search")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R searchAll(@RequestParam Map<String, Object> params) {
 		String scopeStr = Tool.MapUtil.get(params, "scope", String.class);
 		List<String> scopeList = null;
@@ -411,11 +439,15 @@ public class StatController extends AbstractController {
 
 	/**
 	 * rownum 查询接口
-	 * 
-	 * @param params
+	 *
+	 * @param table
+	 * @param id
+	 * @param order
+	 * @param pageSize
 	 * @return
 	 */
 	@GetMapping("/rownum")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R queryRowNum(@RequestParam(name = "table") String table, @RequestParam(name = "id") Integer id,
 			@RequestParam(name = "order", defaultValue = "id") String order,
 			@RequestParam(name = "pageSize", required = false) Integer pageSize) {
@@ -435,6 +467,7 @@ public class StatController extends AbstractController {
 	 * @return
 	 */
 	@GetMapping("/rel")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
 	public R rel(@RequestParam(name = "type") String type,
 	             @RequestParam(name = "id") Integer id,
 	             @RequestParam(name = "level", defaultValue = "1") Integer level,

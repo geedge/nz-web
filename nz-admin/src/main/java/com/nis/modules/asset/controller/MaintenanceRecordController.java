@@ -1,9 +1,8 @@
 package com.nis.modules.asset.controller;
 
+import com.nis.common.annotation.SysLog;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
+import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.MaintenanceRecord;
 import com.nis.modules.asset.service.MaintenanceRecordService;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
@@ -33,6 +32,7 @@ public class MaintenanceRecordController {
      * @return
      */
     @GetMapping
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET_MAINTENANCE)
     public R list(@RequestParam Map<String, Object> params) {
         PageUtils page = maintenanceRecordService.queryPage(params);
         return R.ok(page);
@@ -46,6 +46,7 @@ public class MaintenanceRecordController {
      */
     @PostMapping
     @RequiresPermissions({"asset:maintenance:save"})
+    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.ASSET_MAINTENANCE)
     public R save(@RequestBody MaintenanceRecord maintenance) {
         ValidateUtils.is(maintenance.getAssetId()).notNull(RCode.ASSET_ID_ISNULL)
                 .and(maintenance.getContent()).notNull(RCode.ASSET_MAINTENANCE_CONTENT_ISNULL);
@@ -56,6 +57,7 @@ public class MaintenanceRecordController {
 
     @PutMapping
     @RequiresPermissions({"asset:maintenance:update"})
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ASSET_MAINTENANCE)
     public R update(@RequestBody MaintenanceRecord maintenance) {
         ValidateUtils.is(maintenance.getId()).notNull(RCode.ASSET_MAINTENANCEID_ISNULL)
                 .and(maintenance.getAssetId()).notNull(RCode.ASSET_ID_ISNULL)

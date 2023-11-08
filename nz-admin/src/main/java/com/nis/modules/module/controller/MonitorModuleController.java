@@ -109,6 +109,7 @@ public class MonitorModuleController {
 
 
     @GetMapping("/module/template")
+    @SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.MODULE)
     public void getTemplateByLanguage(HttpServletResponse response,
                                       @RequestParam(required = false, defaultValue = "en") String language,
                                       @RequestParam(required = false, defaultValue = "1") String format) throws IOException {
@@ -173,6 +174,7 @@ public class MonitorModuleController {
      * @return
      */
     @RequestMapping(value = "/module/sync", method = {RequestMethod.POST, RequestMethod.PUT})
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.MODULE)
     public R syncModuleEndpointAndDashboard(@RequestBody(required = false) Map<String, Object> requestParam) {
         // validate param
         requestParam = Tool.MapUtil.defaultIfEmpty(requestParam, Tool.MapUtil.empty());

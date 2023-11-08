@@ -65,6 +65,7 @@ public class IpamSubnetController {
 	}
 
 	@GetMapping("/template")
+	@SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.IPAM_SUBNET)
 	public void getTemplateByLanguage(HttpServletResponse response,
 	                                  @RequestParam(required = false, defaultValue = "en") String language,
 	                                  @RequestParam(required = false, defaultValue = "1") String format) throws IOException {

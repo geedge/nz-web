@@ -1,12 +1,9 @@
 package com.nis.modules.endpoint.controller;
 
-import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.OperationEnum;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
-import com.nis.common.utils.TypeEnum;
 import com.nis.modules.endpoint.entity.MetadataMetric;
 import com.nis.modules.endpoint.service.MetadataMetricService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,8 +33,7 @@ public class MetricController {
      */
     @GetMapping("/metadata")
     @ResponseBody
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.AGENT)
-    public R queryMetadata(Integer endpointId) throws IOException {
+    public R queryMetadata(Integer endpointId) {
         ValidateUtils.is(endpointId).notNull(RCode.ENDPOINT_ID_ISNULL);
         List<MetadataMetric> metadata;
 		try {

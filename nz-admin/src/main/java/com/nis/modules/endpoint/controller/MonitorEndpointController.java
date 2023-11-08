@@ -107,6 +107,7 @@ public class MonitorEndpointController {
     }
 
     @GetMapping("/endpoint/template")
+    @SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.ENDPOINT)
     public void getExportTemplateByLanguage(HttpServletResponse response,
                                             @RequestParam(required = false, defaultValue = "en") String language,
                                             @RequestParam(required = false, defaultValue = "1") String format) throws IOException {
@@ -176,6 +177,7 @@ public class MonitorEndpointController {
     }
 
     @RequestMapping(value = "/endpoint/render", method = {RequestMethod.POST, RequestMethod.PUT})
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ENDPOINT)
     public R render(@RequestBody Map<String, String> params) {
         ValidateUtils.is(params.get("moduleIds")).notNull(RCode.MODULE_ID_ISNULL)
                 .and(params.get("assetIds")).notNull(RCode.ASSET_ID_ISNULL);
@@ -210,7 +212,6 @@ public class MonitorEndpointController {
      * endpoint 错误诊断
      */
     // @GetMapping( "/endpoint/diagnose/{id}")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ENDPOINT)
     public R diagnose(@PathVariable("id") Integer id, HttpServletRequest request) throws IOException {
         ValidateUtils.is(id).notNull(RCode.ENDPOINT_ID_ISNULL);
         return R.ok(monitorEndpointService.diagnose(id, request));
@@ -223,6 +224,7 @@ public class MonitorEndpointController {
      * @return
      */
     @RequestMapping(value = "/endpoint/sync", method = {RequestMethod.POST, RequestMethod.PUT})
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ENDPOINT)
     public R syncEndpointConfigAndDashboard(@RequestBody(required = false) Map<String, Object> requestParam) {
         // validate param
         requestParam = Tool.MapUtil.defaultIfEmpty(requestParam, Tool.MapUtil.empty());

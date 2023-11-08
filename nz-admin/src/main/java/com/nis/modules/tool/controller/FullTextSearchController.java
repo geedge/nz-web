@@ -32,6 +32,7 @@ public class FullTextSearchController {
 
 
     @GetMapping("/fulltext/metadata/{type}")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
     public R queryMetadataConf(@PathVariable(value = "type", required = false) String type) {
         ValidateUtils.is(type).notNull(RCode.TOOL_FULLTEXT_METADATA_TYPE_ISNULL);
 
@@ -40,6 +41,7 @@ public class FullTextSearchController {
 
 
     @GetMapping("/fulltext/keyword")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
     public R queryKeywordList(@RequestParam Map<String, Object> requestParam) {
         requestParam = Tool.MapUtil.defaultIfEmpty(requestParam, Tool.MapUtil.empty());
 

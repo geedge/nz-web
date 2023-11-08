@@ -1,11 +1,3 @@
-/**
-
- *
-
- *
-
- */
-
 package com.nis.modules.sys.controller;
 
 import cn.hutool.core.util.StrUtil;
@@ -15,7 +7,6 @@ import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.SysDictService;
-import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -27,10 +18,7 @@ import java.util.Map;
 
 /**
  * 数据字典
- *
-
  */
-@Api(tags="系统字典")
 @RestController
 @RequestMapping("sys/dict")
 public class SysDictController extends AbstractController {
@@ -53,12 +41,7 @@ public class SysDictController extends AbstractController {
      * @return
      */
     @GetMapping("/all")
-    @ApiOperation(httpMethod = "GET", value = "业务系统列表查询")
-    @ApiImplicitParams({
-        @ApiImplicitParam(paramType="query", name = "name", value = "名称", required = false),
-        @ApiImplicitParam(paramType="query", name = "type", value = "类别", required = false)
-    })
-    public R all(@ApiParam(hidden=true) @RequestParam Map<String, Object> params) {
+    public R all(@RequestParam Map<String, Object> params) {
     	String type = (String) params.get("type");
     	ValidateUtils.is(type).notNull(RCode.NOT_NULL_ERROR);
     	List<SysDictEntity> queryList = sysDictService.queryList(params);

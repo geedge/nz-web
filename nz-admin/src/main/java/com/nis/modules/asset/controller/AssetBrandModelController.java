@@ -133,6 +133,7 @@ public class AssetBrandModelController {
 
 
     @GetMapping("/asset/model/template")
+    @SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.ASSET_MODEL)
     public void getExportTemplateByLanguage(HttpServletResponse response,
                                             @RequestParam(required = false, defaultValue = "en") String language,
                                             @RequestParam(required = false, defaultValue = "1") String format) throws IOException {

@@ -191,8 +191,8 @@ public class SysLogAspect {
 		sysLog.setOperation(operationType);
 		// 类型
 		sysLog.setType(syslog.type().getValue());
-		// 当 operation = query 时，只记录 code != 200 的内容
-		if (! StrUtil.equalsIgnoreCase(operationType, "query")) {
+		// 当 operation = query|download 时，只记录 code != 200 的内容
+		if (!StrUtil.equalsAnyIgnoreCase(operationType, OperationEnum.QUERY.getValue(), OperationEnum.DOWNLOAD.getValue())) {
 			if (StrUtil.equalsAnyIgnoreCase("login", operationType)) {
 				Map map = JSONObject.parseObject(JSONObject.toJSONString(r), Map.class);
 				map.remove("data");
@@ -261,8 +261,8 @@ public class SysLogAspect {
 		sysLog.setCreateDate(new Date());
 
 		sysLog.setApiKeyId(apiKeyId);
-		// 保存系统日志 注： 查询操作若无异常不记录操作日志
-		if (! StrUtil.equalsIgnoreCase(operationType,"query")) {
+		// 保存系统日志 注： 查询|下载 操作若无异常不记录操作日志
+		if (!StrUtil.equalsAnyIgnoreCase(operationType, OperationEnum.QUERY.getValue(), OperationEnum.DOWNLOAD.getValue())) {
 			sysLogService.save(sysLog);
 		}
 	}

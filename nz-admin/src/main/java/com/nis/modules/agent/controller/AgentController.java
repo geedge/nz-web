@@ -113,6 +113,7 @@ public class AgentController {
 	 * @Date 2021/4/2
 	 */
 	@GetMapping("/{dcId}/{type}/install.sh")
+	@SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.AGENT)
 	public String pushInstallScript(HttpServletRequest request, @PathVariable("dcId") Integer dcId,
 			@PathVariable("type") Integer type) {
 		ValidateUtils.is(dcId).notNull(RCode.AGENT_INSTALL_PARAM_MISS).and(type)
@@ -218,6 +219,7 @@ public class AgentController {
 
 	@PutMapping("/ota")
 	@RequiresPermissions({"agent:update"})
+	@SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.AGENT)
 	public R ota(String ids) {
 		ValidateUtils.is(ids).notNull(RCode.AGENT_ID_ISNULL);
 		List<String> idList = Tool.ListUtil.toList(ids.split(","));
@@ -248,6 +250,7 @@ public class AgentController {
 
 	@PutMapping("/resetConfig")
 	@RequiresPermissions({"agent:update"})
+	@SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.AGENT)
 	public R resetConfig() {
 		HashOperations opsForHash = redisTemplate.opsForHash();
 		Map<String, String> confEvent = opsForHash.entries(Constant.REDIS_KEY_CONF_EVENT);
