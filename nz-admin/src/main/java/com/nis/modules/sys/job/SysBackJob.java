@@ -1,9 +1,9 @@
 package com.nis.modules.sys.job;
 
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONPath;
-import com.nis.common.utils.Constant;
+import com.nis.modules.election.dao.LeaderElectionDao;
 import com.nis.modules.report.job.ReportJobManager;
 import com.nis.modules.sys.service.SysBackupService;
 import com.nis.modules.sys.service.SysConfService;
@@ -12,7 +12,6 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.quartz.JobKey;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.stereotype.Component;
 
@@ -23,9 +22,6 @@ public class SysBackJob extends QuartzJobBean {
     private static final Log log = Log.get();
 
     @Autowired
-    private RedisTemplate redisTemplate;
-
-    @Autowired
     private SysBackupService sysBackupService;
 
     @Autowired
@@ -33,9 +29,11 @@ public class SysBackJob extends QuartzJobBean {
 
     @Override
     protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
-        // 检查 haMode
-        String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
-        if (!StrUtil.equals(serverId, Constant.SERVER_ID)) return;
+        // 检查 HA_LOCK
+        LeaderElectionDao dao = LeaderElectionDao.getInstance();
+        boolean isLeader = dao.isLeader();
+        log.info("[SysBackJob] [Get HA_LOCK] [isLeader: {}]", isLeader);
+        if (BooleanUtil.negate(isLeader)) return;
 
         JobKey key = context.getJobDetail().getKey();
         log.info(String.format("Job name: %s, Job group: %s", key.getName(), key.getGroup()));

@@ -1,11 +1,13 @@
 package com.nis.modules.sys.job;
 
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 import com.nis.modules.agent.service.MonitorEventLogService;
+import com.nis.modules.election.dao.LeaderElectionDao;
 import com.nis.modules.sys.entity.SysComponent;
 import com.nis.modules.sys.service.SysComponentService;
 import com.nis.modules.sys.service.SysConfigService;
@@ -14,7 +16,6 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
 import java.net.InetAddress;
@@ -34,8 +35,6 @@ public class SysComponentJob extends QuartzJobBean {
 	private SysComponentService sysComponentService;
 	@Autowired
 	private SysConfigService sysConfigService;
-	@Autowired
-	private RedisTemplate<String, String> redisTemplate;
 	@Autowired
 	private MonitorEventLogService eventLogService;
 	@Value("${server.host:}")
@@ -80,11 +79,9 @@ public class SysComponentJob extends QuartzJobBean {
 			sysComponentService.saveOrUpdate(component);
 		}
 
-		// 检查 haMode
-		String serverId = redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
-		if (!StrUtil.equals(serverId, Constant.SERVER_ID)) {
-			return;
-		}
+		// 检查 HA_LOCK
+		LeaderElectionDao dao = LeaderElectionDao.getInstance();
+		if (BooleanUtil.negate(dao.isLeader())) return;
 		// 删除超过3min没有更新的component
 		long ltime = System.currentTimeMillis() - 3 * 60 * 1000;
 		sysComponentService.remove(Wrappers.lambdaQuery(new SysComponent()).lt(SysComponent::getUtime, ltime));

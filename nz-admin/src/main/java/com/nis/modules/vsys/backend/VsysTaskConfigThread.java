@@ -9,6 +9,7 @@ import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.service.AssetAssetService;
+import com.nis.modules.election.dao.LeaderElectionDao;
 import com.nis.modules.vsys.entity.VsysResult;
 import com.nis.modules.vsys.entity.VsysTask;
 import com.nis.modules.vsys.service.VsysResultService;
@@ -67,8 +68,9 @@ public class VsysTaskConfigThread implements Runnable {
 
         while (true) {
             try {
-                String serverId = redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
-                if (!Tool.StrUtil.equals(serverId, Constant.SERVER_ID)) {
+                // 检查 HA_LOCK
+                LeaderElectionDao dao = LeaderElectionDao.getInstance();
+                if (Tool.BooleanUtil.negate(dao.isLeader())) {
                     boolean sleep = Tool.ThreadUtil.sleep(10000);
                     log.info("vsys task config thread sleep 10000ms :{}", sleep);
                     continue;

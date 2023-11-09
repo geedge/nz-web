@@ -1,3 +1,4 @@
+/*
 package com.nis.common.job;
 
 import cn.hutool.core.util.StrUtil;
@@ -39,3 +40,4 @@ public class HaJob extends QuartzJobBean {
 	}
 
 }
+*/

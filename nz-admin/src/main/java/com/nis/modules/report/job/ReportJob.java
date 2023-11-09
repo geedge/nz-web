@@ -13,6 +13,7 @@ import com.nis.common.utils.Tool;
 import com.nis.modules.agent.service.PromApiService;
 import com.nis.modules.dashboard.entity.VisualDashboard;
 import com.nis.modules.dashboard.service.VisualDashboardService;
+import com.nis.modules.election.dao.LeaderElectionDao;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysUserService;
@@ -75,9 +76,11 @@ public class ReportJob extends QuartzJobBean {
 
     @Override
     protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
-        // 检查 haMode
-        String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
-        if (!StrUtil.equals(serverId, Constant.SERVER_ID)) return;
+        // 检查 HA_LOCK
+        LeaderElectionDao dao = LeaderElectionDao.getInstance();
+        boolean isLeader = dao.isLeader();
+        log.info("[ReportJob] [Get HA_LOCK] [isLeader: {}]", isLeader);
+        if (Tool.BooleanUtil.negate(isLeader)) return;
 
         JobKey key = context.getJobDetail().getKey();
         log.info(String.format("Job name: %s, Job group: %s", key.getName(), key.getGroup()));

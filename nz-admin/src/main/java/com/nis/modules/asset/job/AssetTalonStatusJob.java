@@ -1,6 +1,7 @@
 package com.nis.modules.asset.job;
 
 import cn.hutool.core.net.url.UrlBuilder;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
@@ -14,6 +15,7 @@ import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetTalonStatus;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetTalonStatusService;
+import com.nis.modules.election.dao.LeaderElectionDao;
 import com.nis.modules.endpoint.dao.MonitorEndpointStateDao;
 import com.nis.modules.endpoint.entity.MonitorEndpointConfig;
 import com.nis.modules.endpoint.entity.MonitorEndpointState;
@@ -70,9 +72,11 @@ public class AssetTalonStatusJob extends QuartzJobBean {
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
     	Thread.currentThread().setName("AssetTalonStatusJob");
-        // 检查 haMode
-		String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
-		if(!StrUtil.equals(serverId, Constant.SERVER_ID)) return;
+        // 检查 HA_LOCK
+        LeaderElectionDao dao = LeaderElectionDao.getInstance();
+        boolean isLeader = dao.isLeader();
+        log.info("[AssetTalonStatusJob] [Get HA_LOCK] [isLeader: {}]", isLeader);
+        if (BooleanUtil.negate(isLeader)) return;
 
         StopWatch sw = new StopWatch();
         sw.start();

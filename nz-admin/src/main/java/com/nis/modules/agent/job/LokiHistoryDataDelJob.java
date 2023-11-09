@@ -21,13 +21,13 @@ import com.amazonaws.services.s3.model.lifecycle.LifecyclePrefixPredicate;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.JSONUtil;
 import com.nis.common.utils.Tool;
+import com.nis.modules.election.dao.LeaderElectionDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
 import java.util.Arrays;
@@ -45,22 +45,17 @@ public class LokiHistoryDataDelJob extends QuartzJobBean {
     private static final Log log = Log.get();
 
     @Autowired
-    private RedisTemplate redisTemplate;
-
-    @Autowired
     private SysConfigService sysConfigService;
 
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         Thread.currentThread().setName("LokiHistoryDataDelJob");
 
-        // 检查 haMode
-        String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
-        log.info("[LokiHistoryDataDelJob] [Get ha lock from redis] [server id: {}]", serverId);
-        if (!StrUtil.equals(serverId, Constant.SERVER_ID)) {
-            log.warn("[LokiHistoryDataDelJob] [did not get the ha lock, not run job] [redis server id: {}] [system server id: {}]", serverId, Constant.SERVER_ID);
-            return;
-        }
+        // 检查 HA_LOCK
+        LeaderElectionDao dao = LeaderElectionDao.getInstance();
+        boolean isLeader = dao.isLeader();
+        log.info("[LokiHistoryDataDelJob] [Get HA_LOCK] [isLeader: {}]", isLeader);
+        if (BooleanUtil.negate(isLeader)) return;
 
         log.info("[LokiHistoryDataDelJob] [begin]");
 

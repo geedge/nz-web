@@ -16,6 +16,7 @@ import com.nis.modules.agent.service.MonitorEventLogService;
 import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.service.AssetAssetService;
+import com.nis.modules.election.dao.LeaderElectionDao;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.sys.entity.SysConfigEntity;
@@ -74,13 +75,12 @@ public class AutoConfigAgentJob extends QuartzJobBean {
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         Thread.currentThread().setName("AutoConfigAgentJob");
-        // 检查 haMode
-        String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
-        log.info("[AutoConfigAgentJob] [Get ha lock from redis] [server id: {}]", serverId);
-        if (!StrUtil.equals(serverId, Constant.SERVER_ID)) {
-            log.warn("[AutoConfigAgentJob] [did not get the ha lock, not run job] [redis server id: {}] [system server id: {}]", serverId, Constant.SERVER_ID);
-            return;
-        }
+
+        // 检查 HA_LOCK
+        LeaderElectionDao dao = LeaderElectionDao.getInstance();
+        boolean isLeader = dao.isLeader();
+        log.info("[AutoConfigAgentJob] [Get HA_LOCK] [isLeader: {}]", isLeader);
+        if (BooleanUtil.negate(isLeader)) return;
 
         log.info("[AutoConfigAgentJob] [Begin]");
         try {

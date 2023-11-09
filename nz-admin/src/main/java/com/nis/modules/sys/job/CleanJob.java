@@ -1,11 +1,10 @@
 package com.nis.modules.sys.job;
 
 import cn.hutool.core.date.DateTime;
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.nis.common.utils.Constant;
 import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.Tool;
 import com.nis.modules.alert.dao.AlertMessageHistoryPartitionManagementDao;
@@ -14,13 +13,13 @@ import com.nis.modules.alert.entity.AlertRuleSchedLog;
 import com.nis.modules.alert.job.AlertMessageHistoryPartitionManagementJob;
 import com.nis.modules.alert.service.AlertRuleEvalLogService;
 import com.nis.modules.alert.service.AlertRuleSchedLogService;
+import com.nis.modules.election.dao.LeaderElectionDao;
 import com.nis.modules.sys.service.SysConfigService;
 import org.apache.commons.lang3.time.StopWatch;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
 import java.util.List;
@@ -47,19 +46,16 @@ public class CleanJob extends QuartzJobBean {
 	private SysConfigService sysConfigService;
 
 	@Autowired
-	private RedisTemplate<String, String> redisTemplate;
-
-	@Autowired
 	private AlertMessageHistoryPartitionManagementDao alertMessageHistoryPartitionManagementDao;
 	
 	@Override
 	protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
 		Thread.currentThread().setName("CleanJob");
-		// 检查 haMode
-		String serverId = redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
-		if (!StrUtil.equals(serverId, Constant.SERVER_ID)) {
-			return;
-		}
+		// 检查 HA_LOCK
+		LeaderElectionDao dao = LeaderElectionDao.getInstance();
+		boolean isLeader = dao.isLeader();
+		log.info("[CleanJob] [Get HA_LOCK] [isLeader: {}]", isLeader);
+		if (BooleanUtil.negate(isLeader)) return;
 
 		DateTime now = Tool.DateUtil.date();
 		StopWatch sw = new StopWatch();

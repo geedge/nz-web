@@ -2,10 +2,12 @@ package com.nis.modules.sys.job;
 
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.Constant;
+import com.nis.modules.election.dao.LeaderElectionDao;
 import com.nis.modules.sys.entity.SysApiKey;
 import com.nis.modules.sys.entity.SysLoginSession;
 import com.nis.modules.sys.service.SysApiKeyService;
@@ -15,7 +17,6 @@ import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
 import java.util.Date;
@@ -31,9 +32,6 @@ public class LoginSessionCleanJob extends QuartzJobBean {
     private SysLoginSessionService sessionService;
 
     @Autowired
-    private RedisTemplate<String, String> redisTemplate;
-
-    @Autowired
     private SysConfigService configService;
 
     @Autowired
@@ -43,11 +41,11 @@ public class LoginSessionCleanJob extends QuartzJobBean {
     @Override
     protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
         Thread.currentThread().setName("loginSessionCleanJob");
-        // 检查 haMode
-        String serverId = redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
-        if (!StrUtil.equals(serverId, Constant.SERVER_ID)) {
-            return;
-        }
+        // 检查 HA_LOCK
+        LeaderElectionDao dao = LeaderElectionDao.getInstance();
+        boolean isLeader = dao.isLeader();
+        log.info("[LoginSessionCleanJob] [Get HA_LOCK] [isLeader: {}]", isLeader);
+        if (BooleanUtil.negate(isLeader)) return;
 
         //获取 session 过期时间
         String sessionTimeOut = StrUtil.emptyToDefault(configService.getValue(Constant.SYSCONFIG_SESSION_TIMEOUT_KEY), "30");

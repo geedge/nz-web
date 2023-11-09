@@ -23,6 +23,7 @@ import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertRuleEvalLogService;
 import com.nis.modules.alert.service.RecordRuleService;
+import com.nis.modules.election.dao.LeaderElectionDao;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
@@ -73,9 +74,9 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 		AlertRuleEntity alertRuleEntity = (AlertRuleEntity) jobDataMap.get(AlertContext.JOB_DATA_KEY_ALERT_RULE_ENTITY);
 		Integer alertRuleId = alertRuleEntity.getId();
 		Thread.currentThread().setName(String.format("alertRuleJuage-%s", alertRuleId));
-		// 检查 haMode
-		String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
-		if (!StrUtil.equals(serverId, Constant.SERVER_ID)) {
+		// 检查 HA_LOCK
+		LeaderElectionDao dao = LeaderElectionDao.getInstance();
+		if (Tool.BooleanUtil.negate(dao.isLeader())) {
 			log.info("skip execute, SERVER_ID: {}, ruleId: {}",Constant.SERVER_ID, alertRuleId);
 			return;
 		}

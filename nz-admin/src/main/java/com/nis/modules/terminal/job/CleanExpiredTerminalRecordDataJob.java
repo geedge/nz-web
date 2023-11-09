@@ -9,8 +9,8 @@ import cn.hutool.log.Log;
 import com.amazonaws.SDKGlobalConfiguration;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration;
-import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
+import com.nis.modules.election.dao.LeaderElectionDao;
 import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.terminal.service.TerminalRecordService;
 import com.nis.modules.terminal.service.TerminalSessionService;
@@ -19,7 +19,6 @@ import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,9 +35,6 @@ public class CleanExpiredTerminalRecordDataJob extends QuartzJobBean {
     }
 
     @Autowired
-    private RedisTemplate redisTemplate;
-
-    @Autowired
     private SysConfService sysConfService;
 
     @Autowired
@@ -51,13 +47,11 @@ public class CleanExpiredTerminalRecordDataJob extends QuartzJobBean {
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         Thread.currentThread().setName("CleanExpiredTerminalRecordDataJob");
 
-        // 检查 haMode
-        String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
-        log.info("[CleanExpiredTerminalRecordDataJob] [Get ha lock from redis] [server id: {}]", serverId);
-        if (!StrUtil.equals(serverId, Constant.SERVER_ID)) {
-            log.warn("[CleanExpiredTerminalRecordDataJob] [did not get the ha lock, not run job] [redis server id: {}] [system server id: {}]", serverId, Constant.SERVER_ID);
-            return;
-        }
+        // 检查 HA_LOCK
+        LeaderElectionDao dao = LeaderElectionDao.getInstance();
+        boolean isLeader = dao.isLeader();
+        log.info("[CleanExpiredTerminalRecordDataJob] [Get HA_LOCK] [isLeader: {}]", isLeader);
+        if (BooleanUtil.negate(isLeader)) return;
 
         log.info("[CleanExpiredTerminalRecordDataJob] [start cleaning expired data]");
 

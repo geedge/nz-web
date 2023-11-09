@@ -1,6 +1,7 @@
 package com.nis.modules.endpoint.job;
 
 import cn.hutool.core.date.DateTime;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
@@ -13,6 +14,7 @@ import com.nis.common.utils.Constant.AgentType;
 import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.service.AgentService;
 import com.nis.modules.agent.service.PromApiService;
+import com.nis.modules.election.dao.LeaderElectionDao;
 import com.nis.modules.endpoint.entity.MonitorEndpointConfig;
 import com.nis.modules.endpoint.entity.MonitorEndpointState;
 import com.nis.modules.endpoint.service.MonitorEndpointConfigService;
@@ -72,13 +74,11 @@ public class MetricTypeEndpointStatusJob extends QuartzJobBean {
     protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
         Thread.currentThread().setName("EndpointStateJob");
 
-        // 检查 haMode
-        String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
-        log.info("[EndpointStateJob] [Get ha lock from redis] [server id: {}]", serverId);
-        if (!StrUtil.equals(serverId, Constant.SERVER_ID)) {
-            log.warn("[EndpointStateJob] [did not get the ha lock, not run job] [redis server id: {}] [system server id: {}]", serverId, Constant.SERVER_ID);
-            return;
-        }
+        // 检查 HA_LOCK
+        LeaderElectionDao dao = LeaderElectionDao.getInstance();
+        boolean isLeader = dao.isLeader();
+        log.info("[MetricTypeEndpointStatusJob] [Get HA_LOCK] [isLeader: {}]", isLeader);
+        if (BooleanUtil.negate(isLeader)) return;
 
         log.info("[EndpointStateJob] [Begin]");
         StopWatch sw = new StopWatch();

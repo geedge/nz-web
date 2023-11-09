@@ -1,10 +1,10 @@
 package com.nis.modules.sys.job;
 
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.nis.common.utils.Constant;
 import com.nis.common.utils.ToolUtil;
+import com.nis.modules.election.dao.LeaderElectionDao;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.modules.terminal.backend.TerminalHandler;
@@ -16,7 +16,6 @@ import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -33,18 +32,16 @@ public class SessionTimeOutJob extends QuartzJobBean {
 	
 	@Autowired
 	private TerminalSessionService terminalSessionService;
-	
-	@Autowired
-	private RedisTemplate<String, String> redisTemplate;
-	
+
 	@SuppressWarnings("unchecked")
 	@Override
 	protected void executeInternal(JobExecutionContext arg0) throws JobExecutionException {
-		// 检查 haMode
-		String serverId = redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
-		if (!StrUtil.equals(serverId, Constant.SERVER_ID)) {
-			return;
-		}
+		// 检查 HA_LOCK
+		LeaderElectionDao dao = LeaderElectionDao.getInstance();
+		boolean isLeader = dao.isLeader();
+		log.info("[SessionTimeOutJob] [Get HA_LOCK] [isLeader: {}]", isLeader);
+		if (BooleanUtil.negate(isLeader)) return;
+
 		Thread.currentThread().setName("SessionTimeOutJob");
 		// 获取redis中所有的token信息
 		Map<String, SysUserEntity> shiroSessionInfoMap = ShiroUtils.getShiroSessionInfoMap();

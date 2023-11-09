@@ -1,22 +1,21 @@
 package com.nis.modules.alert.backend;
 
 import cn.hutool.core.date.StopWatch;
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
-import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.entity.AlertRuleSchedLog;
 import com.nis.modules.alert.service.AlertRuleSchedLogService;
 import com.nis.modules.alert.service.AlertRuleService;
+import com.nis.modules.election.dao.LeaderElectionDao;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.quartz.JobKey;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
 /**
@@ -32,15 +31,13 @@ public class AlertRuleScheduleJob extends QuartzJobBean {
 	@Autowired
 	private AlertRuleService alertRuleService;
 	@Autowired
-	private RedisTemplate<String, String> redisTemplate;
-	@Autowired
 	private AlertRuleSchedLogService alertRuleSchedLogService;
 	@Override
 	protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
 		Thread.currentThread().setName("AlertRuleScheduleJob");
-		// 检查 haMode
-		String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
-		if (!StrUtil.equals(serverId, Constant.SERVER_ID))
+		// 检查 HA_LOCK
+		LeaderElectionDao dao = LeaderElectionDao.getInstance();
+		if (BooleanUtil.negate(dao.isLeader()))
 			return;
 		JobKey key = context.getJobDetail().getKey();
 		log.info("alert rule schedule job start,key:{}", key);

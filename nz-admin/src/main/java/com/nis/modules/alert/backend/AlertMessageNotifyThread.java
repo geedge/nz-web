@@ -16,6 +16,7 @@ import com.nis.modules.alert.entity.AlertNotifyMethod;
 import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.service.AlertNotifyLogService;
 import com.nis.modules.alert.service.AlertNotifyMethodService;
+import com.nis.modules.election.dao.LeaderElectionDao;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
@@ -83,13 +84,13 @@ public class AlertMessageNotifyThread implements Runnable {
 		logger.info("AlertMessageNotifyHandler 告警通知线程启动");
 		while (true) {
 			try {
-				// 检查 haMode
-		    	String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
-		        if(!StrUtil.equals(serverId, Constant.SERVER_ID)) {
-		        	boolean sleep = Tool.ThreadUtil.sleep(10000);
-		        	logger.debug("sleep 10000ms :{}",sleep);
-		        	continue;
-		        }
+				// 检查 HA_LOCK
+				LeaderElectionDao dao = LeaderElectionDao.getInstance();
+				if (Tool.BooleanUtil.negate(dao.isLeader())) {
+					boolean sleep = Tool.ThreadUtil.sleep(10000);
+					logger.debug("sleep 10000ms :{}", sleep);
+					continue;
+				}
 				ListOperations<String, String> opsForList = redisTemplate.opsForList();
 				if(redisTemplate.hasKey(Constant.ALERT_MESSAGE_NOTIFY)) {
 					Long size = opsForList.size(Constant.ALERT_MESSAGE_NOTIFY);

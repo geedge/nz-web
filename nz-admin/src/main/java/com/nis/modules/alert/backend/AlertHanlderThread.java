@@ -12,6 +12,7 @@ import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.entity.AlertSilenceConf;
 import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
 import com.nis.modules.alert.service.AlertHandlerService;
+import com.nis.modules.election.dao.LeaderElectionDao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.QueryTimeoutException;
@@ -60,9 +61,9 @@ public class AlertHanlderThread implements Runnable {
 		log.info("AlertHanlderRunner 告警消息处理线程启动");
 		while (true) {
 			try {
-				// 检查 haMode
-		    	String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
-		        if(!StrUtil.equals(serverId, Constant.SERVER_ID)) {
+				// 检查 HA_LOCK
+				LeaderElectionDao dao = LeaderElectionDao.getInstance();
+				if (Tool.BooleanUtil.negate(dao.isLeader())) {
 		        	boolean sleep = Tool.ThreadUtil.sleep(10000);
 		        	log.debug("sleep 10000ms :{}",sleep);
 		        	continue;

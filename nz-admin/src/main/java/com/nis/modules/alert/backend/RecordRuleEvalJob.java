@@ -1,7 +1,7 @@
 package com.nis.modules.alert.backend;
 
 import cn.hutool.core.date.StopWatch;
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -21,13 +21,13 @@ import com.nis.modules.alert.entity.RecordRuleEntity;
 import com.nis.modules.alert.entity.RecordRuleEvalLog;
 import com.nis.modules.alert.service.RecordRuleEvalLogService;
 import com.nis.modules.alert.service.RecordRuleService;
+import com.nis.modules.election.dao.LeaderElectionDao;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.stereotype.Component;
 
@@ -44,9 +44,6 @@ public class RecordRuleEvalJob extends QuartzJobBean {
 
 	@Autowired
 	private LokiApiService lokiApiService;
-
-	@Autowired
-	private RedisTemplate<String, Object> redisTemplate;
 
 	@Autowired
 	private RecordRuleEvalLogService evalLogService;
@@ -69,9 +66,9 @@ public class RecordRuleEvalJob extends QuartzJobBean {
 				.get(RecordManagerJob.JOB_DATA_KEY_RECORD_RULE_ENTITY);
 		Integer recordRuleId = recordRuleEntity.getId();
 		Thread.currentThread().setName(String.format("RecordRuleEvalJob-%s", recordRuleId));
-		// 检查 haMode
-		String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
-		if (!StrUtil.equals(serverId, Constant.SERVER_ID)) {
+		// 检查 HA_LOCK
+		LeaderElectionDao dao = LeaderElectionDao.getInstance();
+		if (BooleanUtil.negate(dao.isLeader())) {
 			log.info("skip execute, SERVER_ID: {}, ruleId: {}", Constant.SERVER_ID, recordRuleId);
 			return;
 		}

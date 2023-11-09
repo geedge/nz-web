@@ -15,6 +15,7 @@ import com.nis.modules.alert.job.AlertMessageHistoryPartitionManagementJob;
 import com.nis.modules.asset.job.AssetFeatureJob;
 import com.nis.modules.asset.job.AssetPingStatusJob;
 import com.nis.modules.asset.job.AssetTalonStatusJob;
+import com.nis.modules.election.job.HaJob;
 import com.nis.modules.endpoint.job.MetricTypeEndpointStatusJob;
 import com.nis.modules.sys.job.*;
 import com.nis.modules.sys.service.SysConfService;

@@ -1,13 +1,13 @@
 package com.nis.modules.alert.backend;
 
 import cn.hutool.core.date.StopWatch;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.nis.common.protobuf.Types.TimeSeries;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 import com.nis.modules.agent.util.AgentUtil;
+import com.nis.modules.election.dao.LeaderElectionDao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.QueryTimeoutException;
@@ -56,9 +56,9 @@ public class RecordDataConsumer implements Runnable {
 		log.info("thread start");
 		while (true) {
 			try {
-				// 检查 haMode
-				String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
-				if (!StrUtil.equals(serverId, Constant.SERVER_ID)) {
+				// 检查 HA_LOCK
+				LeaderElectionDao dao = LeaderElectionDao.getInstance();
+				if (Tool.BooleanUtil.negate(dao.isLeader())) {
 					Tool.ThreadUtil.sleep(maxSendIntervalMs);
 					log.debug("sleep {}ms ", maxSendIntervalMs);
 					continue;

@@ -1,7 +1,7 @@
 package com.nis.modules.agent.job;
 
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -9,6 +9,7 @@ import com.nis.common.utils.*;
 import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.service.AgentService;
 import com.nis.modules.agent.util.AgentUtil;
+import com.nis.modules.election.dao.LeaderElectionDao;
 import com.nis.modules.sys.service.SysConfigService;
 import org.apache.commons.lang3.time.StopWatch;
 import org.quartz.DisallowConcurrentExecution;
@@ -27,9 +28,6 @@ public class AgentHealthCheckJob extends QuartzJobBean {
 
 	private static Log log = Log.get();
 
-	@Value("${connect.timeout:30000}")
-	private Integer connectTimeout;
-
 	@Autowired
 	private AgentService agentService;
 	@Autowired
@@ -47,10 +45,12 @@ public class AgentHealthCheckJob extends QuartzJobBean {
 	@Override
 	protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
 		Thread.currentThread().setName("AgentHealthCheckJob");
-		// 检查 haMode
-		String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
-		if (!StrUtil.equals(serverId, Constant.SERVER_ID))
-			return;
+
+		// 检查 HA_LOCK
+		LeaderElectionDao dao = LeaderElectionDao.getInstance();
+		boolean isLeader = dao.isLeader();
+		log.info("[AgentHealthCheckJob] [Get HA_LOCK] [isLeader: {}]", isLeader);
+		if (BooleanUtil.negate(isLeader)) return;
 
 		log.info("agent healthy 开始执行");
 		StopWatch sw = new StopWatch();
