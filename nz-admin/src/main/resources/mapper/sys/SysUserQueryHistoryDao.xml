@@ -27,21 +27,28 @@
     </delete>
 
     <select id="queryList" resultMap="queryHistory">
-        select
-            * ,
-            COUNT(query_hash) as cnt
-        from sys_user_query_history suqh
-        <where>
-            <if test="params.queryKey != null and params.queryKey != ''">
-                and locate(#{params.queryKey} , suqh.query_key)
-            </if>
-            <if test="params.uid != null and params.uid != ''">
-                and #{params.uid} = suqh.uid
-            </if>
-            <if test="params.queryValue != null and params.queryValue != ''">
-                AND locate(#{params.queryValue} , suqh.query_value)
-            </if>
-        </where>
-        group by suqh.query_hash
+        SELECT * FROM (
+            SELECT
+                MAX( suqh.id ) AS id,
+                suqh.query_hash,
+                suqh.query_key,
+                suqh.query_value,
+                MAX( suqh.uts ) AS uts,
+                COUNT( query_hash ) AS cnt
+            FROM
+                sys_user_query_history suqh
+            <where>
+                <if test="params.queryKey != null and params.queryKey != ''">
+                    AND locate(#{params.queryKey} , suqh.query_key)
+                </if>
+                <if test="params.uid != null and params.uid != ''">
+                    AND #{params.uid} = suqh.uid
+                </if>
+                <if test="params.queryValue != null and params.queryValue != ''">
+                    AND locate(#{params.queryValue} , suqh.query_value)
+                </if>
+            </where>
+            GROUP BY suqh.query_hash
+        ) t
     </select>
 </mapper>
