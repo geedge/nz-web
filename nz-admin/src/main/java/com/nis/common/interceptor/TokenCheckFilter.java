@@ -97,7 +97,7 @@ public class TokenCheckFilter extends AccessControlFilter {
 				session.setTimeout(Integer.MAX_VALUE);
 			}
 			// 手动保存 session 信息
-			ShiroUtils.updateSession(session);
+			ShiroUtils.save(session);
 			DefaultSubjectContext context = new DefaultSubjectContext();
 			context.setSession(session);
 			SecurityManager securityManager = SecurityUtils.getSecurityManager();

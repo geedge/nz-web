@@ -44,12 +44,6 @@ public class RedisCacheSubscribe  implements MessageListener{
 	private ShiroFilterFactoryBean shiroFilterFactoryBean;
 	
 	@Autowired
-	private RedisSessionDAO redisSessionDao;
-	
-	@Autowired
-	private RedisCacheManager redisCacheManager;
-	
-	@Autowired
 	private MySessionManager mySessionManager;
 	
 	@Autowired
@@ -86,11 +80,6 @@ public class RedisCacheSubscribe  implements MessageListener{
 			// 监听到session过期时间变化
 			Map<String, Filter> filters = shiroFilterFactoryBean.getFilters();
 			TokenCheckFilter filter = (TokenCheckFilter) filters.get("tokenCheckFilter");
-//			Integer loginExpiration = filter.getLoginExpiration();
-//			System.out.println(loginExpiration);
-//			filter.setLoginExpiration(Integer.valueOf(sessionTimeOut));
-			redisCacheManager.setExpire(Integer.valueOf(sessionTimeOut) * 60);
-			redisSessionDao.setExpire(Integer.valueOf(sessionTimeOut) * 60);
 			mySessionManager.setGlobalSessionTimeout(Integer.valueOf(sessionTimeOut) * 60 * 1000);
 		}
 

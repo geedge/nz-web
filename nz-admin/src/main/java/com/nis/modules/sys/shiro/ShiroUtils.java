@@ -4,18 +4,18 @@ import cn.hutool.log.Log;
 import com.nis.common.utils.SpringContextUtils;
 import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
+import com.nis.modules.sys.dao.SysLoginSessionDao;
 import com.nis.modules.sys.entity.SysUserEntity;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.crypto.hash.SimpleHash;
 import org.apache.shiro.session.Session;
 import org.apache.shiro.session.UnknownSessionException;
 import org.apache.shiro.session.mgt.DefaultSessionKey;
+import org.apache.shiro.session.mgt.eis.SessionDAO;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.subject.SimplePrincipalCollection;
 import org.apache.shiro.subject.Subject;
 import org.apache.shiro.subject.support.DefaultSubjectContext;
-import org.crazycake.shiro.RedisSessionDAO;
-import org.springframework.data.redis.core.RedisTemplate;
 
 import java.util.Collection;
 import java.util.List;
@@ -25,14 +25,14 @@ import java.util.Map;
  * Shiro工具类
  */
 public class ShiroUtils {
+
 	private static final Log log = Log.get();
+
 	/**  加密算法 */
 	public final static String hashAlgorithmName = "SHA-256";
+
 	/**  循环次数 */
 	public final static int hashIterations = 16;
-
-	// redis 中 shiro key 前缀
-	public final static String REDIS_KEYPREFIX = "shiro_session:";
 
 	public static String sha256(String pin, String salt) {
 		return new SimpleHash(hashAlgorithmName, pin, salt, hashIterations).toString();
@@ -92,14 +92,14 @@ public class ShiroUtils {
 	}
 	
 	
-	public static void updateSession(Session session) {
-		RedisSessionDAO sessionDao = SpringContextUtils.getBean("redisSessionDAO", RedisSessionDAO.class);
-		sessionDao.update(session);
-	}
+	public static void save(Session session) {
+		SessionDAO sessionDao = SpringContextUtils.getBean("sessionDAO", SessionDAO.class);
+		sessionDao.create(session);
+}
 	
 	
 	public static List<SysUserEntity> getActiveUsers() {
-		RedisSessionDAO sessionDao = SpringContextUtils.getBean("redisSessionDAO", RedisSessionDAO.class);
+		SessionDAO sessionDao = SpringContextUtils.getBean("sessionDAO", SessionDAO.class);
 		Collection<Session> sessions = sessionDao.getActiveSessions();
 		List<SysUserEntity> userList = Tool.CollUtil.newArrayList();
 		for (Session session : sessions) {
@@ -117,7 +117,7 @@ public class ShiroUtils {
 	 * @return
 	 */
 	public static Map<String, SysUserEntity> getShiroSessionInfoMap() {
-		RedisSessionDAO sessionDao = SpringContextUtils.getBean("redisSessionDAO", RedisSessionDAO.class);
+		SessionDAO sessionDao = SpringContextUtils.getBean("sessionDAO", SessionDAO.class);
 		Collection<Session> sessions = sessionDao.getActiveSessions();
 		Map<String, SysUserEntity> resultMap = Tool.MapUtil.newHashMap(sessions.size());
 		for (Session session : sessions) {
@@ -130,9 +130,9 @@ public class ShiroUtils {
 	}
 
 	public static void deleteSession(List<String> sessionIds) {
-		RedisTemplate redisTemplate = SpringContextUtils.getBean("redisTemplate", RedisTemplate.class);
+		SysLoginSessionDao sysLoginSessionDao = SpringContextUtils.getBean("sysLoginSessionDao", SysLoginSessionDao.class);
 		for (String sessionId : sessionIds) {
-			redisTemplate.delete(ShiroUtils.REDIS_KEYPREFIX + sessionId);
+			sysLoginSessionDao.deleteById(sessionId);
 		}
 	}
 }

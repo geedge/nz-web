@@ -16,10 +16,7 @@ import com.nis.modules.asset.job.AssetFeatureJob;
 import com.nis.modules.asset.job.AssetPingStatusJob;
 import com.nis.modules.asset.job.AssetTalonStatusJob;
 import com.nis.modules.endpoint.job.MetricTypeEndpointStatusJob;
-import com.nis.modules.sys.job.CleanJob;
-import com.nis.modules.sys.job.SessionTimeOutJob;
-import com.nis.modules.sys.job.SysBackFileSyncJob;
-import com.nis.modules.sys.job.SysComponentJob;
+import com.nis.modules.sys.job.*;
 import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.terminal.job.CleanExpiredTerminalRecordDataJob;
 import com.nis.modules.terminal.job.CleanNoRealUseTerminalConnJob;
@@ -104,6 +101,9 @@ public class JobConfig {
     @Value("${nezha.sysBackFileSyncJobCron:0 0 3 * * ?}")
     private String sysBackFileSyncJobCron;
 
+    @Value("${nezha.sysLoginSessionCleanJobCron:0/10 * * * * ?}")
+    private String sysLoginSessionCleanJobCron;
+
     @Autowired
     private Scheduler scheduler;
     @Autowired
@@ -131,6 +131,7 @@ public class JobConfig {
     private String cleanNoRealUseTerminalConnJobName = "CLEANNOREALUSETERMINALCONN_JOB";
     private String cleanExpiredTerminalRecordDataJob = "CLEAN_EXPIRED_TERMINAL_RECORD_DATA_JOB";
     private String sysBackFileSyncJob = "SYS_BACKUP_SYNC_JOB";
+    private String sysLoginSessionCleanJob = "SYS_LOGIN_SESSION_CLEAN_JOB";
 
     @Bean
     public JobDetail agentCronJobDetail() {
@@ -232,6 +233,11 @@ public class JobConfig {
         return JobBuilder.newJob(SysBackFileSyncJob.class).withIdentity(JOB_NAME + sysBackFileSyncJob).storeDurably().build();
     }
 
+    @Bean
+    public JobDetail sysLoginSessionCleanJobDetail() {
+        return JobBuilder.newJob(LoginSessionCleanJob.class).withIdentity(JOB_NAME + sysLoginSessionCleanJob).storeDurably().build();
+    }
+
     @PostConstruct
     public void init() throws SchedulerException {
         // agent 健康检查定时任务
@@ -294,6 +300,8 @@ public class JobConfig {
 
         // SysBackFileSyncJob
         createCronScheduleJob(sysBackFileSyncJob, sysBackFileSyncJobDetail(), Tool.StrUtil.emptyToDefault(sysBackFileSyncJobCron, "0 0 3 * * ?"));
+
+        createCronScheduleJob(sysLoginSessionCleanJob, sysLoginSessionCleanJobDetail(), Tool.StrUtil.emptyToDefault(sysLoginSessionCleanJobCron, "0/10 * * * * ?"));
     }
     
     /**

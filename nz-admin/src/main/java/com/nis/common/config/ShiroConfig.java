@@ -10,9 +10,7 @@ import com.nis.modules.sys.dao.SysApiKeyDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.LicenseService;
 import com.nis.modules.sys.service.SysConfigService;
-import com.nis.modules.sys.shiro.MySessionManager;
-import com.nis.modules.sys.shiro.ShiroUtils;
-import com.nis.modules.sys.shiro.UserRealm;
+import com.nis.modules.sys.shiro.*;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.Filter;
 import jakarta.servlet.ServletRequest;
@@ -21,13 +19,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.apache.catalina.connector.Connector;
 import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.session.mgt.SessionManager;
+import org.apache.shiro.session.mgt.eis.SessionDAO;
 import org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor;
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.apache.shiro.web.filter.AccessControlFilter;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
-import org.crazycake.shiro.IRedisManager;
-import org.crazycake.shiro.RedisCacheManager;
-import org.crazycake.shiro.RedisSessionDAO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
@@ -37,15 +33,11 @@ import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerF
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Shiro的配置文件
@@ -55,8 +47,6 @@ import java.util.concurrent.TimeUnit;
 @DependsOn(value = { "mybatisPlusConfig", "redisConfig" })
 public class ShiroConfig {
 
-	@Autowired
-	private RedisTemplate<String,String> redisTemplate;
 	@Autowired
 	private SysApiKeyDao sysApiKeyDao;
 
@@ -204,47 +194,14 @@ public class ShiroConfig {
 		return factory;
 	}
 
-	/**
-	 * 配置shiro redisManager 使用的是shiro-redis开源插件
-	 *
-	 * @return
-	 */
+
+
 	@Bean
-	public IRedisManager redisManager() {
-		RedisManager  redisManager = new RedisManager(redisTemplate);
-		return redisManager;
+	public SessionDAO sessionDAO(){
+		MySessionDao sessionDao = new MySessionDao();
+		return sessionDao;
 	}
 
-	/**
-	 * cacheManager 缓存 redis实现 使用的是shiro-redis开源插件
-	 *
-	 * @return
-	 */
-	@Bean
-	public RedisCacheManager cacheManager() {
-		Integer loginExpiration = getTimeOutData();
-		RedisCacheManager redisCacheManager = new RedisCacheManager();
-		redisCacheManager.setRedisManager(redisManager());
-		// 配置缓存过期时间
-		redisCacheManager.setExpire(loginExpiration * 60);
-		redisCacheManager.setKeyPrefix(ShiroUtils.REDIS_KEYPREFIX);
-		// user entity ID
-		redisCacheManager.setPrincipalIdFieldName("userId");
-		return redisCacheManager;
-	}
-
-	/**
-	 * RedisSessionDAO shiro sessionDao层的实现 通过redis 使用的是shiro-redis开源插件
-	 */
-	@Bean
-	public RedisSessionDAO redisSessionDAO() {
-		Integer loginExpiration = getTimeOutData();
-		RedisSessionDAO redisSessionDAO = new RedisSessionDAO();
-		redisSessionDAO.setRedisManager(redisManager());
-		redisSessionDAO.setExpire(loginExpiration * 60);
-		redisSessionDAO.setKeyPrefix(ShiroUtils.REDIS_KEYPREFIX);
-		return redisSessionDAO;
-	}
 
 	/**
 	 * 身份认证realm; (这个需要自己写，账号密码校验；权限等)
@@ -268,8 +225,8 @@ public class ShiroConfig {
 	public SessionManager sessionManager() {
 		Integer loginExpiration = getTimeOutData();
 		MySessionManager mySessionManager = new MySessionManager();
+		mySessionManager.setSessionDAO(sessionDAO());
 		mySessionManager.setGlobalSessionTimeout(loginExpiration * 60 * 1000);
-		mySessionManager.setSessionDAO(redisSessionDAO());
 		// Disable Session ID cookie
 		mySessionManager.setSessionIdCookieEnabled(false);
 		return mySessionManager;
@@ -280,9 +237,7 @@ public class ShiroConfig {
 		DefaultWebSecurityManager securityManager = new DefaultWebSecurityManager();
 		// 设置realm.
 		securityManager.setRealm(myShiroRealm());
-		// 自定义缓存实现 使用redis
-		securityManager.setCacheManager(cacheManager());
-		// 自定义session管理 使用redis
+		// 自定义session管理 使用sessionDao
 		securityManager.setSessionManager(sessionManager());
 		return securityManager;
 	}
@@ -299,52 +254,4 @@ public class ShiroConfig {
 		return loginExpiration;
 	}
 
-	/**
-	 * 自定义 redis manager
-	 * @author ThinkPad
-	 *
-	 */
-	public static class RedisManager implements IRedisManager {
-		private RedisTemplate<String, String> redisTemplate;
-
-		public RedisManager(RedisTemplate<String, String> redisTemplate) {
-			this.redisTemplate = redisTemplate;
-		}
-
-		@Override
-		public byte[] get(byte[] key) {
-			ValueOperations<String, String> opsForValue = redisTemplate.opsForValue();
-			String v = opsForValue.get(Tool.StrUtil.str(key, "UTF-8"));
-			return Tool.HexUtil.decodeHex(v);
-		}
-
-		@Override
-		public byte[] set(byte[] key, byte[] value, int expire) {
-			ValueOperations<String, String> opsForValue = redisTemplate.opsForValue();
-			opsForValue.set(Tool.StrUtil.str(key, "UTF-8"), Tool.HexUtil.encodeHexStr(value), expire, TimeUnit.SECONDS);
-			return value;
-		}
-
-		@Override
-		public void del(byte[] key) {
-			redisTemplate.delete(Tool.StrUtil.str(key, "UTF-8"));
-		}
-
-		@Override
-		public Long dbSize(byte[] pattern) {
-			return (long)redisTemplate.keys(Tool.StrUtil.str(pattern, "UTF-8")).size();
-		}
-
-		@Override
-		public Set<byte[]> keys(byte[] pattern) {
-			Set<String> set = redisTemplate.keys(Tool.StrUtil.str(pattern, "UTF-8"));
-			if(Tool.CollUtil.isEmpty(set)) {
-				return null;
-			}
-			Set<byte[]> keys = Tool.CollUtil.newHashSet();
-			set.forEach( k -> keys.add(Tool.StrUtil.bytes(k,"UTF-8")));
-			return keys;
-		}
-
-	}
 }

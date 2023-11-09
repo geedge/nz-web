@@ -11,6 +11,7 @@ import com.google.code.kaptcha.Producer;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
+import com.nis.modules.sys.dao.SysLoginSessionDao;
 import com.nis.modules.sys.entity.AuthTokenEntity;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
@@ -61,6 +62,8 @@ public class SysLoginController extends AbstractController {
 	private SysLoginRedis sysLoginRedis;
 	@Autowired
 	private SysConfigService sysConfigService;
+	@Autowired
+	private SysLoginSessionDao sysLoginSessionDao;
 	
 	@RequestMapping("captcha.jpg")
 	public void captcha(HttpServletResponse response)throws IOException {
@@ -91,17 +94,17 @@ public class SysLoginController extends AbstractController {
 		boolean flag = false;
 		try{
 			SysUserEntity user = sysUserService.getOne(new LambdaQueryWrapper<SysUserEntity>().eq(SysUserEntity::getName, username));
-			if(ToolUtil.isNotEmpty(user)) {
+			if (ToolUtil.isNotEmpty(user)) {
 				sysUser.setPinTime(user.getPinTime());
-			}else {
+			} else {
 				sysUser.setPinTime(new Date());
 			}
-			sysUserService.checkPin(sysUser,true);
+			sysUserService.checkPin(sysUser, true);
 			Subject subject = ShiroUtils.getSubject();
 			UsernamePasswordToken token = new UsernamePasswordToken(username, pin);
 			subject.login(token); //登录
-			String loginToken=CommonUtils.uuid();
-			subject.getSession().setAttribute("token",loginToken);
+			String loginToken = CommonUtils.uuid();
+			subject.getSession().setAttribute("token", loginToken);
 			String sessionId = subject.getSession().getId().toString();
 			String mfaAuthEnableStr = configService.getValueOrDefault("mfa_auth_enable", "0");
 			int mfaAuthEnable = StrUtil.isEmpty(mfaAuthEnableStr) ? 0 : Integer.valueOf(mfaAuthEnableStr);
@@ -114,7 +117,7 @@ public class SysLoginController extends AbstractController {
 			int authBind = 0;
 			if(mfaAuthEnable == 1 || mfaLevel > 0) {
 				authFlag = 1;
-				authBind = Tool.StrUtil.isBlank(otpKey)?1:0;
+				authBind = Tool.StrUtil.isBlank(otpKey) ? 1 : 0;
 				String authToken = MfaUtils.getAuthToken();
 				//临时token，储存到redis，过期时间 30min
 				AuthTokenEntity authTokenEntity = new AuthTokenEntity();
@@ -200,16 +203,15 @@ public class SysLoginController extends AbstractController {
 	@SysLog(operation = OperationEnum.LOGOUT,type = TypeEnum.SYSTEM)
 	public R logout(HttpServletRequest request) {
 		ShiroUtils.logout();
-		String requestToken=request.getHeader(Constant.AUTH_TOKEN_CODE);
-		if(StringUtils.isBlank(requestToken)){
-			requestToken=request.getParameter(Constant.AUTH_TOKEN_CODE);
+		String requestToken = request.getHeader(Constant.AUTH_TOKEN_CODE);
+		if (StringUtils.isBlank(requestToken)) {
+			requestToken = request.getParameter(Constant.AUTH_TOKEN_CODE);
 		}
 		try {
-			redisTemplate.delete(requestToken);
-		}catch (RuntimeException e){
-				logger.debug("登出操作删除redis信息失败，失败key：{}",requestToken);
+			sysLoginSessionDao.deleteById(requestToken);
+		} catch (RuntimeException e) {
+			logger.debug("[SysLoginController] [Logout] [Delete token error] [sessionId : {}]", requestToken);
 		}
 		return R.ok();
 	}
-
 }
