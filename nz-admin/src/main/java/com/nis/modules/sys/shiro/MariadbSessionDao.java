@@ -18,14 +18,14 @@ import java.util.List;
 /**
  * 自定义 session 操作
  */
-public class MySessionDao extends EnterpriseCacheSessionDAO {
+public class MariadbSessionDao extends EnterpriseCacheSessionDAO {
 
     private Log log = Log.get();
 
     @Autowired
     private SysLoginSessionService sessionService;
 
-    public MySessionDao() {
+    public MariadbSessionDao() {
         super();
     }
 

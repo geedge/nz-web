@@ -198,7 +198,7 @@ public class ShiroConfig {
 
 	@Bean
 	public SessionDAO sessionDAO(){
-		MySessionDao sessionDao = new MySessionDao();
+		MariadbSessionDao sessionDao = new MariadbSessionDao();
 		return sessionDao;
 	}
 
