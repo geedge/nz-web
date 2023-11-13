@@ -20,8 +20,8 @@
                     #{id}
                 </foreach>
             </if>
-            <if test="params.hash != null and params.hash != ''">
-                or #{params.hash} = query_hash
+            <if test="params.queryHash != null and params.queryHash != ''">
+                or #{params.queryHash} = query_hash
             </if>
         </where>
     </delete>
