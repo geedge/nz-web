@@ -48,7 +48,7 @@ public class AgentHealthCheckJob extends QuartzJobBean {
 
 		// 检查 HA_LOCK
 		LeaderElectionDao dao = LeaderElectionDao.getInstance();
-		boolean isLeader = dao.isLeader();
+		boolean isLeader = dao.isLeader(Constant.SYS_HA_LOCK, Constant.SERVER_ID);
 		log.info("[AgentHealthCheckJob] [Get HA_LOCK] [isLeader: {}]", isLeader);
 		if (BooleanUtil.negate(isLeader)) return;
 

@@ -5,6 +5,7 @@ import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.entity.AlertRuleSchedLog;
@@ -37,7 +38,7 @@ public class AlertRuleScheduleJob extends QuartzJobBean {
 		Thread.currentThread().setName("AlertRuleScheduleJob");
 		// 检查 HA_LOCK
 		LeaderElectionDao dao = LeaderElectionDao.getInstance();
-		if (BooleanUtil.negate(dao.isLeader()))
+		if (BooleanUtil.negate(dao.isLeader(Constant.SYS_HA_LOCK, Constant.SERVER_ID)))
 			return;
 		JobKey key = context.getJobDetail().getKey();
 		log.info("alert rule schedule job start,key:{}", key);

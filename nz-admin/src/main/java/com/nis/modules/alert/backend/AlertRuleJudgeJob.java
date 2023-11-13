@@ -76,7 +76,7 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 		Thread.currentThread().setName(String.format("alertRuleJuage-%s", alertRuleId));
 		// 检查 HA_LOCK
 		LeaderElectionDao dao = LeaderElectionDao.getInstance();
-		if (Tool.BooleanUtil.negate(dao.isLeader())) {
+		if (Tool.BooleanUtil.negate(dao.isLeader(Constant.SYS_HA_LOCK, Constant.SERVER_ID))) {
 			log.info("skip execute, SERVER_ID: {}, ruleId: {}",Constant.SERVER_ID, alertRuleId);
 			return;
 		}

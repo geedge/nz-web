@@ -81,7 +81,7 @@ public class SysComponentJob extends QuartzJobBean {
 
 		// 检查 HA_LOCK
 		LeaderElectionDao dao = LeaderElectionDao.getInstance();
-		if (BooleanUtil.negate(dao.isLeader())) return;
+		if (BooleanUtil.negate(dao.isLeader(Constant.SYS_HA_LOCK, Constant.SERVER_ID))) return;
 		// 删除超过3min没有更新的component
 		long ltime = System.currentTimeMillis() - 3 * 60 * 1000;
 		sysComponentService.remove(Wrappers.lambdaQuery(new SysComponent()).lt(SysComponent::getUtime, ltime));

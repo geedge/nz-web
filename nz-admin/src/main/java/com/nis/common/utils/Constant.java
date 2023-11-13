@@ -1139,8 +1139,10 @@ public class Constant {
 	public static final String SERVER_ID = Tool.IdUtil.fastUUID();
 	public static final String SYS_HA_LOCK = "sys_ha_lock";
 
-	// sys_backup redis lock
-	public static final String SYS_BACKUP_LOCK = "lock_sys_backup";
+	// sys_backup_lock
+	public static final String SYS_BACKUP_LOCK = "sys_backup_lock";
+	// sys_restore_file
+	public static final String SYS_RESTORE_FILE = "sys_restore_file";
 
 	public static final String NEZHA_ROOT_PATH = StrUtil.subBefore(System.getProperty("user.dir"), StrUtil.C_SLASH,
 			true);
@@ -1178,8 +1180,6 @@ public class Constant {
 	public static final String REPORT_TOPIC_NAME = "report_topic";
 
 	public static final String BACKUP_TOPIC_NAME = "backup_topic";
-
-	public static final String RESTORE_TOPIC_NAME = "restore_topic";
 
 	public static final String REPORT_JOB_GROUP = "report_job_group";
 

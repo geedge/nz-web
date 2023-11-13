@@ -17,6 +17,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
+import com.nis.modules.election.dao.LeaderElectionDao;
 import com.nis.modules.sys.entity.SysBackupLog;
 import com.nis.modules.sys.entity.SysComponent;
 import com.nis.modules.sys.entity.SysConfigEntity;
@@ -348,11 +349,9 @@ public class SysBackupServiceImpl implements SysBackupService {
         boolean exist = FileUtil.exist(sqlFilePath);
         log.info("[restore] [download file] [filename: {}] [exist: {}]", filename, exist);
         if (exist) {
-            // sys_restore_filename
-            redisTemplate.opsForValue().set("sys_restore_filename", Tool.AesUtil.encrypt(filename, Constant.AES_SECRET_KEY), 300, TimeUnit.SECONDS);
-
-            // send restart notify
-            redisTemplate.convertAndSend(Constant.RESTORE_TOPIC_NAME, Constant.SERVER_ID);
+            LeaderElectionDao dao = LeaderElectionDao.getInstance();
+            // sys_restore_file
+            dao.attemptLeadership(Constant.SYS_RESTORE_FILE, filename, TimeUnit.SECONDS.toMillis(300));
         } else {
             log.warn("[restore] [file not found] [filename: {}]", filename);
             throw new NZException(RCode.SYS_BACKUP_FILENAME_NOTEXIST);

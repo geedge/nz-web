@@ -9,6 +9,7 @@ import cn.hutool.log.Log;
 import com.amazonaws.SDKGlobalConfiguration;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 import com.nis.modules.election.dao.LeaderElectionDao;
 import com.nis.modules.sys.service.SysConfService;
@@ -49,7 +50,7 @@ public class CleanExpiredTerminalRecordDataJob extends QuartzJobBean {
 
         // 检查 HA_LOCK
         LeaderElectionDao dao = LeaderElectionDao.getInstance();
-        boolean isLeader = dao.isLeader();
+        boolean isLeader = dao.isLeader(Constant.SYS_HA_LOCK, Constant.SERVER_ID);
         log.info("[CleanExpiredTerminalRecordDataJob] [Get HA_LOCK] [isLeader: {}]", isLeader);
         if (BooleanUtil.negate(isLeader)) return;
 

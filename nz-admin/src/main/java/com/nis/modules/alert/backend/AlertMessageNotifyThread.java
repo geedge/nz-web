@@ -86,7 +86,7 @@ public class AlertMessageNotifyThread implements Runnable {
 			try {
 				// 检查 HA_LOCK
 				LeaderElectionDao dao = LeaderElectionDao.getInstance();
-				if (Tool.BooleanUtil.negate(dao.isLeader())) {
+				if (Tool.BooleanUtil.negate(dao.isLeader(Constant.SYS_HA_LOCK, Constant.SERVER_ID))) {
 					boolean sleep = Tool.ThreadUtil.sleep(10000);
 					logger.debug("sleep 10000ms :{}", sleep);
 					continue;

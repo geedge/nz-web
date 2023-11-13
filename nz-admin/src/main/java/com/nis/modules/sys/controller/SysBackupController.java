@@ -7,6 +7,7 @@ import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
+import com.nis.modules.election.dao.LeaderElectionDao;
 import com.nis.modules.sys.service.SysBackupService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FilenameUtils;
@@ -18,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 系统备份
@@ -31,9 +33,6 @@ public class SysBackupController {
 
     @Autowired
     private SysBackupService sysBackupService;
-
-    @Autowired
-    private RedisLock redisLock;
 
     /**
      * 查询列表
@@ -66,9 +65,12 @@ public class SysBackupController {
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.SYS_BACKUP)
     public R backupData(@RequestBody(required = false) Map<String, String> requestBody) {
         // get lock
+        LeaderElectionDao dao = LeaderElectionDao.getInstance();
+
         String uuid = Tool.StrUtil.uuid();
+        dao.attemptLeadership(Constant.SYS_BACKUP_LOCK, uuid, TimeUnit.SECONDS.toMillis(300));
         try {
-            if (redisLock.lock(Constant.SYS_BACKUP_LOCK, uuid, 300L)) {
+            if (dao.isLeader(Constant.SYS_BACKUP_LOCK, uuid)) {
                 log.info("[backupData] [Get lock and start system data backup]");
 
                 StopWatch sw = new StopWatch();
@@ -88,7 +90,7 @@ public class SysBackupController {
             log.error(e, "[backupData] [backup error]");
             throw new NZException(RCode.SYS_BACKUP_ERROR);
         } finally {
-            redisLock.unlock(Constant.SYS_BACKUP_LOCK, uuid);
+            dao.forceReElection(Constant.SYS_BACKUP_LOCK, uuid);
         }
     }
 

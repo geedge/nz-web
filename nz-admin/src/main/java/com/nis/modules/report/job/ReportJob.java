@@ -78,7 +78,7 @@ public class ReportJob extends QuartzJobBean {
     protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
         // 检查 HA_LOCK
         LeaderElectionDao dao = LeaderElectionDao.getInstance();
-        boolean isLeader = dao.isLeader();
+        boolean isLeader = dao.isLeader(Constant.SYS_HA_LOCK, Constant.SERVER_ID);
         log.info("[ReportJob] [Get HA_LOCK] [isLeader: {}]", isLeader);
         if (Tool.BooleanUtil.negate(isLeader)) return;
 

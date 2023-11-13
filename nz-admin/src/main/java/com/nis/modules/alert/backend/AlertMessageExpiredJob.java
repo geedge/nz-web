@@ -42,7 +42,7 @@ public class AlertMessageExpiredJob extends QuartzJobBean{
 		Thread.currentThread().setName("AlertMessageExpiredJob");
         // 检查 HA_LOCK
         LeaderElectionDao dao = LeaderElectionDao.getInstance();
-        if (BooleanUtil.negate(dao.isLeader())) return;
+        if (BooleanUtil.negate(dao.isLeader(Constant.SYS_HA_LOCK, Constant.SERVER_ID))) return;
         log.info("AlertMessageExpiredJob start");
         try {
         	StopWatch sw = StopWatch.create("messageExpired");

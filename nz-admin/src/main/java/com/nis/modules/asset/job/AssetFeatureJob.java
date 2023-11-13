@@ -3,6 +3,7 @@ package com.nis.modules.asset.job;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
+import com.nis.common.utils.Constant;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.election.dao.LeaderElectionDao;
@@ -28,7 +29,7 @@ public class AssetFeatureJob extends QuartzJobBean {
 
 		// 检查 HA_LOCK
 		LeaderElectionDao dao = LeaderElectionDao.getInstance();
-		boolean isLeader = dao.isLeader();
+		boolean isLeader = dao.isLeader(Constant.SYS_HA_LOCK, Constant.SERVER_ID);
 		logger.info("[AssetFeatureJob] [Get HA_LOCK] [isLeader: {}]", isLeader);
 		if (BooleanUtil.negate(isLeader)) return;
 		

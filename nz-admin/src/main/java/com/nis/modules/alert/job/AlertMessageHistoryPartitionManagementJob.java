@@ -3,6 +3,7 @@ package com.nis.modules.alert.job;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 import com.nis.modules.alert.dao.AlertMessageHistoryPartitionManagementDao;
 import com.nis.modules.election.dao.LeaderElectionDao;
@@ -43,7 +44,7 @@ public class AlertMessageHistoryPartitionManagementJob extends QuartzJobBean {
 
         // 检查 HA_LOCK
         LeaderElectionDao dao = LeaderElectionDao.getInstance();
-        boolean isLeader = dao.isLeader();
+        boolean isLeader = dao.isLeader(Constant.SYS_HA_LOCK, Constant.SERVER_ID);
         log.info("[AlertMessageHistoryPartitionManagementJob] [Get HA_LOCK] [isLeader: {}]", isLeader);
         if (BooleanUtil.negate(isLeader)) return;
 

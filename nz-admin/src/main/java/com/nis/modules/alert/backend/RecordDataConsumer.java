@@ -58,7 +58,7 @@ public class RecordDataConsumer implements Runnable {
 			try {
 				// 检查 HA_LOCK
 				LeaderElectionDao dao = LeaderElectionDao.getInstance();
-				if (Tool.BooleanUtil.negate(dao.isLeader())) {
+				if (Tool.BooleanUtil.negate(dao.isLeader(Constant.SYS_HA_LOCK, Constant.SERVER_ID))) {
 					Tool.ThreadUtil.sleep(maxSendIntervalMs);
 					log.debug("sleep {}ms ", maxSendIntervalMs);
 					continue;

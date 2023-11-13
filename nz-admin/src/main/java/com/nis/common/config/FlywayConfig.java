@@ -2,10 +2,11 @@ package com.nis.common.config;
 
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ReflectUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.nis.common.utils.Constant;
-import com.nis.common.utils.RedisLock;
 import com.nis.common.utils.Tool;
+import com.nis.modules.election.dao.LeaderElectionDao;
 import com.nis.modules.sys.service.SysBackupService;
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.lang3.time.StopWatch;
@@ -18,7 +19,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.data.redis.core.RedisTemplate;
 
 import javax.sql.DataSource;
 import java.beans.BeanInfo;
@@ -45,12 +45,6 @@ public class FlywayConfig implements ApplicationContextAware {
 
     @Autowired
     private FlywayProperties flywayProperties;
-
-    @Autowired
-    private RedisLock redisLock;
-
-    @Autowired
-    private RedisTemplate redisTemplate;
 
     @Autowired
     private SysBackupService sysBackupService;
@@ -95,18 +89,12 @@ public class FlywayConfig implements ApplicationContextAware {
      * restore system data
      */
     private void restoreSystemData() {
-        Boolean hasSysRestoreFilename = redisTemplate.hasKey("sys_restore_filename");
-        log.info("[restoreSystemData] [sys_restore_filename key in redis] [exist: {}]", hasSysRestoreFilename);
-        if (hasSysRestoreFilename) {
-            // get restore filename
-            String restoreFilenameInRedis = (String) redisTemplate.opsForValue().get("sys_restore_filename");
+        LeaderElectionDao leaderElectionDao = LeaderElectionDao.getInstance(dataSource);
+        String restoreFilename = leaderElectionDao.getLeader(Constant.SYS_RESTORE_FILE);
 
-            // aes decrypt
-            String restoreFilename = Tool.AesUtil.decrypt(restoreFilenameInRedis, Constant.AES_SECRET_KEY);
-            if (restoreFilename == null) {
-                log.warn("[restoreSystemData] [decrypt error] [restoreFilenameInRedis: {}]", restoreFilenameInRedis);
-                return;
-            }
+        boolean hasSysRestoreFilename = StrUtil.isNotEmpty(restoreFilename);
+        log.info("[restoreSystemData] [sys_restore_file key in db] [exist: {}]", hasSysRestoreFilename);
+        if (hasSysRestoreFilename) {
             log.info("[restoreSystemData] [restore filename: {}]", restoreFilename);
 
             // check restore file exists
@@ -115,9 +103,10 @@ public class FlywayConfig implements ApplicationContextAware {
                 log.warn("[restoreSystemData] [no restore file in this server] [sleep 5 minutes]");
                 Tool.ThreadUtil.sleep(5, TimeUnit.MINUTES);
                 while (true) {
-                    Boolean hasKey = redisTemplate.hasKey(SYS_RESTORE_LOCK_KEY);
-                    log.warn("[restoreSystemData] [sys_restore_lock] [release: {}]", !hasKey);
-                    if (hasKey) {
+                    String leader = leaderElectionDao.getLeader(SYS_RESTORE_LOCK_KEY);
+                    boolean hasLeader = StrUtil.isNotEmpty(leader);
+                    log.warn("[restoreSystemData] [sys_restore_lock] [release: {}]", !hasLeader);
+                    if (hasLeader) {
                         Tool.ThreadUtil.sleep(10, TimeUnit.SECONDS);
                     } else {
                         log.info("[restoreSystemData] [lock release and start web service]");
@@ -125,27 +114,26 @@ public class FlywayConfig implements ApplicationContextAware {
                     }
                 }
             } else {
-                // get lock
-                String uuid = Tool.StrUtil.uuid();
                 try {
-                    if (redisLock.lock(SYS_RESTORE_LOCK_KEY, uuid, -1L)) {
+                    // get lock
+                    leaderElectionDao.attemptLeadership(SYS_RESTORE_LOCK_KEY, Constant.SERVER_ID, TimeUnit.SECONDS.toMillis(300));
+                    if (leaderElectionDao.isLeader(SYS_RESTORE_LOCK_KEY, Constant.SERVER_ID)) {
                         log.info("[restoreSystemData] [begin] [get lock]");
 
                         // restore
                         sysBackupService.restore(restoreFilename);
 
                         // unlock
-                        redisLock.unlock(SYS_RESTORE_LOCK_KEY, uuid);
-                        // del sys_restore_filename key
-                        redisTemplate.delete("sys_restore_filename");
-
+                        leaderElectionDao.forceReElection(SYS_RESTORE_LOCK_KEY, Constant.SERVER_ID);
+                        leaderElectionDao.forceReElection(Constant.SYS_RESTORE_FILE, restoreFilename);
                         log.info("[restoreSystemData] [finshed]");
                     } else {
                         log.warn("[restoreSystemData] [unable to get the lock] [waiting for lock release...]");
                         while (true) {
-                            Boolean hasKey = redisTemplate.hasKey(SYS_RESTORE_LOCK_KEY);
-                            log.warn("[restoreSystemData] [sys_restore_lock] [release: {}]", !hasKey);
-                            if (hasKey) {
+                            String leader = leaderElectionDao.getLeader(SYS_RESTORE_LOCK_KEY);
+                            boolean hasLeader = StrUtil.isNotEmpty(leader);
+                            log.warn("[restoreSystemData] [sys_restore_lock] [release: {}]", !hasLeader);
+                            if (hasLeader) {
                                 Tool.ThreadUtil.sleep(10, TimeUnit.SECONDS);
                             } else {
                                 log.info("[restoreSystemData] [lock release and start web service]");

@@ -3,6 +3,7 @@ package com.nis.modules.sys.job;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.election.dao.LeaderElectionDao;
 import com.nis.modules.sys.entity.SysUserEntity;
@@ -38,7 +39,7 @@ public class SessionTimeOutJob extends QuartzJobBean {
 	protected void executeInternal(JobExecutionContext arg0) throws JobExecutionException {
 		// 检查 HA_LOCK
 		LeaderElectionDao dao = LeaderElectionDao.getInstance();
-		boolean isLeader = dao.isLeader();
+		boolean isLeader = dao.isLeader(Constant.SYS_HA_LOCK, Constant.SERVER_ID);
 		log.info("[SessionTimeOutJob] [Get HA_LOCK] [isLeader: {}]", isLeader);
 		if (BooleanUtil.negate(isLeader)) return;
 

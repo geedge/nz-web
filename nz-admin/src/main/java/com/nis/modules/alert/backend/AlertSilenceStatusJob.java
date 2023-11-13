@@ -3,6 +3,7 @@ package com.nis.modules.alert.backend;
 import cn.hutool.core.date.StopWatch;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.log.Log;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 import com.nis.modules.alert.entity.AlertSilenceConf;
 import com.nis.modules.alert.service.AlertHandlerService;
@@ -42,7 +43,7 @@ public class AlertSilenceStatusJob extends QuartzJobBean{
 		Thread.currentThread().setName("AlertSilenceStatusJob");
 		// 检查 HA_LOCK
 		LeaderElectionDao dao = LeaderElectionDao.getInstance();
-		if (BooleanUtil.negate(dao.isLeader())) return;
+		if (BooleanUtil.negate(dao.isLeader(Constant.SYS_HA_LOCK, Constant.SERVER_ID))) return;
 		log.info("AlertSilenceStatusJob start");
 		try {
 			/**
