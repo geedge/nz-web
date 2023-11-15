@@ -9,7 +9,7 @@ import com.nis.common.utils.Tool;
 import com.nis.modules.alert.backend.SNMPTrapReceiver;
 import com.nis.modules.report.job.ReportJobManager;
 import com.nis.modules.sys.job.SysBackJobManager;
-import com.nis.modules.sys.shiro.MySessionManager;
+import com.nis.modules.sys.shiro.MariadbSessionManager;
 import jakarta.servlet.Filter;
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.quartz.SchedulerException;
@@ -38,7 +38,7 @@ public class RedisCacheSubscribe  implements MessageListener{
 	private ShiroFilterFactoryBean shiroFilterFactoryBean;
 	
 	@Autowired
-	private MySessionManager mySessionManager;
+	private MariadbSessionManager mySessionManager;
 	
 	@Autowired
 	private SNMPTrapReceiver trapReceiver;

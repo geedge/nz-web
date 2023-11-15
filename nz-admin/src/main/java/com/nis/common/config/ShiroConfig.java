@@ -224,11 +224,12 @@ public class ShiroConfig {
 	@Bean
 	public SessionManager sessionManager() {
 		Integer loginExpiration = getTimeOutData();
-		MySessionManager mySessionManager = new MySessionManager();
+		MariadbSessionManager mySessionManager = new MariadbSessionManager();
 		mySessionManager.setSessionDAO(sessionDAO());
 		mySessionManager.setGlobalSessionTimeout(loginExpiration * 60 * 1000);
 		// Disable Session ID cookie
 		mySessionManager.setSessionIdCookieEnabled(false);
+		mySessionManager.setSessionFactory(new MariadbSessionFactory());
 		return mySessionManager;
 	}
 

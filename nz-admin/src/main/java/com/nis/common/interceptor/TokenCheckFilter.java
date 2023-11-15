@@ -8,6 +8,7 @@ import com.nis.common.utils.*;
 import com.nis.modules.sys.dao.SysApiKeyDao;
 import com.nis.modules.sys.entity.SysApiKey;
 import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.shiro.MariadbSession;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
@@ -81,7 +82,7 @@ public class TokenCheckFilter extends AccessControlFilter {
 		} else {
 			// 获取存在缓存中的过期时间
 			Date expireAt = apiKey.getExpireAt();
-			SimpleSession session = new SimpleSession();
+			MariadbSession session = new MariadbSession();
 			SysUserEntity user = new SysUserEntity();
 			user.setApiKeyId(apiKey.getId());
 			user.setId(0L);

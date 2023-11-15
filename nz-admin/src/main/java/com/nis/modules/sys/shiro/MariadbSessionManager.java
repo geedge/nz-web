@@ -10,11 +10,11 @@ import org.springframework.util.StringUtils;
 
 import java.io.Serializable;
 
-public class MySessionManager extends DefaultWebSessionManager {
+public class MariadbSessionManager extends DefaultWebSessionManager {
 
     private static final String REFERENCED_SESSION_ID_SOURCE = "Stateless request";
 
-    public MySessionManager() {
+    public MariadbSessionManager() {
         super();
     }
 
