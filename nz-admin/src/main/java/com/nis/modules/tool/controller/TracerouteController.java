@@ -133,7 +133,7 @@ public class TracerouteController {
         String tracerouteStatStr = (String) cache.get(tracerouteStatKey);
 
         // 任务已被取消或 key 超时
-        ValidateUtils.is(tracerouteStatStr).notNull(RCode.TOOL_TRACEROUTE_TASK_NOT_EXIST);
+        ValidateUtils.is(tracerouteStatStr).notNull(RCode.TOOL_TASK_NOT_EXIST);
 
         String tracerouteResultKey = Tool.StrUtil.concat(true, "test_traceroute_result_", tid);
         List<String> tracerouteResultList = CollUtil.defaultIfEmpty((List<String>) cache.get(tracerouteResultKey), CollUtil.list(true));

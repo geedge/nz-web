@@ -1100,9 +1100,7 @@ public enum RCode {
     TOOL_NOT_SUPPORTED_IPV6SUBNET(753002, "IPV6 subnet asset scanning is not supported"),
     TOOL_FULLTEXT_METADATA_TYPE_ISNULL(751003, "Fulltext search metadata type cannot be empty"),
     TOOL_FULLTEXT_KEYWORD_TYPE_INVALID(754004, "Fulltext keyword type not in enumeration range"),
-    TOOL_PING_TASK_NOT_EXIST(751005, "Ping task not found, the task does not exist or has expired."),
-    TOOL_TRACEROUTE_TASK_NOT_EXIST(751006, "Traceroute task not found, the task does not exist or has expired."),
-    TOOL_ASSET_DISCOVERY_TASK_NOT_EXIST(751007, "Asset discovery task not found, the task does not exist or has expired."),
+    TOOL_TASK_NOT_EXIST(751005, "Task not found, the task does not exist or has expired."),
 
     /**
      * integration 相关

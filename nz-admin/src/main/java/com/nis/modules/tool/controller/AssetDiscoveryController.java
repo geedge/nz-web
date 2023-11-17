@@ -187,7 +187,7 @@ public class AssetDiscoveryController {
         String statJsonStr = (String) cache.get(statKey);
 
         // 任务已被取消或 key 超时
-        ValidateUtils.is(statJsonStr).notNull(RCode.TOOL_ASSET_DISCOVERY_TASK_NOT_EXIST);
+        ValidateUtils.is(statJsonStr).notNull(RCode.TOOL_TASK_NOT_EXIST);
 
         String discoveryResultKey = StrUtil.concat(true, "discovery_result_", tid);
         List<String> discoveryResultList = CollUtil.defaultIfEmpty((List<String>) cache.get(discoveryResultKey), CollUtil.list(true));

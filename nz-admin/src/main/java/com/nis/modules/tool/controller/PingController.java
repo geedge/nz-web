@@ -133,7 +133,7 @@ public class PingController {
         String pingStatStr = (String) cache.get(pingStatKey);
 
         // 任务已被取消或 key 超时
-        ValidateUtils.is(pingStatStr).notNull(RCode.TOOL_PING_TASK_NOT_EXIST);
+        ValidateUtils.is(pingStatStr).notNull(RCode.TOOL_TASK_NOT_EXIST);
 
         String pingResultKey = Tool.StrUtil.concat(true, "test_ping_result_", tid);
         List<String> pingResultList = CollUtil.defaultIfEmpty((List<String>) cache.get(pingResultKey), CollUtil.list(true));
