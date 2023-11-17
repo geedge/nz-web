@@ -67,6 +67,9 @@ public class SysBackupServiceImpl implements SysBackupService {
     @Autowired
     private RedisTemplate redisTemplate;
 
+    @Autowired
+    private SysService sysService;
+
     @Value("${nezha.exportMaxSize:10000}")
     private Integer exportMaxSize;
 
@@ -352,6 +355,10 @@ public class SysBackupServiceImpl implements SysBackupService {
             LeaderElectionDao dao = LeaderElectionDao.getInstance();
             // sys_restore_file
             dao.attemptLeadership(Constant.SYS_RESTORE_FILE, filename, TimeUnit.SECONDS.toMillis(300));
+
+            // notify restore message
+            String message = Constant.SERVER_ID;
+            sysService.notifySysMessage(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.SYS_RESTORE.getName(), message);
         } else {
             log.warn("[restore] [file not found] [filename: {}]", filename);
             throw new NZException(RCode.SYS_BACKUP_FILENAME_NOTEXIST);
