@@ -1,5 +1,6 @@
 package com.nis.modules.asset.service.impl;
 
+import cn.hutool.cache.impl.TimedCache;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.map.MapUtil;
@@ -58,7 +59,6 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.shiro.ShiroException;
 import org.snmp4j.smi.TimeTicks;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionStatus;
@@ -81,9 +81,6 @@ import java.util.stream.Collectors;
 public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset> implements AssetAssetService {
 
     private static final Log log = Log.get();
-
-    @Autowired
-    private RedisTemplate redisTemplate;
 
     @Autowired
     private SysUserDao sysUserDao;
@@ -200,7 +197,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         asset.setDc(dc);
 
         AssetPing assetPing = assetPingService.getOne(new QueryWrapper<AssetPing>().lambda().eq(AssetPing::getAssetId, asset.getId()));
-        Object object = redisTemplate.opsForHash().get(Constant.SYSCONFIG_KEY_ASSET_PING, asset.getId().toString());
+        TimedCache<String, Object> cache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_PING);
+        Object object = cache.get(asset.getId().toString());
         if (ToolUtil.isNotEmpty(object)) {
             assetPing = JSON.parseObject((String) object, AssetPing.class);
         }
@@ -460,7 +458,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         List<AssetFieldMeta> metaInfoList = assetFieldMetaService.getAssetFieldMetaListByAssetId(null);
         Map<Integer, List<AssetFieldMeta>> assetIdAndMetaInfoList = metaInfoList.stream().collect(Collectors.groupingBy(AssetFieldMeta::getAssetId));
 
-        Map assetCachePings = redisTemplate.opsForHash().entries(Constant.SYSCONFIG_KEY_ASSET_PING);
+        TimedCache<String, Object> cache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_PING);
         List<AssetPing> assetPinglist = assetPingService.list();
         Map<Integer, AssetPing> assetPings = assetPinglist.stream().collect(Collectors.toMap(AssetPing::getAssetId, Function.identity()));
 
@@ -489,7 +487,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
             // 获取缓存中ping状态信息
             AssetPing assetPing = assetPings.get(asset.getId());
-            Object object = assetCachePings.get(asset.getId().toString());
+            Object object = cache.get(asset.getId().toString());
             if (ToolUtil.isNotEmpty(object)) {
                 assetPing = JSON.parseObject((String) object, AssetPing.class);
             }
@@ -1018,10 +1016,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
      */
     private void afterUpdateAsset(Integer assetId) {
         assetPingService.remove(new QueryWrapper<AssetPing>().lambda().eq(AssetPing::getAssetId, assetId));
-        redisTemplate.opsForHash().delete(Constant.SYSCONFIG_KEY_ASSET_PING, assetId.toString());
+        TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_PING).remove(assetId.toString());
 
         assetTalonStatusService.removeById(assetId);
-        redisTemplate.opsForHash().delete(Constant.ASSET_TALON_STATUS_CACHE_KEY, assetId.toString());
+        TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ASSET_TALON_STATUS_CACHE_KEY).remove(assetId.toString());
     }
 
     private void saveAssetRelData(AssetAsset asset) {
@@ -1123,11 +1121,13 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // asset Ping
         List<String> removeRelInRedisIdList = removeAssetIdList.stream().map(id -> id.toString()).collect(Collectors.toList());
         assetPingService.remove(new LambdaQueryWrapper<AssetPing>().in(AssetPing::getAssetId, removeAssetIdList));
-        redisTemplate.opsForHash().delete(Constant.SYSCONFIG_KEY_ASSET_PING, removeRelInRedisIdList.toArray());
+        TimedCache<String, Object> assetPingCache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_PING);
+        removeRelInRedisIdList.parallelStream().forEach(key -> assetPingCache.remove(key));
 
         // asset Talon
         assetTalonStatusService.removeByIds(removeAssetIdList);
-        redisTemplate.opsForHash().delete(Constant.ASSET_TALON_STATUS_CACHE_KEY, removeRelInRedisIdList.toArray());
+        TimedCache<String, Object> assetTalonCache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ASSET_TALON_STATUS_CACHE_KEY);
+        removeRelInRedisIdList.parallelStream().forEach(key -> assetTalonCache.remove(key));
 
         // field
         assetFieldValueService.remove(new LambdaQueryWrapper<AssetFieldValue>().in(AssetFieldValue::getAssetId, removeAssetIdList));

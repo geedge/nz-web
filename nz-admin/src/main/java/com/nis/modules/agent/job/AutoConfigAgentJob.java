@@ -1,5 +1,6 @@
 package com.nis.modules.agent.job;
 
+import cn.hutool.cache.impl.TimedCache;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
@@ -84,10 +85,17 @@ public class AutoConfigAgentJob extends QuartzJobBean {
 
         log.info("[AutoConfigAgentJob] [Begin]");
         try {
-            List<Agent> healthyAgents = Tool.ListUtil.empty();
-            List<String> agentCaches = redisTemplate.opsForHash().values(Constant.AGENT_STATE_CACHE_KEY);
-            if (ToolUtil.isNotEmpty(agentCaches)) {
-                healthyAgents = agentCaches.stream().map(agentCache -> JSON.parseObject(agentCache, Agent.class)).filter(p -> p.getStatus().equals(1)).collect(Collectors.toList());
+            List<Agent> healthyAgents = Tool.ListUtil.list(true);
+            TimedCache<String, Object> agentCaches = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.AGENT_STATE_CACHE_KEY);
+            if (BooleanUtil.negate(agentCaches.isEmpty())) {
+                Iterator<Object> iterator = agentCaches.iterator();
+                while (iterator.hasNext()) {
+                    String next = (String) iterator.next();
+                    Agent agentInCache = JSON.parseObject(next, Agent.class);
+                    if (ObjectUtil.equal(1, agentInCache.getStatus())) {
+                        healthyAgents.add(agentInCache);
+                    }
+                }
                 log.info("[AutoConfigAgentJob] [Get healthy agent list from redis] [size: {}]", healthyAgents.size());
             } else {
                 healthyAgents = agentService.list(new LambdaQueryWrapper<Agent>().eq(Agent::getStatus, 1));

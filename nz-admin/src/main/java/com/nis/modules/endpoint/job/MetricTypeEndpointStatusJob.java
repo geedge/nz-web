@@ -1,5 +1,6 @@
 package com.nis.modules.endpoint.job;
 
+import cn.hutool.cache.impl.TimedCache;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
@@ -26,14 +27,16 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -41,9 +44,6 @@ import java.util.stream.Collectors;
 public class MetricTypeEndpointStatusJob extends QuartzJobBean {
 
     private static final Log log = Log.get();
-
-    @Autowired
-    private RedisTemplate redisTemplate;
 
     @Autowired
     private PromApiService promApiService;
@@ -147,30 +147,30 @@ public class MetricTypeEndpointStatusJob extends QuartzJobBean {
         log.info("[updateEndpointStatus] [update metrics endpoints] [total size: {}]", updateMetricsEndpointStateList.size());
 
         //  判断查询数据与缓存中变化的信息
-        Map endpointStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
-        if (ToolUtil.isNotEmpty(endpointStates) && counter % forceSync != 0) {
+        TimedCache<String, Object> metricsTypeEndpointStateCache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
+        if (BooleanUtil.negate(metricsTypeEndpointStateCache.isEmpty()) && counter % forceSync != 0) {
             log.info("[updateEndpointStatus] [incrementally update the metrics endpoint state in redis]");
             for (int i = updateMetricsEndpointStateList.size() - 1; i >= 0; i--) {
                 MonitorEndpointState endpointState = updateMetricsEndpointStateList.get(i);
-                if (endpointStates.containsKey(endpointState.getEndpointId().toString())) {
-                    MonitorEndpointState cacheEndpointState = JSON.parseObject((String) endpointStates.get(endpointState.getEndpointId().toString()), MonitorEndpointState.class);
-                    redisTemplate.opsForHash().put(Constant.ENDPOINT_METRICS_STATE_CACHE_KEY, endpointState.getEndpointId().toString(), JSON.toJSONString(endpointState));
+                if (metricsTypeEndpointStateCache.containsKey(endpointState.getEndpointId().toString())) {
+                    MonitorEndpointState cacheEndpointState = JSON.parseObject((String) metricsTypeEndpointStateCache.get(endpointState.getEndpointId().toString()), MonitorEndpointState.class);
+                    metricsTypeEndpointStateCache.put(endpointState.getEndpointId().toString(), JSON.toJSONString(endpointState));
                     if (cacheEndpointState.getState().equals(endpointState.getState())) {
                         // 如果状态相同则只更新缓存中的数据信息
                         updateMetricsEndpointStateList.remove(i);
                     }
                 } else {
                     // 数据库存在 缓存中不存在
-                    redisTemplate.opsForHash().put(Constant.ENDPOINT_METRICS_STATE_CACHE_KEY, endpointState.getEndpointId().toString(), JSON.toJSONString(endpointState));
+                    metricsTypeEndpointStateCache.put(endpointState.getEndpointId().toString(), JSON.toJSONString(endpointState));
                 }
             }
         } else {
             log.info("[updateEndpointStatus] [Full update cache]");
             Map<String, String> updateMetricsEndpointsInRedis = updateMetricsEndpointStateList.stream().collect(Collectors.toMap(state -> StrUtil.toString(state.getEndpointId()), state -> JSONUtil.toJsonStr(state)));
-            redisTemplate.opsForHash().putAll(Constant.ENDPOINT_METRICS_STATE_CACHE_KEY, updateMetricsEndpointsInRedis);
+            for (Map.Entry<String, String> entry : updateMetricsEndpointsInRedis.entrySet()) {
+                metricsTypeEndpointStateCache.put(entry.getKey(), entry.getValue());
+            }
         }
-        // 超时周期设置为两个 endpointState 周期
-        redisTemplate.expire(Constant.ENDPOINT_METRICS_STATE_CACHE_KEY, 2, TimeUnit.MINUTES);
 
         // 保存 根据类型以及endpointId进行新增或者修改
         if (ToolUtil.isNotEmpty(updateMetricsEndpointStateList)) {
@@ -372,9 +372,12 @@ public class MetricTypeEndpointStatusJob extends QuartzJobBean {
             }
             endpointStateService.saveBatch(saveBatchEndpointStatusList);
 
-            // redis
+            // cache
+            TimedCache<String, Object> metricsTypeEndpointStateCache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
             Map<String, String> updateMetricsEndpointsInRedis = saveBatchEndpointStatusList.stream().collect(Collectors.toMap(state -> StrUtil.toString(state.getEndpointId()), state -> JSONUtil.toJsonStr(state)));
-            redisTemplate.opsForHash().putAll(Constant.ENDPOINT_METRICS_STATE_CACHE_KEY, updateMetricsEndpointsInRedis);
+            for (Map.Entry<String, String> entry : updateMetricsEndpointsInRedis.entrySet()) {
+                metricsTypeEndpointStateCache.put(entry.getKey(), entry.getValue());
+            }
         }
         log.info("[updateAllMetricTypeEndpointsToDown] [finshed]");
     }

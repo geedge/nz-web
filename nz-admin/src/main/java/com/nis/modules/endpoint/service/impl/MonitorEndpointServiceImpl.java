@@ -1,5 +1,6 @@
 package com.nis.modules.endpoint.service.impl;
 
+import cn.hutool.cache.impl.TimedCache;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.lang.Pair;
@@ -191,8 +192,8 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     // 获取 endpointConfigs 及其 state
     private List<MonitorEndpointConfig> getEndpointConfigs(MonitorEndpoint endpoint){
-        Map endpointMetricsStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
-        Map endpointLogsStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
+        TimedCache<String, Object> metricsTypeEndpointStateCache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
+        TimedCache<String, Object> logTypeEndpointStateCache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
 
         List<MonitorEndpointConfig> endpointConfigs = endpointConfigService.list(new LambdaQueryWrapper<MonitorEndpointConfig>().eq(MonitorEndpointConfig::getEndpointId, endpoint.getId()).orderByDesc(MonitorEndpointConfig::getType));
         for (MonitorEndpointConfig endpointConfig : endpointConfigs) {
@@ -200,15 +201,15 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
             MonitorEndpointState endpointStateByConfigId = null;
             if(endpointConfig.getType().equals(Constant.MonitorConfType.METRICS.getValue())) {
-                if(ToolUtil.isNotEmpty(endpointMetricsStates)) {
-                    Object object = endpointMetricsStates.get(endpointConfig.getEndpointId().toString());
+                if (BooleanUtil.negate(metricsTypeEndpointStateCache.isEmpty())) {
+                    Object object = metricsTypeEndpointStateCache.get(endpointConfig.getEndpointId().toString());
                     if(ToolUtil.isNotEmpty(object)) {
                         endpointStateByConfigId = JSON.parseObject((String)object,MonitorEndpointState.class);
                     }
                 }
             }else{
-                if(ToolUtil.isNotEmpty(endpointLogsStates)) {
-                    Object object = endpointLogsStates.get(endpointConfig.getEndpointId().toString());
+                if (BooleanUtil.negate(logTypeEndpointStateCache.isEmpty())) {
+                    Object object = logTypeEndpointStateCache.get(endpointConfig.getEndpointId().toString());
                     if(ToolUtil.isNotEmpty(object)) {
                         endpointStateByConfigId = JSON.parseObject((String)object,MonitorEndpointState.class);
                     }
@@ -680,8 +681,8 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 	private void handleResuleList(List<MonitorEndpoint> endpointList) {
         List<MonitorEndpointConfig> endpointConfigs = endpointConfigService.list(new LambdaQueryWrapper<MonitorEndpointConfig>().orderByDesc(MonitorEndpointConfig::getType));
 
-        Map endpointMetricsStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
-        Map endpointLogsStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
+        TimedCache<String, Object> metricsTypeEndpointStateCache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
+        TimedCache<String, Object> logTypeEndpointStateCache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
         // 获取agent
         Map endpointProm = redisTemplate.opsForHash().entries(Constant.REDIS_KEY_ENDPOINT_PROM);
         List<Agent> agentList = agentService.list();
@@ -694,15 +695,15 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
                 MonitorEndpointState endpointStateByConfigId = null;
                 if(endpointConfig.getType().equals(Constant.MonitorConfType.METRICS.getValue())) {
-                	if(ToolUtil.isNotEmpty(endpointMetricsStates)) {
-                		Object object = endpointMetricsStates.get(endpointConfig.getEndpointId().toString());
+                    if (BooleanUtil.negate(metricsTypeEndpointStateCache.isEmpty())) {
+                		Object object = metricsTypeEndpointStateCache.get(endpointConfig.getEndpointId().toString());
                     	if(ToolUtil.isNotEmpty(object)) {
                     		endpointStateByConfigId = JSON.parseObject((String)object,MonitorEndpointState.class);
                         }
                 	}
                 }else {
-                	if(ToolUtil.isNotEmpty(endpointLogsStates)) {
-                		Object object = endpointLogsStates.get(endpointConfig.getEndpointId().toString());
+                    if (BooleanUtil.negate(logTypeEndpointStateCache.isEmpty())) {
+                		Object object = logTypeEndpointStateCache.get(endpointConfig.getEndpointId().toString());
                     	if(ToolUtil.isNotEmpty(object)) {
                     		endpointStateByConfigId = JSON.parseObject((String)object,MonitorEndpointState.class);
                         }
@@ -837,8 +838,12 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         // 删除 endpoint state
         endpointStateService.removeByIds(ids);
         List<String> deleteList = ids.stream().map(id-> id.toString()).collect(Collectors.toList());
-        redisTemplate.opsForHash().delete(Constant.ENDPOINT_METRICS_STATE_CACHE_KEY, deleteList.toArray());
-        redisTemplate.opsForHash().delete(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY, deleteList.toArray());
+        TimedCache<String, Object> metricsTypeEndpointStateCache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
+        TimedCache<String, Object> logTypeEndpointStateCache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
+        deleteList.stream().forEach(key -> {
+            metricsTypeEndpointStateCache.remove(key);
+            logTypeEndpointStateCache.remove(key);
+        });
 
         // 删除 alert
         alertMessageService.removeByEndpointIds(ids);
@@ -1288,8 +1293,8 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
         endpointStateService.removeById(endpointId);
 
-        redisTemplate.opsForHash().delete(Constant.ENDPOINT_METRICS_STATE_CACHE_KEY, endpointId.toString());
-        redisTemplate.opsForHash().delete(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY, endpointId.toString());
+        TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_METRICS_STATE_CACHE_KEY).remove(endpointId.toString());
+        TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_LOGS_STATE_CACHE_KEY).remove(endpointId.toString());
     }
 
     /**

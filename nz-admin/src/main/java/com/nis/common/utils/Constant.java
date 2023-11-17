@@ -1297,6 +1297,8 @@ public class Constant {
 	    }
     }
 
+	public static final String SYS_STATE_CACHE_PREFIX = "SYS_STATE_";
+
 	public static final String ENDPOINT_METRICS_STATE_CACHE_KEY = "endpoint_metrics_state";
 
 	public static final String ENDPOINT_LOGS_STATE_CACHE_KEY = "endpoint_logs_state";
@@ -1352,6 +1354,40 @@ public class Constant {
 
 		public Integer getValue() {
 			return value;
+		}
+	}
+
+	/**
+	 * SysTopicNameEnum
+	 */
+	public enum SysTopicNameEnum {
+		SNMP_TRAP_PORT("snmp_trap_port"),
+
+		DASHBOARD_REPORT("dashboard_report"),
+
+		SYS_BACKUP("sys_backup"),
+
+		SYS_RESTORE("sys_restore"),
+
+		SYS_CONFIG_RELOAD("sys_config_reload");
+
+		private String name;
+
+		SysTopicNameEnum(String name) {
+			this.name = name;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public static SysTopicNameEnum getInstanceByName(String name) {
+			for (SysTopicNameEnum v : values()) {
+				if (StrUtil.equalsIgnoreCase(v.getName(), name)) {
+					return v;
+				}
+			}
+			return null;
 		}
 	}
 

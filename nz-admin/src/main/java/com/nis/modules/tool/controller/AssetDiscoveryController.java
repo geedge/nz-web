@@ -1,5 +1,8 @@
 package com.nis.modules.tool.controller;
 
+import cn.hutool.cache.impl.TimedCache;
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.lang.Pair;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.*;
@@ -9,7 +12,6 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
@@ -25,10 +27,10 @@ import com.nis.modules.ipam.entity.IpamSubnet;
 import com.nis.modules.sys.entity.SnmpCredential;
 import com.nis.modules.sys.service.SnmpCredentialService;
 import com.nis.modules.sys.service.SysConfService;
+import com.nis.modules.tool.utils.ToolConstant;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.net.util.SubnetUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,7 +40,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Discover assets by subnet
@@ -50,9 +53,6 @@ import java.util.concurrent.TimeUnit;
 public class AssetDiscoveryController {
 
     private final static Log log = Log.get();
-
-    @Autowired
-    private RedisTemplate redisTemplate;
 
     @Autowired
     private AgentService agentService;
@@ -134,6 +134,8 @@ public class AssetDiscoveryController {
         String tid = StrUtil.uuid();
         ThreadUtil.execAsync(() -> {
             ExecutorService taskExecutor = getDiscoveryThreadPoolByTid(tid);
+            ReentrantReadWriteLock readWriteLock = Tool.LockUtil.createReadWriteLock(false);
+            ReentrantReadWriteLock.WriteLock lock = readWriteLock.writeLock();
             for (IpamSubnet ipamSubnet : ipamSubnetList) {
                 ThreadUtil.execAsync(() -> {
                     // 利用 SubnetUtils 计算 ip 范围
@@ -145,7 +147,7 @@ public class AssetDiscoveryController {
                     int high = ReflectUtil.invoke(subnetUtils.getInfo(), "high");
                     for (int add = low, j = 0; add <= high; ++add, ++j) {
                         String ip = format(toArray(add));
-                        DiscoveryRunnable discoveryRunnable = new DiscoveryRunnable(tid, ip, ipamSubnet, assetModelList, discoveredAssetList, confParams);
+                        DiscoveryRunnable discoveryRunnable = new DiscoveryRunnable(tid, lock, ip, ipamSubnet, assetModelList, discoveredAssetList, confParams);
                         // submit
                         taskExecutor.submit(discoveryRunnable);
                     }
@@ -163,9 +165,10 @@ public class AssetDiscoveryController {
         m.put("task", task);
         log.info("[createDiscoveryTask] [finshed] [tid: {}] [subnet size: {}] [discovery ip size: {}]", tid, ipamSubnetList.size(), totalDiscoveryIpNum);
 
-        // 设置 30 分钟超时，避免 redis 中存在垃圾数据
-        redisTemplate.expire(StrUtil.concat(true, "discovery_result_", tid), 30, TimeUnit.MINUTES);
-        redisTemplate.opsForValue().set(StrUtil.concat(true, "discovery_stat_", tid), JSONObject.toJSONString(task), 30, TimeUnit.MINUTES);
+        // stat in cache
+        TimedCache<String, Object> cache = TimedCacheManager.getCache(ToolConstant.ASSET_DISCOVERY_CACHE_PREFIX, tid);
+        String stat = Tool.StrUtil.concat(true, "discovery_stat_", tid);
+        cache.put(stat, JSONObject.toJSONString(task));
         return R.ok(m);
     }
 
@@ -178,40 +181,36 @@ public class AssetDiscoveryController {
      */
     @GetMapping("/discovery/{tid}")
     public R queryResult(@PathVariable(value = "tid", required = true) String tid) {
-        String discoveryResultKey = StrUtil.concat(true, "discovery_result_", tid);
-        List<String> discoveryResultList = Tool.ListUtil.list(false);
-        while (true) {
-            String obj = (String) redisTemplate.opsForList().rightPop(discoveryResultKey);
-            if (obj == null) break;
-            discoveryResultList.add(obj);
-        }
+        TimedCache<String, Object> cache = TimedCacheManager.getCache(ToolConstant.ASSET_DISCOVERY_CACHE_PREFIX, tid);
 
-        String discoveryStatStr = (String) redisTemplate.opsForValue().get(StrUtil.concat(true, "discovery_stat_", tid));
+        String statKey = Tool.StrUtil.concat(true, "discovery_stat_", tid);
+        String statJsonStr = (String) cache.get(statKey);
+
         // 任务已被取消或 key 超时
-        if (Tool.StrUtil.isEmpty(discoveryStatStr)) {
-            Map result = Tool.MapUtil.newHashMap();
-            Map<String, Integer> task = Tool.MapUtil.of(Pair.of("total", 0), Pair.of("done", 0), Pair.of("process", 0));
-            result.put("task", task);
-            result.put("list", Tool.ListUtil.empty());
-            return R.ok(result);
-        }
+        ValidateUtils.is(statJsonStr).notNull(RCode.TOOL_ASSET_DISCOVERY_TASK_NOT_EXIST);
 
-        Map discoveryStatMap = JSONObject.parseObject(discoveryStatStr, Map.class);
+        String discoveryResultKey = StrUtil.concat(true, "discovery_result_", tid);
+        List<String> discoveryResultList = CollUtil.defaultIfEmpty((List<String>) cache.get(discoveryResultKey), CollUtil.list(true));
+        int completedSize = discoveryResultList.size();
+
+        Map discoveryStatMap = JSONObject.parseObject(statJsonStr, Map.class);
         Integer total = (Integer) discoveryStatMap.get("total");
         Integer done = (Integer) discoveryStatMap.get("done");
 
+        // 增量返回
+        discoveryResultList = ListUtil.sub(discoveryResultList, done, completedSize);
         List list = Tool.ListUtil.list(false);
         for (String jsonStr : discoveryResultList) {
             cn.hutool.json.JSONObject jsonObject = JSONUtil.parseObj(jsonStr);
             list.add(jsonObject);
         }
-        done = done + list.size();
-        discoveryStatMap.put("done", done);
-        String percent = NumberUtil.formatPercent((double) done / total, 2);
+
+        discoveryStatMap.put("done", completedSize);
+        String percent = NumberUtil.formatPercent((double) completedSize / total, 2);
         discoveryStatMap.put("process", percent.replace("%", ""));
 
         // update
-        redisTemplate.opsForValue().set(StrUtil.concat(true, "discovery_stat_", tid), JSONObject.toJSONString(discoveryStatMap), 30, TimeUnit.MINUTES);
+        cache.put(statKey, JSONObject.toJSONString(discoveryStatMap));
 
         Map result = Tool.MapUtil.newHashMap();
         result.put("task", discoveryStatMap);
@@ -246,10 +245,7 @@ public class AssetDiscoveryController {
         }
 
         // remove cache
-        List<String> keys = Tool.ListUtil.of(
-                StrUtil.concat(true, "discovery_stat_", tid),
-                StrUtil.concat(true, "discovery_result_", tid));
-        redisTemplate.delete(keys);
+        TimedCacheManager.removeCache(ToolConstant.ASSET_DISCOVERY_CACHE_PREFIX, tid);
         return R.ok();
     }
 
@@ -294,6 +290,7 @@ public class AssetDiscoveryController {
         private final static String SYSUPTIME_OID = "1.3.6.1.2.1.1.3.0";
         private String ip;
         private String tid;
+        private Lock lock;
         private IpamSubnet subnet;
         private List<AssetModel> assetModelList;
         private List<AssetAsset> discoveredAssetList;
@@ -302,9 +299,10 @@ public class AssetDiscoveryController {
         private Integer timeout;
         private Integer retries;
 
-        public DiscoveryRunnable(String tid, String ip, IpamSubnet subnet, List<AssetModel> assetModelList, List<AssetAsset> discoveredAssetList, Map<String, Object> confParams) {
+        public DiscoveryRunnable(String tid, Lock lock, String ip, IpamSubnet subnet, List<AssetModel> assetModelList, List<AssetAsset> discoveredAssetList, Map<String, Object> confParams) {
             this.ip = ip;
             this.tid = tid;
+            this.lock = lock;
             this.subnet = subnet;
             this.assetModelList = assetModelList;
             this.discoveredAssetList = discoveredAssetList;
@@ -374,9 +372,22 @@ public class AssetDiscoveryController {
                         }
                     }
                     if (!Thread.currentThread().isInterrupted()) {
+                        lock.lock();
                         try {
-                            redisTemplate.opsForList().leftPush(StrUtil.concat(true, "discovery_result_", tid), JSONUtil.toJsonStr(m));
+                            // update resule
+                            TimedCache<String, Object> cache = TimedCacheManager.getCache(ToolConstant.ASSET_DISCOVERY_CACHE_PREFIX, tid);
+
+                            // result cache
+                            String resultKey = Tool.StrUtil.concat(true, "discovery_result_", tid);
+                            List<String> resultList = (List<String>) cache.get(resultKey);
+                            resultList = Tool.CollUtil.defaultIfEmpty(resultList, Tool.ListUtil.list(true));
+
+                            resultList.add(JSONUtil.toJsonStr(m));
+                            cache.put(resultKey, resultList);
                         } catch (Exception e) {
+                            log.error(e);
+                        } finally {
+                            lock.unlock();
                         }
                     }
                 }

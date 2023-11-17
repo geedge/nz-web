@@ -1,12 +1,13 @@
 package com.nis.modules.asset.job;
 
+import cn.hutool.cache.impl.TimedCache;
 import cn.hutool.core.util.BooleanUtil;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.TimedCacheManager;
 import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.agent.entity.Agent;
@@ -25,14 +26,11 @@ import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @DisallowConcurrentExecution
@@ -54,9 +52,6 @@ public class AssetPingStatusJob extends QuartzJobBean {
 
     @Autowired
     private AssetAssetService assetAssetService;
-
-    @Autowired
-    private RedisTemplate redisTemplate;
 
     @Autowired
     private PromApiService promApiService;
@@ -164,13 +159,13 @@ public class AssetPingStatusJob extends QuartzJobBean {
         Map<Integer, Integer> befUpdHistoryAssetPingAssetIdAndStatusMap = befUpdHistoryAssetPingDataList.stream().collect(Collectors.toMap(AssetPing::getAssetId, AssetPing::getStatus));
 
         //判断查询数据与缓存中变化的信息
-        Map assetPings = redisTemplate.opsForHash().entries(Constant.SYSCONFIG_KEY_ASSET_PING);
-        if(ToolUtil.isNotEmpty(assetPings)) {
-        	for(int i=upAssetPings.size()-1;i>=0;i--) {
-        		AssetPing assetPing = upAssetPings.get(i);
-        		if(assetPings.containsKey(assetPing.getAssetId().toString())) {
-        			AssetPing cachePing = JSON.parseObject((String)assetPings.get(assetPing.getAssetId().toString()),AssetPing.class);
-        			redisTemplate.opsForHash().put(Constant.SYSCONFIG_KEY_ASSET_PING, assetPing.getAssetId().toString(), JSON.toJSONString(assetPing));
+        TimedCache<String, Object> cache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_PING);
+        if (BooleanUtil.negate(cache.isEmpty())) {
+            for (int i = upAssetPings.size() - 1; i >= 0; i--) {
+                AssetPing assetPing = upAssetPings.get(i);
+                if (cache.containsKey(assetPing.getAssetId().toString())) {
+                    AssetPing cachePing = JSON.parseObject((String) cache.get(assetPing.getAssetId().toString()), AssetPing.class);
+                    cache.put(assetPing.getAssetId().toString(), JSON.toJSONString(assetPing));
                     // 如果状态相同则只更新缓存中的数据信息
                     if (cachePing.getStatus().equals(assetPing.getStatus())) {
                         // 增加数据库状态对比 避免数据库历史数据导致状态不一致没有更新的情况
@@ -179,18 +174,16 @@ public class AssetPingStatusJob extends QuartzJobBean {
                             upAssetPings.remove(i);
                         }
                     }
-        		}else{
-        			// 数据库存在 缓存中不存在
-        			redisTemplate.opsForHash().put(Constant.SYSCONFIG_KEY_ASSET_PING, assetPing.getAssetId().toString(), JSON.toJSONString(assetPing));
-        		}
+                } else {
+                    // 数据库存在 缓存中不存在
+                    cache.put(assetPing.getAssetId().toString(), JSON.toJSONString(assetPing));
+                }
             }
-        }else {
-        	for(AssetPing assetPing:upAssetPings) {
-        		redisTemplate.opsForHash().put(Constant.SYSCONFIG_KEY_ASSET_PING, assetPing.getAssetId().toString(), JSON.toJSONString(assetPing));
-        	}
+        } else {
+            for (AssetPing assetPing : upAssetPings) {
+                cache.put(assetPing.getAssetId().toString(), JSON.toJSONString(assetPing));
+            }
         }
-        // 超时周期设置为两个assetPing周期
-        redisTemplate.expire(Constant.SYSCONFIG_KEY_ASSET_PING, Long.valueOf(assetPingIntervalStr)*2, TimeUnit.SECONDS);
         if(ToolUtil.isNotEmpty(upAssetPings)) {
         	assetPingService.saveOrUpdateBatch(upAssetPings);
         }

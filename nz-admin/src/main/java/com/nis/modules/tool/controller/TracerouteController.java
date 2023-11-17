@@ -1,25 +1,32 @@
 package com.nis.modules.tool.controller;
 
+import cn.hutool.cache.impl.TimedCache;
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.lang.Pair;
 import cn.hutool.core.lang.UUID;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.NumberUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
-import com.nis.common.utils.*;
+import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.TimedCacheManager;
+import com.nis.common.utils.Tool;
 import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.service.AgentService;
 import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.asset.service.DcService;
+import com.nis.modules.tool.utils.ToolConstant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,6 +35,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @RestController
 @RequestMapping("/tool")
@@ -43,9 +52,6 @@ public class TracerouteController {
 
     @Autowired
     private AgentService agentService;
-
-    @Autowired
-    private RedisTemplate redisTemplate;
 
     @Autowired
     private DcService dcService;
@@ -87,17 +93,6 @@ public class TracerouteController {
 
         String tid = UUID.randomUUID().toString();
         List<String> ipList = Tool.StrUtil.split(ips, ',');
-        for (Dc dc : futureDcList) {
-            for (String ip : ipList) {
-                Map<String, Object> map = Tool.MapUtil.newHashMap();
-                map.putAll(requestParam);
-                map.put("ips", Tool.StrUtil.split(ip, ','));
-
-                TracerouteRunnable tracerouteRunnable = new TracerouteRunnable(dc, tid, Long.valueOf(timeout), TimeUnit.SECONDS, map);
-                tracerouteRunnable.setName(Tool.StrUtil.concat(true, tid, "-", dc.getName()));
-                ThreadUtil.execAsync(tracerouteRunnable);
-            }
-        }
 
         Map m = Tool.MapUtil.newHashMap();
         m.put("tid", tid);
@@ -107,48 +102,61 @@ public class TracerouteController {
         task.put("process", 0);
         m.put("task", task);
 
-        // 设置 30 分钟超时，避免 redis 中存在垃圾数据
-        redisTemplate.opsForValue().set(Tool.StrUtil.concat(true, "test_traceroute_stat_", tid), JSONObject.toJSONString(task), 30, TimeUnit.MINUTES);
+        // traceroute stat in cache
+        TimedCache<String, Object> cache = TimedCacheManager.getCache(ToolConstant.TRACEROUTE_CACHE_PREFIX, tid);
+        String stat = Tool.StrUtil.concat(true, "test_traceroute_stat_", tid);
+        cache.put(stat, JSONObject.toJSONString(task));
+
+        ThreadUtil.execAsync(() -> {
+            ReentrantReadWriteLock readWriteLock = Tool.LockUtil.createReadWriteLock(false);
+            ReentrantReadWriteLock.WriteLock lock = readWriteLock.writeLock();
+            for (Dc dc : futureDcList) {
+                for (String ip : ipList) {
+                    Map<String, Object> map = Tool.MapUtil.newHashMap();
+                    map.putAll(requestParam);
+                    map.put("ips", Tool.StrUtil.split(ip, ','));
+
+                    TracerouteRunnable tracerouteRunnable = new TracerouteRunnable(tid, lock, dc, Long.valueOf(timeout), TimeUnit.SECONDS, map);
+                    tracerouteRunnable.setName(Tool.StrUtil.concat(true, tid, "-", dc.getName()));
+                    ThreadUtil.execAsync(tracerouteRunnable);
+                }
+            }
+        });
         return R.ok(m);
     }
 
     @GetMapping("/traceroute/result/{tid}")
     public R tracerouteResult(@PathVariable(value = "tid", required = true) String tid) {
-        String tracerouteResultKey = Tool.StrUtil.concat(true, "test_traceroute_result_", tid);
-//        List<String> tracerouteResultList = redisTemplate.opsForList().range(tracerouteResultKey, 0, -1);
-        List<String> tracerouteResultList = Tool.ListUtil.list(false);
-        while (true) {
-            String obj = (String) redisTemplate.opsForList().rightPop(tracerouteResultKey);
-            if (obj == null) break;
-            tracerouteResultList.add(obj);
-        }
+        TimedCache<String, Object> cache = TimedCacheManager.getCache(ToolConstant.TRACEROUTE_CACHE_PREFIX, tid);
 
-        String tracerouteStatStr = (String) redisTemplate.opsForValue().get(Tool.StrUtil.concat(true, "test_traceroute_stat_", tid));
+        String tracerouteStatKey = Tool.StrUtil.concat(true, "test_traceroute_stat_", tid);
+        String tracerouteStatStr = (String) cache.get(tracerouteStatKey);
+
         // 任务已被取消或 key 超时
-        if (Tool.StrUtil.isEmpty(tracerouteStatStr)) {
-            Map result = Tool.MapUtil.newHashMap();
-            Map<String, Integer> task = Tool.MapUtil.of(Pair.of("total", 0), Pair.of("done", 0), Pair.of("process", 0));
-            result.put("task", task);
-            result.put("list", Tool.ListUtil.empty());
-            return R.ok(result);
-        }
+        ValidateUtils.is(tracerouteStatStr).notNull(RCode.TOOL_TRACEROUTE_TASK_NOT_EXIST);
+
+        String tracerouteResultKey = Tool.StrUtil.concat(true, "test_traceroute_result_", tid);
+        List<String> tracerouteResultList = CollUtil.defaultIfEmpty((List<String>) cache.get(tracerouteResultKey), CollUtil.list(true));
+        int completedSize = tracerouteResultList.size();
 
         Map tracerouteStatMap = JSONObject.parseObject(tracerouteStatStr, Map.class);
         Integer total = (Integer) tracerouteStatMap.get("total");
         Integer done = (Integer) tracerouteStatMap.get("done");
 
+        // 增量返回
+        tracerouteResultList = ListUtil.sub(tracerouteResultList, done, completedSize);
         List list = Tool.ListUtil.list(false);
         for (String jsonStr : tracerouteResultList) {
             JSONArray jsonArray = JSONArray.parseArray(jsonStr);
             list.addAll(jsonArray);
         }
-        done = done + list.size();
-        tracerouteStatMap.put("done", done);
-        String percent = NumberUtil.formatPercent((double) done / total, 2);
+
+        tracerouteStatMap.put("done", completedSize);
+        String percent = NumberUtil.formatPercent((double) completedSize / total, 2);
         tracerouteStatMap.put("process", percent.replace("%", ""));
 
-        // 更新 redis test_traceroute_stat  设置 30分钟超时，避免 redis 中存在垃圾数据
-        redisTemplate.opsForValue().set(Tool.StrUtil.concat(true, "test_traceroute_stat_", tid), JSONObject.toJSONString(tracerouteStatMap), 30, TimeUnit.MINUTES);
+        // 更新 cache test_traceroute_stat
+        cache.put(tracerouteStatKey, JSONObject.toJSONString(tracerouteStatMap));
 
         Map result = Tool.MapUtil.newHashMap();
         result.put("task", tracerouteStatMap);
@@ -165,27 +173,22 @@ public class TracerouteController {
             });
         }
 
-        List<String> keys = Tool.ListUtil.of(
-                Tool.StrUtil.concat(true, "test_traceroute_stat_", tid),
-                Tool.StrUtil.concat(true, "test_traceroute_result_", tid));
-        redisTemplate.delete(keys);
+        TimedCacheManager.removeCache(ToolConstant.TRACEROUTE_CACHE_PREFIX, tid);
         return R.ok();
     }
 
     public class TracerouteRunnable extends Thread {
-        private Dc dc;
         private String tid;
+        private Lock lock;
+        private Dc dc;
         private long timeout;
         private TimeUnit timeUnit;
         private Map<String, Object> requestBody;
 
-        private volatile boolean isWrite = true;
-        // 任务运行状态，调用 interrupt() 后，该值为 false
-        private volatile boolean isRun = true;
-
-        public TracerouteRunnable(Dc dc, String tid, Long timeout, TimeUnit timeUnit, Map<String, Object> requestBody) {
+        public TracerouteRunnable(String tid, Lock lock, Dc dc, Long timeout, TimeUnit timeUnit, Map<String, Object> requestBody) {
             this.dc = dc;
             this.tid = tid;
+            this.lock = lock;
             this.timeout = timeout;
             this.timeUnit = timeUnit;
             this.requestBody = requestBody;
@@ -197,48 +200,20 @@ public class TracerouteController {
             // agent 存在，向 agent 发起请求获取数据
             if (Optional.ofNullable(dc).map(Dc::getAgent).isPresent()) {
                 Agent agent = dc.getAgent();
-                CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
-                    String path = "/cmd/traceroute";
-                    String resultJsonStr = AgentUtil.request(agent, HttpMethod.POST, path, null, requestBody, String.class);
-                    Object list = JSONPath.read(resultJsonStr, "data.list");
-                    log.info("host: {}, path: {}, result: {}", agent.getHost(), path, resultJsonStr);
-                    // 由于 future.cancel 在任务已经运行状态下，不一定能取消，所以在写 redis 前增加判断
-                    if (isWrite) {
-                        List<Map> mapList = JSONArray.parseArray(JSONArray.toJSONString(list), Map.class);
-                        for (Map map : mapList) {
-                            Map dcMap = Tool.MapUtil.newHashMap(4);
-                            dcMap.put("id", dc.getId());
-                            dcMap.put("name", dc.getName());
-
-                            Map agentMap = Tool.MapUtil.newHashMap(4);
-                            agentMap.put("id", agent.getId());
-                            agentMap.put("name", agent.getName());
-
-                            map.put("dc", dcMap);
-                            map.put("agent", agentMap);
-
-                            // source 赋值为 agent ip
-                            map.put("source", agent.getHost());
-                        }
-                        redisTemplate.opsForList().leftPush(Tool.StrUtil.concat(true, "test_traceroute_result_", tid), JSONArray.toJSONString(mapList));
-                    } else {
-                        log.info(String.format("Traceroute thread: %s has been canceled, Do not write data to Redis", this.getName()));
-                    }
-                    return Tool.StrUtil.EMPTY;
-                });
-
+                CompletableFuture<String> future = this.createCompletableFuture(agent);
                 try {
-                    future.get(timeout, timeUnit);
+                    String result = future.get(timeout, timeUnit);
+                    // update result
+                    if (!Thread.currentThread().isInterrupted())
+                        this.updateResult(result);
                 } catch (InterruptedException | ExecutionException e) {
                     log.error(e);
                 } catch (TimeoutException e) {
                     boolean cancel = future.cancel(true);
-                    isWrite = false;
                     log.error(String.format("%s agent traceroute %s timeout, Task cancel status: %s", agent.getName(), requestBody.get("ips").toString(), cancel));
-
-                    if (isRun) {
-                        log.info(String.format("%s agent traceroute %s timeout, Timeout data write to redis", agent.getName(), requestBody.get("ips").toString()));
-                        // 超时也需要向 redis 中写入 timeout 消息
+                    if (!Thread.currentThread().isInterrupted()) {
+                        log.info(String.format("%s agent traceroute %s timeout, Timeout data write to cache", agent.getName(), requestBody.get("ips").toString()));
+                        // 超时也需要向 cache 中写入 timeout 消息
                         Map agentMap = Tool.MapUtil.newHashMap(4);
                         agentMap.put("id", agent.getId());
                         agentMap.put("name", agent.getName());
@@ -260,15 +235,15 @@ public class TracerouteController {
                             );
                             list.add(timeoutInfoMap);
                         }
-                        redisTemplate.opsForList().leftPush(Tool.StrUtil.concat(true, "test_traceroute_result_", tid), JSONObject.toJSONString(list));
+                        this.updateResult(JSONObject.toJSONString(list));
                     } else {
-                        log.info(String.format("%s agent traceroute %s timeout, But the thread is interrupted, and the timeout data is not write to redis.", agent.getName(), requestBody.get("ips").toString()));
+                        log.info(String.format("%s agent traceroute %s timeout, But the thread is interrupted, and the timeout data is not write to cache.", agent.getName(), requestBody.get("ips").toString()));
                     }
                 }
             } else {
-                // agent 不存在（DC 下没有可用 agent,记录错误数据至 REDIS 中）
-                if (isRun) {
-                    log.info(String.format("Dc info : %s , No Agent available", JSONObject.toJSONString(dc)));
+                // agent 不存在（DC 下没有可用 agent,记录错误数据至 cache 中）
+                if (!Thread.currentThread().isInterrupted()) {
+                    log.info(String.format("Dc id : %s , No Agent available", dc.getId()));
                     Map dcMap = Tool.MapUtil.newHashMap(4);
                     dcMap.put("id", dc.getId());
                     dcMap.put("name", dc.getName());
@@ -286,19 +261,75 @@ public class TracerouteController {
                         );
                         list.add(noAgentInfo);
                     }
-                    redisTemplate.opsForList().leftPush(Tool.StrUtil.concat(true, "test_traceroute_result_", tid), JSONObject.toJSONString(list));
+                    this.updateResult(JSONObject.toJSONString(list));
                 } else {
-                    log.info(String.format("Dc info : %s , No Agent available, But the thread is interrupted, not write to redis.", JSONObject.toJSONString(dc)));
+                    log.info(String.format("Dc id : %s , No Agent available, But the thread is interrupted, not write to cache.", dc.getId()));
                 }
             }
             ACTIVE_TASKS.remove(this);
         }
 
-        @Override
-        public void interrupt() {
-            super.interrupt();
-            isWrite = false;
-            isRun = false;
+        /**
+         * createCompletableFuture
+         *
+         * @param agent
+         * @return
+         */
+        private CompletableFuture<String> createCompletableFuture(Agent agent) {
+            return CompletableFuture.supplyAsync(() -> {
+                String path = "/cmd/traceroute";
+                try {
+                    String resultJsonStr = AgentUtil.request(agent, HttpMethod.POST, path, null, requestBody, String.class);
+                    Object list = JSONPath.read(resultJsonStr, "data.list");
+                    List<Map> mapList = JSONArray.parseArray(JSONArray.toJSONString(list), Map.class);
+                    for (Map map : mapList) {
+                        Map dcMap = Tool.MapUtil.newHashMap(4);
+                        dcMap.put("id", dc.getId());
+                        dcMap.put("name", dc.getName());
+
+                        Map agentMap = Tool.MapUtil.newHashMap(4);
+                        agentMap.put("id", agent.getId());
+                        agentMap.put("name", agent.getName());
+
+                        map.put("dc", dcMap);
+                        map.put("agent", agentMap);
+
+                        // source 赋值为 agent ip
+                        map.put("source", agent.getHost());
+                    }
+                    return JSONArray.toJSONString(mapList);
+                } catch (Exception e) {
+                    log.error(e, "host: {}, path: {}", agent.getHost(), path);
+                }
+                return StrUtil.EMPTY;
+            });
+        }
+
+        /**
+         * updateResult
+         *
+         * @param resultData
+         */
+        private void updateResult(String resultData) {
+            if (StrUtil.isEmpty(resultData))
+                return;
+
+            lock.lock();
+            try {
+                TimedCache<String, Object> cache = TimedCacheManager.getCache(ToolConstant.TRACEROUTE_CACHE_PREFIX, tid);
+
+                // result cache
+                String resultKey = Tool.StrUtil.concat(true, "test_traceroute_result_", tid);
+                List<String> resultList = (List<String>) cache.get(resultKey);
+                resultList = Tool.CollUtil.defaultIfEmpty(resultList, Tool.ListUtil.list(true));
+
+                resultList.add(resultData);
+                cache.put(resultKey, resultList, TimeUnit.SECONDS.toMillis(60));
+            } catch (Exception e) {
+                log.error(e);
+            } finally {
+                lock.unlock();
+            }
         }
     }
 }

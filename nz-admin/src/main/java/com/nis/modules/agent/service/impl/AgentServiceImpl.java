@@ -1,5 +1,7 @@
 package com.nis.modules.agent.service.impl;
 
+import cn.hutool.cache.impl.TimedCache;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
@@ -16,7 +18,6 @@ import com.nis.modules.agent.service.AgentService;
 import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.asset.service.DcService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -35,9 +36,6 @@ public class AgentServiceImpl extends ServiceImpl<AgentDao, Agent> implements Ag
 
 	@Autowired
 	private AgentDao agentDao;
-
-	@Autowired
-	private RedisTemplate redisTemplate;
 
 	@SuppressWarnings("unchecked")
 	@Override
@@ -58,10 +56,10 @@ public class AgentServiceImpl extends ServiceImpl<AgentDao, Agent> implements Ag
 		IPage page = new Query(Agent.class).getPage(params);
 		List<Agent> agentList = agentDao.queryList(page, params);
 		// 获取缓存中检查时间信息
-		Map agentCaches = redisTemplate.opsForHash().entries(Constant.AGENT_STATE_CACHE_KEY);
-		if(ToolUtil.isNotEmpty(agentCaches)) {
-			for(Agent prom : agentList) {
-				Object promCache = agentCaches.get(prom.getId().toString());
+		TimedCache<String, Object> cache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.AGENT_STATE_CACHE_KEY);
+		if (BooleanUtil.negate(cache.isEmpty())) {
+			for (Agent prom : agentList) {
+				Object promCache = cache.get(prom.getId().toString());
 				if(ToolUtil.isNotEmpty(promCache)) {
 					prom.setCheckTime(JSON.parseObject((String)promCache, Agent.class).getCheckTime());
 					prom.setTs(JSON.parseObject((String) promCache, Agent.class).getTs());

@@ -1,5 +1,6 @@
 package com.nis.modules.agent.job;
 
+import cn.hutool.cache.impl.TimedCache;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.log.Log;
@@ -163,18 +164,18 @@ public class AgentHealthCheckJob extends QuartzJobBean {
 
 		try {
 			List<Future<Agent>> futures = exec.invokeAll(tasks);
+			TimedCache<String, Object> cache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.AGENT_STATE_CACHE_KEY);
 			for (Future<Agent> future : futures) {
 				if (!future.isCancelled()) {
 					Agent agent = future.get();
-					Object agentInfoInRedis = redisTemplate.opsForHash().get(Constant.AGENT_STATE_CACHE_KEY,agent.getId().toString());
-					Agent agentCache = JSON.parseObject((String) agentInfoInRedis, Agent.class);
+					Object agentInfoInCache = cache.get(agent.getId().toString());
+					Agent agentCache = JSON.parseObject((String) agentInfoInCache, Agent.class);
 					if(counter % forceSync == 0 || ToolUtil.isEmpty(agentCache) || !ObjectUtil.equal(agentCache.getStatus(), agent.getStatus())) {
 						// 判断状态是否缓存与数据库数据是否一致 不一致需要修改数据库信息
 						agentService.updateStatusInfo(agent);
 					}
-					redisTemplate.opsForHash().put(Constant.AGENT_STATE_CACHE_KEY,agent.getId().toString(),JSON.toJSONString(agent));
-					// 超时周期设置为两个agent周期
-			        redisTemplate.expire(Constant.AGENT_STATE_CACHE_KEY, 1, TimeUnit.MINUTES);
+					// update
+					cache.put(agent.getId().toString(), JSON.toJSONString(agent));
 				}
 			}
 			if(counter % forceSync == 0) {

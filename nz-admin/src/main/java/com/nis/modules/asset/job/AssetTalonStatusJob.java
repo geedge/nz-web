@@ -1,5 +1,6 @@
 package com.nis.modules.asset.job;
 
+import cn.hutool.cache.impl.TimedCache;
 import cn.hutool.core.net.url.UrlBuilder;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.StrUtil;
@@ -9,6 +10,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.R;
+import com.nis.common.utils.TimedCacheManager;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.asset.entity.AssetAsset;
@@ -16,7 +18,6 @@ import com.nis.modules.asset.entity.AssetTalonStatus;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetTalonStatusService;
 import com.nis.modules.election.dao.LeaderElectionDao;
-import com.nis.modules.endpoint.dao.MonitorEndpointStateDao;
 import com.nis.modules.endpoint.entity.MonitorEndpointConfig;
 import com.nis.modules.endpoint.entity.MonitorEndpointState;
 import com.nis.modules.endpoint.service.MonitorEndpointConfigService;
@@ -28,12 +29,14 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -52,15 +55,8 @@ public class AssetTalonStatusJob extends QuartzJobBean {
     private MonitorEndpointConfigService endpointConfigService;
 
     @Autowired
-    private MonitorEndpointStateDao endpointStateDao;
-
-    @Autowired
     private MonitorEndpointStateService endpointStateService;
 
-
-    @Autowired
-    private RedisTemplate redisTemplate;
-    
     // 计数器，每 forceSync 个周期 执行一次强制执行
  	private volatile static Integer counter = 1;
 
@@ -196,34 +192,32 @@ public class AssetTalonStatusJob extends QuartzJobBean {
         }
 
         talonUpdateStatusList.addAll(abnormalTalonList);
-        
+
         Map<Integer, AssetTalonStatus> map = talonUpdateStatusList.stream().collect(Collectors.toMap(AssetTalonStatus::getAssetId, Function.identity()));
         //判断查询数据与缓存中变化的信息
-        Map assetTalonStatuss = redisTemplate.opsForHash().entries(Constant.ASSET_TALON_STATUS_CACHE_KEY);
-        if(ToolUtil.isNotEmpty(assetTalonStatuss) && counter % forceSync != 0) {
-        	for(int i=talonUpdateStatusList.size()-1;i>=0;i--) {
-        		AssetTalonStatus assetTalonStatus = talonUpdateStatusList.get(i);
-        		if(assetTalonStatuss.containsKey(assetTalonStatus.getAssetId().toString())) {
-        			AssetTalonStatus cacheEndpointState = JSON.parseObject((String)assetTalonStatuss.get(assetTalonStatus.getAssetId().toString()),AssetTalonStatus.class);
-        			redisTemplate.opsForHash().put(Constant.ASSET_TALON_STATUS_CACHE_KEY, assetTalonStatus.getAssetId().toString(), JSON.toJSONString(assetTalonStatus));
-        			if(cacheEndpointState.getStatus().equals(assetTalonStatus.getStatus())) {
-        				// 如果状态相同则只更新缓存中的数据信息
-        				talonUpdateStatusList.remove(i);
-        			}
-        		}else{
-        			// 数据库存在 缓存中不存在
-        			redisTemplate.opsForHash().put(Constant.ASSET_TALON_STATUS_CACHE_KEY, assetTalonStatus.getAssetId().toString(), JSON.toJSONString(assetTalonStatus));
-        		}
+        TimedCache<String, Object> assetTalonStatusCache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ASSET_TALON_STATUS_CACHE_KEY);
+        if (BooleanUtil.negate(assetTalonStatusCache.isEmpty()) && counter % forceSync != 0) {
+            for (int i = talonUpdateStatusList.size() - 1; i >= 0; i--) {
+                AssetTalonStatus assetTalonStatus = talonUpdateStatusList.get(i);
+                if (assetTalonStatusCache.containsKey(assetTalonStatus.getAssetId().toString())) {
+                    AssetTalonStatus cacheEndpointState = JSON.parseObject((String) assetTalonStatusCache.get(assetTalonStatus.getAssetId().toString()), AssetTalonStatus.class);
+                    assetTalonStatusCache.put(assetTalonStatus.getAssetId().toString(), JSON.toJSONString(assetTalonStatus));
+                    if (cacheEndpointState.getStatus().equals(assetTalonStatus.getStatus())) {
+                        // 如果状态相同则只更新缓存中的数据信息
+                        talonUpdateStatusList.remove(i);
+                    }
+                } else {
+                    // 数据库存在 缓存中不存在
+                    assetTalonStatusCache.put(assetTalonStatus.getAssetId().toString(), JSON.toJSONString(assetTalonStatus));
+                }
             }
-        }else {
-        	for(AssetTalonStatus assetTalonStatus:talonUpdateStatusList) {
-        		redisTemplate.opsForHash().put(Constant.ASSET_TALON_STATUS_CACHE_KEY, assetTalonStatus.getAssetId().toString(), JSON.toJSONString(assetTalonStatus));
-        	}
+        } else {
+            for (AssetTalonStatus assetTalonStatus : talonUpdateStatusList) {
+                assetTalonStatusCache.put(assetTalonStatus.getAssetId().toString(), JSON.toJSONString(assetTalonStatus));
+            }
         }
-        // 超时周期设置为两个endpointState周期
-        redisTemplate.expire(Constant.ASSET_TALON_STATUS_CACHE_KEY, 2, TimeUnit.MINUTES);
-        if(ToolUtil.isNotEmpty(talonUpdateStatusList)) {
-        	talonStatusService.saveOrUpdateBatch(talonUpdateStatusList);
+        if (ToolUtil.isNotEmpty(talonUpdateStatusList)) {
+            talonStatusService.saveOrUpdateBatch(talonUpdateStatusList);
         }
 
         // 更新 endpoint state 表数据
@@ -256,29 +250,27 @@ public class AssetTalonStatusJob extends QuartzJobBean {
             logStateList.add(new MonitorEndpointState(conf.getEndpointId(), conf.getId(), conf.getType(), state, talonStatus.getVersion(), StrUtil.EMPTY, new Date()));
         }
         //判断查询数据与缓存中变化的信息
-        Map endpointStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
-        if(ToolUtil.isNotEmpty(endpointStates) && counter % forceSync != 0) {
-        	for(int i=logStateList.size()-1;i>=0;i--) {
-        		MonitorEndpointState endpointState = logStateList.get(i);
-        		if(endpointStates.containsKey(endpointState.getEndpointId().toString())) {
-        			MonitorEndpointState cacheEndpointState = JSON.parseObject((String)endpointStates.get(endpointState.getEndpointId().toString()),MonitorEndpointState.class);
-        			redisTemplate.opsForHash().put(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY, endpointState.getEndpointId().toString(), JSON.toJSONString(endpointState));
-        			if(cacheEndpointState.getState().equals(endpointState.getState())) {
-        				// 如果状态相同则只更新缓存中的数据信息
-        				logStateList.remove(i);
-        			}
-        		}else{
-        			// 数据库存在 缓存中不存在
-        			redisTemplate.opsForHash().put(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY, endpointState.getEndpointId().toString(), JSON.toJSONString(endpointState));
-        		}
+        TimedCache<String, Object> logTypeEndpointStateCache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
+        if (BooleanUtil.negate(logTypeEndpointStateCache.isEmpty()) && counter % forceSync != 0) {
+            for (int i = logStateList.size() - 1; i >= 0; i--) {
+                MonitorEndpointState endpointState = logStateList.get(i);
+                if (logTypeEndpointStateCache.containsKey(endpointState.getEndpointId().toString())) {
+                    MonitorEndpointState cacheEndpointState = JSON.parseObject((String) logTypeEndpointStateCache.get(endpointState.getEndpointId().toString()), MonitorEndpointState.class);
+                    logTypeEndpointStateCache.put(endpointState.getEndpointId().toString(), JSON.toJSONString(endpointState));
+                    if (cacheEndpointState.getState().equals(endpointState.getState())) {
+                        // 如果状态相同则只更新缓存中的数据信息
+                        logStateList.remove(i);
+                    }
+                } else {
+                    // 数据库存在 缓存中不存在
+                    logTypeEndpointStateCache.put(endpointState.getEndpointId().toString(), JSON.toJSONString(endpointState));
+                }
             }
-        }else {
-        	for(MonitorEndpointState endpointState:logStateList) {
-        		redisTemplate.opsForHash().put(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY, endpointState.getEndpointId().toString(), JSON.toJSONString(endpointState));
-        	}
+        } else {
+            for (MonitorEndpointState endpointState : logStateList) {
+                logTypeEndpointStateCache.put(endpointState.getEndpointId().toString(), JSON.toJSONString(endpointState));
+            }
         }
-        // 超时周期设置为两个endpointState周期
-        redisTemplate.expire(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY, 2, TimeUnit.MINUTES);
         // 保存 根据类型以及endpointId进行新增或者修改
         if(ToolUtil.isNotEmpty(logStateList)) {
         	// 将数据分为新增或者修改

@@ -1,5 +1,6 @@
 package com.nis.modules.agent.job;
 
+import cn.hutool.cache.impl.TimedCache;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.hash.MurmurHash;
@@ -1463,7 +1464,8 @@ public class AgentConfigUtil {
 		agent.setStatusInfo(getPromStatusInfoErrorMsg());
 		agent.setCheckTime(new Date());
 		// 缓存和数据库需同时更新
-		redisTemplate.opsForHash().put(Constant.AGENT_STATE_CACHE_KEY, agent.getId().toString(), JSON.toJSONString(agent));
+		TimedCache<String, Object> cache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.AGENT_STATE_CACHE_KEY);
+		cache.put(agent.getId().toString(), JSON.toJSONString(agent));
 		agentService.updateById(agent);
 	}
 

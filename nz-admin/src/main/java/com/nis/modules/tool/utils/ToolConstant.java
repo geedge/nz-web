@@ -49,4 +49,8 @@ public class ToolConstant {
             return null;
         }
     }
+    public static final String PING_CACHE_PREFIX = "tool_ping_cache_";
+    public static final String TRACEROUTE_CACHE_PREFIX = "tool_traceroute_cache_";
+    public static final String ASSET_DISCOVERY_CACHE_PREFIX = "tool_asset_discovery_cache_";
+
 }
