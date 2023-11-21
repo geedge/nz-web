@@ -460,7 +460,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         TimedCache<String, Object> cache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_PING);
         List<AssetPing> assetPinglist = assetPingService.list();
-        Map<Integer, AssetPing> assetPings = assetPinglist.stream().collect(Collectors.toMap(AssetPing::getAssetId, Function.identity()));
+        Map<Integer, AssetPing> assetPings = assetPinglist.stream().collect(Collectors.toMap(AssetPing::getAssetId, Function.identity(), (entity1, entity2) -> entity1));
 
         for (AssetAsset asset : assetList) {
             if (ToolUtil.isNotEmpty(asset.getCreateBy())) {
