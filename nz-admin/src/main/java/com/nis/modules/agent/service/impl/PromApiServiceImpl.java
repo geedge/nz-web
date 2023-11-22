@@ -21,16 +21,13 @@ import com.nis.modules.sys.service.SysConfService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 @Service
 public class PromApiServiceImpl extends ServiceImpl<AgentDao, Agent> implements PromApiService {
@@ -180,13 +177,7 @@ public class PromApiServiceImpl extends ServiceImpl<AgentDao, Agent> implements 
                     resultArray = this.filterResult(resultArray, filter);
                 }
                 // 查询结果集超过系统设置最大限制 , -1 表示不做限制
-                ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
-                String queryMaxSeries = valueOperations.get(Constant.METRICS_QUERY_MAX_SERIES);
-                if (StringUtils.isEmpty(queryMaxSeries)) {
-                    queryMaxSeries = sysConfService.getValue(Constant.METRICS_QUERY_MAX_SERIES);
-                    valueOperations.set(Constant.METRICS_QUERY_MAX_SERIES, queryMaxSeries, 30, TimeUnit.MINUTES);
-                }
-
+                String queryMaxSeries = sysConfService.getValue(Constant.METRICS_QUERY_MAX_SERIES);
                 Integer queryMaxSeriesIntVal = Integer.valueOf(queryMaxSeries);
                 if (!queryMaxSeriesIntVal.equals(-1) && resultArray.size() > queryMaxSeriesIntVal) {
                     data.put("result", Collections.emptyList());

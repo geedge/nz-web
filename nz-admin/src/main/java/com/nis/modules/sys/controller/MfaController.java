@@ -1,13 +1,11 @@
 package com.nis.modules.sys.controller;
 
 import cn.hutool.core.util.StrUtil;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.sys.entity.AuthTokenEntity;
-import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.redis.SysLoginRedis;
 import com.nis.modules.sys.service.SysConfService;

@@ -1,7 +1,6 @@
 package com.nis.modules.alert.backend;
 
 import cn.hutool.core.date.StopWatch;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.PropertyFilter;

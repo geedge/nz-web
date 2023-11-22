@@ -40,7 +40,6 @@ import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.project.service.TopoService;
 import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.entity.SnmpCredential;
-import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SnmpCredentialService;

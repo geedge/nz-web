@@ -21,7 +21,6 @@ import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetTypeConf;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetTypeConfService;
-import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysUserService;

@@ -5,7 +5,6 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
-import com.alibaba.fastjson2.JSONPath;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;

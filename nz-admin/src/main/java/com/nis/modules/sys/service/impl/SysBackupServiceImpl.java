@@ -20,7 +20,6 @@ import com.nis.common.utils.*;
 import com.nis.modules.election.dao.LeaderElectionDao;
 import com.nis.modules.sys.entity.SysBackupLog;
 import com.nis.modules.sys.entity.SysComponent;
-import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.*;
 import com.nis.modules.sys.shiro.ShiroUtils;
@@ -32,7 +31,6 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.mariadb.jdbc.MariaDbBlob;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 

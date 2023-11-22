@@ -45,7 +45,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;

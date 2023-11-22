@@ -25,7 +25,6 @@ import com.nis.common.utils.*;
 import com.nis.common.utils.Constant.ChartDatasourceType;
 import com.nis.modules.agent.service.LokiApiService;
 import com.nis.modules.agent.service.PromApiService;
-import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetModel;
 import com.nis.modules.asset.service.AssetAssetService;
@@ -53,7 +52,6 @@ import org.apache.poi.util.TempFile;
 import org.quartz.SchedulerException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionStatus;
@@ -124,9 +122,6 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 
 	@Autowired
 	private MonitorEndpointService monitorEndpointService;
-
-	@Autowired
-	private RedisTemplate redisTemplate;
 
 	@Autowired
 	private ReportJobManager reportJobManager;
