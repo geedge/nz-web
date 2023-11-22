@@ -1,10 +1,8 @@
 package com.nis.common.interceptor;
 
 import cn.hutool.core.util.StrUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -14,11 +12,11 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 public class SysMenuInterceptor implements HandlerInterceptor {
 
-    private SysConfigService sysConfigService;
+    private SysConfService sysConfService;
 
 
-    public SysMenuInterceptor(SysConfigService sysConfigService) {
-        this.sysConfigService = sysConfigService;
+    public SysMenuInterceptor(SysConfService sysConfService) {
+        this.sysConfService = sysConfService;
     }
 
     @Override
@@ -28,8 +26,8 @@ public class SysMenuInterceptor implements HandlerInterceptor {
             return true;
         } else {
             SysUserEntity user = ShiroUtils.getUserEntity();
-            SysConfigEntity developDdmin = sysConfigService.getOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, "develop_admin"));
-            if(!StrUtil.equals(user.getUsername(),developDdmin.getParamValue())) {
+            String developDdminConf = sysConfService.getValue("develop_admin");
+            if (!StrUtil.equals(user.getUsername(), developDdminConf)) {
                 response.sendError(HttpStatus.SC_NOT_FOUND, "Not Found");
                 return false;
             }

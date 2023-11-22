@@ -7,7 +7,7 @@ import com.nis.common.utils.Tool;
 import com.nis.modules.agent.service.MonitorEventLogService;
 import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.service.AlertRuleService;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import org.quartz.*;
 import org.quartz.impl.matchers.GroupMatcher;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +39,7 @@ public class AlertRuleManagerJob extends QuartzJobBean {
 	@Autowired
 	private AlertRuleService ruleService;
 	@Autowired
-	private SysConfigService configService;
+	private SysConfService sysConfService;
 	private Scheduler scheduler;
 
 	private static final String RULE_EVENT_LOG_KEY = "rule";
@@ -93,7 +93,7 @@ public class AlertRuleManagerJob extends QuartzJobBean {
 		 * 3、更新 alert rule judge nezha alert rule 规则判断是否启用 a.未启用 nezha alert rule
 		 * 时，取消所有alertrulejudgejob b.更新 alertrulejudgejob
 		 */
-		String enable = configService.getValueOrDefault("nz_alert_rule_eval_enable", "1");
+		String enable = sysConfService.getValueOrDefault("nz_alert_rule_eval_enable", "1");
 		log.info("nz alert rule eval enable : {}", enable);
 		StopWatch stopWatch = Tool.DateUtil.createStopWatch();
 		stopWatch.start();
@@ -219,7 +219,7 @@ public class AlertRuleManagerJob extends QuartzJobBean {
 		Map<String, AlertRuleEntity> newAlertRuleMap = Tool.MapUtil.newHashMap();
 		if (allRuleList != null) {
 			int defaultInterval = Tool.NumberUtil
-					.parseInt(configService.getValueOrDefault("default_scrape_interval", "30"));
+					.parseInt(sysConfService.getValueOrDefault("default_scrape_interval", "30"));
 			for (AlertRuleEntity entity : allRuleList) {
 				// 判断是否需要设置默认执行周期
 				Integer interval = entity.getInr();
@@ -322,7 +322,7 @@ public class AlertRuleManagerJob extends QuartzJobBean {
 			JobDetail jobDetail = JobBuilder.newJob(AlertRuleScheduleJob.class).withIdentity(onJobKey).storeDurably()
 					.build();
 			String jobCronExpression = this.genCron(rule.getSchedStime(), rule.getSchedDays());
-			String timezone = configService.getValue("timezone");
+			String timezone = sysConfService.getValue("timezone");
 			CronScheduleBuilder cronScheduleBuilder = CronScheduleBuilder.cronSchedule(jobCronExpression).inTimeZone(TimeZone.getTimeZone(timezone));
 			CronTrigger cronTrigger = TriggerBuilder.newTrigger().forJob(jobDetail).withSchedule(cronScheduleBuilder)
 					.build();
@@ -336,7 +336,7 @@ public class AlertRuleManagerJob extends QuartzJobBean {
 			JobDetail jobDetail = JobBuilder.newJob(AlertRuleScheduleJob.class).withIdentity(offJobKey).storeDurably()
 					.build();
 			String jobCronExpression = this.genCron(rule.getSchedEtime(), rule.getSchedDays());
-			String timezone = configService.getValue("timezone");
+			String timezone = sysConfService.getValue("timezone");
 			CronScheduleBuilder cronScheduleBuilder = CronScheduleBuilder.cronSchedule(jobCronExpression).inTimeZone(TimeZone.getTimeZone(timezone));
 			CronTrigger cronTrigger = TriggerBuilder.newTrigger().forJob(jobDetail).withSchedule(cronScheduleBuilder)
 					.build();

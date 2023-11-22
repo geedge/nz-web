@@ -11,7 +11,7 @@ import com.nis.modules.election.dao.LeaderElectionDao;
 import com.nis.modules.sys.entity.SysApiKey;
 import com.nis.modules.sys.entity.SysLoginSession;
 import com.nis.modules.sys.service.SysApiKeyService;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysLoginSessionService;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
@@ -32,7 +32,7 @@ public class LoginSessionCleanJob extends QuartzJobBean {
     private SysLoginSessionService sessionService;
 
     @Autowired
-    private SysConfigService configService;
+    private SysConfService sysConfService;
 
     @Autowired
     private SysApiKeyService sysApiKeyService;
@@ -48,7 +48,7 @@ public class LoginSessionCleanJob extends QuartzJobBean {
         if (BooleanUtil.negate(isLeader)) return;
 
         //获取 session 过期时间
-        String sessionTimeOut = StrUtil.emptyToDefault(configService.getValue(Constant.SYSCONFIG_SESSION_TIMEOUT_KEY), "30");
+        String sessionTimeOut = StrUtil.emptyToDefault(sysConfService.getValue(Constant.SYSCONFIG_SESSION_TIMEOUT_KEY), "30");
 
         //获取所有的 apikey
         List<SysApiKey> apiKeyList = sysApiKeyService.list();

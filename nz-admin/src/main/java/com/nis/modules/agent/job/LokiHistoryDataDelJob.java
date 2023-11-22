@@ -22,8 +22,7 @@ import com.nis.common.utils.Constant;
 import com.nis.common.utils.JSONUtil;
 import com.nis.common.utils.Tool;
 import com.nis.modules.election.dao.LeaderElectionDao;
-import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -32,8 +31,6 @@ import org.springframework.scheduling.quartz.QuartzJobBean;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @DisallowConcurrentExecution
 public class LokiHistoryDataDelJob extends QuartzJobBean {
@@ -45,7 +42,7 @@ public class LokiHistoryDataDelJob extends QuartzJobBean {
     private static final Log log = Log.get();
 
     @Autowired
-    private SysConfigService sysConfigService;
+    private SysConfService sysConfService;
 
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
@@ -77,18 +74,17 @@ public class LokiHistoryDataDelJob extends QuartzJobBean {
     /**
      * buidl buildAmazonS3Client
      *
-     * @param sysConfigMap
      * @return
      */
-    private AmazonS3 buildAmazonS3Client(Map<String, String> sysConfigMap) {
+    private AmazonS3 buildAmazonS3Client() {
         log.info("[buildAmazonS3Client] [build Amazon S3 Client] [begin]");
-        String connectionScheme = sysConfigMap.get(Constant.LOKI_MONITOR_SCHEME);
+        String connectionScheme = sysConfService.getValue(Constant.LOKI_MONITOR_SCHEME);
         connectionScheme = StrUtil.isEmpty(connectionScheme) ? "http" : connectionScheme;
 
-        String minioEndpoint = sysConfigMap.get(Constant.SYSCONFIG_KEY_LOGS_STORAGE_S3_ENDPOINT);
-        String accessKey = sysConfigMap.get(Constant.SYSCONFIG_KEY_LOGS_STORAGE_S3_ACCESS_KEY);
-        String secretKey = sysConfigMap.get(Constant.SYSCONFIG_KEY_LOGS_STORAGE_S3_SECRET_ACCESS_KEY);
-        String regionStr = sysConfigMap.get(Constant.SYSCONFIG_KEY_LOGS_STORAGE_S3_REGION);
+        String minioEndpoint = sysConfService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_S3_ENDPOINT);
+        String accessKey = sysConfService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_S3_ACCESS_KEY);
+        String secretKey = sysConfService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_S3_SECRET_ACCESS_KEY);
+        String regionStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_S3_REGION);
 
         AWSCredentials credentials = new BasicAWSCredentials(accessKey, secretKey);
         ClientConfiguration clientConfig = new ClientConfiguration();
@@ -111,11 +107,8 @@ public class LokiHistoryDataDelJob extends QuartzJobBean {
      * 通过对 minio bucket 设置生命周期实现清理过期数据
      */
     public void lokiStorageRetention() {
-        List<SysConfigEntity> sysConfigList = sysConfigService.list();
-        Map<String, String> sysConfigMap = sysConfigList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
-
         // logs storage 标识 1: 本地文件存储，2：S3对象存储
-        String logsStorageType = sysConfigMap.get(Constant.SYSCONFIG_KEY_LOGS_STORAGE_TYPE);
+        String logsStorageType = sysConfService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_TYPE);
         logsStorageType = StrUtil.emptyToDefault(logsStorageType, "1");
 
         log.info("[lokiStorageRetention] [begin] [logs_storage_type: {}]", logsStorageType);
@@ -125,15 +118,15 @@ public class LokiHistoryDataDelJob extends QuartzJobBean {
         }
 
         // build Amazon S3 Client
-        AmazonS3 s3Client = this.buildAmazonS3Client(sysConfigMap);
+        AmazonS3 s3Client = this.buildAmazonS3Client();
 
-        String bucketName = sysConfigMap.get(Constant.SYSCONFIG_KEY_LOGS_STORAGE_S3_BUCKET);
+        String bucketName = sysConfService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_S3_BUCKET);
         boolean doesBucketExistV2 = s3Client.doesBucketExistV2(bucketName);
         log.info("[lokiStorageRetention] [bucket: {}] [exist: {}]", bucketName, doesBucketExistV2);
 
         if (doesBucketExistV2) {
             // 日志存储天数，默认 7 天
-            String retentionDayStr = sysConfigMap.get(Constant.SYSCONFIG_KEY_LOGS_STORAGE_RETENTION);
+            String retentionDayStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_RETENTION);
             Integer retentionDay = Integer.valueOf(StrUtil.emptyToDefault(retentionDayStr, "7"));
 
             // Retrieve the configuration.

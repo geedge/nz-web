@@ -6,7 +6,6 @@ import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
@@ -18,11 +17,10 @@ import com.nis.modules.asset.service.AssetBrandService;
 import com.nis.modules.asset.service.AssetModelService;
 import com.nis.modules.asset.service.AssetTypeConfService;
 import com.nis.modules.sys.dao.SnmpMibDao;
-import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.MmMib;
 import com.nis.modules.sys.entity.SnmpMib;
-import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SnmpMibService;
+import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import net.percederberg.mibble.Mib;
 import net.percederberg.mibble.MibLoader;
@@ -51,7 +49,7 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
     private SnmpMibDao snmpMibDao;
 
     @Autowired
-    private SysConfigDao sysConfigDao;
+    private SysConfService sysConfService;
 
     @Autowired
     private AssetModelService assetModelService;
@@ -131,8 +129,8 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
     private void copyMibFileForGenerator(MultipartFile mibFile) {
         if (mibFile != null) {
             // 取出generator路径
-            SysConfigEntity entity = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_GENERATOR_PATH));
-            String mibsPath = entity.getParamValue() + File.separator + "mibs";
+            String generatorPath = sysConfService.getValue(Constant.SYSCONFIG_KEY_GENERATOR_PATH);
+            String mibsPath = generatorPath + File.separator + "mibs";
             try {
                 File dest = new File(mibsPath + File.separator + mibFile.getOriginalFilename());
                 FileUtils.copyInputStreamToFile(mibFile.getInputStream(), dest);

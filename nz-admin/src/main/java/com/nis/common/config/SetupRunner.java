@@ -17,7 +17,7 @@ import com.nis.modules.report.job.ReportJobManager;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.job.SysBackJobManager;
 import com.nis.modules.sys.service.LicenseService;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.modules.vsys.backend.VsysTaskConfigThread;
@@ -54,7 +54,7 @@ public class SetupRunner implements CommandLineRunner{
 	private String compileType;
     
     @Autowired
-    SysConfigService sysConfigService;
+	SysConfService sysConfService;
 
     @Autowired
     SysUserService sysUserService;
@@ -86,6 +86,10 @@ public class SetupRunner implements CommandLineRunner{
 		}
 		log.info("Setup inited {}", inited);
 
+		// 加载系统配置到缓存中
+		sysConfService.reloadSysConfigToCache();
+		log.info("Setup load SysConfig To Cache finished");
+
 		// 加载已有 dashboard report job type = DASHBOARD
 		log.info("Setup dashboard report job begin...");
 		List<VisualDashboard> dashboardList = dashboardService.list(new LambdaQueryWrapper<VisualDashboard>().eq(VisualDashboard::getType, DashboardConstant.Type.DASHBOARD.getValue()));
@@ -102,7 +106,7 @@ public class SetupRunner implements CommandLineRunner{
 
 
 		log.info("Setup sys-backup job begin...");
-		String backupConfigJsonStr = sysConfigService.getValue("backup_config");
+		String backupConfigJsonStr = sysConfService.getValue("backup_config");
 		if (StrUtil.isNotEmpty(backupConfigJsonStr)) {
 			String state = JSONPath.read(backupConfigJsonStr, "state").toString();
 			if (Tool.StrUtil.equalsIgnoreCase("1", StrUtil.nullToDefault(state, "1"))) {
@@ -122,7 +126,7 @@ public class SetupRunner implements CommandLineRunner{
 		if (inited == 1) {
 			log.info(" inited = {}	, init system config license_token", inited);
 			// 创建设备16位数字的license token
-			String licenseToken = sysConfigService.getValue("license_token");
+			String licenseToken = sysConfService.getValue("license_token");
 			if(ToolUtil.isEmpty(licenseToken)|| ! licenseToken.startsWith("GDNT-")||licenseToken.length()!=21) {
 				int random = (int) (Math.random()*9+1);
 		        String valueOf = String.valueOf(random);
@@ -133,7 +137,7 @@ public class SetupRunner implements CommandLineRunner{
 		            hashCode = -hashCode;
 		        }
 		        licenseToken = StrUtil.concat(true, "GDNT-",valueOf,String.format("%015d", hashCode));
-		        sysConfigService.updateValueByKey("license_token",licenseToken);
+				sysConfService.updateValueByKey("license_token", licenseToken);
 			}
 		}
 		File file = Tool.FileUtil.file(tmpDir, Constant.SETUP_FILE_NAME);
@@ -142,9 +146,8 @@ public class SetupRunner implements CommandLineRunner{
 			log.info("start inited setup");
 			String jsonStr = Tool.FileUtil.readUtf8String(file);
 	        SetupEntity setupEntity = Tool.JSONUtil.toBean(jsonStr, SetupEntity.class);
-	        sysConfigService.updateValueByKey("alert_api",setupEntity.getSystem().getAlertPath()==null ? "":setupEntity.getSystem().getAlertPath());
-//	        sysConfigService.updateValueByKey("alert_path_prefix",setupEntity.getSystem().getAlertPrefix());
-	        sysConfigService.updateValueByKey("prometheus_federation_enabled",setupEntity.getSystem().getFederationEnabled());
+			sysConfService.updateValueByKey("alert_api",setupEntity.getSystem().getAlertPath()==null ? "":setupEntity.getSystem().getAlertPath());
+			sysConfService.updateValueByKey("prometheus_federation_enabled",setupEntity.getSystem().getFederationEnabled());
 	        log.info("update db config");
 	        SysUserEntity sysUser =  sysUserService.getById(adminId);
 	        sysUser.setId(Long.parseLong(adminId));

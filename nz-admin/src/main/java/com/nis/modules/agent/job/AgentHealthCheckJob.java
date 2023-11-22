@@ -11,7 +11,7 @@ import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.service.AgentService;
 import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.election.dao.LeaderElectionDao;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import org.apache.commons.lang3.time.StopWatch;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
@@ -32,7 +32,7 @@ public class AgentHealthCheckJob extends QuartzJobBean {
 	@Autowired
 	private AgentService agentService;
 	@Autowired
-	private SysConfigService configService;
+	private SysConfService sysConfService;
 	@Autowired
 	private RedisTemplate redisTemplate;
 	private static ExecutorService exec = Executors.newCachedThreadPool();
@@ -73,7 +73,7 @@ public class AgentHealthCheckJob extends QuartzJobBean {
 	@SuppressWarnings("unchecked")
 	public void updateAgentStatus() {
 		List<Agent> allAgents = agentService.list();
-		String metricsStorageType = configService.getValueOrDefault(Constant.SYSCONFIG_KEY_METRICS_STORAGE_TYPE, "1");
+		String metricsStorageType = sysConfService.getValueOrDefault(Constant.SYSCONFIG_KEY_METRICS_STORAGE_TYPE, "1");
 		allAgents.stream().forEach(agent -> agent.setStatus(null));
 
 		List<Callable<Agent>> tasks = new ArrayList<>();

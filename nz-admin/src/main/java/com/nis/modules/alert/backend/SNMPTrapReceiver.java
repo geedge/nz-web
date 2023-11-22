@@ -10,7 +10,7 @@ import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.service.AssetAssetService;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import org.snmp4j.*;
 import org.snmp4j.mp.MPv1;
 import org.snmp4j.mp.MPv2c;
@@ -50,7 +50,7 @@ public class SNMPTrapReceiver implements CommandResponder, ApplicationRunner {
 	@Autowired
 	private AlertMessageService messageService;
 	@Autowired
-	private SysConfigService configService;
+	private SysConfService sysConfService;
 	@Autowired
 	private AssetAssetService assetService;
 
@@ -59,7 +59,7 @@ public class SNMPTrapReceiver implements CommandResponder, ApplicationRunner {
 
 	@Override
 	public void run(ApplicationArguments args) throws Exception {
-		String port = configService.getValueOrDefault("snmp_trap_listen_port", "162");
+		String port = sysConfService.getValueOrDefault("snmp_trap_listen_port", "162");
 		this.start(Integer.valueOf(port));
 	}
 

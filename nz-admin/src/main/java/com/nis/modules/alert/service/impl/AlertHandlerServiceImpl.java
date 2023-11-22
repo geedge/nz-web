@@ -33,7 +33,7 @@ import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.tool.service.FullTextSearchService;
 import com.nis.setup.controller.TimezoneController;
 import jakarta.servlet.http.HttpServletResponse;
@@ -77,7 +77,7 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	@Autowired
 	private AlertSilenceDao alertSilenceDao;
 	@Autowired
-	private SysConfigService sysConfigService;
+	private SysConfService sysConfService;
 	@Autowired
 	private BasicImportAndExportServices basicImportAndExportServices;
 	@Autowired
@@ -542,7 +542,7 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 
 	@Override
 	public void exportMessage(HttpServletResponse response, Map<String, Object> params) throws IOException {
-		String maxLine = sysConfigService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
+		String maxLine = sysConfService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
 		long exportMaxLine = Integer.parseInt(StrUtil.emptyToDefault(maxLine, "10000"));
 		// 导出最大条数限制
 		Object limit = params.get(Constant.LIMIT) == null ? Constant.PAGESIZE : params.get(Constant.LIMIT);
@@ -560,7 +560,7 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 
 		List<List<String>> exportDataList = this.handleExportDataList(list);
 
-		String sysHeaderJsonStr = sysConfigService.getValue("alert_export_header");
+		String sysHeaderJsonStr = sysConfService.getValue("alert_export_header");
 		String fileName = "AlertMessages";
 		String formatStr = params.get("format").toString();
 		basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, formatStr, fileName);
@@ -569,7 +569,7 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	private List<List<String>> handleExportDataList(List<AlertMessageEntity> list) {
 		List<List<String>> exportDataList = new ArrayList<>();
 
-		TimezoneController.Timezone sysTimezone = TimezoneController.queryTimezoneByName(sysConfigService.getValue("timezone"));
+		TimezoneController.Timezone sysTimezone = TimezoneController.queryTimezoneByName(sysConfService.getValue("timezone"));
 		DateFormat dateformat = CommonUtils.getDateFormatByOffset(sysTimezone.getOffset(), "yyyy-MM-dd'T'HH:mm:ssZ");
 
 		for (AlertMessageEntity alertMessage : list) {

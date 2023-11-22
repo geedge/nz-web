@@ -41,4 +41,15 @@ public interface SysConfService extends IService<SysConfigEntity> {
 
     Map<String, Object> querySysConfig(String configKey);
 
+    /**
+     * 根据key，更新value
+     */
+    void updateValueByKey(String key, String value);
+
+    void updateValueByKey(String key, String value, String remark);
+
+    String getDataBasesVersion();
+
+    void reloadSysConfigToCache();
+
 }

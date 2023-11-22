@@ -30,7 +30,7 @@ import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
@@ -67,7 +67,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     private AlertNotifyMethodService methodService;
 
     @Autowired
-    private SysConfigService sysConfigService;
+    private SysConfService sysConfService;
 
     @Autowired
     private AlertMessageService alertMessageService;
@@ -207,12 +207,12 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
         // 设置 interval timeout 值
         if (alertRule.getInr() != null && alertRule.getInr() < 15) {
-            Integer defaultScrapeInterval = Integer.valueOf(sysConfigService.getValue(Constant.SYSCONFIG_KEY_SCRAPEINTERVAL));
+            Integer defaultScrapeInterval = Integer.valueOf(sysConfService.getValue(Constant.SYSCONFIG_KEY_SCRAPEINTERVAL));
             alertRule.setInr(defaultScrapeInterval);
         }
 
         if (alertRule.getTimeout() != null && alertRule.getTimeout() < 15) {
-            Integer defaultScrapeTimeout = Integer.valueOf(sysConfigService.getValue(Constant.SYSCONFIG_KEY_SCRAPETIMEOUT));
+            Integer defaultScrapeTimeout = Integer.valueOf(sysConfService.getValue(Constant.SYSCONFIG_KEY_SCRAPETIMEOUT));
             alertRule.setTimeout(defaultScrapeTimeout);
         }
 
@@ -262,14 +262,14 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
     @Override
     public void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException {
-        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_ALERTRULE_EXPORT_HEADER);
+        String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_ALERTRULE_EXPORT_HEADER);
         String fileName = "AlertRuleTemplate";
         basicImportAndExportServices.getTemplate(sysHeaderJsonStr, format, fileName, response);
     }
 
     @Override
     public Map importAlertRuleData(MultipartFile multipartFile, Map<String, Object> params) throws IOException {
-        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_ALERTRULE_EXPORT_HEADER);
+        String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_ALERTRULE_EXPORT_HEADER);
         Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
         List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
 
@@ -476,7 +476,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 failContentList.add(dataMap);
             }
         }
-        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_ALERTRULE_EXPORT_HEADER);
+        String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_ALERTRULE_EXPORT_HEADER);
         String failedContentFileBase64Str = basicImportAndExportServices.getFailedContentFileBase64Str(failContentList, sysHeaderJsonStr, MapUtil.getStr(params, "fileExtension"));
         //  返回统计信息
         Map<Object, Object> statMap = Tool.MapUtil.builder()
@@ -500,14 +500,14 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         Integer inr = rule.getInr();
         if (ObjectUtil.isNotEmpty(inr)) {
             if (inr < 15) {
-                inr = Integer.valueOf(sysConfigService.getValue(Constant.SYSCONFIG_KEY_SCRAPEINTERVAL));
+                inr = Integer.valueOf(sysConfService.getValue(Constant.SYSCONFIG_KEY_SCRAPEINTERVAL));
             }
             rule.setInr(inr);
         }
         Integer timeout = rule.getTimeout();
         if (ObjectUtil.isNotEmpty(timeout)) {
             if (timeout < 15) {
-                timeout = Integer.valueOf(sysConfigService.getValue(Constant.SYSCONFIG_KEY_SCRAPETIMEOUT));
+                timeout = Integer.valueOf(sysConfService.getValue(Constant.SYSCONFIG_KEY_SCRAPETIMEOUT));
             }
             rule.setTimeout(timeout);
         }
@@ -533,7 +533,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
     @Override
     public void export(HttpServletResponse response, Map<String, Object> params) throws IOException {
-        String maxLine = sysConfigService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
+        String maxLine = sysConfService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
         long exportMaxLine = Integer.parseInt(StrUtil.emptyToDefault(maxLine, "10000"));
         // 导出最大条数限制
         Object limit = params.get(Constant.LIMIT) == null ? Constant.PAGESIZE : params.get(Constant.LIMIT);
@@ -553,7 +553,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
         List<List<String>> exportDataList = this.handleExportDataList(list);
 
-        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_ALERTRULE_EXPORT_HEADER);
+        String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_ALERTRULE_EXPORT_HEADER);
         String fileName = "AlterRules";
         String formatStr = params.get("format").toString();
         basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, formatStr, fileName);
@@ -838,7 +838,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         if (Tool.ObjectUtil.equal(1, rule.getSchedEnable())) {
             List<String> schedDayList = Tool.StrUtil.split(rule.getSchedDays(), ",");
 
-            String timezone = sysConfigService.getValue("timezone");
+            String timezone = sysConfService.getValue("timezone");
             // 当前时间-带时区
             LocalDateTime now = LocalDateTime.now(ZoneId.of(timezone));
             String currentWeek = Tool.StrUtil.toString((now.getDayOfWeek().getValue() % 7) + 1);

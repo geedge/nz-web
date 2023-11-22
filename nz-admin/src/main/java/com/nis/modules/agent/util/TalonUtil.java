@@ -10,7 +10,7 @@ import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
 import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.service.PromApiService;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpEntity;
@@ -34,7 +34,7 @@ public class TalonUtil {
 
     private static RestTemplate restTemplate;
     private static PromApiService promApiService;
-    private static SysConfigService sysConfigService;
+    private static SysConfService sysConfService;
 
     /**
      * 构建  UrlQuery
@@ -67,7 +67,7 @@ public class TalonUtil {
      * @return
      */
     public static <T> T getForObject(String targetUrl, String targetToken, String path, Map requestParam, Class<T> responseType) {
-        String talonOshiMode = sysConfigService.getValueOrDefault("nz_talon_oshi_mode", "1");
+        String talonOshiMode = sysConfService.getValueOrDefault("nz_talon_oshi_mode", "1");
         switch (talonOshiMode) {
             case "1": {
                 // 通过 agent 代理访问 talon 接口
@@ -95,7 +95,7 @@ public class TalonUtil {
      */
     public static <T> T postForObject(String targetUrl, String targetToken, String path, Map requestParam, Object body,
                                       Class<T> responseType) {
-        String talonOshiMode = sysConfigService.getValueOrDefault("nz_talon_oshi_mode", "1");
+        String talonOshiMode = sysConfService.getValueOrDefault("nz_talon_oshi_mode", "1");
         switch (talonOshiMode) {
             case "1": {
                 // 通过 agent 代理访问 talon 接口
@@ -168,7 +168,7 @@ public class TalonUtil {
         UrlQuery urlQuery = TalonUtil.buildUrlQuery(requestParam);
 
         Agent server = promApiService.getOneAvaliableGlobalAgent();
-        String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
+        String agentPath = sysConfService.getValue(Constant.CONFAGENT_PATH);
 
         /*UrlBuilder urlBuilder = UrlBuilder.create()
                 .setScheme(server.getProtocol())
@@ -232,7 +232,7 @@ public class TalonUtil {
                 throw new NZException("file download error", 500);
             }
 
-            String talonRpmNameRegexJsonStr = sysConfigService.getValue("talon_name");
+            String talonRpmNameRegexJsonStr = sysConfService.getValue("talon_name");
             JSONObject jsonObject = JSONUtil.parseObj(talonRpmNameRegexJsonStr);
 
             String talonNameRegex = (String) jsonObject.get(os);
@@ -265,8 +265,8 @@ public class TalonUtil {
     }
 
     @Autowired
-    public void setSysconfigService(SysConfigService sysConfigService) {
-        TalonUtil.sysConfigService = sysConfigService;
+    public void setSysConfService(SysConfService sysConfService) {
+        TalonUtil.sysConfService = sysConfService;
     }
 
     @Autowired

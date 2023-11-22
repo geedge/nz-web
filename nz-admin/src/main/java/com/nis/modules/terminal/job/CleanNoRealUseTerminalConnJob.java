@@ -8,7 +8,7 @@ import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.election.dao.LeaderElectionDao;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.terminal.backend.TerminalSession;
 import org.apache.commons.net.telnet.TelnetClient;
 import org.quartz.DisallowConcurrentExecution;
@@ -33,7 +33,7 @@ public class CleanNoRealUseTerminalConnJob extends QuartzJobBean {
     private final Log log = Log.get();
 
     @Autowired
-    private SysConfigService sysConfigService;
+    private SysConfService sysConfService;
 
     @SuppressWarnings("unchecked")
     @Override
@@ -71,7 +71,7 @@ public class CleanNoRealUseTerminalConnJob extends QuartzJobBean {
         }
 
         // system session timeout (minute)
-        String sessionTimeoutConfStr = sysConfigService.getValue(Constant.SYSCONFIG_SESSION_TIMEOUT_KEY);
+        String sessionTimeoutConfStr = sysConfService.getValue(Constant.SYSCONFIG_SESSION_TIMEOUT_KEY);
         Integer sessionTimeout = Integer.valueOf(sessionTimeoutConfStr);
 
         long currentSeconds = Tool.DateUtil.currentSeconds();

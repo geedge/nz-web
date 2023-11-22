@@ -7,7 +7,7 @@ import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,7 +26,7 @@ public class SysUserController extends AbstractController {
 	private SysUserService sysUserService;
 
 	@Autowired
-	private SysConfigService sysConfigService;
+	private SysConfService sysConfService;
 	
 	/**
 	 * 所有用户列表
@@ -72,7 +72,7 @@ public class SysUserController extends AbstractController {
 	public R info(@PathVariable("id") Long id){
 		ValidateUtils.is(id).notNull(RCode.SYS_USER_ID_ISNULL);
 		SysUserEntity user = sysUserService.queryUserInfo(id);
-		String mfaAuthEnable = sysConfigService.getValueOrDefault("mfa_auth_enable", "0");
+		String mfaAuthEnable = sysConfService.getValueOrDefault("mfa_auth_enable", "0");
 		user.setMfaAuthEnable(Integer.valueOf(mfaAuthEnable));
 		return R.ok().put("user", user);
 	}
@@ -100,7 +100,7 @@ public class SysUserController extends AbstractController {
 	@RequestMapping("/disableMfa")
 	public R disableMfa() {
 		Long userId = this.getUserId();
-		String mfaAuthEnable = sysConfigService.getValueOrDefault("mfa_auth_enable", "0");
+		String mfaAuthEnable = sysConfService.getValueOrDefault("mfa_auth_enable", "0");
 		if(Tool.StrUtil.equals("1", mfaAuthEnable)) {
 			throw new NZException(RCode.SYS_USER_DISABLE_MFA_ERROR);
 		}

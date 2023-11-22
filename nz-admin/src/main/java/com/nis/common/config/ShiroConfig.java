@@ -1,16 +1,19 @@
 package com.nis.common.config;
 
 import Aladdin.HaspStatus;
-import cn.hutool.core.util.StrUtil;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.interceptor.TokenCheckFilter;
-import com.nis.common.utils.*;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.Tool;
 import com.nis.modules.metric.dto.NezhaMetrics;
 import com.nis.modules.sys.dao.SysApiKeyDao;
-import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.LicenseService;
-import com.nis.modules.sys.service.SysConfigService;
-import com.nis.modules.sys.shiro.*;
+import com.nis.modules.sys.service.SysConfService;
+import com.nis.modules.sys.shiro.MariadbSessionDao;
+import com.nis.modules.sys.shiro.MariadbSessionFactory;
+import com.nis.modules.sys.shiro.MariadbSessionManager;
+import com.nis.modules.sys.shiro.UserRealm;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.Filter;
 import jakarta.servlet.ServletRequest;
@@ -51,7 +54,7 @@ public class ShiroConfig {
 	private SysApiKeyDao sysApiKeyDao;
 
 	@Autowired
-	private SysConfigService sysconfigService;
+	private SysConfService sysConfService;
 
 	@Value("${compileType:release}")
 	private String compileType;
@@ -245,15 +248,8 @@ public class ShiroConfig {
 	}
 
 	private Integer getTimeOutData() {
-		SysConfigEntity configEntity = sysconfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda()
-				.eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_SESSION_TIMEOUT_KEY));
-		Integer loginExpiration = 30;
-		if (ToolUtil.isNotEmpty(configEntity)) {
-			loginExpiration = StrUtil.isNotBlank(configEntity.getParamValue())
-					? Integer.valueOf(configEntity.getParamValue())
-					: loginExpiration;
-		}
-		return loginExpiration;
+		String loginExpiration = sysConfService.getValueOrDefault(Constant.SYSCONFIG_SESSION_TIMEOUT_KEY, "30");
+		return Integer.valueOf(loginExpiration);
 	}
 
 }

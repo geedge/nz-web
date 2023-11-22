@@ -40,7 +40,7 @@ import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
@@ -89,7 +89,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
     private AlertMessageService alertMessageService;
 
     @Autowired
-    private SysConfigService sysConfigService;
+    private SysConfService sysConfService;
 
     @Autowired
     private BasicImportAndExportServices basicImportAndExportServices;
@@ -469,14 +469,14 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
 
     @Override
     public void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException {
-        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_DC_EXPORT_HEADER);
+        String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_DC_EXPORT_HEADER);
         String fileName = "DatacenterTemplate";
         basicImportAndExportServices.getTemplate(sysHeaderJsonStr, format, fileName, response);
     }
 
     @Override
     public Map importDcData(MultipartFile multipartFile, Map<String, Object> params) throws IOException {
-        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_DC_EXPORT_HEADER);
+        String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_DC_EXPORT_HEADER);
         Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
         List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
 
@@ -588,7 +588,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
                 failContentList.add(dataMap);
             }
         }
-        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_DC_EXPORT_HEADER);
+        String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_DC_EXPORT_HEADER);
         String failedContentFileBase64Str = basicImportAndExportServices.getFailedContentFileBase64Str(failContentList, sysHeaderJsonStr, MapUtil.getStr(params, "fileExtension"));
         //  返回统计信息
         Map<Object, Object> statMap = Tool.MapUtil.builder()
@@ -611,7 +611,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
 
         // 经纬度存在空值，则使用系统默认值填充
         if (BooleanUtil.or(ToolUtil.isEmpty(dc.getLatitude()), ToolUtil.isEmpty(dc.getLongitude()))) {
-            String mapCenterConfigJsonStr = sysConfigService.getValue("map_center_config");
+            String mapCenterConfigJsonStr = sysConfService.getValue("map_center_config");
             Map<String, Object> map = JSONObject.parseObject(mapCenterConfigJsonStr, Map.class);
             String longitude = (String) map.get("longitude");
             String latitude = (String) map.get("latitude");
@@ -647,7 +647,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
 
     @Override
     public void export(HttpServletResponse response, Map<String, Object> params) throws IOException {
-        String maxLine = sysConfigService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
+        String maxLine = sysConfService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
         long exportMaxLine = Integer.parseInt(StrUtil.emptyToDefault(maxLine, "10000"));
         // 导出最大条数限制
         Object limit = params.get(Constant.LIMIT) == null ? Constant.PAGESIZE : params.get(Constant.LIMIT);
@@ -664,7 +664,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
         List<Dc> list = (List<Dc>) page.getList();
         List<List<String>> exportDataList = this.handleExportDataList(list);
 
-        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_DC_EXPORT_HEADER);
+        String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_DC_EXPORT_HEADER);
         String fileName = "Datacenters";
         String formatStr = params.get("format").toString();
         basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, formatStr, fileName);

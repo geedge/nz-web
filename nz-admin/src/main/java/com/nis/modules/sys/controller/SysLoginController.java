@@ -5,7 +5,6 @@ import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.google.code.kaptcha.Constants;
 import com.google.code.kaptcha.Producer;
 import com.nis.common.annotation.SysLog;
@@ -13,10 +12,9 @@ import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
 import com.nis.modules.sys.dao.SysLoginSessionDao;
 import com.nis.modules.sys.entity.AuthTokenEntity;
-import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.redis.SysLoginRedis;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.setup.controller.TimezoneController;
@@ -40,7 +38,6 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -55,13 +52,11 @@ public class SysLoginController extends AbstractController {
 	@Autowired
 	private RedisTemplate<String,String> redisTemplate;
 	@Autowired
-	private SysConfigService configService;
+	private SysConfService sysConfService;
 	@Autowired
 	private SysUserService sysUserService;
 	@Autowired
 	private SysLoginRedis sysLoginRedis;
-	@Autowired
-	private SysConfigService sysConfigService;
 	@Autowired
 	private SysLoginSessionDao sysLoginSessionDao;
 	
@@ -106,7 +101,7 @@ public class SysLoginController extends AbstractController {
 			String loginToken = CommonUtils.uuid();
 			subject.getSession().setAttribute("token", loginToken);
 			String sessionId = subject.getSession().getId().toString();
-			String mfaAuthEnableStr = configService.getValueOrDefault("mfa_auth_enable", "0");
+			String mfaAuthEnableStr = sysConfService.getValueOrDefault("mfa_auth_enable", "0");
 			int mfaAuthEnable = StrUtil.isEmpty(mfaAuthEnableStr) ? 0 : Integer.valueOf(mfaAuthEnableStr);
 			//登录成功后: sys_user.mfa_level > 0 || sys_config.mfa_auth_enable == 1 则响应 authFlag=1 & 生成 authToken （临时token，储存到redis，过期时间 30min）
 			SysUserEntity u = sysUserService.getOne(new QueryWrapper<SysUserEntity>().lambda().eq(SysUserEntity::getUsername, username));
@@ -144,16 +139,17 @@ public class SysLoginController extends AbstractController {
 			result.put("user", u);
 			// 查询系统配置信息
 			String[] paramkeys = {"system_name", "system_logo", "timezone", "default_cabinet_usize", "map_center_config", "unsaved_change","prometheus_federation_enabled"};
-			List<SysConfigEntity> configEntityList = configService.list(new LambdaUpdateWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey, paramkeys));
-			for (SysConfigEntity configEntity : configEntityList) {
-				if ("timezone".equals(configEntity.getParamKey())) {
-					TimezoneController.Timezone timezoneEntity = TimezoneController.queryTimezoneByName(configEntity.getParamValue());
+			Map<String, String> sysConfMap = sysConfService.batchQuery(paramkeys);
+			for (Map.Entry<String, String> entry : sysConfMap.entrySet()) {
+				String key = entry.getKey();
+				String value = entry.getValue();
+				if ("timezone".equals(key)) {
+					TimezoneController.Timezone timezoneEntity = TimezoneController.queryTimezoneByName(value);
 					result.put("offset", timezoneEntity.getOffset());
 				}
-				result.put(ToolUtil.toCamelCase(configEntity.getParamKey()), configEntity.getParamValue());
+				result.put(ToolUtil.toCamelCase(key), value);
 			}
-
-			String pinPolicy = sysConfigService.getValue("pin_policy");
+			String pinPolicy = sysConfService.getValue("pin_policy");
 			if(ToolUtil.isNotEmpty(pinPolicy)) {
 				Map<String,Object> pinPolicyInfo = (Map<String, Object>) JSON.parse(pinPolicy);
 				// 密码有效时间

@@ -14,7 +14,7 @@ import com.nis.common.utils.Tool;
 import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.service.AgentService;
 import com.nis.modules.agent.util.AgentUtil;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -40,7 +40,7 @@ public class AgentProxyController {
     private AgentService agentService;
 
     @Autowired
-    private SysConfigService configService;
+    private SysConfService sysConfService;
 
     /**
      * prometheus ready 接口
@@ -460,7 +460,7 @@ public class AgentProxyController {
      * @return
      */
     public String buildUrl(Agent server, String path){
-        String agentPath = configService.getValueOrDefault(Constant.CONFAGENT_PATH, "");
+        String agentPath = sysConfService.getValueOrDefault(Constant.CONFAGENT_PATH, "");
         path = path.startsWith("/") ? (String.format("%s%s", agentPath, path))
                 : (String.format("%s/%s", agentPath, path));
         UrlBuilder urlString = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())

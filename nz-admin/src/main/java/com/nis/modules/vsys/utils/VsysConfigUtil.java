@@ -8,7 +8,7 @@ import cn.hutool.http.HttpStatus;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONPath;
 import com.nis.common.utils.Tool;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.*;
@@ -26,7 +26,7 @@ public class VsysConfigUtil {
     private static Log log = Log.get();
 
     private static RestTemplate restTemplate;
-    private static SysConfigService sysConfigService;
+    private static SysConfService sysConfService;
 
     /**
      * build HttpEntity
@@ -36,7 +36,7 @@ public class VsysConfigUtil {
      * @return
      */
     private static HttpEntity buildHttpEntity(Map<Object, Object> body) {
-        String vsysRestconfAuthJsonStr = sysConfigService.getValue(VsysConstant.VSYS_RESTCONF_AUTH);
+        String vsysRestconfAuthJsonStr = sysConfService.getValue(VsysConstant.VSYS_RESTCONF_AUTH);
         String type = JSONPath.read(vsysRestconfAuthJsonStr, "type").toString();
 
         HttpHeaders headers = new HttpHeaders();
@@ -62,7 +62,7 @@ public class VsysConfigUtil {
      * @return
      */
     private static String buildUrl(String host, String path) {
-        String vsysRestconfAuthJsonStr = sysConfigService.getValue(VsysConstant.VSYS_RESTCONF_AUTH);
+        String vsysRestconfAuthJsonStr = sysConfService.getValue(VsysConstant.VSYS_RESTCONF_AUTH);
         String protocol = JSONPath.read(vsysRestconfAuthJsonStr, "protocol").toString();
         protocol = StrUtil.emptyToDefault(protocol, "http");
 
@@ -87,7 +87,7 @@ public class VsysConfigUtil {
      * @return
      */
     private static String buildUrlWithoutEncode(String host, String path) {
-        String vsysRestconfAuthJsonStr = sysConfigService.getValue(VsysConstant.VSYS_RESTCONF_AUTH);
+        String vsysRestconfAuthJsonStr = sysConfService.getValue(VsysConstant.VSYS_RESTCONF_AUTH);
         String protocol = JSONPath.read(vsysRestconfAuthJsonStr, "protocol").toString();
         protocol = StrUtil.emptyToDefault(protocol, "http");
 
@@ -253,7 +253,7 @@ public class VsysConfigUtil {
     }
 
     @Autowired
-    public void setSysconfigService(SysConfigService sysConfigService) {
-        VsysConfigUtil.sysConfigService = sysConfigService;
+    public void setSysConfService(SysConfService sysConfService) {
+        VsysConfigUtil.sysConfService = sysConfService;
     }
 }

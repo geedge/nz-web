@@ -10,7 +10,7 @@ import com.nis.modules.agent.service.MonitorEventLogService;
 import com.nis.modules.election.dao.LeaderElectionDao;
 import com.nis.modules.sys.entity.SysComponent;
 import com.nis.modules.sys.service.SysComponentService;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -34,7 +34,7 @@ public class SysComponentJob extends QuartzJobBean {
 	@Autowired
 	private SysComponentService sysComponentService;
 	@Autowired
-	private SysConfigService sysConfigService;
+	private SysConfService sysConfService;
 	@Autowired
 	private MonitorEventLogService eventLogService;
 	@Value("${server.host:}")
@@ -86,7 +86,7 @@ public class SysComponentJob extends QuartzJobBean {
 		long ltime = System.currentTimeMillis() - 3 * 60 * 1000;
 		sysComponentService.remove(Wrappers.lambdaQuery(new SysComponent()).lt(SysComponent::getUtime, ltime));
 		// 检查 alert_api是否需要更新
-		String alertApi = sysConfigService.getValue(Constant.ALERT_API);
+		String alertApi = sysConfService.getValue(Constant.ALERT_API);
 		SysComponent sc = sysComponentService.findByUrl(alertApi);
 		if (sc == null) {
 			SysComponent one = sysComponentService.getOne(Wrappers.lambdaQuery(new SysComponent())
@@ -95,7 +95,7 @@ public class SysComponentJob extends QuartzJobBean {
 			if (one != null) {
 				alertApi = String.format("%s://%s:%s", one.getProtocol(), one.getHost(), one.getPort());
 				// update alert_api
-				sysConfigService.updateValueByKey(Constant.ALERT_API, alertApi);
+				sysConfService.updateValueByKey(Constant.ALERT_API, alertApi);
 				// increment monitor_event_log.prometheus
 				eventLogService.increment("prometheus");
 				log.info("update alert api : {}", alertApi);

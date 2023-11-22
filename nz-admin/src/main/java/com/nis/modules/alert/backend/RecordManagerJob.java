@@ -7,7 +7,7 @@ import com.nis.common.utils.Tool;
 import com.nis.modules.agent.service.MonitorEventLogService;
 import com.nis.modules.alert.entity.RecordRuleEntity;
 import com.nis.modules.alert.service.RecordRuleService;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import org.quartz.*;
 import org.quartz.impl.matchers.GroupMatcher;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +38,7 @@ public class RecordManagerJob extends QuartzJobBean {
 	@Autowired
 	private RecordRuleService recordService;
 	@Autowired
-	private SysConfigService configService;
+	private SysConfService sysConfService;
 	private Scheduler scheduler;
 
 	private static final String RECORD_EVENT_LOG_KEY = "record";
@@ -178,7 +178,7 @@ public class RecordManagerJob extends QuartzJobBean {
 		Map<String, RecordRuleEntity> newRecordRuleMap = Tool.MapUtil.newHashMap();
 		if (allRuleList != null) {
 			int defaultInterval = Tool.NumberUtil
-					.parseInt(configService.getValueOrDefault("default_scrape_interval", "30"));
+					.parseInt(sysConfService.getValueOrDefault("default_scrape_interval", "30"));
 			for (RecordRuleEntity entity : allRuleList) {
 				// 判断是否需要设置默认执行周期
 				Integer interval = entity.getInr();

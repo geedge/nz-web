@@ -13,7 +13,7 @@ import com.nis.modules.sys.entity.Signature;
 import com.nis.modules.sys.entity.SysComponent;
 import com.nis.modules.sys.service.LicenseService;
 import com.nis.modules.sys.service.SysComponentService;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
@@ -59,7 +59,7 @@ public class SysLicenseController extends AbstractController {
 	private RestTemplate restTemplate;
 
 	@Autowired
-	private SysConfigService sysConfigService;
+	private SysConfService sysConfService;
 	/**
 	 * 获取license
 	 */
@@ -122,7 +122,7 @@ public class SysLicenseController extends AbstractController {
 			String haspsStr = hasps.asXML();
 			
 			licenseEle.remove(hasps);
-			String licenseToken = sysConfigService.getValue("license_token");
+			String licenseToken = sysConfService.getValue("license_token");
 			LicenseEntity licenseEntity = new LicenseEntity();
 			try {
 				String licenseStr = licenseService.getLicense(); // 已签发 license 信息
@@ -156,7 +156,7 @@ public class SysLicenseController extends AbstractController {
 			
 			// 多个 c2v组织成一个 license 文件
 			String license = licDoc.asXML();
-			String licenseProductName = sysConfigService.getValue("license_product_name");
+			String licenseProductName = sysConfService.getValue("license_product_name");
 			Tool.ResponseUtil.downloadFile(response, String.format("%s-%s-license-apply.xml", licenseProductName, licenseToken),
 					license.getBytes(Constant.DEFAULT_CHARTSET_NAME));
 			return null;
@@ -271,8 +271,8 @@ public class SysLicenseController extends AbstractController {
 		if (license == null) {
 			throw new NZException(RCode.LICENSE_FILE_IS_EMPTY);
 		}
-		String licenseProductName = sysConfigService.getValue("license_product_name");
-		String licenseToken = sysConfigService.getValue("license_token");
+		String licenseProductName = sysConfService.getValue("license_product_name");
+		String licenseToken = sysConfService.getValue("license_token");
 		Tool.ResponseUtil.downloadFile(response, String.format("%s-%s-license-issue.xml", licenseProductName, licenseToken), license.getBytes(Constant.DEFAULT_CHARTSET_NAME));
 	}
 
@@ -291,7 +291,7 @@ public class SysLicenseController extends AbstractController {
 		if(StrUtil.isEmpty(license)) {
 			return;
 		}else {
-			Tool.ResponseUtil.downloadFile(response, String.format("%s-%s-license-issue.xml",  sysConfigService.getValue("license_product_name"), params.get("supportID")),
+			Tool.ResponseUtil.downloadFile(response, String.format("%s-%s-license-issue.xml",  sysConfService.getValue("license_product_name"), params.get("supportID")),
 					license.getBytes(Constant.DEFAULT_CHARTSET_NAME));
 		}
 	}

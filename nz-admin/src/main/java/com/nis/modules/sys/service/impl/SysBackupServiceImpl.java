@@ -65,9 +65,6 @@ public class SysBackupServiceImpl implements SysBackupService {
     private DataSource dataSource;
 
     @Autowired
-    private RedisTemplate redisTemplate;
-
-    @Autowired
     private SysService sysService;
 
     @Value("${nezha.exportMaxSize:10000}")
@@ -83,22 +80,12 @@ public class SysBackupServiceImpl implements SysBackupService {
     @Override
     public void save(Map<String, Object> params) {
         String backupConfigJsonStr = sysConfService.getValue("backup_config");
-        if (ToolUtil.isNotEmpty(backupConfigJsonStr)) {
-            sysConfService.update(new LambdaUpdateWrapper<SysConfigEntity>().set(SysConfigEntity::getParamValue, JSON.toJSONString(params)).eq(SysConfigEntity::getParamKey, "backup_config"));
+        sysConfService.updateValueByKey("backup_config", JSON.toJSONString(params));
 
-            Map oldParamMap = JSONObject.parseObject(StrUtil.emptyToDefault(backupConfigJsonStr, StrUtil.EMPTY_JSON), LinkedHashMap.class);
-            if (!oldParamMap.equals(params)) {
-                redisTemplate.convertAndSend(Constant.BACKUP_TOPIC_NAME, JSONObject.toJSONString(params));
-            }
-        } else {
-            // 新增
-            SysConfigEntity config = new SysConfigEntity();
-            config.setParamKey("backup_config");
-            config.setParamValue(JSON.toJSONString(params));
-            config.setStatus("1");
-            sysConfService.save(config);
-
-            redisTemplate.convertAndSend(Constant.BACKUP_TOPIC_NAME, JSONObject.toJSONString(params));
+        Map oldParamMap = JSONObject.parseObject(StrUtil.emptyToDefault(backupConfigJsonStr, StrUtil.EMPTY_JSON), LinkedHashMap.class);
+        if (!oldParamMap.equals(params)) {
+            // notify message
+            sysService.notifySysMessage(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.SYS_BACKUP.getName(), JSONObject.toJSONString(params));
         }
     }
 

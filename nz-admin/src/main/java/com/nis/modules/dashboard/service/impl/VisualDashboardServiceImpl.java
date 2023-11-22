@@ -138,7 +138,7 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 	private SysDictService sysDictService;
 
 	@Autowired
-	private SysConfigService sysConfigService;
+	private SysConfService sysConfService;
 
 	@Autowired
 	private SysUserStarredService starredService;
@@ -147,7 +147,7 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 	private StatService statService;
 
 	@Autowired
-	private AlertRuleService alertRuleService;
+	private SysService sysService;
 
 	@Override
 	public VisualDashboard queryInfo(Integer id) {
@@ -567,12 +567,12 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 
 			VisualChart chartTemplate = null;
 			if (ObjectUtil.equal(DashboardConstant.VariableType.ASSET.getValue(), varType)) {
-				String configValue = sysConfigService.getValue(Constant.SYSCONFIG_KEY_ASSET_CHART_TPL);
+				String configValue = sysConfService.getValue(Constant.SYSCONFIG_KEY_ASSET_CHART_TPL);
 				chartTemplate = JSONObject.parseObject(configValue, VisualChart.class);
 			}
 
 			if (ObjectUtil.equal(DashboardConstant.VariableType.ENDPOINT.getValue(), varType)) {
-				String configValue = sysConfigService.getValue(Constant.SYSCONFIG_KEY_ENDPOINT_CHART_TPL);
+				String configValue = sysConfService.getValue(Constant.SYSCONFIG_KEY_ENDPOINT_CHART_TPL);
 				chartTemplate = JSONObject.parseObject(configValue, VisualChart.class);
 			}
 
@@ -612,7 +612,8 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 			publishMap.put("dashboardId", dashboard.getId());
 			publishMap.putAll(JSONObject.parseObject(dashboard.getParam().toString(), Map.class));
 
-			redisTemplate.convertAndSend(Constant.REPORT_TOPIC_NAME, JSONObject.toJSONString(publishMap));
+			// notify message
+			sysService.notifySysMessage(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.DASHBOARD_REPORT.getName(), JSONObject.toJSONString(publishMap));
 		}
 	}
 
@@ -681,7 +682,8 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 			publishMap.put("dashboardId", newDashboard.getId());
 			publishMap.putAll(newParamMap);
 
-			redisTemplate.convertAndSend(Constant.REPORT_TOPIC_NAME, JSONObject.toJSONString(publishMap));
+			// notify message
+			sysService.notifySysMessage(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.DASHBOARD_REPORT.getName(), JSONObject.toJSONString(publishMap));
 		}
 	}
 
@@ -706,7 +708,7 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 	public void getTemplateByLanguage(HttpServletResponse response, String format, String type) throws IOException {
 		// 按类型获取表头模板信息
 		String configKey = this.getChartTemplateConfigKeyByType(type);
-		String sysHeaderJsonStr = sysConfigService.getValue(configKey);
+		String sysHeaderJsonStr = sysConfService.getValue(configKey);
 		String fileName = "DashboardChartTemplate";
 		basicImportAndExportServices.getTemplate(sysHeaderJsonStr, format, fileName, response);
 	}
@@ -723,9 +725,9 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 		}
 
 		// 表头信息 国际化之后的
-		String dashboardHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_DASHBOARD_EXPORT_HEADER);
+		String dashboardHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_DASHBOARD_EXPORT_HEADER);
 		List<String> dashboardHeaderInfos = new ArrayList<>(basicImportAndExportServices.getI18nHeaderMap(dashboardHeaderJsonStr).keySet());
-		String chartHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_CHART_EXPORT_HEADER);
+		String chartHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_CHART_EXPORT_HEADER);
 		List<String> chartHeaderInfos = new ArrayList<>(basicImportAndExportServices.getI18nHeaderMap(chartHeaderJsonStr).keySet());
 
 		// 返回统计信息
@@ -769,7 +771,8 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 			publishMap.put("dashboardId", dashboard.getId());
 			publishMap.putAll(JSONObject.parseObject(dashboard.getParam().toString(), Map.class));
 
-			redisTemplate.convertAndSend(Constant.REPORT_TOPIC_NAME, JSONObject.toJSONString(publishMap));
+			// notify message
+			sysService.notifySysMessage(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.DASHBOARD_REPORT.getName(), JSONObject.toJSONString(publishMap));
 		}
 
 		// 复制dashboard 下的 charts
@@ -1015,7 +1018,7 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 
 	@Override
 	public void export(HttpServletResponse response, Map<String, Object> params) throws IOException {
-		String maxLine = sysConfigService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
+		String maxLine = sysConfService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
 		long exportMaxLine = Integer.parseInt(StrUtil.emptyToDefault(maxLine, "10000"));
 		// 导出最大条数限制
 		Object limit = params.get(Constant.LIMIT) == null ? Constant.PAGESIZE : params.get(Constant.LIMIT);

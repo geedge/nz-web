@@ -4,15 +4,13 @@ import Aladdin.HaspStatus;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.qrcode.QrCodeException;
 import cn.hutool.log.Log;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.sys.entity.LicenseEntity;
 import com.nis.modules.sys.entity.Signature;
-import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.LicenseService;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import org.dom4j.DocumentException;
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
@@ -33,7 +31,7 @@ public class LicenseServiceImpl implements LicenseService {
 	private static final Log log = Log.get();
 
 	@Autowired
-	private SysConfigService sysConfigService;
+	private SysConfService sysConfService;
 
 	@Value("${license.config.key:license}")
 	private String licenseConfigKey;
@@ -62,7 +60,7 @@ public class LicenseServiceImpl implements LicenseService {
 		}
 		Map<String, Object> licenseMap = Tool.XmlUtil.xmlToMap(licenseInfo);
 		
-		String v2c = sysConfigService.getValue("license");
+		String v2c = sysConfService.getValue("license");
 		LicenseEntity license = (LicenseEntity) LicenseUtil.convertXmlStrToObject(LicenseEntity.class, v2c);
 		if(ToolUtil.isNotEmpty(license)) {
 			licenseMap.put("comment", license.getComment());
@@ -78,14 +76,7 @@ public class LicenseServiceImpl implements LicenseService {
 	 */
 	@Override
 	public void uploadLicense(String v2c) {
-		SysConfigEntity entity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().eq("param_key", licenseConfigKey));
-		if (entity == null) {
-			entity = new SysConfigEntity();
-		}
-		entity.setParamKey(licenseConfigKey);
-		entity.setParamValue(v2c);
-		entity.setRemark(Tool.DateUtil.now());
-		sysConfigService.saveOrUpdate(entity);
+		sysConfService.updateValueByKey(licenseConfigKey, v2c, Tool.DateUtil.now());
 	}
 
 	/**
@@ -95,7 +86,7 @@ public class LicenseServiceImpl implements LicenseService {
 	 */
 	@Override
 	public String getSystemVersion() {
-		return sysConfigService.getValue(systemVersionKey);
+		return sysConfService.getValue(systemVersionKey);
 	}
 
 	/**
@@ -156,11 +147,8 @@ public class LicenseServiceImpl implements LicenseService {
 	 */
 	@Override
 	public String getLicense() {
-		SysConfigEntity entity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().eq("param_key", licenseConfigKey));
-		if (entity == null || Tool.StrUtil.isBlank(entity.getParamValue())) {
-			return null;
-		}
-		return entity.getParamValue();
+		String licenseConfig = sysConfService.getValue(licenseConfigKey);
+		return licenseConfig;
 	}
 
 	@Override

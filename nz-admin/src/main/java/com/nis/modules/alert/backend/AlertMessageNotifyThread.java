@@ -18,7 +18,7 @@ import com.nis.modules.alert.service.AlertNotifyLogService;
 import com.nis.modules.alert.service.AlertNotifyMethodService;
 import com.nis.modules.election.dao.LeaderElectionDao;
 import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysUserService;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
@@ -52,7 +52,7 @@ public class AlertMessageNotifyThread implements Runnable {
 	@Autowired
 	private RedisTemplate<String, String> redisTemplate;
 	@Autowired
-	private SysConfigService configService;
+	private SysConfService sysConfService;
 
 	private static Template template;
 	@Autowired
@@ -267,7 +267,7 @@ public class AlertMessageNotifyThread implements Runnable {
 	 */
 	private Template getEmailTemplate() throws IOException {
 		if (template == null) {
-			String templateString = configService.getValue("email_template");
+			String templateString = sysConfService.getValue("email_template");
 			template = TemplateUtil.stringToTemplate(templateString, "emailTemplate");
 		}
 		return template;

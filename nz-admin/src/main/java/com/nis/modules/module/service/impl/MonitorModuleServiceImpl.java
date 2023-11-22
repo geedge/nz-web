@@ -44,7 +44,7 @@ import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SnmpCredentialService;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import jakarta.servlet.http.HttpServletResponse;
@@ -78,7 +78,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
     private MonitorModuleDao monitorModuleDao;
 
     @Autowired
-    private SysConfigService sysConfigService;
+    private SysConfService sysConfService;
 
     @Autowired
     private MonitorProjectService monitorProjectService;
@@ -605,8 +605,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
     public String generateYmlFromSnmpParam(String snmpCredentialsId, MonitorModule moduleEntity) {
         // 取出generator路径
-        SysConfigEntity entity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_GENERATOR_PATH));
-        String generatorPath = entity.getParamValue();
+        String generatorPath = sysConfService.getValue(Constant.SYSCONFIG_KEY_GENERATOR_PATH);
 
         Map modules = new HashMap();
 
@@ -679,7 +678,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
     @Override
     public void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException {
-        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_MODULE_EXPORT_HEADER);
+        String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_MODULE_EXPORT_HEADER);
         String fileName = "ModuleTemplate";
         basicImportAndExportServices.getTemplate(sysHeaderJsonStr, format, fileName, response);
     }
@@ -696,7 +695,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
     @Override
     public Map importModuleData(MultipartFile multipartFile, Map<String, Object> params) throws IOException {
-        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_MODULE_EXPORT_HEADER);
+        String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_MODULE_EXPORT_HEADER);
         Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
         List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
 
@@ -926,7 +925,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
                 failContentList.add(dataMap);
             }
         }
-        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_MODULE_EXPORT_HEADER);
+        String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_MODULE_EXPORT_HEADER);
         String failedContentFileBase64Str = basicImportAndExportServices.getFailedContentFileBase64Str(failContentList, sysHeaderJsonStr, MapUtil.getStr(params, "fileExtension"));
         //  返回统计信息
         Map<Object, Object> statMap = Tool.MapUtil.builder()
@@ -1012,7 +1011,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
     @Override
     public void export(HttpServletResponse response, Map<String, Object> params) throws IOException {
-        String maxLine = sysConfigService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
+        String maxLine = sysConfService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
         long exportMaxLine = Integer.parseInt(StrUtil.emptyToDefault(maxLine, "10000"));
         // 导出最大条数限制
         Object limit = params.get(Constant.LIMIT) == null ? Constant.PAGESIZE : params.get(Constant.LIMIT);
@@ -1030,7 +1029,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
         List<List<String>> exportDataList = this.handleExportDataList(list);
 
-        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_MODULE_EXPORT_HEADER);
+        String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_MODULE_EXPORT_HEADER);
         String fileName = "Modules";
         String formatStr = params.get("format").toString();
         basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, formatStr, fileName);

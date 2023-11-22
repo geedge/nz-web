@@ -60,36 +60,38 @@ public class SysServiceImpl extends ServiceImpl<SysDao, SysConfigEntity> impleme
 
     @Override
     public void notifySysMessage(String componentName, String topic, Object message) {
-        log.info("[notifySysMessage] [begin] [topic: {}]", topic);
-        StopWatch sw = new StopWatch();
-        sw.start();
+        Tool.ThreadUtil.execAsync(() -> {
+            log.info("[notifySysMessage] [begin] [topic: {}]", topic);
+            StopWatch sw = new StopWatch();
+            sw.start();
 
-        // requestBody
-        Map<Object, Object> requestBody = Tool.MapUtil.builder()
-                .put("topic", topic)
-                .put("message", message)
-                .build();
+            // requestBody
+            Map<Object, Object> requestBody = Tool.MapUtil.builder()
+                    .put("topic", topic)
+                    .put("message", message)
+                    .build();
 
-        // notify message
-        List<SysComponent> sysComponentList = sysComponentService.list(new LambdaQueryWrapper<SysComponent>().eq(SysComponent::getComponent, componentName));
-        sysComponentList = sysComponentList.stream()
-                .sorted(Comparator.comparing(SysComponent::getServerid, Comparator.comparing(serverid -> StrUtil.equals(Constant.SERVER_ID, serverid))))
-                .toList();
+            // notify message
+            List<SysComponent> sysComponentList = sysComponentService.list(new LambdaQueryWrapper<SysComponent>().eq(SysComponent::getComponent, componentName));
+            sysComponentList = sysComponentList.stream()
+                    .sorted(Comparator.comparing(SysComponent::getServerid, Comparator.comparing(serverid -> StrUtil.equals(Constant.SERVER_ID, serverid))))
+                    .toList();
 
-        for (SysComponent component : sysComponentList) {
-            String host = component.getProtocol() + "://" + component.getHost() + ":" + component.getPort();
-            String url = String.format("%s%s", host, "/sys/component/message");
-            try {
-                ResponseEntity<Map> entity = restTemplate.postForEntity(url, requestBody, Map.class);
-                HttpStatusCode statusCode = entity.getStatusCode();
-                log.info("[notifySysMessage] [url: {}] [responseStatus: {}] [result: {}]", url, statusCode.value(), Tool.JSONUtil.toJsonStr(entity));
-            } catch (Exception e) {
-                log.error(e, "[notifySysMessage] [error] [url: {}] [message: {}]", url, message);
+            for (SysComponent component : sysComponentList) {
+                String host = component.getProtocol() + "://" + component.getHost() + ":" + component.getPort();
+                String url = String.format("%s%s", host, "/sys/component/message");
+                try {
+                    ResponseEntity<Map> entity = restTemplate.postForEntity(url, requestBody, Map.class);
+                    HttpStatusCode statusCode = entity.getStatusCode();
+                    log.info("[notifySysMessage] [url: {}] [responseStatus: {}] [result: {}]", url, statusCode.value(), Tool.JSONUtil.toJsonStr(entity));
+                } catch (Exception e) {
+                    log.error(e, "[notifySysMessage] [error] [url: {}] [message: {}]", url, message);
+                }
             }
-        }
 
-        sw.stop();
-        log.info("[notifySysMessage] [finshed] [Run time: {}]", sw.toString());
+            sw.stop();
+            log.info("[notifySysMessage] [finshed] [Run time: {}]", sw.toString());
+        });
     }
 
     @Override

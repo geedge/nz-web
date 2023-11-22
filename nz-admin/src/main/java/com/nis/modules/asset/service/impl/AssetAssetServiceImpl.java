@@ -48,7 +48,7 @@ import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SnmpCredentialService;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.modules.vsys.entity.VsysAssetRel;
@@ -86,7 +86,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     private SysUserDao sysUserDao;
 
     @Autowired
-    private SysConfigService sysConfigService;
+    private SysConfService sysConfService;
 
     @Autowired
     private DcService dcService;
@@ -1304,7 +1304,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
     @Override
     public void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException {
-        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_ASSET_ASSET_EXPORT_HEADER);
+        String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_ASSET_ASSET_EXPORT_HEADER);
         String fileName = "AssetTemplate";
         basicImportAndExportServices.getTemplate(sysHeaderJsonStr, format, fileName, response);
     }
@@ -1653,7 +1653,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
     @Override
     public void export(HttpServletResponse response, Map<String, Object> params) throws IOException {
-        String maxLine = sysConfigService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
+        String maxLine = sysConfService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
         long exportMaxLine = Integer.parseInt(StrUtil.emptyToDefault(maxLine, "10000"));
         // 导出最大条数限制
         Object limit = params.get(Constant.LIMIT) == null ? Constant.PAGESIZE : params.get(Constant.LIMIT);
@@ -1670,7 +1670,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         List<AssetAsset> list = (List<AssetAsset>) page.getList();
         List<List<String>> exportDataList = this.handleExportDataList(list);
 
-        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_ASSET_ASSET_EXPORT_HEADER);
+        String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_ASSET_ASSET_EXPORT_HEADER);
         String fileName = "Assets";
         String formatStr = params.get("format").toString();
         basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, formatStr, fileName);
@@ -1678,7 +1678,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
     @Override
     public Map importAssetsData(MultipartFile multipartFile, Map<String, Object> params) throws IOException {
-        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_ASSET_ASSET_EXPORT_HEADER);
+        String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_ASSET_ASSET_EXPORT_HEADER);
         Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
         List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
 
@@ -1740,7 +1740,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         Map<Integer, Dc> dcIdAndNameMap = dcList.stream().collect(Collectors.toMap(Dc::getId, Function.identity()));
 
         // asset_ping_interval，default = 300
-        String assetPingIntervalInConfig = sysConfigService.getValueOrDefault(Constant.SYSCONFIG_KEY_ASSET_PING_INTERVAL, "300");
+        String assetPingIntervalInConfig = sysConfService.getValueOrDefault(Constant.SYSCONFIG_KEY_ASSET_PING_INTERVAL, "300");
         for (AssetAsset entity : assetList) {
             entity.setDc(dcIdAndNameMap.get(entity.getDcId()));
             entity.setAssetPingInterval(assetPingIntervalInConfig);
@@ -1768,7 +1768,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // 已存在的内容处理方式，可选值：0：错误 error  1：覆盖 override   2：忽略 ignore
         String existed = Tool.ObjectUtil.defaultIfEmpty((String) params.get("existed"), "1");
 
-        String defaultCabinetUsizeStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_DEFAULT_CABINETU);
+        String defaultCabinetUsizeStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_DEFAULT_CABINETU);
         Integer defaultCabinetUsize = Integer.parseInt(defaultCabinetUsizeStr);
 
         // 创建导入校验对象
@@ -2087,7 +2087,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 failContentList.add(dataMap);
             }
         }
-        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_ASSET_ASSET_EXPORT_HEADER);
+        String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_ASSET_ASSET_EXPORT_HEADER);
         String failedContentFileBase64Str = basicImportAndExportServices.getFailedContentFileBase64Str(failContentList, sysHeaderJsonStr, MapUtil.getStr(params, "fileExtension"));
         //  返回统计信息
         Map<Object, Object> statMap = Tool.MapUtil.builder()
@@ -2171,7 +2171,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         Dc dc = (Dc) saveEntitys.get("dc");
         Cabinet cabinet = (Cabinet) saveEntitys.get("cabinet");
-        String defaultCabinetUsizeStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_DEFAULT_CABINETU);
+        String defaultCabinetUsizeStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_DEFAULT_CABINETU);
         Integer defaultCabinetUsize = Integer.parseInt(defaultCabinetUsizeStr);
         if (dc == null && cabinet != null) {
             cabinet.setSeq(seq);
@@ -2179,7 +2179,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             cabinetService.save(cabinet);
         }
         if (dc != null) {
-            String mapCenterConfigJsonStr = sysConfigService.getValue("map_center_config");
+            String mapCenterConfigJsonStr = sysConfService.getValue("map_center_config");
             Map<String, Object> map = JSONObject.parseObject(mapCenterConfigJsonStr, Map.class);
             String longitude = (String) map.get("longitude");
             String latitude = (String) map.get("latitude");

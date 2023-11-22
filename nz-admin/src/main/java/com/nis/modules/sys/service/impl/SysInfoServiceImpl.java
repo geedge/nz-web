@@ -9,8 +9,7 @@ import com.nis.common.utils.*;
 import com.nis.modules.agent.dao.AgentDao;
 import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.util.AgentUtil;
-import com.nis.modules.sys.dao.SysConfigDao;
-import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysInfoService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.RandomUtils;
@@ -31,7 +30,7 @@ public class SysInfoServiceImpl implements SysInfoService {
     private static Log log = Log.get();
 
     @Autowired
-    private SysConfigDao sysConfigDao;
+    private SysConfService sysConfService;
 
     @Autowired
     private AgentDao agentDao;
@@ -43,11 +42,11 @@ public class SysInfoServiceImpl implements SysInfoService {
     public Map getAboutInfo() {
         Map resultMap = new HashMap(4);
         // 1. nehza 系统版本
-        SysConfigEntity sysVersion = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_SYSTEM_VERSION));
-        SysConfigEntity systemNameConfig = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, "system_name"));
+        String systemVersion = sysConfService.getValue(Constant.SYSCONFIG_KEY_SYSTEM_VERSION);
+        String systemName = sysConfService.getValue("system_name");
         Map sysVersionMap = new HashMap(4);
-        sysVersionMap.put("name", Tool.StrUtil.emptyToDefault(systemNameConfig.getParamValue(), "Network Zodiac"));
-        sysVersionMap.put("version", sysVersion.getParamValue());
+        sysVersionMap.put("name", Tool.StrUtil.emptyToDefault(systemName, "Network Zodiac"));
+        sysVersionMap.put("version", systemVersion);
 
         resultMap.put("nezha", sysVersionMap);
 
@@ -56,7 +55,7 @@ public class SysInfoServiceImpl implements SysInfoService {
 
         // ① mariaDB version
         Map componentVersion = new HashMap(4);
-        String dataBasesVersion = sysConfigDao.getDataBasesVersion();
+        String dataBasesVersion = sysConfService.getDataBasesVersion();
         componentVersion.put("name", "Mariadb");
         componentVersion.put("version", dataBasesVersion);
         componentVersionInfoList.add(componentVersion);

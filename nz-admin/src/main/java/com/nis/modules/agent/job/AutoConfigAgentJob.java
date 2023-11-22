@@ -20,8 +20,7 @@ import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.election.dao.LeaderElectionDao;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
-import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import lombok.Data;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
@@ -61,16 +60,13 @@ public class AutoConfigAgentJob extends QuartzJobBean {
     private AssetAssetService assetService;
 
     @Autowired
-    private SysConfigService sysConfigService;
+    private SysConfService sysConfService;
 
     @Autowired
     private MonitorEndpointService endpointService;
 
     @Autowired
     private MonitorEventLogService eventLogService;
-
-    // sys_config map
-    Map<String, String> sysConfigMap = new HashMap();
 
     @SuppressWarnings("unchecked")
     @Override
@@ -108,9 +104,6 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             if (log.isDebugEnabled()) {
                 log.debug("[AutoConfigAgentJob] [Healthy agents] [detail: {}]", JSONUtil.toJsonStr(healthyAgents));
             }
-
-            List<SysConfigEntity> sysConfigList = sysConfigService.list();
-            sysConfigMap = sysConfigList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
 
             // get global agent
             List<Agent> globalAgentList = healthyAgents.stream().filter(pojo -> ObjectUtil.equal(Constant.AgentType.GLOBAL.getValue(), pojo.getType())).collect(Collectors.toList());
@@ -222,7 +215,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             log.info("[setUpAgentConfig] [conf_event rule state] [change: {}]", ruleChangeFlag);
 
             // 是否更新 rule.yml 配置
-            String alertConfUpdate = sysConfigMap.get("nz_alert_rule_eval_enable");
+            String alertConfUpdate = sysConfService.getValue("nz_alert_rule_eval_enable");
 //            Map alertYmlMap = configUtil.generateRuleYml();
 //            if (ruleChangeFlag && StrUtil.equals("0", StrUtil.emptyToDefault(alertConfUpdate, "1"))) {
 //                // 生成 alert.yml
@@ -278,7 +271,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             }
         }
 
-        String fedeEnabledStr = sysConfigMap.get(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED);
+        String fedeEnabledStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED);
         log.info(String.format("prometheus 联邦状态: %s", StrUtil.equals("0", fedeEnabledStr) ? "关闭" : "开启"));
         if (StrUtil.equals("0", fedeEnabledStr)) {
             // 用于生成配置的 endpoint 信息
@@ -345,7 +338,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
      * @param version
      */
     private void handlePerDatacenterLogs(List<Agent> globalPromServers, List<Agent> perDataCenterPromServers, Integer version) {
-        String fedeEnabledStr = sysConfigMap.get(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED);
+        String fedeEnabledStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED);
         log.debug(String.format("prometheus 联邦状态: %s", StrUtil.equals("0", fedeEnabledStr) ? "关闭" : "开启"));
         // 联邦关闭 禁用所有 per-datacenter 角色配置
         if (StrUtil.equals("0", fedeEnabledStr)) return;
@@ -458,14 +451,14 @@ public class AutoConfigAgentJob extends QuartzJobBean {
      * @param perDataCenterPromServers
      */
     private void handleGlobalMtericsConf(List<Agent> globalPromServers, List<Agent> perDataCenterPromServers) {
-        boolean fedeEnabled = StrUtil.equals("1", sysConfigMap.get(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED));
+        boolean fedeEnabled = StrUtil.equals("1", sysConfService.getValue(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED));
 
         List<MonitorEndpoint> endpointList = new ArrayList<>();
         Map<Integer, Integer> assetIdAndPromIdMap, endpointIdAndPromIdMap = new HashMap<>();
         List<AssetAsset> blackboxAssetInfoList = assetService.getBlackboxAssetInfoList();
         // 开启联邦
         if (fedeEnabled) {
-            String assetPingFrom = sysConfigMap.get(Constant.SYSCONFIG_KEY_ASSET_PING_FROM);
+            String assetPingFrom = sysConfService.getValue(Constant.SYSCONFIG_KEY_ASSET_PING_FROM);
             // blackbox 源为 global
             assetIdAndPromIdMap = StrUtil.equals("1", assetPingFrom) ? configUtil.consistentHashingAssignAsset(globalPromServers, blackboxAssetInfoList) : new HashMap<>(2);
         } else {
@@ -525,7 +518,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
      * @param globalPromServers
      */
     private void handlePerDatacenterMtericsConf(List<Agent> perDataCenterPromServers, List<Agent> globalPromServers) {
-        String fedeEnabledStr = sysConfigMap.get(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED);
+        String fedeEnabledStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED);
         log.debug(String.format("prometheus 联邦状态: %s", StrUtil.equals("0", fedeEnabledStr) ? "关闭" : "开启"));
         // 联邦关闭 禁用所有 per-datacenter 角色配置
         if (StrUtil.equals("0", fedeEnabledStr)) return;
@@ -553,7 +546,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             // per-datacenter 支持 asset ping job
             List<AssetAsset> assetListByDc = blackboxAssetInfoList.stream().filter(asset -> dcId.equals(asset.getDcId())).collect(Collectors.toList());
             Map<Integer, Integer> assetIdAndPromIdMap = new HashMap<>();
-            String assetPingFrom = sysConfigMap.get(Constant.SYSCONFIG_KEY_ASSET_PING_FROM);
+            String assetPingFrom = sysConfService.getValue(Constant.SYSCONFIG_KEY_ASSET_PING_FROM);
             if (StrUtil.equals("2", assetPingFrom)) {
                 assetIdAndPromIdMap = configUtil.consistentHashingAssignAsset(agentListByDc, assetListByDc);
             }
@@ -665,7 +658,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             }
 
             // 配置下发后向 redis 记录配置更新  默认五分钟 单位 s
-            String cortexUpdateTimeout = Tool.ObjectUtil.defaultIfNull(sysConfigMap.get(Constant.SYSCONFIG_KEY_LOKI_UPDATE_TIMEOUT), "300");
+            String cortexUpdateTimeout = Tool.ObjectUtil.defaultIfNull(sysConfService.getValue(Constant.SYSCONFIG_KEY_LOKI_UPDATE_TIMEOUT), "300");
             redisTemplate.opsForValue().set(Constant.REDIS_KEY_LOKI_UPDATE, "1", Integer.valueOf(cortexUpdateTimeout), TimeUnit.SECONDS);
         });
     }
@@ -789,7 +782,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             }
 
             // 配置下发后向 redis 记录配置更新  默认五分钟 单位 s
-            String cortexUpdateTimeout = Tool.ObjectUtil.defaultIfNull(sysConfigMap.get(Constant.SYSCONFIG_KEY_CORTEX_UPDATE_TIMEOUT), "300");
+            String cortexUpdateTimeout = Tool.ObjectUtil.defaultIfNull(sysConfService.getValue(Constant.SYSCONFIG_KEY_CORTEX_UPDATE_TIMEOUT), "300");
             redisTemplate.opsForValue().set(Constant.REDIS_KEY_CORTEX_UPDATE, "1", Integer.valueOf(cortexUpdateTimeout), TimeUnit.SECONDS);
         });
     }

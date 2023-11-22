@@ -66,7 +66,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 	private RedisTemplate redisTemplate;
 
 	@Autowired
-	private SysConfigService sysConfigService;
+	private SysConfService sysConfService;
 
 	@Autowired
 	private SysApiKeyService sysApiKeyService;
@@ -91,6 +91,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 
 	@Autowired
 	private SysUserStarredService sysUserStarredService;
+
+	@Autowired
+	private SysService sysService;
 
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
@@ -360,7 +363,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 			publishMap.put("dashboardId", dashboard.getId());
 			publishMap.putAll(newParamMap);
 
-			redisTemplate.convertAndSend(Constant.REPORT_TOPIC_NAME, JSONObject.toJSONString(publishMap));
+			// notify message
+			sysService.notifySysMessage(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.DASHBOARD_REPORT.getName(), JSONObject.toJSONString(publishMap));
 		}
 		if(Tool.CollUtil.isNotEmpty(visualDashboardList)) dashboardService.updateBatchById(visualDashboardList);
 
@@ -470,7 +474,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 	public void checkPin(SysUserEntity user,boolean isLogin) {
 		String pin = user.getPin();
 		Date pinTime = user.getPinTime();
-		String pinPolicy = sysConfigService.getValue("pin_policy");
+		String pinPolicy = sysConfService.getValue("pin_policy");
 		if(ToolUtil.isNotEmpty(pinPolicy) && StrUtil.isNotBlank(pin)) {
 			Map<String,Object> pinPolicyInfo = (Map<String, Object>) JSON.parse(pinPolicy);
 			Integer enable = (Integer) pinPolicyInfo.get("enable");
@@ -531,7 +535,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 	public void checkRedisRetry(SysUserEntity user) {
 		Integer retry = 0;
 		Integer lockTime = 30;
-		String pinPolicy = sysConfigService.getValue("pin_policy");
+		String pinPolicy = sysConfService.getValue("pin_policy");
 		if(ToolUtil.isNotEmpty(pinPolicy)) {
 			Map<String,Object> pinPolicyInfo = (Map<String, Object>) JSON.parse(pinPolicy);
 			retry = (Integer) pinPolicyInfo.get("retry");

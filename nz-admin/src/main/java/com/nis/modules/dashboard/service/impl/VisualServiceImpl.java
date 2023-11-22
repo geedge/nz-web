@@ -30,7 +30,7 @@ import com.nis.modules.dashboard.utils.DashboardConstant;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.stat.service.impl.StatServiceImpl;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysI18nService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.setup.controller.TimezoneController;
@@ -82,7 +82,7 @@ public class VisualServiceImpl implements VisualService {
     private SysI18nService sysI18nService;
 
     @Autowired
-    private SysConfigService sysConfigService;
+    private SysConfService sysConfService;
 
     @Autowired
     private PromApiService promApiService;
@@ -207,7 +207,7 @@ public class VisualServiceImpl implements VisualService {
         resultMap.put("start", start);
         resultMap.put("end", end);
         // 查询系统时区信息
-        String timezone = sysConfigService.getValue("timezone");
+        String timezone = sysConfService.getValue("timezone");
         TimezoneController.Timezone timezoneEntity = TimezoneController.queryTimezoneByName(timezone);
         resultMap.put("offset", timezoneEntity.getOffset());
         resultMap.put("timezone", timezone);
@@ -222,7 +222,7 @@ public class VisualServiceImpl implements VisualService {
         BufferedReader reader = null;
         StringBuffer sbf = new StringBuffer();
         try {
-            String path = sysConfigService.getValue("snapshot_template_path");
+            String path = sysConfService.getValue("snapshot_template_path");
             reader = new BufferedReader(new FileReader(Tool.StrUtil.concat(true, path, File.separator, "snapshot_template.html")));
             String line;
             while ((line = reader.readLine()) != null) {
@@ -807,7 +807,7 @@ public class VisualServiceImpl implements VisualService {
                     .map();
 
             Template template = TemplateUtil.stringToTemplate(
-                    sysConfigService.getValue("notebook_snapshot_markdown_template"),
+                    sysConfService.getValue("notebook_snapshot_markdown_template"),
                     "notebook_snapshot_markdown_template");
             String markDownContent = FreeMarkerTemplateUtils.processTemplateIntoString(template, templateDataParam);
 
@@ -824,7 +824,7 @@ public class VisualServiceImpl implements VisualService {
 
     private String getMdHeaderTimeRangeString(long startTimeSec, long endTimeSec) {
         // timezone
-        String timezoneConfName = sysConfigService.getValue("timezone");
+        String timezoneConfName = sysConfService.getValue("timezone");
         TimezoneController.Timezone timezone = TimezoneController.queryTimezoneByName(timezoneConfName);
 
         // dateformat
@@ -847,7 +847,7 @@ public class VisualServiceImpl implements VisualService {
     private String getMdHeaderGenerateInfoString(String language) {
         // user name
         String userName = ShiroUtils.getUserEntity().getName();
-        String timezoneConfName = sysConfigService.getValue("timezone");
+        String timezoneConfName = sysConfService.getValue("timezone");
         TimezoneController.Timezone timezone = TimezoneController.queryTimezoneByName(timezoneConfName);
 
         String dateFromatPattern = "";

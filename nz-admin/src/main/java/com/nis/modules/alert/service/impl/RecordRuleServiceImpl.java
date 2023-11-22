@@ -23,7 +23,7 @@ import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import jakarta.servlet.http.HttpServletResponse;
@@ -63,7 +63,7 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 	private RedisTemplate<String, Object> redisTemplate;
 
 	@Autowired
-	private SysConfigService configService;
+	private SysConfService sysConfService;
 
 	@Autowired
 	private BasicImportAndExportServices basicImportAndExportServices;
@@ -256,14 +256,14 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 
 	@Override
 	public void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException {
-		String sysHeaderJsonStr = configService.getValue(Constant.SYSCONFIG_KEY_RUCORDRULE_IMPORT_HEADER);
+		String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_RUCORDRULE_IMPORT_HEADER);
 		String fileName = "RecordRuleTemplate";
 		basicImportAndExportServices.getTemplate(sysHeaderJsonStr, format, fileName, response);
 	}
 
 	@Override
 	public void export(HttpServletResponse response, Map<String, Object> params) throws IOException {
-		String maxLine = configService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
+		String maxLine = sysConfService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
 		long exportMaxLine = Integer.parseInt(StrUtil.emptyToDefault(maxLine, "10000"));
 		// 导出最大条数限制
 		Object limit = params.get(Constant.LIMIT) == null ? Constant.PAGESIZE : params.get(Constant.LIMIT);
@@ -283,7 +283,7 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 
 		List<List<String>> exportDataList = this.handleExportDataList(list);
 
-		String sysHeaderJsonStr = configService.getValue(Constant.SYSCONFIG_KEY_RUCORDRULE_IMPORT_HEADER);
+		String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_RUCORDRULE_IMPORT_HEADER);
 		String fileName = "RecordRules";
 		String formatStr = params.get("format").toString();
 		basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, formatStr, fileName);
@@ -307,7 +307,7 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 
 	@Override
 	public Map importData(MultipartFile excelFile, Map<String, Object> params) throws IOException {
-		String sysHeaderJsonStr = configService.getValue(Constant.SYSCONFIG_KEY_RUCORDRULE_IMPORT_HEADER);
+		String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_RUCORDRULE_IMPORT_HEADER);
 		Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
 		List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(excelFile, sysHeaderJsonStr);
 
@@ -419,7 +419,7 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 				failContentList.add(dataMap);
 			}
 		}
-		String sysHeaderJsonStr = configService.getValue(Constant.SYSCONFIG_KEY_RUCORDRULE_IMPORT_HEADER);
+		String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_RUCORDRULE_IMPORT_HEADER);
 		String failedContentFileBase64Str = basicImportAndExportServices.getFailedContentFileBase64Str(failContentList, sysHeaderJsonStr, MapUtil.getStr(params, "fileExtension"));
 		//  返回统计信息
 		Map<Object, Object> statMap = Tool.MapUtil.builder()

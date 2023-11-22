@@ -9,7 +9,7 @@ import com.nis.common.utils.*;
 import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.service.AgentService;
 import com.nis.modules.agent.util.AgentUtil;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,7 +42,7 @@ public class AgentController {
 	private AgentService agentService;
 
 	@Autowired
-	private SysConfigService sysConfigService;
+	private SysConfService sysConfService;
 
 	@Autowired
 	private AgentUtil agentUtil;
@@ -203,7 +203,7 @@ public class AgentController {
 		protocol = Tool.StrUtil.isBlank(protocol) ? "http" : "https";
 		// 拼接url
 		UrlBuilder urlBuilder = UrlBuilder.create();
-		String agentPath = sysConfigService.getValueOrDefault(Constant.CONFAGENT_PATH, "");
+		String agentPath = sysConfService.getValueOrDefault(Constant.CONFAGENT_PATH, "");
 		urlBuilder.setScheme(protocol).setHost(host).setPort(port).appendPath(agentPath).appendPath("auth")
 				.appendPath("refresh");
 		// 调用 confagent接口 获取结果

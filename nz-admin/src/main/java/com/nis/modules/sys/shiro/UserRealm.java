@@ -14,8 +14,9 @@ import com.nis.modules.sys.dao.SysRoleMenuDao;
 import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.dao.SysUserRoleDao;
 import com.nis.modules.sys.entity.*;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysMenuService;
+import com.nis.modules.sys.service.impl.SysConfServiceImpl;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
@@ -70,7 +71,7 @@ public class UserRealm extends AuthorizingRealm {
 	private SysMenuService sysMenuService;
 
 	@Autowired
-	private SysConfigService sysConfigService;
+	private SysConfService sysConfService;
 
 	@Autowired
 	private SysUserRoleDao sysUserRoleDao;
@@ -219,8 +220,7 @@ public class UserRealm extends AuthorizingRealm {
 	@SuppressWarnings("unchecked")
 	public SysUserEntity getLdapAuthentication(String userName, String pin) {
 		// 获取sys_config中的ldap信息 判断是否支持ldap登录
-		Map<String, Object> ldapInfos = sysConfigService.getConfigListByTypes(new String[] { "ldap" }, null);
-		Map<String, String> ldap = (Map<String, String>) ldapInfos.get("ldap");
+		Map<String, String> ldap = sysConfService.batchQuery(SysConfServiceImpl.LDAP_KEYS);
 		// 判断是否开启 ldap 认证
 		if (ObjectUtils.isEmpty(ldap) || StrUtil.isBlank(ldap.get("ldap_enable"))
 				|| "off".equalsIgnoreCase(ldap.get("ldap_enable"))) {

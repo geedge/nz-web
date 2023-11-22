@@ -15,7 +15,7 @@ import com.nis.modules.alert.job.AlertMessageHistoryPartitionManagementJob;
 import com.nis.modules.alert.service.AlertRuleEvalLogService;
 import com.nis.modules.alert.service.AlertRuleSchedLogService;
 import com.nis.modules.election.dao.LeaderElectionDao;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import org.apache.commons.lang3.time.StopWatch;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
@@ -44,7 +44,7 @@ public class CleanJob extends QuartzJobBean {
 	private AlertRuleSchedLogService alertRuleSchedLogService;
 
 	@Autowired
-	private SysConfigService sysConfigService;
+	private SysConfService sysConfService;
 
 	@Autowired
 	private AlertMessageHistoryPartitionManagementDao alertMessageHistoryPartitionManagementDao;
@@ -62,7 +62,7 @@ public class CleanJob extends QuartzJobBean {
 		StopWatch sw = new StopWatch();
 
 		// terminal_*
-//		String terminalRecordLocalRetention = sysConfigService.getValue("terminal_record_local_retention");
+//		String terminalRecordLocalRetention = sysConfService.getValue("terminal_record_local_retention");
 //		terminalRecordLocalRetention = Tool.StrUtil.emptyToDefault(terminalRecordLocalRetention, "365");
 //		DateTime startCleanTerminalTime = Tool.DateUtil.offsetDay(now, -Integer.valueOf(terminalRecordLocalRetention));
 //		sw.start();
@@ -77,7 +77,7 @@ public class CleanJob extends QuartzJobBean {
 //		log.info("clean terminal data Run Time: {}", sw.toString());
 
 		// alert_rule_eval_log
-		String ruleEvalLogLocalRetention = sysConfigService.getValue("alert_rule_eval_log_local_retention");
+		String ruleEvalLogLocalRetention = sysConfService.getValue("alert_rule_eval_log_local_retention");
 		ruleEvalLogLocalRetention = Tool.StrUtil.emptyToDefault(ruleEvalLogLocalRetention, "30");
 		DateTime startCleanRuleEvalLogTime = Tool.DateUtil.offsetDay(now, -Integer.valueOf(ruleEvalLogLocalRetention));
 		sw.reset();
@@ -94,7 +94,7 @@ public class CleanJob extends QuartzJobBean {
 		log.info("clean alert rule eval log data Run Time: {}", sw.toString());
 
 		// alert_rule_sched_log
-		String ruleSchedLogLocalRetention = sysConfigService.getValue("alert_rule_sched_log_local_retention");
+		String ruleSchedLogLocalRetention = sysConfService.getValue("alert_rule_sched_log_local_retention");
 		ruleSchedLogLocalRetention = Tool.StrUtil.emptyToDefault(ruleSchedLogLocalRetention, "30");
 		DateTime startCleanRuleSchedLogTime = Tool.DateUtil.offsetDay(now,
 				-Integer.valueOf(ruleSchedLogLocalRetention));
@@ -112,10 +112,10 @@ public class CleanJob extends QuartzJobBean {
 		log.info("clean alert rule sched log data Run Time: {}", sw.toString());
 
 		// 告警消息清理开关
-		String cleanAlertMessageEnable = sysConfigService.getValue("clean_alert_message_enable");
+		String cleanAlertMessageEnable = sysConfService.getValue("clean_alert_message_enable");
 		cleanAlertMessageEnable = Tool.StrUtil.emptyToDefault(cleanAlertMessageEnable, "0");
 		if (Tool.StrUtil.equals("1", cleanAlertMessageEnable)) {
-			String alertMessageLocalRetention = sysConfigService.getValue("alert_message_local_retention");
+			String alertMessageLocalRetention = sysConfService.getValue("alert_message_local_retention");
 			alertMessageLocalRetention = Tool.StrUtil.emptyToDefault(alertMessageLocalRetention, "365");
 			DateTime startCleanAlertMessageTime = Tool.DateUtil.offsetDay(now,
 					-Integer.valueOf(alertMessageLocalRetention));

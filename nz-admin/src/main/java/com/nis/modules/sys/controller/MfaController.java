@@ -10,7 +10,7 @@ import com.nis.modules.sys.entity.AuthTokenEntity;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.redis.SysLoginRedis;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.setup.controller.TimezoneController;
@@ -32,7 +32,7 @@ import java.util.Map;
 public class MfaController extends AbstractController {
 
 	@Autowired
-	private SysConfigService configService;
+	private SysConfService sysConfService;
 	@Autowired
 	private SysUserService sysUserService;
 	@Autowired
@@ -202,13 +202,15 @@ public class MfaController extends AbstractController {
 		SysUserEntity userEntity = ShiroUtils.getUserEntityBySessionId(token);
 		// 查询系统配置信息
 		String[] paramkeys = {"system_name", "system_logo", "timezone", "default_cabinet_usize", "map_center_config", "unsaved_change","prometheus_federation_enabled","mfa_auth_enable"};
-		List<SysConfigEntity> configEntityList = configService.list(new LambdaUpdateWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey, paramkeys));
-		for (SysConfigEntity configEntity : configEntityList) {
-			if ("timezone".equals(configEntity.getParamKey())) {
-				TimezoneController.Timezone timezoneEntity = TimezoneController.queryTimezoneByName(configEntity.getParamValue());
+		Map<String, String> sysConfMap = sysConfService.batchQuery(paramkeys);
+		for (Map.Entry<String, String> entry : sysConfMap.entrySet()) {
+			String key = entry.getKey();
+			String value = entry.getValue();
+			if ("timezone".equals(key)) {
+				TimezoneController.Timezone timezoneEntity = TimezoneController.queryTimezoneByName(value);
 				obj.put("offset", timezoneEntity.getOffset());
 			}
-			obj.put(ToolUtil.toCamelCase(configEntity.getParamKey()), configEntity.getParamValue());
+			obj.put(ToolUtil.toCamelCase(key), value);
 		}
 
         // 获取request

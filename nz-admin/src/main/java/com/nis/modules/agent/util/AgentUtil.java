@@ -19,7 +19,7 @@ import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.service.PromApiService;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,7 +52,7 @@ public class AgentUtil {
 
 	private static Log log = Log.get();
 	private static RestTemplate restTemplate;
-	private static SysConfigService sysConfigService;
+	private static SysConfService sysConfService;
 	private static PromApiService promApiService;
 	
 	@Value("${nezha.installPath:install/}")
@@ -82,7 +82,7 @@ public class AgentUtil {
 
 	public static <T> T request(Agent server, HttpMethod method, String path, String queryString, Object body,
 			Class<T> responseType) {
-		String agentPath = sysConfigService.getValueOrDefault(Constant.CONFAGENT_PATH, "");
+		String agentPath = sysConfService.getValueOrDefault(Constant.CONFAGENT_PATH, "");
 		path = path.startsWith("/") ? (String.format("%s%s", agentPath, path))
 				: (String.format("%s/%s", agentPath, path));
 		/*String urlString = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
@@ -274,8 +274,8 @@ public class AgentUtil {
 	 */
 	public String agentOTA(Agent agent) {
 		// 获取agent更新包
-		String json = sysConfigService.getValue("confagent_name");
-		String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
+		String json = sysConfService.getValue("confagent_name");
+		String agentPath = sysConfService.getValue(Constant.CONFAGENT_PATH);
 		UrlBuilder urlBuilder = UrlBuilder.create().setScheme(agent.getProtocol()).setHost(agent.getHost())
 				.setPort(agent.getPort())
 				.setPath(UrlPath.of(String.format("%s%s", agentPath, "/ota"), Charset.forName("UTF-8")));
@@ -323,7 +323,7 @@ public class AgentUtil {
 	 */
 	public File getAgentRpmFile(String os) {
 		os = Tool.StrUtil.isEmpty(os) ? "centos" : os;
-		String json = sysConfigService.getValue("confagent_name");
+		String json = sysConfService.getValue("confagent_name");
 		JSONObject confagentNames = JSONObject.parseObject(json);
 		// 配置的正则
 		String confagentName = (String) confagentNames.get(os);
@@ -438,8 +438,8 @@ public class AgentUtil {
 	}
 
 	@Autowired
-	public void setSysconfigService(SysConfigService sysConfigService) {
-		AgentUtil.sysConfigService = sysConfigService;
+	public void setSysConfService(SysConfService sysConfService) {
+		AgentUtil.sysConfService = sysConfService;
 	}
 	
 	@Autowired

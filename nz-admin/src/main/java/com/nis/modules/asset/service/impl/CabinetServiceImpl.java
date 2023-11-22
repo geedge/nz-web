@@ -29,7 +29,7 @@ import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import jakarta.servlet.http.HttpServletResponse;
@@ -58,7 +58,7 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
     private CabinetDao cabinetDao;
 
     @Autowired
-    private SysConfigService sysConfigService;
+    private SysConfService sysConfService;
 
     @Autowired
     private DcService dcService;
@@ -211,8 +211,8 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
 
         // Usize 为空 则从配置表中取出 cabinet u位默认值
         if (cabinet.getuSize() == null) {
-            SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_DEFAULT_CABINETU).eq(SysConfigEntity::getStatus, 1));
-            cabinet.setuSize(Integer.valueOf(configEntity.getParamValue()));
+            String defaultCabinetUsize = sysConfService.getValue(Constant.SYSCONFIG_KEY_DEFAULT_CABINETU);
+            cabinet.setuSize(Integer.valueOf(defaultCabinetUsize));
         }
 
         // 保存
@@ -372,14 +372,14 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
 
     @Override
     public void getCabinetTemplateByLanguage(HttpServletResponse response, String format) throws IOException {
-        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_CABINET_EXPORT_HEADER);
+        String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_CABINET_EXPORT_HEADER);
         String fileName = "CabinetTemplate";
         basicImportAndExportServices.getTemplate(sysHeaderJsonStr, format, fileName, response);
     }
 
     @Override
     public Map importCabinetData(MultipartFile multipartFile, Map<String, Object> params) throws IOException {
-        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_CABINET_EXPORT_HEADER);
+        String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_CABINET_EXPORT_HEADER);
         Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
         List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
 
@@ -511,7 +511,7 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
                 failContentList.add(dataMap);
             }
         }
-        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_CABINET_EXPORT_HEADER);
+        String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_CABINET_EXPORT_HEADER);
         String failedContentFileBase64Str = basicImportAndExportServices.getFailedContentFileBase64Str(failContentList, sysHeaderJsonStr, MapUtil.getStr(params, "fileExtension"));
         //  返回统计信息
         Map<Object, Object> statMap = Tool.MapUtil.builder()
@@ -534,7 +534,7 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
         cabinet.setDcId(dc.getId());
 
         if (ObjectUtil.isEmpty(cabinet.getuSize())) {
-            String defaultUSize = sysConfigService.getValue(Constant.SYSCONFIG_KEY_DEFAULT_CABINETU);
+            String defaultUSize = sysConfService.getValue(Constant.SYSCONFIG_KEY_DEFAULT_CABINETU);
             cabinet.setuSize(Integer.valueOf(defaultUSize));
         }
 
@@ -562,7 +562,7 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
 
     @Override
     public void export(HttpServletResponse response, Map<String, Object> params) throws IOException {
-        String maxLine = sysConfigService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
+        String maxLine = sysConfService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
         long exportMaxLine = Integer.parseInt(StrUtil.emptyToDefault(maxLine, "10000"));
         // 导出最大条数限制
         Object limit = params.get(Constant.LIMIT) == null ? Constant.PAGESIZE : params.get(Constant.LIMIT);
@@ -580,7 +580,7 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
 
         List<List<String>> exportDataList = this.handleExportDataList(list);
 
-        String sysDcHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_CABINET_EXPORT_HEADER);
+        String sysDcHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_CABINET_EXPORT_HEADER);
         String fileName = "Cabinets";
         String formatStr = params.get("format").toString();
         basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysDcHeaderJsonStr, formatStr, fileName);

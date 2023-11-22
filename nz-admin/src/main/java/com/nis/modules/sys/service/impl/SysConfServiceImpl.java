@@ -1,12 +1,16 @@
 package com.nis.modules.sys.service.impl;
 
+import cn.hutool.cache.impl.TimedCache;
 import cn.hutool.core.util.ArrayUtil;
+import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
@@ -20,8 +24,8 @@ import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.sys.dao.SysConfDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.redis.SysConfigRedis;
 import com.nis.modules.sys.service.SysConfService;
+import com.nis.modules.sys.service.SysService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
@@ -47,9 +51,8 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
-@Service("sysConfServiceImpl")
+@Service("sysConfService")
 public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity> implements SysConfService {
 
     public static final String[] BASIC_KEYS = {"system_name","theme","language","date_format","system_bgImg","system_favicon","system_logo", "default_cabinet_usize", "map_center_config", "timezone", "session_timeout", "snmp_trap_listen_port", "unsaved_change", "mfa_auth_enable","pin_policy"};
@@ -104,8 +107,6 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
     private static final Log logger = Log.get();
 
     @Autowired
-    private SysConfigRedis sysConfigRedis;
-    @Autowired
     private AgentService agentService;
     @Autowired
     private AlertMessageService alertMessageService;
@@ -120,6 +121,9 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
     @Lazy
     @Autowired
     private Scheduler scheduler;
+
+    @Autowired
+    private SysService sysService;
 
     @Autowired
     private MonitorEventLogService eventLogService;
@@ -205,9 +209,6 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
         final String SNMP_TRAP_KEY = Constant.SYSCONFIG_SNMP_PORT_KEY;
         SysConfigEntity snmpTrapConf = this.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey,SNMP_TRAP_KEY));
 
-        final String SESSION_TIME_OUT_KEY = Constant.SYSCONFIG_SESSION_TIMEOUT_KEY;
-        SysConfigEntity sessionTimeOutConf = this.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey,SESSION_TIME_OUT_KEY));
-
         String timezone = this.getValue("timezone");
 
         //过滤非法的key
@@ -237,9 +238,9 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
 
         //发布 snmp trap 或者 session过期时间变化 监听端口
         if(ToolUtil.isEmpty(snmpTrapConf)||!StrUtil.equals(snmpTrapConf.getParamValue(),params.get(SNMP_TRAP_KEY))){
-            redisTemplate.convertAndSend(Constant.SYSCONFIG_SNMP_PORT_KEY,params.get(Constant.SYSCONFIG_SNMP_PORT_KEY));
-        }else if(ToolUtil.isEmpty(sessionTimeOutConf)||!StrUtil.equals(sessionTimeOutConf.getParamValue(),params.get(SESSION_TIME_OUT_KEY))) {
-        	redisTemplate.convertAndSend(Constant.SYSCONFIG_SESSION_TIMEOUT_KEY,params.get(Constant.SYSCONFIG_SESSION_TIMEOUT_KEY));
+            // notify message
+            String message = params.get(Constant.SYSCONFIG_SNMP_PORT_KEY);
+            sysService.notifySysMessage(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.SNMP_TRAP_PORT.getName(), message);
         }
 
         // timezone offset变更，更新 cronJob.timezone
@@ -389,13 +390,17 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
 
     @Override
     public String getValue(String key) {
-        SysConfigEntity config = sysConfigRedis.get(key);
-        if(config == null){
-            config = this.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey,key));
-            sysConfigRedis.saveOrUpdate(config);
+        TimedCache<String, Object> cache = TimedCacheManager.getNeverExpireCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
+
+        Object value = cache.get(key);
+        if (value == null) {
+            SysConfigEntity config = this.getOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, key));
+            if (config != null) {
+                cache.put(key, config.getParamValue());
+            }
         }
 
-        return config == null ? null : config.getParamValue();
+        return StrUtil.str(cache.get(key), CharsetUtil.CHARSET_UTF_8);
     }
 
     @Override
@@ -408,15 +413,11 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
     * @Author  rui
     * @Date   2021/4/19
     */
-    public Map<String,String> batchQuery(String ... keys){
-
-        List<SysConfigEntity> list = this.list(new QueryWrapper<SysConfigEntity>().lambda().in(ToolUtil.isNotEmpty(keys) && keys.length > 0, SysConfigEntity::getParamKey, keys));
-
-        Map<String,String> result = new HashMap<>();
-        for (SysConfigEntity conf : list){
-            result.put(conf.getParamKey(),conf.getParamValue());
+    public Map<String, String> batchQuery(String... keys) {
+        Map<String, String> result = new HashMap<>();
+        for (String key : Arrays.asList(keys)) {
+            result.put(key, this.getValue(key));
         }
-
         return result;
     }
 
@@ -516,6 +517,9 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
 
         this.saveOrUpdateBatch(map.values());
 
+        // notify message
+        sysService.notifySysMessage(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.SYS_CONFIG_RELOAD.getName(), StrUtil.EMPTY);
+
         return map;
     }
 
@@ -588,8 +592,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
 
     @Override
     public boolean checkHaMode() {
-        List<SysConfigEntity> configList = this.list(new LambdaQueryWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey, new String[]{"ha_mode", "ha_vip"}));
-        Map<String, String> configMap = configList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
+        Map<String, String> configMap = this.batchQuery("ha_mode", "ha_vip");
         if ("2".equals(configMap.get("ha_mode"))) {
             if (!CommonUtils.getInetIpAddress().contains(configMap.get("ha_vip"))) {
                 return false;
@@ -799,5 +802,61 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
         }
     }
 
+    @Override
+    public void updateValueByKey(String key, String value) {
+        this.updateValueByKey(key, value, StrUtil.EMPTY);
+    }
+
+    @Override
+    public void updateValueByKey(String key, String value, String remark) {
+        String conf = this.getValue(key);
+        // save
+        if (conf == null) {
+            SysConfigEntity entity = new SysConfigEntity();
+            entity.setParamKey(key);
+            entity.setParamValue(value);
+            entity.setRemark(remark);
+            this.save(entity);
+        } else {
+            if (StrUtil.equals(conf, value)) {
+                logger.warn("[updateValueByKey] [this configuration has not changed] [key: {}]", key);
+                return;
+            } else {
+                // update
+                LambdaUpdateWrapper<SysConfigEntity> updateWrapper = new UpdateWrapper<SysConfigEntity>().lambda()
+                        .set(SysConfigEntity::getParamValue, value)
+                        .set(SysConfigEntity::getRemark, remark)
+                        .eq(SysConfigEntity::getParamKey, key);
+                this.update(updateWrapper);
+            }
+        }
+
+        // notify message
+        sysService.notifySysMessage(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.SYS_CONFIG_RELOAD.getName(), StrUtil.EMPTY);
+    }
+
+    @Override
+    public String getDataBasesVersion() {
+        return this.getBaseMapper().getDataBasesVersion();
+    }
+
+    @Override
+    public synchronized void reloadSysConfigToCache() {
+        logger.info("[reloadSysConfigToCache] [begin]");
+        try {
+            TimedCache<String, Object> cache = TimedCacheManager.getNeverExpireCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
+            // clear
+            cache.clear();
+
+            // put
+            List<SysConfigEntity> sysConfigList = this.list();
+            sysConfigList.parallelStream().forEach(config -> {
+                cache.put(config.getParamKey(), config.getParamValue());
+            });
+        } catch (Exception e) {
+            logger.error(e, "[reloadSysConfigToCache] [error]");
+        }
+        logger.info("[reloadSysConfigToCache] [finshed]");
+    }
 
 }

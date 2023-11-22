@@ -26,7 +26,7 @@ import com.nis.modules.ipam.entity.IpamSubnetEum;
 import com.nis.modules.ipam.service.IpamSubnetService;
 import com.nis.modules.sys.entity.SysUserStarredEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysUserStarredService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import inet.ipaddr.*;
@@ -54,7 +54,7 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
     private IpamSubnetDao ipamSubnetDao;
     
     @Autowired
-    private SysConfigService sysConfigService;
+    private SysConfService sysConfService;
     
     @Autowired
     private BasicImportAndExportServices basicImportAndExportServices;
@@ -274,14 +274,14 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 
 	@Override
 	public void getTemplateByLanguage(HttpServletResponse response,String format) throws IOException{
-		String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_IPAMSUBNET_IMPORT_HEADER);
+		String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_IPAMSUBNET_IMPORT_HEADER);
         String fileName = "IpamSubnetTemplate";
         basicImportAndExportServices.getTemplate(sysHeaderJsonStr, format, fileName, response);
 	}
 
 	@Override
 	public Map importIpamSubnetData(MultipartFile multipartFile,Map<String,Object> params) throws IOException, AddressStringException, IncompatibleAddressException {
-		String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_IPAMSUBNET_IMPORT_HEADER);
+		String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_IPAMSUBNET_IMPORT_HEADER);
 		Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
         List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
 		// 表头信息 国际化之后的
@@ -404,7 +404,7 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 				failContentList.add(dataMap);
 			}
 		}
-		String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_IPAMSUBNET_IMPORT_HEADER);
+		String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_IPAMSUBNET_IMPORT_HEADER);
 		String failedContentFileBase64Str = basicImportAndExportServices.getFailedContentFileBase64Str(failContentList, sysHeaderJsonStr, MapUtil.getStr(params, "fileExtension"));
 		//  返回统计信息
 		Map<Object, Object> statMap = Tool.MapUtil.builder()
@@ -450,7 +450,7 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 
 	@Override
 	public void export(HttpServletResponse response, Map<String, Object> params) throws IOException{
-		String maxLine = sysConfigService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
+		String maxLine = sysConfService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
         long exportMaxLine = Integer.parseInt(StrUtil.emptyToDefault(maxLine, "10000"));
         // 导出最大条数限制
         Object limit = params.get(Constant.LIMIT) == null ? Constant.PAGESIZE : params.get(Constant.LIMIT);
@@ -478,7 +478,7 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 			tempList.add(ipamSubnet.getRemark());
 			exportDataList.add(tempList);
 		}
-		String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_IPAMSUBNET_IMPORT_HEADER);
+		String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_IPAMSUBNET_IMPORT_HEADER);
         String fileName = "Ipamsubnets";
         String formatStr = params.get("format").toString();
         basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, formatStr, fileName);

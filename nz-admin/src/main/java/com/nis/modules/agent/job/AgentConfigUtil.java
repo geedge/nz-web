@@ -30,8 +30,7 @@ import com.nis.modules.endpoint.service.MonitorEndpointStateService;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.project.entity.MonitorProject;
-import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,7 +77,7 @@ public class AgentConfigUtil {
 	private MonitorEventLogDao confEventDao;
 
 	@Autowired
-	private SysConfigService sysConfigService;
+	private SysConfService sysConfService;
 
 	@Autowired
 	private AlertSeverityService alertSeverityService;
@@ -161,7 +160,7 @@ public class AgentConfigUtil {
 //	public Map generateRuleYml() {
 //		log.debug("rule.yml 开始生成");
 //		// sys_config 配置表信息
-//		List<SysConfigEntity> configEntityList = sysConfigService.list();
+//		List<SysConfigEntity> configEntityList = sysConfService.list();
 //		Map<String, String> configMap = configEntityList.stream()
 //				.collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
 //
@@ -227,13 +226,13 @@ public class AgentConfigUtil {
 		
 		params.put("ip", agent.getHost());
 		params.put("localAgent", agent);
-		params.put("objectStroageUrl", sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_S3_ENDPOINT));
-		params.put("bucketName", sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_S3_BUCKET));
-		params.put("accessKey", sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_S3_ACCESS_KEY));
-		params.put("secret", sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_S3_SECRET_ACCESS_KEY));
-		params.put("insecure", sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_S3_INSECURE));
+		params.put("objectStroageUrl", sysConfService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_S3_ENDPOINT));
+		params.put("bucketName", sysConfService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_S3_BUCKET));
+		params.put("accessKey", sysConfService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_S3_ACCESS_KEY));
+		params.put("secret", sysConfService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_S3_SECRET_ACCESS_KEY));
+		params.put("insecure", sysConfService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_S3_INSECURE));
 		// object storage 标识 1: 本地文件存储，2：S3对象存储
-		String objStroageEnable = sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_TYPE);
+		String objStroageEnable = sysConfService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_TYPE);
 		boolean isLocalStorage = StrUtil.equals("1", objStroageEnable);
 		params.put("isLocalStorage", isLocalStorage);
 
@@ -243,17 +242,15 @@ public class AgentConfigUtil {
 		params.put("joinMemberList", joinMemberIpList);
 		params.put("isMemberlistStore", CollectionUtil.isNotEmpty(joinMemberIpList));
 
-		String interfaceNames = sysConfigService.getValue("interface_name");
+		String interfaceNames = sysConfService.getValue("interface_name");
 		if(StrUtil.isBlank(interfaceNames)) {
 			interfaceNames = "eth0";
 		}
 		List<String> interfaceNameList = Arrays.asList(interfaceNames.split(","));
 		params.put("interfaceNameList", interfaceNameList);
 		params.put("instanceInterfaceNames", CollectionUtil.isNotEmpty(interfaceNameList));
-		
-		List<SysConfigEntity> sysConfigList = sysConfigService.list();
-		Map<String, String> sysConfiMap = sysConfigList.stream()
-				.collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
+
+		TimedCache<String, Object> sysConfiMap = TimedCacheManager.getNeverExpireCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
 		params.put("systemConfig", sysConfiMap);
 
 		params.put("isAlert", isAlert);
@@ -261,7 +258,7 @@ public class AgentConfigUtil {
 		Map map = new HashMap();
 		String content = "";
 		try {
-			String cortexYmlTmpl = sysConfigService.getValue(Constant.SYSCONFIG_KEY_CORTEX_YML_TMPL);
+			String cortexYmlTmpl = sysConfService.getValue(Constant.SYSCONFIG_KEY_CORTEX_YML_TMPL);
 			Template template = TemplateUtil.stringToTemplate(cortexYmlTmpl, Constant.SYSCONFIG_KEY_CORTEX_YML_TMPL);
 			content = FreeMarkerTemplateUtils.processTemplateIntoString(template, params);
 			map = JSONObject.parseObject(content, LinkedHashMap.class, Feature.OrderedField);
@@ -282,7 +279,7 @@ public class AgentConfigUtil {
 		Map params = new LinkedHashMap(16);
 		params.put("localAgent", agent);
 		
-		String interfaceNames = sysConfigService.getValue("interface_name");
+		String interfaceNames = sysConfService.getValue("interface_name");
 		if(StrUtil.isBlank(interfaceNames)) {
 			interfaceNames = "eth0";
 		}
@@ -296,27 +293,25 @@ public class AgentConfigUtil {
 		params.put("isMemberlistStore", CollectionUtil.isNotEmpty(joinMemberIpList));
 		
 		params.put("schemaConfigFrom", DateUtil.format(new Date(), "yyyy-MM-dd"));
-		String logsStorageType = sysConfigService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_TYPE);
+		String logsStorageType = sysConfService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_TYPE);
 		params.put("openAws", StrUtil.equals("2", logsStorageType));
-		String logsStorageRetention = sysConfigService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_RETENTION);
+		String logsStorageRetention = sysConfService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_RETENTION);
 		params.put("storageRetention", Integer.valueOf(logsStorageRetention) * 24);
-		params.put("storageLocalPath", sysConfigService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_LOCAL_PATH));
+		params.put("storageLocalPath", sysConfService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_LOCAL_PATH));
 
-		params.put("objectStroageUrl", sysConfigService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_S3_ENDPOINT));
-		params.put("bucketName", sysConfigService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_S3_BUCKET));
-		params.put("accessKey", sysConfigService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_S3_ACCESS_KEY));
-		params.put("secret", sysConfigService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_S3_SECRET_ACCESS_KEY));
-		params.put("insecure", sysConfigService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_S3_INSECURE));
+		params.put("objectStroageUrl", sysConfService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_S3_ENDPOINT));
+		params.put("bucketName", sysConfService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_S3_BUCKET));
+		params.put("accessKey", sysConfService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_S3_ACCESS_KEY));
+		params.put("secret", sysConfService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_S3_SECRET_ACCESS_KEY));
+		params.put("insecure", sysConfService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_S3_INSECURE));
 
-		List<SysConfigEntity> sysConfigList = sysConfigService.list();
-		Map<String, String> sysConfiMap = sysConfigList.stream()
-				.collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
+		TimedCache<String, Object> sysConfiMap = TimedCacheManager.getNeverExpireCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
 		params.put("systemConfig", sysConfiMap);
 
 		Map map = new HashMap();
 		String content = "";
 		try {
-			String lokiYmlTmpl = sysConfigService.getValue(Constant.SYSCONFIG_KEY_LOKI_YML_TMPL);
+			String lokiYmlTmpl = sysConfService.getValue(Constant.SYSCONFIG_KEY_LOKI_YML_TMPL);
 			Template template = TemplateUtil.stringToTemplate(lokiYmlTmpl, Constant.SYSCONFIG_KEY_LOKI_YML_TMPL);
 			content = FreeMarkerTemplateUtils.processTemplateIntoString(template, params);
 			map = JSONObject.parseObject(content, LinkedHashMap.class, Feature.OrderedField);
@@ -386,8 +381,7 @@ public class AgentConfigUtil {
 	 * @return
 	 */
 	public Map<String, String> generatePrometheusCmdLine(Agent currentAgent) {
-		List<SysConfigEntity> sysConfigList = sysConfigService.list();
-		Map<String, String> sysConfiMap = sysConfigList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
+		TimedCache<String, Object> sysConfiMap = TimedCacheManager.getNeverExpireCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
 
 		Map params = Tool.MapUtil.builder()
 				.put("currentAgent", currentAgent)
@@ -396,7 +390,7 @@ public class AgentConfigUtil {
 		String content = "";
 		try {
 			Template template = TemplateUtil.stringToTemplate(
-					sysConfigService.getValue(Constant.SYSCONFIG_KEY_PROM_CMD_TMPL),
+					sysConfService.getValue(Constant.SYSCONFIG_KEY_PROM_CMD_TMPL),
 					Constant.SYSCONFIG_KEY_PROM_CMD_TMPL);
 			content = FreeMarkerTemplateUtils.processTemplateIntoString(template, params);
 		} catch (IOException | TemplateException | RuntimeException e) {
@@ -449,19 +443,19 @@ public class AgentConfigUtil {
 
 		List<Map> clientsMapList = new ArrayList<>();
 		// 日志代理推送模式
-		String logsProxyPushType = sysConfigService.getValue(Constant.SYSCONFIG_KEY_LOGS_PROXY_PUSH_TYPE);
+		String logsProxyPushType = sysConfService.getValue(Constant.SYSCONFIG_KEY_LOGS_PROXY_PUSH_TYPE);
 		switch (StrUtil.emptyToDefault(logsProxyPushType, "1")) {
 		case "1": // 全部使用 agent proxy 方式
 		case "2": // 联邦开启模式下，promtail 先推送至 per-datacenter agent 代理接口，再 push global loki
 			Map clientEntity = new HashMap(4);
 			clientEntity.put("url", String.format("%s://%s:%s%s%s", currentAgent.getProtocol(), currentAgent.getHost(), currentAgent.getPort(),
-					sysConfigService.getValue(Constant.CONFAGENT_PATH), "/loki/proxy/loki/api/v1/push"));
+					sysConfService.getValue(Constant.CONFAGENT_PATH), "/loki/proxy/loki/api/v1/push"));
 			clientEntity.put("token", currentAgent.getToken());
 			clientsMapList.add(clientEntity);
 			break;
 		case "3"://直接推送到 loki
 			// 1、本地存储，2、s3
-			String logsStorageType = sysConfigService.getValueOrDefault(Constant.SYSCONFIG_KEY_LOGS_STORAGE_TYPE, "1");
+			String logsStorageType = sysConfService.getValueOrDefault(Constant.SYSCONFIG_KEY_LOGS_STORAGE_TYPE, "1");
 
 			if (Tool.StrUtil.equals("1", logsStorageType)) {
 				for (Agent globalAgent : globalAgentList) {
@@ -490,7 +484,7 @@ public class AgentConfigUtil {
 		String content = "";
 		try {
 			Template template = TemplateUtil.stringToTemplate(
-					sysConfigService.getValue(Constant.SYSCONFIG_KEY_PROMTAIL_YML_TMPL),
+					sysConfService.getValue(Constant.SYSCONFIG_KEY_PROMTAIL_YML_TMPL),
 					Constant.SYSCONFIG_KEY_PROMTAIL_YML_TMPL);
 			content = FreeMarkerTemplateUtils.processTemplateIntoString(template, params);
 			map = JSONObject.parseObject(content, LinkedHashMap.class, Feature.OrderedField);
@@ -514,8 +508,8 @@ public class AgentConfigUtil {
 			List<AssetAsset> assetList, List<Agent> globalAgents) {
 		log.debug("per-datacenter prometheus.yml 开始生成");
 		Map<String, Object> params = new LinkedHashMap();
-		params.put("scrape_interval", sysConfigService.getValue(Constant.SYSCONFIG_KEY_SCRAPEINTERVAL));
-		params.put("scrape_timeout", sysConfigService.getValue(Constant.SYSCONFIG_KEY_SCRAPETIMEOUT));
+		params.put("scrape_interval", sysConfService.getValue(Constant.SYSCONFIG_KEY_SCRAPEINTERVAL));
+		params.put("scrape_timeout", sysConfService.getValue(Constant.SYSCONFIG_KEY_SCRAPETIMEOUT));
 		params.put("path_prefix", "");
 		params.put("alert_url", "");
 
@@ -529,7 +523,7 @@ public class AgentConfigUtil {
 		// prometheus_metric
 		Map promMetricsMap = new LinkedHashMap();
 		promMetricsMap.put("job_name", "prometheus_metric");
-		promMetricsMap.put("metrics_path",sysConfigService.getValue(Constant.CONFAGENT_PATH) + "/prometheus/proxy/metrics");
+		promMetricsMap.put("metrics_path",sysConfService.getValue(Constant.CONFAGENT_PATH) + "/prometheus/proxy/metrics");
 		promMetricsMap.put("scheme",agent.getProtocol());
 		
 		List promMetricsStaticConfigList = new ArrayList();
@@ -553,7 +547,7 @@ public class AgentConfigUtil {
 		// agent metrics
 		Map agentMetricsMap = new LinkedHashMap();
 		agentMetricsMap.put("job_name", "agent_metrics");
-		agentMetricsMap.put("metrics_path",sysConfigService.getValue(Constant.CONFAGENT_PATH) + "/actuator/prometheus");
+		agentMetricsMap.put("metrics_path",sysConfService.getValue(Constant.CONFAGENT_PATH) + "/actuator/prometheus");
 		agentMetricsMap.put("scheme",agent.getProtocol());
 		
 		List agentMetricsStaticConfigList = new ArrayList();
@@ -577,13 +571,13 @@ public class AgentConfigUtil {
 		// snmp exporter metrics
 		Map snmpExporterMetricsMap = new LinkedHashMap();
 		snmpExporterMetricsMap.put("job_name", "snmp_exporter_metrics");
-		snmpExporterMetricsMap.put("metrics_path",sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_PATH));
-		snmpExporterMetricsMap.put("scheme",sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_SCHEME));
+		snmpExporterMetricsMap.put("metrics_path",sysConfService.getValue(Constant.SNMP_EXPORTER_MONITOR_PATH));
+		snmpExporterMetricsMap.put("scheme",sysConfService.getValue(Constant.SNMP_EXPORTER_MONITOR_SCHEME));
 		
 		List snmpExporterMetricsStaticConfigList = new ArrayList();
 		Map snmpExporterMetricsStaticConfig = new LinkedHashMap(2);
 		List snmpExporterMetricsTargets = new ArrayList();
-		snmpExporterMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_HOST))?agent.getHost():sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_HOST), sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_PORT)));
+		snmpExporterMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfService.getValue(Constant.SNMP_EXPORTER_MONITOR_HOST))?agent.getHost():sysConfService.getValue(Constant.SNMP_EXPORTER_MONITOR_HOST), sysConfService.getValue(Constant.SNMP_EXPORTER_MONITOR_PORT)));
 		snmpExporterMetricsStaticConfig.put("targets", snmpExporterMetricsTargets);
 
 		Map snmpExporterLabels = new LinkedHashMap(4);
@@ -601,13 +595,13 @@ public class AgentConfigUtil {
 		// blackbox exporter metrics
 		Map blackboxExporterMetricsMap = new LinkedHashMap();
 		blackboxExporterMetricsMap.put("job_name", "blackbox_exporter_metrics");
-		blackboxExporterMetricsMap.put("metrics_path",sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PATH));
-		blackboxExporterMetricsMap.put("scheme",sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_SCHEME));
+		blackboxExporterMetricsMap.put("metrics_path",sysConfService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PATH));
+		blackboxExporterMetricsMap.put("scheme",sysConfService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_SCHEME));
 		
 		List blackboxExporterMetricsStaticConfigList = new ArrayList();
 		Map blackboxExporterMetricsStaticConfig = new LinkedHashMap(2);
 		List blackboxExporterMetricsTargets = new ArrayList();
-		blackboxExporterMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_HOST))?agent.getHost():sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_HOST), sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PORT)));
+		blackboxExporterMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_HOST))?agent.getHost():sysConfService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_HOST), sysConfService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PORT)));
 		blackboxExporterMetricsStaticConfig.put("targets", blackboxExporterMetricsTargets);
 
 		Map blackboxExporterLabels = new LinkedHashMap(4);
@@ -635,21 +629,21 @@ public class AgentConfigUtil {
 		// remote_write url and token
 		List<Map> remoteWriteUrlInfoMapList = new ArrayList<>();
 		// object storage 标识 1: 本地文件存储，2：S3对象存储
-		String objStroageEnable = sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_TYPE);
+		String objStroageEnable = sysConfService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_TYPE);
 		boolean isLocalStorage = StrUtil.equals("1", objStroageEnable);
 
-		String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
+		String agentPath = sysConfService.getValue(Constant.CONFAGENT_PATH);
 
 		// 指标代理模式 metrics_proxy_push_type 1: 经过 agent 代理推送 cortex/prometheus 2: 直接推送
 		// cortex/prometheus
-		String metricsProxyPushType = sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_PROXY_PUSH_TYPE);
+		String metricsProxyPushType = sysConfService.getValue(Constant.SYSCONFIG_KEY_METRICS_PROXY_PUSH_TYPE);
 		switch (StrUtil.emptyToDefault(metricsProxyPushType, "1")) {
 		case "1": {
 			if (isLocalStorage) {
 				// metrics 本地存储，弃用 cortex ，直接采用 prometheus , 根据 sys_config prometheus_fed_mode
 				// 确定 pull/push
 				// 1: pull 2:push 默认 push
-				String prometheusFedMode = sysConfigService.getValue(Constant.SYSCONFIG_KEY_PROM_FEDER_MODE);
+				String prometheusFedMode = sysConfService.getValue(Constant.SYSCONFIG_KEY_PROM_FEDER_MODE);
 				prometheusFedMode = StrUtil.emptyToDefault(prometheusFedMode, "2");
 				if (StrUtil.equals("1", prometheusFedMode)) {
 					// global 使用 federation job 集中收集各个 per-datacenter 数据，do nothing
@@ -678,7 +672,7 @@ public class AgentConfigUtil {
 				// metrics 本地存储，弃用 cortex ，直接采用 prometheus , 根据 sys_config prometheus_fed_mode
 				// 确定 pull/push
 				// 1: pull 2:push 默认 push
-				String prometheusFedMode = sysConfigService.getValue(Constant.SYSCONFIG_KEY_PROM_FEDER_MODE);
+				String prometheusFedMode = sysConfService.getValue(Constant.SYSCONFIG_KEY_PROM_FEDER_MODE);
 				prometheusFedMode = StrUtil.emptyToDefault(prometheusFedMode, "2");
 				if (StrUtil.equals("1", prometheusFedMode)) {
 					// global 使用 federation job 集中收集各个 per-datacenter 数据，do nothing
@@ -705,9 +699,7 @@ public class AgentConfigUtil {
 		}
 		params.put("remoteWriteUrlInfos", remoteWriteUrlInfoMapList);
 
-		List<SysConfigEntity> sysConfigList = sysConfigService.list();
-		Map<String, String> sysConfiMap = sysConfigList.stream()
-				.collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
+		TimedCache<String, Object> sysConfiMap = TimedCacheManager.getNeverExpireCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
 		params.put("systemConfig", sysConfiMap);
 		params.put("currentAgent", agent);
 
@@ -715,7 +707,7 @@ public class AgentConfigUtil {
 		String content = "";
 		try {
 			Template template = TemplateUtil.stringToTemplate(
-					sysConfigService.getValue(Constant.SYSCONFIG_KEY_PROM_YML_TMPL),
+					sysConfService.getValue(Constant.SYSCONFIG_KEY_PROM_YML_TMPL),
 					Constant.SYSCONFIG_KEY_PROM_YML_TMPL);
 			content = FreeMarkerTemplateUtils.processTemplateIntoString(template, params);
 			map = JSONObject.parseObject(content, LinkedHashMap.class, Feature.OrderedField);
@@ -742,12 +734,8 @@ public class AgentConfigUtil {
 			List<Agent> perDataCenterAgents, List<AssetAsset> assetList, List<MonitorEndpoint> endpointList,
 			Boolean isAlert, Boolean isSupportSysteMetrics) {
 		log.debug("global prometheus.yml 开始生成");
-		// sys_config 配置表信息
-		List<SysConfigEntity> configEntityList = sysConfigService.list();
-		Map<String, String> configMap = configEntityList.stream()
-				.collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
 
-		boolean fedeEnabled = StrUtil.equals("1", configMap.get(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED));
+		boolean fedeEnabled = StrUtil.equals("1", sysConfService.getValue(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED));
 		// 关闭联邦 不启用 per-datecenter
 		if (!fedeEnabled)
 			perDataCenterAgents = new ArrayList<>();
@@ -757,11 +745,11 @@ public class AgentConfigUtil {
 		allAgentList.addAll(perDataCenterAgents);
 
 		// agent 代理接口前缀
-		String proxyPath = configMap.get(Constant.CONFAGENT_PATH) + "/prometheus/proxy";
+		String proxyPath = sysConfService.getValue(Constant.CONFAGENT_PATH) + "/prometheus/proxy";
 		// federate
 		List<Map> federateMapList = new ArrayList<>();
 		// blackbox job 1: global 2: per-datacenter
-		String assetPingFrom = configMap.get(Constant.SYSCONFIG_KEY_ASSET_PING_FROM);
+		String assetPingFrom = sysConfService.getValue(Constant.SYSCONFIG_KEY_ASSET_PING_FROM);
 		for (Agent server : allAgentList) {
 			// 联邦开启
 			/*if (fedeEnabled) {
@@ -854,13 +842,13 @@ public class AgentConfigUtil {
 		promMetricsMap.put("staticConfigList", promMetricsStaticConfigList);
 
 		// nezha_metrics
-		String alertApi = configMap.get(Constant.SYSCONFIG_KEY_ALERT_API);
+		String alertApi = sysConfService.getValue(Constant.SYSCONFIG_KEY_ALERT_API);
 		String scheme = Tool.StrUtil.isBlank(alertApi) ? "http": alertApi.split("://")[0];
 		String target = Tool.StrUtil.isBlank(alertApi) ? "" : alertApi.replace(scheme + "://", "");
 		Map nezhaMetricsMap = new LinkedHashMap();
 		String[] split = alertApi.split("://");
 		nezhaMetricsMap.put("job_name", "nezha_metrics");
-		nezhaMetricsMap.put("metrics_path",configMap.get(Constant.SYSCONFIG_KEY_ALERT_PATH_PREFIX) + "/actuator/prometheus");
+		nezhaMetricsMap.put("metrics_path", sysConfService.getValue(Constant.SYSCONFIG_KEY_ALERT_PATH_PREFIX) + "/actuator/prometheus");
 		nezhaMetricsMap.put("isFederate", false);
 		nezhaMetricsMap.put("scheme", scheme); // 协议
 		nezhaMetricsMap.put("instanceRelabel", true);
@@ -881,7 +869,7 @@ public class AgentConfigUtil {
 		// agent metrics
 		Map agentMetricsMap = new LinkedHashMap();
 		agentMetricsMap.put("job_name", "agent_metrics");
-		agentMetricsMap.put("metrics_path", configMap.get(Constant.CONFAGENT_PATH) + "/actuator/prometheus");
+		agentMetricsMap.put("metrics_path", sysConfService.getValue(Constant.CONFAGENT_PATH) + "/actuator/prometheus");
 		agentMetricsMap.put("scheme", currentAgent.getProtocol());
 		agentMetricsMap.put("isFederate", false);
 		agentMetricsMap.put("instanceRelabel", true);
@@ -904,15 +892,15 @@ public class AgentConfigUtil {
 		// snmp exporter metrics
 		Map snmpExporterMetricsMap = new LinkedHashMap();
 		snmpExporterMetricsMap.put("job_name", "snmp_exporter_metrics");
-		snmpExporterMetricsMap.put("metrics_path",sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_PATH));
-		snmpExporterMetricsMap.put("scheme",sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_SCHEME));
+		snmpExporterMetricsMap.put("metrics_path",sysConfService.getValue(Constant.SNMP_EXPORTER_MONITOR_PATH));
+		snmpExporterMetricsMap.put("scheme",sysConfService.getValue(Constant.SNMP_EXPORTER_MONITOR_SCHEME));
 		snmpExporterMetricsMap.put("isFederate", false);
 		snmpExporterMetricsMap.put("instanceRelabel", true);
 		
 		List snmpExporterMetricsStaticConfigList = new ArrayList();
 		Map snmpExporterMetricsStaticConfig = new LinkedHashMap(2);
 		List snmpExporterMetricsTargets = new ArrayList();
-		snmpExporterMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_HOST))?currentAgent.getHost():sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_HOST), sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_PORT)));
+		snmpExporterMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfService.getValue(Constant.SNMP_EXPORTER_MONITOR_HOST))?currentAgent.getHost():sysConfService.getValue(Constant.SNMP_EXPORTER_MONITOR_HOST), sysConfService.getValue(Constant.SNMP_EXPORTER_MONITOR_PORT)));
 		snmpExporterMetricsStaticConfig.put("targets", snmpExporterMetricsTargets);
 
 		Map snmpExporterLabels = new LinkedHashMap(2);
@@ -927,15 +915,15 @@ public class AgentConfigUtil {
 		// blackbox exporter metrics
 		Map blackboxExporterMetricsMap = new LinkedHashMap();
 		blackboxExporterMetricsMap.put("job_name", "blackbox_exporter_metrics");
-		blackboxExporterMetricsMap.put("metrics_path",sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PATH));
-		blackboxExporterMetricsMap.put("scheme",sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_SCHEME));
+		blackboxExporterMetricsMap.put("metrics_path",sysConfService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PATH));
+		blackboxExporterMetricsMap.put("scheme",sysConfService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_SCHEME));
 		blackboxExporterMetricsMap.put("isFederate", false);
 		blackboxExporterMetricsMap.put("instanceRelabel", true);
 		
 		List blackboxExporterMetricsStaticConfigList = new ArrayList();
 		Map blackboxExporterMetricsStaticConfig = new LinkedHashMap(2);
 		List blackboxExporterMetricsTargets = new ArrayList();
-		blackboxExporterMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_HOST))?currentAgent.getHost():sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_HOST), sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PORT)));
+		blackboxExporterMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_HOST))?currentAgent.getHost():sysConfService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_HOST), sysConfService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PORT)));
 		blackboxExporterMetricsStaticConfig.put("targets", blackboxExporterMetricsTargets);
 
 		Map blackboxExporterLabels = new LinkedHashMap(2);
@@ -950,14 +938,14 @@ public class AgentConfigUtil {
 		// loki metrics
 		Map lokiMetricsMap = new LinkedHashMap();
 		lokiMetricsMap.put("job_name", "loki_metrics");
-		lokiMetricsMap.put("metrics_path",sysConfigService.getValue(Constant.LOKI_MONITOR_PATH));
-		lokiMetricsMap.put("scheme",sysConfigService.getValue(Constant.LOKI_MONITOR_SCHEME));
+		lokiMetricsMap.put("metrics_path",sysConfService.getValue(Constant.LOKI_MONITOR_PATH));
+		lokiMetricsMap.put("scheme",sysConfService.getValue(Constant.LOKI_MONITOR_SCHEME));
 		lokiMetricsMap.put("isFederate", false);
 		lokiMetricsMap.put("instanceRelabel", true);
 		List lokiMetricsStaticConfigList = new ArrayList();
 		Map lokiMetricsStaticConfig = new LinkedHashMap(2);
 		List lokiMetricsTargets = new ArrayList();
-		lokiMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfigService.getValue(Constant.LOKI_MONITOR_HOST))?currentAgent.getHost():sysConfigService.getValue(Constant.LOKI_MONITOR_HOST), sysConfigService.getValue(Constant.LOKI_MONITOR_PORT)));
+		lokiMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfService.getValue(Constant.LOKI_MONITOR_HOST))?currentAgent.getHost():sysConfService.getValue(Constant.LOKI_MONITOR_HOST), sysConfService.getValue(Constant.LOKI_MONITOR_PORT)));
 		lokiMetricsStaticConfig.put("targets", lokiMetricsTargets);
 		Map lokiLabels = new LinkedHashMap(2);
 		lokiLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
@@ -971,14 +959,14 @@ public class AgentConfigUtil {
 		// cortex metrics
 		Map cortexMetricsMap = new LinkedHashMap();
 		cortexMetricsMap.put("job_name", "cortex_metrics");
-		cortexMetricsMap.put("metrics_path",sysConfigService.getValue(Constant.CORTEX_MONITOR_PATH));
-		cortexMetricsMap.put("scheme",sysConfigService.getValue(Constant.CORTEX_MONITOR_SCHEME));
+		cortexMetricsMap.put("metrics_path",sysConfService.getValue(Constant.CORTEX_MONITOR_PATH));
+		cortexMetricsMap.put("scheme",sysConfService.getValue(Constant.CORTEX_MONITOR_SCHEME));
 		cortexMetricsMap.put("isFederate", false);
 		cortexMetricsMap.put("instanceRelabel", true);
 		List cortexMetricsStaticConfigList = new ArrayList();
 		Map cortexMetricsStaticConfig = new LinkedHashMap(2);
 		List cortexMetricsTargets = new ArrayList();
-		cortexMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfigService.getValue(Constant.CORTEX_MONITOR_HOST))?currentAgent.getHost():sysConfigService.getValue(Constant.CORTEX_MONITOR_HOST), sysConfigService.getValue(Constant.CORTEX_MONITOR_PORT)));
+		cortexMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfService.getValue(Constant.CORTEX_MONITOR_HOST))?currentAgent.getHost():sysConfService.getValue(Constant.CORTEX_MONITOR_HOST), sysConfService.getValue(Constant.CORTEX_MONITOR_PORT)));
 		cortexMetricsStaticConfig.put("targets", cortexMetricsTargets);
 		Map cortexLabels = new LinkedHashMap(2);
 		cortexLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
@@ -990,15 +978,15 @@ public class AgentConfigUtil {
 		cortexMetricsMap.put("staticConfigList", cortexMetricsStaticConfigList);
 		
 		Map<String, Object> params = new LinkedHashMap();
-		params.put("scrape_interval", configMap.get(Constant.SYSCONFIG_KEY_SCRAPEINTERVAL));
-		params.put("scrape_timeout", configMap.get(Constant.SYSCONFIG_KEY_SCRAPETIMEOUT));
-		params.put("path_prefix", configMap.get(Constant.SYSCONFIG_KEY_ALERT_PATH_PREFIX));
-		params.put("alert_url", configMap.get(Constant.SYSCONFIG_KEY_ALERT_API));
+		params.put("scrape_interval", sysConfService.getValue(Constant.SYSCONFIG_KEY_SCRAPEINTERVAL));
+		params.put("scrape_timeout", sysConfService.getValue(Constant.SYSCONFIG_KEY_SCRAPETIMEOUT));
+		params.put("path_prefix", sysConfService.getValue(Constant.SYSCONFIG_KEY_ALERT_PATH_PREFIX));
+		params.put("alert_url", sysConfService.getValue(Constant.SYSCONFIG_KEY_ALERT_API));
 		params.put("isGlobal", true);
 		params.put("isAlert", isAlert);
 
 		// object storage 标识 1: 本地文件存储，2：S3对象存储
-		String objStroageEnable = configMap.get(Constant.SYSCONFIG_KEY_METRICS_STORAGE_TYPE);
+		String objStroageEnable = sysConfService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_TYPE);
 		boolean isLocalStorage = StrUtil.equals("1", objStroageEnable);
 
 		List<Map> jobList = new ArrayList<>();
@@ -1006,7 +994,7 @@ public class AgentConfigUtil {
 		/**
 		 * 指标代理模式 metrics_proxy_push_type 1: 经过 agent 代理推送 cortex 2: 直接推送 cortex
 		 */
-		String metricsProxyPushType = sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_PROXY_PUSH_TYPE);
+		String metricsProxyPushType = sysConfService.getValue(Constant.SYSCONFIG_KEY_METRICS_PROXY_PUSH_TYPE);
 		boolean isProxyPush = StrUtil.equalsIgnoreCase("1", StrUtil.emptyToDefault(metricsProxyPushType, "1"));
 
 		// remote_write url and token
@@ -1021,7 +1009,7 @@ public class AgentConfigUtil {
 				// metrics 本地存储，弃用 cortex ，直接采用 prometheus , 根据 sys_config prometheus_fed_mode
 				// 确定 pull/push
 				// 1: pull 2:push 默认 push
-				String prometheusFedMode = sysConfigService.getValue(Constant.SYSCONFIG_KEY_PROM_FEDER_MODE);
+				String prometheusFedMode = sysConfService.getValue(Constant.SYSCONFIG_KEY_PROM_FEDER_MODE);
 				prometheusFedMode = StrUtil.emptyToDefault(prometheusFedMode, "2");
 				if (StrUtil.equals("1", prometheusFedMode)) {
 					// global 使用 federation job 集中收集各个 per-datacenter 数据
@@ -1047,7 +1035,7 @@ public class AgentConfigUtil {
 				if(isProxyPush) {
 					map.put("url", String.format("%s://%s:%s%s",currentAgent.getProtocol(), 
 							currentAgent.getHost(),currentAgent.getPort(),
-							configMap.get(Constant.CONFAGENT_PATH) + "/cortex/proxy/api/v1/push"));
+							sysConfService.getValue(Constant.CONFAGENT_PATH) + "/cortex/proxy/api/v1/push"));
 				}else {
 					map.put("url", String.format("http://%s:%s%s", currentAgent.getHost(), cortexDefaultPort, "/api/v1/push"));
 				}
@@ -1065,7 +1053,7 @@ public class AgentConfigUtil {
 				// metrics 本地存储，弃用 cortex ，直接采用 prometheus , 根据 sys_config prometheus_fed_mode
 				// 确定 pull/push
 				// 1: pull 2:push 默认 push
-				String prometheusFedMode = sysConfigService.getValue(Constant.SYSCONFIG_KEY_PROM_FEDER_MODE);
+				String prometheusFedMode = sysConfService.getValue(Constant.SYSCONFIG_KEY_PROM_FEDER_MODE);
 				prometheusFedMode = StrUtil.emptyToDefault(prometheusFedMode, "2");
 				if (StrUtil.equals("1", prometheusFedMode)) {
 					// global 使用 federation job 集中收集其他 global promethues
@@ -1084,7 +1072,7 @@ public class AgentConfigUtil {
 							remoteWriteUrl = String.format("%s://%s:%s%s/prometheus/proxy/api/v1/write",
 									globalAgent.getProtocol(),
 									globalAgent.getHost(), globalAgent.getPort(),
-									configMap.get(Constant.CONFAGENT_PATH));
+									sysConfService.getValue(Constant.CONFAGENT_PATH));
 						} else {
 							remoteWriteUrl = String.format("http://%s:%s/api/v1/write", globalAgent.getHost(),
 									prometheusDefaultPort);
@@ -1100,7 +1088,7 @@ public class AgentConfigUtil {
 				if(isProxyPush) {
 					map.put("url",
 							String.format("%s://%s:%s%s", currentAgent.getProtocol(), currentAgent.getHost(),currentAgent.getPort(),
-									configMap.get(Constant.CONFAGENT_PATH) + "/cortex/proxy/api/v1/push"));
+									sysConfService.getValue(Constant.CONFAGENT_PATH) + "/cortex/proxy/api/v1/push"));
 				}else {
 					map.put("url",
 							String.format("http://%s:%s%s", currentAgent.getHost(), cortexDefaultPort,"/api/v1/push"));
@@ -1132,16 +1120,14 @@ public class AgentConfigUtil {
 
 		params.put("jobList", jobList);
 
-		List<SysConfigEntity> sysConfigList = sysConfigService.list();
-		Map<String, String> sysConfiMap = sysConfigList.stream()
-				.collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
+		TimedCache<String, Object> sysConfiMap = TimedCacheManager.getNeverExpireCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
 		params.put("systemConfig", sysConfiMap);
 		params.put("currentAgent", currentAgent);
 
 		Map map = null;
 		String content = "";
 		try {
-			Template template = TemplateUtil.stringToTemplate(configMap.get(Constant.SYSCONFIG_KEY_PROM_YML_TMPL),
+			Template template = TemplateUtil.stringToTemplate(sysConfService.getValue(Constant.SYSCONFIG_KEY_PROM_YML_TMPL),
 					Constant.SYSCONFIG_KEY_PROM_YML_TMPL);
 			content = FreeMarkerTemplateUtils.processTemplateIntoString(template, params);
 			map = JSONObject.parseObject(content, LinkedHashMap.class, Feature.OrderedField);
@@ -1220,11 +1206,11 @@ public class AgentConfigUtil {
 		 * 3、关闭 agent集群 + 本地存储 global 推送到 本地 + 其它所有 global per-datacenter 不推送 talon推送给任意
 		 * global 4、关闭 agent集群 + s3存储 global 推送到本地 per-datacenter 不推送 talon 推送给任意 global
 		 */
-		String logsStorageType = sysConfigService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_TYPE);
-		String logsProxyPushType = sysConfigService.getValueOrDefault(Constant.SYSCONFIG_KEY_LOGS_PROXY_PUSH_TYPE, "1");
+		String logsStorageType = sysConfService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_TYPE);
+		String logsProxyPushType = sysConfService.getValueOrDefault(Constant.SYSCONFIG_KEY_LOGS_PROXY_PUSH_TYPE, "1");
 		// 集群开关
-		String federation = sysConfigService.getValueOrDefault(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED, "1");
-		String agentPath = sysConfigService.getValueOrDefault(Constant.CONFAGENT_PATH, "");
+		String federation = sysConfService.getValueOrDefault(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED, "1");
+		String agentPath = sysConfService.getValueOrDefault(Constant.CONFAGENT_PATH, "");
 
 		/**
 		 * 日志推送模式： 1：agent proxy 代理 2：联邦开启模式下，promtail先推送至 agent代理，再push global loki,
@@ -1475,9 +1461,7 @@ public class AgentConfigUtil {
 	 * @return
 	 */
 	public Map generateInitCortexYml() {
-		List<SysConfigEntity> sysConfigList = sysConfigService.list();
-		Map<String, String> sysConfiMap = sysConfigList.stream()
-				.collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
+		TimedCache<String, Object> sysConfiMap = TimedCacheManager.getNeverExpireCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
 
 		// template variables
 		Map<Object, Object> params = Tool.MapUtil.builder()
@@ -1487,7 +1471,7 @@ public class AgentConfigUtil {
 		log.info("[generateInitCortexYml] [begin]");
 		String content = StrUtil.EMPTY;
 		try {
-			String cortexInitYmlTmpl = sysConfigService.getValue(Constant.SYSCONFIG_KEY_CORTEX_INIT_YML_TMPL);
+			String cortexInitYmlTmpl = sysConfService.getValue(Constant.SYSCONFIG_KEY_CORTEX_INIT_YML_TMPL);
 			// 渲染
 			Template template = TemplateUtil.stringToTemplate(cortexInitYmlTmpl, Constant.SYSCONFIG_KEY_CORTEX_INIT_YML_TMPL);
 			content = FreeMarkerTemplateUtils.processTemplateIntoString(template, params);
@@ -1508,9 +1492,7 @@ public class AgentConfigUtil {
 	 * @return
 	 */
 	public Map generateInitLokiYml() {
-		List<SysConfigEntity> sysConfigList = sysConfigService.list();
-		Map<String, String> sysConfiMap = sysConfigList.stream()
-				.collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
+		TimedCache<String, Object> sysConfiMap = TimedCacheManager.getNeverExpireCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
 
 		// template variables
 		Map<Object, Object> params = Tool.MapUtil.builder()
@@ -1521,7 +1503,7 @@ public class AgentConfigUtil {
 		String content = StrUtil.EMPTY;
 
 		try {
-			String cortexInitYmlTmpl = sysConfigService.getValue(Constant.SYSCONFIG_KEY_LOKI_INIT_YML_TMPL);
+			String cortexInitYmlTmpl = sysConfService.getValue(Constant.SYSCONFIG_KEY_LOKI_INIT_YML_TMPL);
 			// 渲染
 			Template template = TemplateUtil.stringToTemplate(cortexInitYmlTmpl, Constant.SYSCONFIG_KEY_LOKI_INIT_YML_TMPL);
 			content = FreeMarkerTemplateUtils.processTemplateIntoString(template, params);

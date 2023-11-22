@@ -24,7 +24,7 @@ import com.nis.modules.ipam.entity.IpamSubnet;
 import com.nis.modules.ipam.service.IpamIpService;
 import com.nis.modules.ipam.service.IpamSubnetService;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,7 +52,7 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
     private IpamIpDao ipamIpDao;
 
     @Autowired
-    private SysConfigService sysConfigService;
+    private SysConfService sysConfService;
 
     @Autowired
     private BasicImportAndExportServices basicImportAndExportServices;
@@ -150,7 +150,7 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
 
     @Override
     public void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException {
-        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_IPAMIP_IMPORT_HEADER);
+        String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_IPAMIP_IMPORT_HEADER);
         String fileName = "IpamIpTemplate";
         basicImportAndExportServices.getTemplate(sysHeaderJsonStr, format, fileName, response);
 
@@ -158,7 +158,7 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
 
     @Override
     public Map importIpamIpData(MultipartFile excelFile, Map<String, Object> params) throws IOException {
-        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_IPAMIP_IMPORT_HEADER);
+        String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_IPAMIP_IMPORT_HEADER);
         Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
         List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(excelFile, sysHeaderJsonStr);
 
@@ -278,7 +278,7 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
                 failContentList.add(dataMap);
             }
         }
-        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_IPAMIP_IMPORT_HEADER);
+        String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_IPAMIP_IMPORT_HEADER);
         String failedContentFileBase64Str = basicImportAndExportServices.getFailedContentFileBase64Str(failContentList, sysHeaderJsonStr, MapUtil.getStr(params, "fileExtension"));
         //  返回统计信息
         Map<Object, Object> statMap = Tool.MapUtil.builder()
@@ -314,7 +314,7 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
 
     @Override
     public void export(HttpServletResponse response, Map<String, Object> params) throws IOException {
-        String maxLine = sysConfigService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
+        String maxLine = sysConfService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
         long exportMaxLine = Integer.parseInt(StrUtil.emptyToDefault(maxLine, "10000"));
         // 导出最大条数限制
         Object limit = params.get(Constant.LIMIT) == null ? Constant.PAGESIZE : params.get(Constant.LIMIT);
@@ -346,7 +346,7 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
             tempList.add(ipamIp.getRemark());
             exportDataList.add(tempList);
         }
-        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_IPAMIP_IMPORT_HEADER);
+        String sysHeaderJsonStr = sysConfService.getValue(Constant.SYSCONFIG_KEY_IPAMIP_IMPORT_HEADER);
         String fileName = "Ipamips";
         String formatStr = params.get("format").toString();
         basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, formatStr, fileName);

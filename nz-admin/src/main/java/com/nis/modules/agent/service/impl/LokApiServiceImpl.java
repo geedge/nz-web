@@ -8,7 +8,6 @@ import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
@@ -18,8 +17,7 @@ import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.service.LokiApiService;
 import com.nis.modules.agent.service.PromApiService;
 import com.nis.modules.agent.util.AgentUtil;
-import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +36,7 @@ public class LokApiServiceImpl extends ServiceImpl<AgentDao, Agent> implements L
 	private static final Log log = Log.get();
 
 	@Autowired
-	private SysConfigService sysConfigService;
+	private SysConfService sysConfService;
 
 	@Value("${connect.timeout:30000}")
 	private Integer connectTimeout;
@@ -96,7 +94,7 @@ public class LokApiServiceImpl extends ServiceImpl<AgentDao, Agent> implements L
 		Agent server = promApiService.getOneAvaliableGlobalAgent();
 
 		// 请求 prometheus server
-		String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
+		String agentPath = sysConfService.getValue(Constant.CONFAGENT_PATH);
 		String url = String.format("%s%s%s", agentPath, "/loki/proxy", "/loki/api/v1/query");
 
 		Map<Object, Object> requestParam = Tool.MapUtil.builder()
@@ -141,7 +139,7 @@ public class LokApiServiceImpl extends ServiceImpl<AgentDao, Agent> implements L
 		Agent server = promApiService.getOneAvaliableGlobalAgent();
 
 		// 请求 prometheus server
-		String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
+		String agentPath = sysConfService.getValue(Constant.CONFAGENT_PATH);
 		String url = String.format("%s%s%s", agentPath, "/loki/proxy", "/loki/api/v1/query_range");
 
 		Map<Object, Object> requestParam = Tool.MapUtil.builder()
@@ -164,7 +162,7 @@ public class LokApiServiceImpl extends ServiceImpl<AgentDao, Agent> implements L
 		Agent server = promApiService.getOneAvaliableGlobalAgent();
 
 		// 请求 prometheus server
-		String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
+		String agentPath = sysConfService.getValue(Constant.CONFAGENT_PATH);
 		String url = String.format("%s%s%s", agentPath, "/loki/proxy", proxyPath);
 
 		Map<Object, Object> requestParam = Tool.MapUtil.builder()
@@ -181,7 +179,7 @@ public class LokApiServiceImpl extends ServiceImpl<AgentDao, Agent> implements L
 		Agent server = promApiService.getOneAvaliableGlobalAgent();
 
 		// 请求 prometheus server
-		String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
+		String agentPath = sysConfService.getValue(Constant.CONFAGENT_PATH);
 		String url = String.format("%s%s%s", agentPath, "/loki/proxy", proxyPath);
 
 		AgentUtil.agentApiProxy(server, url, request, response);
@@ -212,8 +210,8 @@ public class LokApiServiceImpl extends ServiceImpl<AgentDao, Agent> implements L
 
 					List<Object> valuesList = (List<Object>) resultArray.stream().map(map -> (List) map.get("values")).flatMap(Collection::stream).collect(Collectors.toList());
 					// 查询结果集超过系统设置最大限制 , -1 表示不做限制
-					SysConfigEntity configEntity = sysConfigService.getOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.LOKILOG_QUERY_MAX_SERIES));
-					Integer queryMaxSeriesIntVal = Integer.valueOf(configEntity.getParamValue());
+					String queryMaxSeriesConfStr = sysConfService.getValue(Constant.LOKILOG_QUERY_MAX_SERIES);
+					Integer queryMaxSeriesIntVal = Integer.valueOf(queryMaxSeriesConfStr);
 					if (!queryMaxSeriesIntVal.equals(-1) && valuesList.size() > queryMaxSeriesIntVal) {
 						data.put("result", Collections.emptyList());
 						resultData.put("message", String.format("Configure the maximum number of Series: %s, query the total number of Series: %s", queryMaxSeriesIntVal, valuesList.size()));
@@ -286,8 +284,9 @@ public class LokApiServiceImpl extends ServiceImpl<AgentDao, Agent> implements L
 			mapList = mapList.stream().sorted((s1, s2) -> Long.valueOf(s1.get("timestamp").toString()).compareTo(Long.valueOf(s2.get("timestamp").toString()))).collect(Collectors.toList());
 		}
 
-		SysConfigEntity configEntity = sysConfigService.getOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.LOKI_LOGS_QUERY_STAT_MAX_POINTS));
-		Integer nodeNum = Integer.valueOf(configEntity.getParamValue());
+		// LOKI_LOGS_QUERY_STAT_MAX_POINTS
+		String logsQueryStatMaxPointsConfStr = sysConfService.getValue(Constant.LOKI_LOGS_QUERY_STAT_MAX_POINTS);
+		Integer nodeNum = Integer.valueOf(logsQueryStatMaxPointsConfStr);
 
 		Long first, end;
 		if (directionFlag) {

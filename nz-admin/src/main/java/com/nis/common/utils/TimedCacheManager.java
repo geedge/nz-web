@@ -47,7 +47,24 @@ public class TimedCacheManager {
     public static TimedCache<String, Object> getCache(String prefix, String name, Integer timeout, Integer delay) {
         TimedCache<String, Object> cache = CACHE_MAP.computeIfAbsent(Tool.StrUtil.concat(true, prefix, name), s -> {
             TimedCache<String, Object> timedCache = CacheUtil.newTimedCache(TimeUnit.SECONDS.toMillis(timeout));
-            timedCache.schedulePrune(TimeUnit.SECONDS.toMillis(delay));
+            if (Tool.ObjectUtil.notEqual(0, timeout)) {
+                timedCache.schedulePrune(TimeUnit.SECONDS.toMillis(delay));
+            }
+            return timedCache;
+        });
+        return cache;
+    }
+
+    /**
+     * get never expire cache
+     *
+     * @param prefix
+     * @param name
+     * @return
+     */
+    public static TimedCache<String, Object> getNeverExpireCache(String prefix, String name) {
+        TimedCache<String, Object> cache = CACHE_MAP.computeIfAbsent(Tool.StrUtil.concat(true, prefix, name), s -> {
+            TimedCache<String, Object> timedCache = CacheUtil.newTimedCache(0);
             return timedCache;
         });
         return cache;

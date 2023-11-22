@@ -381,9 +381,7 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
                 String authUsername = terminalConnInfo.getAuthUsername();
                 String pin = StringUtils.str(Base64.getDecoder().decode(terminalConnInfo.getAuthPin()));
 
-                List<SysConfigEntity> configList = sysConfService.list(new LambdaQueryWrapper<SysConfigEntity>()
-                        .in(SysConfigEntity::getParamKey, "terminal_telnet_user_tip", "terminal_telnet_pin_tip"));
-                Map<String, String> systemTipConfigMap = configList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
+                Map<String, String> systemTipConfigMap = sysConfService.batchQuery("terminal_telnet_user_tip", "terminal_telnet_pin_tip");
 
                 String authUserTip = terminalConnInfo.getAuthUserTip();
                 String authPinTip = terminalConnInfo.getAuthPinTip();
@@ -727,8 +725,7 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
                 log.info("[duplicateSession] [reopen TELNET connection begin.] [duplicate uuid: {}]", duplicateSessionUUID);
                 TelnetUtil telnetUtil = new TelnetUtil();
                 telnetUtil.connect(terminalConnInfo.getManageIp(), terminalConnInfo.getAuthProtocolPort());
-                List<SysConfigEntity> configList = sysConfService.list(new LambdaQueryWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey, "terminal_telnet_user_tip", "terminal_telnet_pin_tip"));
-                Map<String, String> systemTipConfigMap = configList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
+                Map<String, String> systemTipConfigMap = sysConfService.batchQuery("terminal_telnet_user_tip", "terminal_telnet_pin_tip");
 
                 String authUserTip = TelnetUtil.getTelenetLoginTip(terminalConnInfo.getAuthUserTip(), systemTipConfigMap, "terminal_telnet_user_tip");
                 String authPinTip = TelnetUtil.getTelenetLoginTip(terminalConnInfo.getAuthPinTip(), systemTipConfigMap, "terminal_telnet_pin_tip");

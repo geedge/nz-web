@@ -32,7 +32,7 @@ import com.nis.modules.stat.dao.StatDao;
 import com.nis.modules.stat.entity.StatAnalysis;
 import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.setup.controller.TimezoneController;
@@ -74,7 +74,7 @@ public class StatServiceImpl implements StatService {
 	private MonitorEndpointService monitorEndpointService;
 
 	@Autowired
-	private SysConfigService sysConfigService;
+	private SysConfService sysConfService;
 
 	@Autowired
 	private AlertSeverityService alertSeverityConfService;
@@ -497,7 +497,7 @@ public class StatServiceImpl implements StatService {
 		Map<String, Object> result = new HashMap<String, Object>();
 
 		// 处理时区问题
-		TimezoneController.Timezone sysTimezone = TimezoneController.queryTimezoneByName(sysConfigService.getValue("timezone"));
+		TimezoneController.Timezone sysTimezone = TimezoneController.queryTimezoneByName(sysConfService.getValue("timezone"));
         params.put("timezone", ToolUtil.isEmpty(sysTimezone) ? 0 : sysTimezone.getOffset() / 1000);
 
 		if (ToolUtil.isEmpty(params.get("stime"))) {
@@ -642,7 +642,7 @@ public class StatServiceImpl implements StatService {
 			throw new NZException(RCode.SYSSTAT_TYPE_IS_NULL);
 		}
 
-		String statQueryJson = sysConfigService.getValue("stat_query_json");
+		String statQueryJson = sysConfService.getValue("stat_query_json");
 		List<Map<String, Object>> allStatMap = JSONArray.parseObject(statQueryJson, List.class);
 		List<String> types = allStatMap.stream().map(o -> (String) o.get("name")).collect(Collectors.toList());
 		if (!types.contains(type)) {

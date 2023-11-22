@@ -3,7 +3,7 @@ package com.nis.common.utils;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.nis.common.exception.NZException;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import com.sun.mail.util.MailConnectException;
 import jakarta.activation.DataHandler;
 import jakarta.activation.FileDataSource;
@@ -22,7 +22,7 @@ public class MailUtil {
 	private static final Log logger = Log.get();
 
 	@Autowired
-	SysConfigService configService;
+	SysConfService sysConfService;
     
 	private Session session = null;
 
@@ -31,29 +31,29 @@ public class MailUtil {
 
 	public void sendHTML(List<String> to, String subject, String txt) throws MessagingException {
 		// 发送邮箱地址
-		from = configService.getValue("email_send_account");
+		from = sysConfService.getValue("email_send_account");
 		if (StringUtils.isEmpty(from)) {
 			// 如果发送邮箱地址为空 则默认使用登录邮箱
-			from = configService.getValue("email_auth_account");
+			from = sysConfService.getValue("email_auth_account");
 		}
 		sendHTML(from, to, subject, txt, Tool.StrUtil.EMPTY);
 	}
 
 	public void sendHTMLAndAppendFile(List<String> to, String subject, String txt, String filePath) throws MessagingException {
 		// 发送邮箱地址
-		from = configService.getValue("email_send_account");
+		from = sysConfService.getValue("email_send_account");
 		if (StringUtils.isEmpty(from)) {
 			// 如果发送邮箱地址为空 则默认使用登录邮箱
-			from = configService.getValue("email_auth_account");
+			from = sysConfService.getValue("email_auth_account");
 		}
         sendHTML(from, to, subject, txt, filePath);
 	}
 
 	public void sendHTML(String from, List<String> to, String subject, String txt, String appendFilePath) throws MessagingException {
-		host = configService.getValue("email_host");
-		port = configService.getValue("email_port");
-		pin = configService.getValue("email_auth_password");
-		user = configService.getValue("email_send_account");
+		host = sysConfService.getValue("email_host");
+		port = sysConfService.getValue("email_port");
+		pin = sysConfService.getValue("email_auth_password");
+		user = sysConfService.getValue("email_send_account");
 
 		Properties props = new Properties();
 		props.setProperty("mail.smtp.host", host);// 服务主机地址
@@ -61,7 +61,7 @@ public class MailUtil {
 		props.setProperty("mail.transport.protocol", "smtp");
 
 		//ssl、tls用
-		String securityType = configService.getValue("email_security_type");
+		String securityType = sysConfService.getValue("email_security_type");
 		if (Tool.StrUtil.equals(securityType, "SSL")) {
 			props.put("mail.smtp.ssl.trust", "*");
 			props.put("mail.smtp.ssl.enable", "true");

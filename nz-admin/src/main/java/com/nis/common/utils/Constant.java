@@ -165,9 +165,6 @@ public class Constant {
 	 */
 	public static final String TOOL_PATH = System.getProperty("user.dir") + File.separator + "tools";
 
-	// 当前sys_config 配置中配置项和所属类别map
-	public static final Map<String, List<String>> SYSCONFIG_TYPEWITHKEYS_MAP;
-
 	// module 类型 可选值 http、snmp
 	public static final String MODULE_TYPE_HTTP = "http";
 	public static final String MODULE_TYPE_SNMP = "snmp";
@@ -256,21 +253,6 @@ public class Constant {
 		ALERTMESSAGE_STATE = new ArrayList<Integer>();
 		ALERTMESSAGE_STATE.add(1);
 		ALERTMESSAGE_STATE.add(2);
-
-		SYSCONFIG_TYPEWITHKEYS_MAP = new HashMap<>();
-
-		SYSCONFIG_TYPEWITHKEYS_MAP.put("basic",
-				Arrays.asList(new String[] { "alert_api", "asset_ping_switch", "asset_ping_interval",
-						"node_exporter_target_path", "scrape_interval", "storage_local_retention", "system_name",
-						"timezone", "default_cabinet_usize", "metrics_query_max_series", "map_center_config",
-						"unsaved_change" }));
-		SYSCONFIG_TYPEWITHKEYS_MAP.put("email",
-				Arrays.asList(new String[] { "email_enable", "email_smtp_host", "email_smtp_port", "email_smtp_account",
-						"email_smtp_password", "email_send_account", "email_test_reciver", "email_ssl_flag",
-						"email_tls_flag", "test" }));
-		SYSCONFIG_TYPEWITHKEYS_MAP.put("terminal", Arrays.asList(new String[] { "max_terminal_num" }));
-		SYSCONFIG_TYPEWITHKEYS_MAP.put("ldap", Arrays.asList(new String[] { "ldap_address", "ldap_dn", "ldap_password",
-				"ldap_ou", "ldap_user_filter", "ldap_mapping", "ldap_enable", "test" }));
 
 		SNMP_SETVLAUE_TYPE = new ArrayList<>();
 		SNMP_SETVLAUE_TYPE.add("OctetString");
@@ -1297,6 +1279,9 @@ public class Constant {
 	    }
     }
 
+	public static final String SYS_CACHE_PREFIX = "SYS_";
+
+	public static final String SYS_CONFIG_CACHE_KEY = "sys_config";
 	public static final String SYS_STATE_CACHE_PREFIX = "SYS_STATE_";
 
 	public static final String ENDPOINT_METRICS_STATE_CACHE_KEY = "endpoint_metrics_state";

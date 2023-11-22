@@ -12,7 +12,7 @@ import com.nis.common.interceptor.SysMenuInterceptor;
 import com.nis.common.utils.SQLUtils;
 import com.nis.common.utils.SpringContextUtils;
 import com.nis.common.utils.SqlHelper.MysqlHelper;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import org.apache.ibatis.mapping.DatabaseIdProvider;
 import org.apache.ibatis.mapping.VendorDatabaseIdProvider;
 import org.springframework.context.annotation.Bean;
@@ -63,7 +63,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        SysConfigService sysConfigService = (SysConfigService) SpringContextUtils.getBean("sysConfigService");
-        registry.addInterceptor(new SysMenuInterceptor(sysConfigService)).addPathPatterns("/sys/menu/**");
+        SysConfService sysConfService = (SysConfService) SpringContextUtils.getBean("sysConfService");
+        registry.addInterceptor(new SysMenuInterceptor(sysConfService)).addPathPatterns("/sys/menu/**");
     }
 }
