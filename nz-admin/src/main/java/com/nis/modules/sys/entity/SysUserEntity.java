@@ -90,12 +90,12 @@ public class SysUserEntity implements Serializable {
 
     private Integer createBy;
 
-    private String name;
-
-    /**
-     * 来源
-     */
-    private String source;
+	private String name;
+	
+	/**
+	 * 来源
+	 */
+	private String source;
 
     private String lastLoginIp;
 

@@ -1,6 +1,7 @@
 package com.nis.modules.sys.controller;
 
 
+import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -42,6 +43,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -154,7 +156,11 @@ public class SysLoginController extends AbstractController {
 
             // user preference
             List<SysUserPreference> preferenceList = userPrefService.list(new LambdaQueryWrapper<SysUserPreference>().eq(SysUserPreference::getUid, u.getId()));
-            Map<String, String> preferences = preferenceList.stream().collect(Collectors.toMap(SysUserPreference::getPrefKey, SysUserPreference::getPrefValue));
+            Map<String, SysUserPreference> preferenceByKey = preferenceList.stream().collect(Collectors.toMap(SysUserPreference::getPrefKey, Function.identity(), (s1, s2) -> s1.getUts() > s2.getUts() ? s1 : s2));
+            Map<String, String> preferences = MapUtil.newHashMap();
+            preferenceByKey.forEach((k, v) -> {
+                preferences.put(k, v.getPrefValue());
+            });
             u.setPreferences(preferences);
             result.put("user", u);
 
