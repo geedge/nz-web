@@ -1,5 +1,6 @@
 package com.nis.modules.sys.service.impl;
 
+import cn.hutool.core.map.MapUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.Tool;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -36,9 +38,16 @@ public class SysUserPrefServiceImpl extends ServiceImpl<SysUserPrefDao, SysUserP
         // query list
         List<SysUserPreference> userPrefList = this.list(queryWrapper);
 
+        // Go heavy
+        Map<String, SysUserPreference> preferenceMap = userPrefList.stream()
+                .collect(Collectors.toMap(SysUserPreference::getPrefKey, Function.identity(), (s1, s2) -> s1.getUts() > s2.getUts() ? s1 : s2));
+
         // return Map format
-        Map<String, String> userPrefMap = userPrefList.stream()
-                .collect(Collectors.toMap(SysUserPreference::getPrefKey, SysUserPreference::getPrefValue));
+        Map<String, String> userPrefMap = MapUtil.newHashMap();
+        preferenceMap.forEach((k, v)->{
+            userPrefMap.put(k, v.getPrefValue());
+        });
+
         return userPrefMap;
     }
 

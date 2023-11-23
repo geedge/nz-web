@@ -14,6 +14,7 @@ import lombok.Data;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 系统用户
@@ -137,4 +138,12 @@ public class SysUserEntity implements Serializable {
 	 */
 	@TableField(exist = false)
 	private Integer online;
+
+	/**
+	 * 个性化配置
+	 */
+	@TableField(exist = false)
+	private Map preferences;
+
+
 }
