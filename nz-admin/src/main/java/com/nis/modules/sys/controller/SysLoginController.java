@@ -1,6 +1,7 @@
 package com.nis.modules.sys.controller;
 
 
+import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -14,8 +15,10 @@ import com.nis.common.utils.*;
 import com.nis.modules.sys.entity.AuthTokenEntity;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.entity.SysUserPreference;
 import com.nis.modules.sys.redis.SysLoginRedis;
 import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysUserPrefService;
 import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.setup.controller.TimezoneController;
@@ -41,6 +44,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * 登录相关
@@ -61,6 +66,8 @@ public class SysLoginController extends AbstractController {
 	private SysLoginRedis sysLoginRedis;
 	@Autowired
 	private SysConfigService sysConfigService;
+	@Autowired
+	private SysUserPrefService userPrefService;
 	
 	@RequestMapping("captcha.jpg")
 	public void captcha(HttpServletResponse response)throws IOException {
@@ -138,6 +145,18 @@ public class SysLoginController extends AbstractController {
 			result.put("authFlag", authFlag);
 			result.put("authBind", authBind);
 			result.put("mfaAuthEnable", mfaAuthEnable);
+
+			String copyright = StrUtil.emptyToDefault(sysConfigService.getValue("copyright"), "0");
+			result.put("copyright", Integer.valueOf(copyright));
+
+			// user preference
+			List<SysUserPreference> preferenceList = userPrefService.list(new LambdaQueryWrapper<SysUserPreference>().eq(SysUserPreference::getUid, u.getId()));
+			Map<String, SysUserPreference> preferenceByKey = preferenceList.stream().collect(Collectors.toMap(SysUserPreference::getPrefKey, Function.identity(), (s1, s2) -> s1.getUts() > s2.getUts() ? s1 : s2));
+			Map<String, String> preferences = MapUtil.newHashMap();
+			preferenceByKey.forEach((k, v) -> {
+				preferences.put(k, v.getPrefValue());
+			});
+			u.setPreferences(preferences);
 			result.put("user", u);
 			// 查询系统配置信息
 			String[] paramkeys = {"system_name", "system_logo", "timezone", "default_cabinet_usize", "map_center_config", "unsaved_change","prometheus_federation_enabled"};
