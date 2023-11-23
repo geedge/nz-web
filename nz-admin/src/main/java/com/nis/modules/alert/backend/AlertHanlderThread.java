@@ -1,17 +1,11 @@
 package com.nis.modules.alert.backend;
 
-import cn.hutool.core.date.DateTime;
-import cn.hutool.core.date.StopWatch;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.Tool;
-import com.nis.modules.alert.entity.AlertMessageEntity;
-import com.nis.modules.alert.entity.AlertSilenceConf;
-import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
-import com.nis.modules.alert.service.AlertHandlerService;
+import java.time.Duration;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.QueryTimeoutException;
@@ -20,9 +14,24 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.nis.common.protobuf.Types.Label;
+import com.nis.common.protobuf.Types.Sample;
+import com.nis.common.protobuf.Types.TimeSeries;
+import com.nis.common.protobuf.Types.TimeSeries.Builder;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.Tool;
+import com.nis.modules.alert.entity.AlertMessageEntity;
+import com.nis.modules.alert.entity.AlertSilenceConf;
+import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
+import com.nis.modules.alert.service.AlertHandlerService;
+import com.nis.modules.alert.service.RecordRuleService;
+
+import cn.hutool.core.date.DateTime;
+import cn.hutool.core.date.StopWatch;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 
 /**
  * 告警消息处理线程 
@@ -47,7 +56,8 @@ public class AlertHanlderThread implements Runnable {
 	private RedisTemplate<String, Object> redisTemplate;
 	@Autowired
 	private AlertHandlerService messageHandlerService;
-	
+	@Autowired
+	private RecordRuleService recordRuleService;
 	/**
 	 * alert message 超时时间
 	 */
@@ -159,6 +169,8 @@ public class AlertHanlderThread implements Runnable {
 								message.setTableName(Constant.ALERT_MESSAGE_ACTIVE_TABLE);
 								//更新表中数据同时更新 redis 超时时间
 								messageHandlerService.updateMessageEndAt(message);
+								//在prometheus中保存一份
+								this.sendToTimeSeries(message.getId(), nowDate, "active", dto);
 								continue;
 							}
 							if(Tool.StrUtil.isNotBlank(silenceRk)) {//非首次接收的状态为 silence 的告警消息
@@ -166,6 +178,8 @@ public class AlertHanlderThread implements Runnable {
 								message.setTableName(Constant.ALERT_MESSAGE_SILENCE_TABLE);
 								//更新表中数据同时更新 redis 超时时间
 								messageHandlerService.updateMessageEndAt(message);
+								//在prometheus中保存一份
+								this.sendToTimeSeries(message.getId(), nowDate, "silence", dto);
 								continue;
 							}
 						}
@@ -198,6 +212,8 @@ public class AlertHanlderThread implements Runnable {
 							// 判断是否已经新产生告警
 							message.setTableName(Constant.ALERT_MESSAGE_ACTIVE_TABLE);
 							messageHandlerService.handleMessageActiveBatch(Tool.ListUtil.toList(message));
+							//在prometheus中保存一份
+							this.sendToTimeSeries(message.getId(), nowDate, "active", dto);
 							continue;
 						}
 						// 匹配到告警静默规则
@@ -205,6 +221,8 @@ public class AlertHanlderThread implements Runnable {
 						message.setTableName(Constant.ALERT_MESSAGE_SILENCE_TABLE);
 						message.setSilenceList(silenceList);
 						messageHandlerService.handleMessageSilenceBatch(Tool.ListUtil.toList(message));
+						//在prometheus中保存一份
+						this.sendToTimeSeries(message.getId(), nowDate, "silence", dto);
 					} catch (RuntimeException e) {
 						log.warn(e, "alert message foreach error");
 					}
@@ -241,5 +259,26 @@ public class AlertHanlderThread implements Runnable {
 		return Tool.NumberUtil.parseLong(Tool.StrUtil.concat(true, datePrefix,middleId));
 	}
 
+	/**
+	 * 将 active message 保存到 prometheus
+	 * @param messageId
+	 * @param dto
+	 */
+	private void sendToTimeSeries(Long messageId,Date nowDate, String state, AlertMessageReceiveDTO dto) {
+		Label idLabel = Label.newBuilder().setName("id").setValue(String.valueOf(messageId)).build();
+		Label metricName = Label.newBuilder().setName("__name__").setValue("nz_alert_message_event").build();
+		Label stateLabel = Label.newBuilder().setName("state").setValue(state).build();
+		Sample sample = Sample.newBuilder().setTimestamp(nowDate.getTime()).setValue(Tool.NumberUtil.parseDouble(Tool.StrUtil.emptyToDefault(dto.getValue(), "1"))).build();
+		Builder builder = TimeSeries.newBuilder().addLabels(idLabel).addLabels(metricName).addLabels(stateLabel).addSamples(sample);
+		LinkedHashMap<String,String> labels = dto.getLabels();
+		if(labels != null) {
+			labels.forEach((k,v) -> {
+				Label l = Label.newBuilder().setName(k).setValue(v).build();
+				builder.addLabels(l);
+			});
+		}
+		TimeSeries timeSeries = builder.build();
+		recordRuleService.rightPushRecordToRedis(timeSeries);
+	}
 
 }
