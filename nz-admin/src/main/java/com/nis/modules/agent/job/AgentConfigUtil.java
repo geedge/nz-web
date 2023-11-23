@@ -17,8 +17,6 @@ import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.entity.MonitorEventLog;
 import com.nis.modules.agent.service.AgentService;
 import com.nis.modules.agent.util.AgentUtil;
-import com.nis.modules.alert.entity.AlertRuleEntity;
-import com.nis.modules.alert.entity.AlertSeverityConf;
 import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.alert.service.AlertSeverityService;
 import com.nis.modules.asset.entity.AssetAsset;
@@ -655,8 +653,10 @@ public class AgentConfigUtil {
 				if (StrUtil.equals("1", prometheusFedMode)) {
 					// global 使用 federation job 集中收集各个 per-datacenter 数据，do nothing
 				} else if (StrUtil.equals("2", prometheusFedMode)) {
-					// global使用 remote_write 集中收集各个 per-datacenter数据
-					for (Agent globalAgent : globalAgents) {
+					// global 使用 remote_write 集中收集各个 per-datacenter数据
+					// 不对状态进行过滤，获取所有 global agent
+					List<Agent> globalAgentListNoStatusFilter = agentService.list(new LambdaQueryWrapper<Agent>().eq(Agent::getType, Constant.AgentType.GLOBAL.getValue()));
+					for (Agent globalAgent : globalAgentListNoStatusFilter) {
 						Map map = new HashMap();
 						map.put("url", String.format("%s://%s:%s%s/prometheus/proxy/api/v1/write",globalAgent.getProtocol(),
 								globalAgent.getHost(), globalAgent.getPort(), agentPath));
@@ -684,8 +684,10 @@ public class AgentConfigUtil {
 				if (StrUtil.equals("1", prometheusFedMode)) {
 					// global 使用 federation job 集中收集各个 per-datacenter 数据，do nothing
 				} else if (StrUtil.equals("2", prometheusFedMode)) {
-					// global使用 remote_write 集中收集各个 per-datacenter数据
-					for (Agent globalAgent : globalAgents) {
+					// global 使用 remote_write 集中收集各个 per-datacenter数据
+					// 不对状态进行过滤，获取所有 global agent
+					List<Agent> globalAgentListNoStatusFilter = agentService.list(new LambdaQueryWrapper<Agent>().eq(Agent::getType, Constant.AgentType.GLOBAL.getValue()));
+					for (Agent globalAgent : globalAgentListNoStatusFilter) {
 						Map map = new HashMap();
 						map.put("url", String.format("http://%s:%s/api/v1/write", globalAgent.getHost(),
 								prometheusDefaultPort));
@@ -1074,8 +1076,10 @@ public class AgentConfigUtil {
 						jobList.add(map);
 					}
 				} else if (StrUtil.equals("2", prometheusFedMode)) {
-					// global使用 remote_write 集中收集其他 global promethues
-					for (Agent globalAgent : globalAgents) {
+					// global 使用 remote_write 集中收集其他 global promethues
+					// 不对状态进行过滤，获取所有 global agent
+					List<Agent> globalAgentListNoStatusFilter = agentService.list(new LambdaQueryWrapper<Agent>().eq(Agent::getType, Constant.AgentType.GLOBAL.getValue()));
+					for (Agent globalAgent : globalAgentListNoStatusFilter) {
 						// 跳过自己
 						if (globalAgent.getId().equals(currentAgent.getId()))
 							continue;
