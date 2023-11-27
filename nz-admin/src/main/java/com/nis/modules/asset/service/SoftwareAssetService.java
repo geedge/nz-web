@@ -25,4 +25,7 @@ public interface SoftwareAssetService extends IService<SoftwareAsset> {
 
     R deleteSoftwareAsset(Integer force, List<Integer> idList);
 
+    List<SoftwareAsset> getSoftwareAssetListByTypeName(String... nameArr);
+
+    List<SoftwareAsset> getSoftwareAssetListByTypeId(Integer... idArr);
 }

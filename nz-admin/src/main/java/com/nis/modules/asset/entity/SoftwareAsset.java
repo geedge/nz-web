@@ -35,11 +35,6 @@ public class SoftwareAsset implements Serializable {
     private Integer assetId;
 
     /**
-     * 业务系统ID
-     */
-    private Integer projectId;
-
-    /**
      * 软件类型ID
      */
     private Integer typeId;
@@ -48,6 +43,31 @@ public class SoftwareAsset implements Serializable {
      * 配置参数
      */
     private Object params;
+
+    /**
+     *签发时间,时间戳,单位：ms
+     */
+    private Long dateIssued;
+
+    /**
+     * 失效时间,时间戳,单位：ms
+     */
+    private Long dateExpires;
+
+    /**
+     * 授权数量,type = TSG-OS Concentrate 时有效
+     */
+    private Integer concurrency;
+
+    /**
+     * 已登录数量,type = TSG-OS Concentrate 时有效
+     */
+    private Integer logins;
+
+    /**
+     * 授权状态, 0：未授权,1：已授权,2：未知错误（网络无法访问）
+     */
+    private Integer status;
 
     /**
      * 描述
@@ -67,19 +87,31 @@ public class SoftwareAsset implements Serializable {
     private Long cts;
 
     /**
+     * 添加用户 id
+     */
+    private Integer cid;
+
+    /**
      * 更新时间戳
      */
     private Long uts;
 
+    /**
+     * 更新用户 id
+     */
+    private Integer uid;
+
+    /**
+     * 最后扫描时间,单位：ms
+     */
+    private Long lastScanTs;
+
 
     @TableField(exist = false)
-    private Map<Object,Object> asset;
+    private AssetAsset asset;
 
     @TableField(exist = false)
-    private Map<Object,Object> project;
-
-    @TableField(exist = false)
-    private Map<Object,Object> type;
+    private SoftwareType type;
 
     public void setName(String name) {
         this.name = Tool.StrUtil.trim(name);

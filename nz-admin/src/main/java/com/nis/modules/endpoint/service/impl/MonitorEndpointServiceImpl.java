@@ -1511,9 +1511,6 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             if (ObjectUtil.notEqual(endpoint.getAssetId(), softwareAsset.getAssetId())) {
                 throw new NZException(RCode.ENDPOINT_ASSETID_ERROR);
             }
-            if (ObjectUtil.notEqual(module.getProjectId(), softwareAsset.getProjectId())) {
-                throw new NZException(RCode.ENDPOINT_PROJECTID_ERROR);
-            }
         }
         // 保存
         this.save(endpoint);

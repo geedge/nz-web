@@ -7,25 +7,27 @@
         <id property="id" column="id"/>
         <result property="name" column="name"/>
         <result property="assetId" column="asset_id"/>
-        <result property="projectId" column="project_id"/>
         <result property="typeId" column="type_id"/>
         <result property="params" column="params"/>
+        <result property="dateIssued" column="date_issued"/>
+        <result property="dateExpires" column="date_expires"/>
+        <result property="concurrency" column="concurrency"/>
+        <result property="logins" column="logins"/>
+        <result property="status" column="status"/>
         <result property="remark" column="remark"/>
         <result property="buildIn" column="build_in"/>
         <result property="cts" column="cts"/>
+        <result property="cid" column="cid"/>
         <result property="uts" column="uts"/>
+        <result property="uid" column="uid"/>
+        <result property="lastScanTs" column="last_scan_ts"/>
 
-        <association property="asset" columnPrefix="ass_" javaType="java.util.HashMap">
+        <association property="asset" columnPrefix="ass_" javaType="com.nis.modules.asset.entity.AssetAsset">
             <result property="id" column="id"/>
             <result property="name" column="name"/>
         </association>
 
-        <association property="project" columnPrefix="pro_" javaType="java.util.HashMap">
-            <result property="id" column="id"/>
-            <result property="name" column="name"/>
-        </association>
-
-        <association property="type" columnPrefix="ty_" javaType="java.util.HashMap">
+        <association property="type" columnPrefix="ty_" javaType="com.nis.modules.asset.entity.SoftwareType">
             <result property="id" column="id"/>
             <result property="name" column="name"/>
             <result property="category" column="category"/>
@@ -38,15 +40,12 @@
             sa.*,
             asset.id AS ass_id,
             asset.name AS ass_name,
-            project.id AS pro_id,
-            project.name AS pro_name,
             type.id as ty_id,
             type.name as ty_name,
             type.category as ty_category
         FROM
             software_asset sa
         LEFT JOIN asset_asset asset ON sa.asset_id = asset.id
-        LEFT JOIN monitor_project project ON sa.project_id = project.id
         LEFT JOIN software_type type on sa.type_id = type.id
         <where>
             <if test="params.ids != null and params.ids != ''">
@@ -55,16 +54,13 @@
                     #{id}
                 </foreach>
             </if>
+            <if test="params.status != null and params.status != ''">
+                AND sa.status = #{params.status}
+            </if>
             <if test="params.assetIds != null and params.assetIds != ''">
                 AND sa.asset_id in
                 <foreach collection="params.assetIds.split(',')" item="assetId" open="(" separator="," close=")">
                     #{assetId}
-                </foreach>
-            </if>
-            <if test="params.projectIds != null and params.projectIds != ''">
-                AND sa.project_id in
-                <foreach collection="params.projectIds.split(',')" item="projectId" open="(" separator="," close=")">
-                    #{projectId}
                 </foreach>
             </if>
             <if test="params.typeIds != null and params.typeIds != ''">

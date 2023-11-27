@@ -17,8 +17,7 @@ import com.nis.modules.asset.entity.SoftwareType;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.SoftwareAssetService;
 import com.nis.modules.asset.service.SoftwareTypeService;
-import com.nis.modules.project.entity.MonitorProject;
-import com.nis.modules.project.service.MonitorProjectService;
+import com.nis.modules.sys.shiro.ShiroUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -41,9 +40,6 @@ public class SoftwareAssetServiceImpl extends ServiceImpl<SoftwareAssetDao, Soft
     private AssetAssetService assetService;
 
     @Autowired
-    private MonitorProjectService projectService;
-
-    @Autowired
     private SoftwareTypeService softwareTypeService;
 
     @Override
@@ -53,30 +49,12 @@ public class SoftwareAssetServiceImpl extends ServiceImpl<SoftwareAssetDao, Soft
 
         AssetAsset refAsset = assetService.getById(softwareAsset.getAssetId());
         if (Tool.ObjectUtil.isNotNull(refAsset)) {
-            Map<Object, Object> refAssetMap = Tool.MapUtil.builder()
-                    .put("id", refAsset.getId())
-                    .put("name", refAsset.getName())
-                    .build();
-            softwareAsset.setAsset(refAssetMap);
-        }
-
-        MonitorProject refProject = projectService.getById(softwareAsset.getProjectId());
-        if (Tool.ObjectUtil.isNotNull(refProject)) {
-            Map<Object, Object> refProjectMap = Tool.MapUtil.builder()
-                    .put("id", refProject.getId())
-                    .put("name", refProject.getName())
-                    .build();
-            softwareAsset.setProject(refProjectMap);
+            softwareAsset.setAsset(refAsset);
         }
 
         SoftwareType refType = softwareTypeService.getById(softwareAsset.getTypeId());
         if (Tool.ObjectUtil.isNotNull(refType)) {
-            Map<Object, Object> refTypeMap = Tool.MapUtil.builder()
-                    .put("id", refType.getId())
-                    .put("name", refType.getName())
-                    .put("category", refType.getCategory())
-                    .build();
-            softwareAsset.setType(refTypeMap);
+            softwareAsset.setType(refType);
         }
 
         Object softwareAssetParams = softwareAsset.getParams();
@@ -132,12 +110,6 @@ public class SoftwareAssetServiceImpl extends ServiceImpl<SoftwareAssetDao, Soft
             ValidateUtils.is(asset).notNull(RCode.ASSET_NOT_EXIST);
         }
 
-        Integer projectId = softwareAsset.getProjectId();
-        if (projectId != null && projectId != -1) {
-            MonitorProject project = projectService.getById(projectId);
-            ValidateUtils.is(project).notNull(RCode.PROJECT_NOTFOUND);
-        }
-
         Integer typeId = softwareAsset.getTypeId();
         if (typeId != null && typeId != -1) {
             SoftwareType type = softwareTypeService.getById(typeId);
@@ -152,8 +124,8 @@ public class SoftwareAssetServiceImpl extends ServiceImpl<SoftwareAssetDao, Soft
 
         // set default value
         softwareAsset.setAssetId(ObjectUtil.defaultIfNull(softwareAsset.getAssetId(), -1));
-        softwareAsset.setProjectId(ObjectUtil.defaultIfNull(softwareAsset.getProjectId(), -1));
         softwareAsset.setTypeId(ObjectUtil.defaultIfNull(softwareAsset.getTypeId(), -1));
+        softwareAsset.setParams(ObjectUtil.defaultIfNull(softwareAsset.getParams(), StrUtil.EMPTY_JSON));
 
         // params
         if (ObjectUtil.isNotEmpty(softwareAsset.getParams())) {
@@ -162,15 +134,18 @@ public class SoftwareAssetServiceImpl extends ServiceImpl<SoftwareAssetDao, Soft
 
         Integer id = softwareAsset.getId();
         if (ObjectUtil.isNull(id)) {
+            softwareAsset.setCid(ShiroUtils.getUserId().intValue());
             softwareAsset.setCts(System.currentTimeMillis());
         } else {
             SoftwareAsset tempSoftwareAssetForJudge = this.getById(id);
             if (ObjectUtil.isNull(tempSoftwareAssetForJudge)) {
+                softwareAsset.setCid(ShiroUtils.getUserId().intValue());
                 softwareAsset.setCts(System.currentTimeMillis());
             }
         }
 
-        // uts
+        // uid&uts
+        softwareAsset.setUid(ShiroUtils.getUserId().intValue());
         softwareAsset.setUts(System.currentTimeMillis());
 
         // save or update
@@ -205,6 +180,43 @@ public class SoftwareAssetServiceImpl extends ServiceImpl<SoftwareAssetDao, Soft
         this.removeByIds(idList);
 
         return R.ok().putData("list", resultList);
+    }
+
+    @Override
+    public List<SoftwareAsset> getSoftwareAssetListByTypeName(String... typeNames) {
+        if (Tool.ArrayUtil.isEmpty(typeNames)) {
+            return Tool.ListUtil.empty();
+        }
+
+        List<SoftwareType> softwareTypeList = softwareTypeService.list(new LambdaQueryWrapper<SoftwareType>().in(SoftwareType::getName, typeNames));
+        Integer[] idArr = softwareTypeList.stream().map(SoftwareType::getId).toArray(Integer[]::new);
+        if (Tool.ArrayUtil.isEmpty(idArr)) {
+            return Tool.ListUtil.empty();
+        }
+
+        return this.getSoftwareAssetListByTypeId(idArr);
+    }
+
+    @Override
+    public List<SoftwareAsset> getSoftwareAssetListByTypeId(Integer... typeIds) {
+        if (Tool.ArrayUtil.isEmpty(typeIds)) {
+            return Tool.ListUtil.empty();
+        }
+
+        List<SoftwareAsset> softwareAssetList = this.list(new LambdaQueryWrapper<SoftwareAsset>().in(SoftwareAsset::getTypeId, typeIds));
+        if (Tool.CollUtil.isNotEmpty(softwareAssetList)) {
+            for (SoftwareAsset softwareAsset : softwareAssetList) {
+                AssetAsset refAsset = assetService.getById(softwareAsset.getAssetId());
+                if (Tool.ObjectUtil.isNotNull(refAsset)) {
+                    softwareAsset.setAsset(refAsset);
+                }
+                SoftwareType refType = softwareTypeService.getById(softwareAsset.getTypeId());
+                if (Tool.ObjectUtil.isNotNull(refType)) {
+                    softwareAsset.setType(refType);
+                }
+            }
+        }
+        return softwareAssetList;
     }
 
 

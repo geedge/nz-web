@@ -3,7 +3,6 @@ package com.nis.modules.project.service.impl;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
@@ -13,8 +12,6 @@ import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.Dc;
-import com.nis.modules.asset.entity.SoftwareAsset;
-import com.nis.modules.asset.service.SoftwareAssetService;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.module.entity.MonitorModule;
@@ -53,9 +50,6 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
     @Autowired
     private SysUserStarredService starredService;
 
-    @Autowired
-    private SoftwareAssetService softwareAssetService;
-    
     @Override
     public MonitorProject queryProjectEntity(Integer id) {
         MonitorProject project = this.getById(id);
@@ -204,15 +198,6 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
 
         // alert
         alertMessageService.removeByProjectIds(idList);
-
-        // software asset
-        softwareAssetService.remove(new LambdaQueryWrapper<SoftwareAsset>()
-                .in(SoftwareAsset::getProjectId, idList)
-                .ne(SoftwareAsset::getBuildIn, 1));
-        softwareAssetService.update(new LambdaUpdateWrapper<SoftwareAsset>()
-                .set(SoftwareAsset::getProjectId, -1)
-                .in(SoftwareAsset::getProjectId, idList)
-                .eq(SoftwareAsset::getBuildIn, 1));
         return R.ok().putData("list", resultList);
     }
 
