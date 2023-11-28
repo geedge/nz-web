@@ -604,6 +604,7 @@
 		SELECT
 			am.id,
 			am.description,
+			am.summary,
 			am.labels,
 			am.start_at,
 			am.end_at,
