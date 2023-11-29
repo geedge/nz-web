@@ -13,7 +13,9 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.nis.common.exception.NZException;
 import com.nis.common.protobuf.Remote.WriteRequest;
+import com.nis.common.protobuf.Types.Label;
 import com.nis.common.protobuf.Types.TimeSeries;
+import com.nis.common.protobuf.Types.TimeSeries.Builder;
 import com.nis.common.utils.CommonUtils;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
@@ -172,6 +174,7 @@ public class AgentUtil {
 		// cortex /api/v1/push 接口，不存在 /prometheus 前缀，此处 replaceAll 处理
 		String path = Tool.StrUtil.contains(pathPrefix, "/cortex") ? String.format("%s%s", pathPrefix.replaceAll("/prometheus", ""),"/api/v1/push") : String.format("%s%s", pathPrefix,"/api/v1/write");
 		String token = server.getToken();
+		Label label = Label.newBuilder().setName("nz_agent_id").setValue(Tool.StrUtil.toString(server.getId())).build();
 		// 构造请求路径
 		UrlBuilder urlBuilder = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
 				.setPort(server.getPort()).setPath(UrlPath.of(path, Charset.forName("UTF-8")));
@@ -184,6 +187,12 @@ public class AgentUtil {
 		headers.add("Content-Type","application/x-protobuf");
 		headers.add("User-Agent","network zodiac");
 		headers.add("X-Prometheus-Remote-Write-Version", "0.1.0");
+		// 遍历 timeseries 添加 nz_agent_id 标签，避免Global prometheus缺少数据的问题
+		for(int i = 0, j = timeSeriesList.size(); i < j; i++) {
+			TimeSeries ts = timeSeriesList.get(i);
+			TimeSeries nts = ts.toBuilder().addLabels(label).build();
+			timeSeriesList.set(i, nts);
+		}
 		//protobuf 序列化
 		WriteRequest writeRequest = WriteRequest.newBuilder().addAllTimeseries(timeSeriesList).build();
 		byte[] byteArray = writeRequest.toByteArray(); // protobuf 序列化
