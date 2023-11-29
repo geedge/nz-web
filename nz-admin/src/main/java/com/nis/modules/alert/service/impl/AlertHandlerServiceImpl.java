@@ -2,6 +2,7 @@ package com.nis.modules.alert.service.impl;
 
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUnit;
+import cn.hutool.core.net.URLDecoder;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
@@ -44,6 +45,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -558,7 +560,13 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		PageUtils page = fullTextSearchService.queryAlertMessageFullTextPage(params);
 		List<AlertMessageEntity> list = (List<AlertMessageEntity>) page.getList();
 
-		List<List<String>> exportDataList = this.handleExportDataList(list);
+		String queryBodyJsonStr = (String) params.get("body");
+		queryBodyJsonStr = URLDecoder.decode(queryBodyJsonStr, Charset.forName("UTF-8"));
+
+		Map queryBody = JSONUtil.toBean(queryBodyJsonStr, HashMap.class);
+		String alertState = Tool.MapUtil.getStr(queryBody, "state", "1");
+
+		List<List<String>> exportDataList = this.handleExportDataList(list, alertState);
 
 		String sysHeaderJsonStr = sysConfigService.getValue("alert_export_header");
 		String fileName = "AlertMessages";
@@ -566,7 +574,7 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, formatStr, fileName);
 	}
 
-	private List<List<String>> handleExportDataList(List<AlertMessageEntity> list) {
+	private List<List<String>> handleExportDataList(List<AlertMessageEntity> list, String alertState) {
 		List<List<String>> exportDataList = new ArrayList<>();
 
 		TimezoneController.Timezone sysTimezone = TimezoneController.queryTimezoneByName(sysConfigService.getValue("timezone"));
@@ -588,7 +596,7 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			tempList.add(alertMessage.getDescription());
 			tempList.add(getExportFormatTime(alertMessage.getStartAt(), dateformat));
 			tempList.add(getExportFormatTime(alertMessage.getEndAt(), dateformat));
-            tempList.add(getDuration(alertMessage.getStartAt(), alertMessage.getEndAt()));
+			tempList.add(getDuration(alertState, alertMessage.getStartAt(), alertMessage.getEndAt()));
             tempList.add(Constant.ALERT_MESSAGE_STATE_NAME_MAPPING.get(alertMessage.getState()));
 			exportDataList.add(tempList);
 		}
@@ -598,11 +606,17 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
     /**
      * 通过 endAtstartAt 获取持续时间
      *
+     * @param alertState
      * @param startAt
      * @param endAt
      * @return
      */
-    private String getDuration(Date startAt, Date endAt) {
+    private String getDuration(String alertState, Date startAt, Date endAt) {
+	    // 当 state = active | silence 时，duration = 当前服务器时间（result.time）- startAt
+	    if (StrUtil.equalsAny(alertState, "1", "2")) {
+		    endAt = new Date();
+	    }
+
         if (Tool.ObjectUtil.isNull(endAt)) return Tool.StrUtil.DASHED;
 
         long durationSecond = Tool.DateUtil.between(startAt, endAt, DateUnit.SECOND);
