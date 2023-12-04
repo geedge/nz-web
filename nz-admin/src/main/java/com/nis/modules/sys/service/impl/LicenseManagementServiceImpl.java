@@ -281,10 +281,10 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
         SoftwareAsset softwareAsset = softwareAssetService.getById(saId);
         ValidateUtils.is(softwareAsset).notNull(RCode.SOFTWARE_ASSET_NOT_EXIST);
 
-        SoftwareType softwareType = softwareTypeService.getById(softwareAsset.getTypeId());
-        if (Tool.ObjectUtil.notEqual("ACC", softwareType.getName())) {
-            throw new NZException(RCode.LICENSE_MGMT_NOT_ACC_ASSET);
-        }
+//        SoftwareType softwareType = softwareTypeService.getById(softwareAsset.getTypeId());
+//        if (Tool.ObjectUtil.notEqual("ACC", softwareType.getName())) {
+//            throw new NZException(RCode.LICENSE_MGMT_NOT_ACC_ASSET);
+//        }
 
         Map<String, Object> softwareAssetParam = JSONUtil.toBean(StrUtil.utf8Str(softwareAsset.getParams()), Map.class);
         String accIp = Tool.MapUtil.getStr(softwareAssetParam, "acc_ip", "");

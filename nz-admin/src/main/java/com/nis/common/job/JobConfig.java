@@ -15,6 +15,7 @@ import com.nis.modules.alert.job.AlertMessageHistoryPartitionManagementJob;
 import com.nis.modules.asset.job.AssetFeatureJob;
 import com.nis.modules.asset.job.AssetPingStatusJob;
 import com.nis.modules.asset.job.AssetTalonStatusJob;
+import com.nis.modules.asset.job.SoftwareLicenseStatusJob;
 import com.nis.modules.election.job.HaJob;
 import com.nis.modules.endpoint.job.MetricTypeEndpointStatusJob;
 import com.nis.modules.sys.job.*;
@@ -105,6 +106,9 @@ public class JobConfig {
     @Value("${nezha.sysLoginSessionCleanJobCron:0/10 * * * * ?}")
     private String sysLoginSessionCleanJobCron;
 
+    @Value("${nezha.softwareLicenseStatusJobCron:0 0/5 * * * ? *}")
+    private String softwareLicenseStatusJobCron;
+
     @Autowired
     private Scheduler scheduler;
     @Autowired
@@ -133,6 +137,7 @@ public class JobConfig {
     private String cleanExpiredTerminalRecordDataJob = "CLEAN_EXPIRED_TERMINAL_RECORD_DATA_JOB";
     private String sysBackFileSyncJob = "SYS_BACKUP_SYNC_JOB";
     private String sysLoginSessionCleanJob = "SYS_LOGIN_SESSION_CLEAN_JOB";
+    private String softwareLicenseStatusJobName = "SOFTWARE_LICENSE_STATUS_JOB";
 
     @Bean
     public JobDetail agentCronJobDetail() {
@@ -239,6 +244,11 @@ public class JobConfig {
         return JobBuilder.newJob(LoginSessionCleanJob.class).withIdentity(JOB_NAME + sysLoginSessionCleanJob).storeDurably().build();
     }
 
+    @Bean
+    public JobDetail softwareLicenseStatusJobDetail() {
+        return JobBuilder.newJob(SoftwareLicenseStatusJob.class).withIdentity(JOB_NAME + softwareLicenseStatusJobName).storeDurably().build();
+    }
+
     @PostConstruct
     public void init() throws SchedulerException {
         // agent 健康检查定时任务
@@ -303,6 +313,9 @@ public class JobConfig {
         createCronScheduleJob(sysBackFileSyncJob, sysBackFileSyncJobDetail(), Tool.StrUtil.emptyToDefault(sysBackFileSyncJobCron, "0 0 3 * * ?"));
 
         createCronScheduleJob(sysLoginSessionCleanJob, sysLoginSessionCleanJobDetail(), Tool.StrUtil.emptyToDefault(sysLoginSessionCleanJobCron, "0/10 * * * * ?"));
+
+        // softwareLicenseStatusJob
+        createCronScheduleJob(softwareLicenseStatusJobName, softwareLicenseStatusJobDetail(), Tool.StrUtil.emptyToDefault(softwareLicenseStatusJobCron, "0 0/5 * * * ? *"));
     }
     
     /**

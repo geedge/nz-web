@@ -5,6 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
@@ -12,14 +13,17 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.asset.dao.SoftwareAssetDao;
 import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.asset.entity.SoftwareAccSession;
 import com.nis.modules.asset.entity.SoftwareAsset;
 import com.nis.modules.asset.entity.SoftwareType;
 import com.nis.modules.asset.service.AssetAssetService;
+import com.nis.modules.asset.service.SoftwareAccSessionService;
 import com.nis.modules.asset.service.SoftwareAssetService;
 import com.nis.modules.asset.service.SoftwareTypeService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -41,6 +45,9 @@ public class SoftwareAssetServiceImpl extends ServiceImpl<SoftwareAssetDao, Soft
 
     @Autowired
     private SoftwareTypeService softwareTypeService;
+
+    @Autowired
+    private SoftwareAccSessionService softwareAccSessionService;
 
     @Override
     public SoftwareAsset querySoftwareAssetInfo(Integer id) {
@@ -118,6 +125,7 @@ public class SoftwareAssetServiceImpl extends ServiceImpl<SoftwareAssetDao, Soft
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Integer saveOrUpdateSoftwareAsset(SoftwareAsset softwareAsset) {
         // validate software asset
         this.validateSoftwareAsset(softwareAsset);
@@ -141,6 +149,15 @@ public class SoftwareAssetServiceImpl extends ServiceImpl<SoftwareAssetDao, Soft
             if (ObjectUtil.isNull(tempSoftwareAssetForJudge)) {
                 softwareAsset.setCid(ShiroUtils.getUserId().intValue());
                 softwareAsset.setCts(System.currentTimeMillis());
+            } else {
+                // 判断名称是否变更
+                String oldName = tempSoftwareAssetForJudge.getName();
+                if (!StrUtil.equals(oldName, softwareAsset.getName())) {
+                    // acc session said
+                    softwareAccSessionService.update(new LambdaUpdateWrapper<SoftwareAccSession>()
+                            .set(SoftwareAccSession::getSaid, softwareAsset.getName())
+                            .eq(SoftwareAccSession::getSaid, oldName));
+                }
             }
         }
 
@@ -154,6 +171,7 @@ public class SoftwareAssetServiceImpl extends ServiceImpl<SoftwareAssetDao, Soft
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public R deleteSoftwareAsset(Integer force, List<Integer> idList) {
         List<SoftwareAsset> delSoftwareAssetList = this.list(new LambdaQueryWrapper<SoftwareAsset>().in(SoftwareAsset::getId, idList));
         if (Tool.CollUtil.isEmpty(delSoftwareAssetList)) {
@@ -178,6 +196,10 @@ public class SoftwareAssetServiceImpl extends ServiceImpl<SoftwareAssetDao, Soft
 
         // remove
         this.removeByIds(idList);
+
+        // acc session
+        List<String> delNameList = delSoftwareAssetList.stream().map(SoftwareAsset::getName).toList();
+        softwareAccSessionService.remove(new LambdaQueryWrapper<SoftwareAccSession>().in(SoftwareAccSession::getSaid, delNameList));
 
         return R.ok().putData("list", resultList);
     }
