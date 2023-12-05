@@ -1038,6 +1038,7 @@ public enum RCode {
     LICENSE_ACC_IP_ISNULL(711020, "ACC ip can not be null"),
     LICENSE_UPLOAD_V2CFILE_ISNULL(711021,"Upload V2C file can not be null"),
     LICENSE_DOWNLOAD_C2VFILE_HASPID_ISNULL(711022, "Haspid can not be null"),
+    LICENSE_UPLOAD_V2CFILE_FAILED(710123, "Upload V2C file failed, msg is: {0}"),
 
 	/**
 	 * Ipamsubnet 相关

@@ -1376,6 +1376,35 @@ public class Constant {
 		}
 	}
 
+	/**
+	 * SoftwareLicenseType
+	 */
+	public enum SoftwareLicenseType {
+		TSG_OS_CONCENTRATE("TSG-OS Concentrate"),
+		TSG_OS_STANDALONE("TSG-OS Stand-alone"),
+		CM("TSG-CM"),
+		NZ("Network Zodiac");
+
+		private String name;
+
+		SoftwareLicenseType(String name) {
+			this.name = name;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public static SoftwareLicenseType getInstance(String name) {
+			for (SoftwareLicenseType type : SoftwareLicenseType.values()) {
+				if (StrUtil.equals(type.getName(), name)) {
+					return type;
+				}
+			}
+			throw new IllegalArgumentException("unknown license enum value");
+		}
+	}
+
 
 	/**
 	 * prometheus 代理 path

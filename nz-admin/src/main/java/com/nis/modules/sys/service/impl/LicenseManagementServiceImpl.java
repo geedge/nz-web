@@ -6,6 +6,10 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.lang.Opt;
+import cn.hutool.core.net.url.UrlBuilder;
+import cn.hutool.core.net.url.UrlPath;
+import cn.hutool.core.net.url.UrlQuery;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSON;
@@ -32,15 +36,20 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -61,6 +70,9 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
 
     @Autowired
     private SoftwareAssetService softwareAssetService;
+
+    @Autowired
+    private RestTemplate restTemplate;
 
     @Override
     public List<JSONObject> queryLicenseProductList(Integer saId, Integer islocal) {
@@ -155,12 +167,42 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
 
     @Override
     public void downloadC2V(Integer saId, String haspid, HttpServletResponse response) throws Exception {
-        log.info("[downloadC2V] [begin] [saId: {}] [haspid: {}]", saId, haspid);
+        SoftwareAsset softwareAsset = softwareAssetService.getById(saId);
+        ValidateUtils.is(softwareAsset).notNull(RCode.SOFTWARE_ASSET_NOT_EXIST);
+
+        SoftwareType softwareType = softwareTypeService.getById(softwareAsset.getTypeId());
+        log.info("[downloadC2V] [begin] [type: {}] [saId: {}] [haspid: {}]", softwareType.getName(), saId, haspid);
+
+        Constant.SoftwareLicenseType instance = Constant.SoftwareLicenseType.getInstance(softwareType.getName());
+        switch (instance) {
+            case TSG_OS_STANDALONE:
+            case TSG_OS_CONCENTRATE: {
+                this.downloadC2VFileFromACC(saId, haspid, response);
+                break;
+            }
+            case CM:
+            case NZ: {
+                this.downloadC2VFileFromLicenseService(softwareType.getName(), softwareAsset, response);
+                break;
+            }
+            default: break;
+        }
+    }
+
+    /**
+     * download C2V File From Acc
+     *
+     * @param saId
+     * @param haspid
+     * @param response
+     * @throws IOException
+     */
+    private void downloadC2VFileFromACC(Integer saId, String haspid, HttpServletResponse response) throws IOException {
         // build adminapi
         AdminApi adminApi = this.buildAdminApi(saId);
 
         if (StrUtil.isEmpty(haspid)) {
-            log.info("[downloadC2V] [download fingerprint_vendorId.c2v file]");
+            log.info("[downloadC2VFileFromACC] [download fingerprint_vendorId.c2v file]");
             String formatXml = """
                         <admin>
                           <license_manager>
@@ -171,16 +213,16 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
 
             String configXmlStr = adminApi.getConfig("", formatXml);
             int lastApiErrorCode = adminApi.getLastApiError();
-            log.info("[downloadC2V] [getLastApiError: {}]", lastApiErrorCode);
+            log.info("[downloadC2VFileFromACC] [getLastApiError: {}]", lastApiErrorCode);
 
             AdminStatusEnum adminStatus = AdminStatusEnum.getAdminStatusByCode(lastApiErrorCode);
             if (ObjectUtil.notEqual(AdminStatusEnum.SNTL_ADMIN_STATUS_OK, adminStatus)) {
-                log.error("[downloadC2V] [error] [code: {}] [status: {}]", lastApiErrorCode, adminStatus);
+                log.error("[downloadC2VFileFromACC] [error] [code: {}] [status: {}]", lastApiErrorCode, adminStatus);
                 throw new NZException(RCode.LICENSE_REQUEST_ADMINAPI_ERROR.setParam(adminStatus));
             }
 
             if (log.isDebugEnabled()) {
-                log.debug("[downloadC2V] [result: {}]", configXmlStr);
+                log.debug("[downloadC2VFileFromACC] [result: {}]", configXmlStr);
             }
 
             JSONObject resultJsonObject = JSONUtil.xmlToJson(configXmlStr);
@@ -194,9 +236,9 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
             byte[] c2vXmlFileStrBytes = c2vXmlFileStr.getBytes();
             int c2vXmlFileStrBytesLength = c2vXmlFileStrBytes.length;
             ResponseUtil.downloadFile(response, filename, c2vXmlFileStrBytes);
-            log.info("[downloadC2V] [finshed] [saId: {}] [bytesize: {}]", saId, c2vXmlFileStrBytesLength);
+            log.info("[downloadC2VFileFromACC] [finshed] [saId: {}] [bytesize: {}]", saId, c2vXmlFileStrBytesLength);
         } else {
-            log.info("[downloadC2V] [download haspid_timestamp.c2v file]");
+            log.info("[downloadC2VFileFromACC] [download haspid_timestamp.c2v file]");
             String scopeXml = StrUtil.concat(true, "<haspscope>",
                     "<hasp><id>", haspid, "</id></hasp>",
                     "</haspscope>");
@@ -206,16 +248,16 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
 
             String configXmlStr = adminApi.getConfig(scopeXml, formatXml);
             int lastApiErrorCode = adminApi.getLastApiError();
-            log.info("[downloadC2V] [haspid: {}] [getLastApiError: {}]", haspid, lastApiErrorCode);
+            log.info("[downloadC2VFileFromACC] [haspid: {}] [getLastApiError: {}]", haspid, lastApiErrorCode);
 
             AdminStatusEnum adminStatus = AdminStatusEnum.getAdminStatusByCode(lastApiErrorCode);
             if (ObjectUtil.notEqual(AdminStatusEnum.SNTL_ADMIN_STATUS_OK, adminStatus)) {
-                log.error("[downloadC2V] [error] [haspid: {}] [code: {}] [status: {}]", haspid, lastApiErrorCode, adminStatus);
+                log.error("[downloadC2VFileFromACC] [error] [haspid: {}] [code: {}] [status: {}]", haspid, lastApiErrorCode, adminStatus);
                 throw new NZException(RCode.LICENSE_REQUEST_ADMINAPI_ERROR.setParam(adminStatus));
             }
 
             if (log.isDebugEnabled()) {
-                log.debug("[downloadC2V] [haspid: {}] [result: {}]", haspid, configXmlStr);
+                log.debug("[downloadC2VFileFromACC] [haspid: {}] [result: {}]", haspid, configXmlStr);
             }
 
             JSONObject resultJsonObject = JSONUtil.xmlToJson(configXmlStr);
@@ -229,13 +271,108 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
             byte[] c2vXmlFileStrBytes = c2vXmlFileStr.getBytes();
             int c2vXmlFileStrBytesLength = c2vXmlFileStrBytes.length;
             ResponseUtil.downloadFile(response, filename, c2vXmlFileStrBytes);
-            log.info("[downloadC2V] [finshed] [saId: {}] [haspid: {}] [bytesize: {}]", saId, haspid, c2vXmlFileStrBytesLength);
+            log.info("[downloadC2VFileFromACC] [finshed] [saId: {}] [haspid: {}] [bytesize: {}]", saId, haspid, c2vXmlFileStrBytesLength);
+        }
+    }
+
+    /**
+     * downloadC2VFileFromLicenseService
+     *
+     * @param typeName
+     * @param softwareAsset
+     * @param response
+     * @throws IOException
+     */
+    private void downloadC2VFileFromLicenseService(String typeName, SoftwareAsset softwareAsset, HttpServletResponse response) throws IOException {
+        Map<String, Object> softwareAssetParam = cn.hutool.json.JSONUtil.toBean(StrUtil.utf8Str(softwareAsset.getParams()), Map.class);
+        String url = Tool.MapUtil.getStr(softwareAssetParam, "url", "");
+        String token = Tool.MapUtil.getStr(softwareAssetParam, "token", "");
+
+        HttpHeaders headers = new HttpHeaders();
+        if (StrUtil.isNotEmpty(token)) {
+            headers.add(HttpHeaders.AUTHORIZATION, token);
+        }
+
+        HttpEntity httpEntity = new HttpEntity(headers);
+
+        String urlStr = "";
+        if (StrUtil.equals(typeName, Constant.SoftwareLicenseType.CM.getName())) {
+            // CM
+            UrlQuery urlQuery = new UrlQuery();
+            urlQuery.add("format", "c2v");
+            urlStr = UrlBuilder.ofHttp(url).setQuery(urlQuery).toString();
+        } else if (StrUtil.equals(typeName, Constant.SoftwareLicenseType.NZ.getName())) {
+            // NZ
+            UrlBuilder urlBuilder = UrlBuilder.ofHttp(url);
+            UrlPath urlPath = UrlPath.of("/sys/license/token", Charset.forName("UTF-8"));
+            urlStr = urlBuilder.setPath(urlPath).toString();
+        }
+
+        // 发送 请求
+        ResponseEntity<String> responseEntity = null;
+        try {
+            responseEntity = restTemplate.exchange(new URI(urlStr), HttpMethod.GET, httpEntity, String.class);
+        } catch (Exception e) {
+            log.error(e, "[downloadC2VFileFromLicenseService] [error] [url: {}]", urlStr);
+        }
+
+        Integer getStatusCodeValue = Opt.ofNullable(responseEntity).map(ResponseEntity::getStatusCodeValue).get();
+        String responseBody = Opt.ofNullable(responseEntity).map(ResponseEntity::getBody).get();
+
+        log.info("[downloadC2VFileFromLicenseService] [url: {}] [responseStatus: {}]", urlStr, getStatusCodeValue);
+        if (Tool.ObjectUtil.equal(HttpStatus.OK.value(), getStatusCodeValue)) {
+            // 从 Content-Disposition 尝试获取 filename
+            HttpHeaders responseEntityHeaders = responseEntity.getHeaders();
+            String contentDisposition = responseEntityHeaders.getFirst("Content-Disposition");
+            String filename;
+            if (StrUtil.isNotEmpty(contentDisposition) && contentDisposition.contains("filename")) {
+                String fielnameStr = Arrays.stream(contentDisposition.split(";")).filter(s -> s.contains("filename")).findFirst().get();
+                filename = fielnameStr.replaceAll("filename=", "");
+            } else {
+                filename = StrUtil.concat(true, softwareAsset.getName(), ".c2v");
+            }
+            byte[] fileStrBytes = responseBody.getBytes();
+            int fileStrBytesLength = fileStrBytes.length;
+            ResponseUtil.downloadFile(response, filename.trim(), fileStrBytes);
+            log.info("[downloadC2VFileFromLicenseService] [finshed] [saId: {}] [bytesize: {}]", softwareAsset.getId(), fileStrBytesLength);
+        } else {
+            response.setStatus(ObjectUtil.defaultIfNull(getStatusCodeValue, HttpStatus.INTERNAL_SERVER_ERROR.value()));
+            response.getWriter().write(ObjectUtil.defaultIfNull(responseBody, HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase()));
         }
     }
 
     @Override
     public void uploadV2C(Integer saId, MultipartFile multipartFile) throws Exception {
-        log.info("[uploadV2C] [begin] [saId: {}]", saId);
+        SoftwareAsset softwareAsset = softwareAssetService.getById(saId);
+        ValidateUtils.is(softwareAsset).notNull(RCode.SOFTWARE_ASSET_NOT_EXIST);
+
+        SoftwareType softwareType = softwareTypeService.getById(softwareAsset.getTypeId());
+        log.info("[uploadV2C] [begin] [type: {}] [saId: {}]", softwareType.getName(), saId);
+
+        Constant.SoftwareLicenseType instance = Constant.SoftwareLicenseType.getInstance(softwareType.getName());
+        switch (instance) {
+            case TSG_OS_STANDALONE:
+            case TSG_OS_CONCENTRATE: {
+                this.uploadV2CToACC(saId, multipartFile);
+                break;
+            }
+            case CM:
+            case NZ: {
+                this.uploadV2CToLicenseService(softwareType.getName(), softwareAsset, multipartFile);
+                break;
+            }
+            default: break;
+        }
+    }
+
+    /**
+     * uploadV2CToACC
+     *
+     * @param saId
+     * @param multipartFile
+     * @throws Exception
+     */
+    private void uploadV2CToACC(Integer saId, MultipartFile multipartFile) throws Exception {
         // build adminapi
         AdminApi adminApi = this.buildAdminApi(saId);
 
@@ -248,21 +385,96 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
 
             String configXmlStr = adminApi.setConfig(StrUtil.concat(true, "file://", tempFile.getAbsolutePath()));
             int lastApiErrorCode = adminApi.getLastApiError();
-            log.info("[uploadV2C] [saId: {}] [getLastApiError: {}]", saId, lastApiErrorCode);
+            log.info("[uploadV2CToACC] [saId: {}] [getLastApiError: {}]", saId, lastApiErrorCode);
 
             AdminStatusEnum adminStatus = AdminStatusEnum.getAdminStatusByCode(lastApiErrorCode);
             if (ObjectUtil.notEqual(AdminStatusEnum.SNTL_ADMIN_STATUS_OK, adminStatus)) {
-                log.error("[uploadV2C] [error] [saId: {}] [code: {}] [status: {}]", saId, lastApiErrorCode, adminStatus);
+                log.error("[uploadV2CToACC] [error] [saId: {}] [code: {}] [status: {}]", saId, lastApiErrorCode, adminStatus);
                 throw new NZException(RCode.LICENSE_REQUEST_ADMINAPI_ERROR.setParam(adminStatus));
             }
 
             if (log.isDebugEnabled()) {
-                log.debug("[uploadV2C] [saId: {}] [result: {}]", saId, configXmlStr);
+                log.debug("[uploadV2CToACC] [saId: {}] [result: {}]", saId, configXmlStr);
             }
 
-            log.info("[uploadV2C] [finshed] [saId: {}]", saId);
+            log.info("[uploadV2CToACC] [finshed] [saId: {}]", saId);
         } catch (Exception e) {
-            log.error(e, "[uploadV2C] [error] [saId: {}]", saId);
+            log.error(e, "[uploadV2CToACC] [error] [saId: {}]", saId);
+            throw e;
+        } finally {
+            FileUtil.del(tempFile);
+        }
+    }
+
+    /**
+     * uploadV2CToLicenseService
+     *
+     * @param typeName
+     * @param softwareAsset
+     * @param multipartFile
+     * @throws IOException
+     */
+    private void uploadV2CToLicenseService(String typeName, SoftwareAsset softwareAsset, MultipartFile multipartFile) throws IOException {
+        Map<String, Object> softwareAssetParam = cn.hutool.json.JSONUtil.toBean(StrUtil.utf8Str(softwareAsset.getParams()), Map.class);
+        String url = Tool.MapUtil.getStr(softwareAssetParam, "url", "");
+        String token = Tool.MapUtil.getStr(softwareAssetParam, "token", "");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        if (StrUtil.isNotEmpty(token)) {
+            headers.add(HttpHeaders.AUTHORIZATION, token);
+        }
+
+        String urlStr = "";
+        if (StrUtil.equals(typeName, Constant.SoftwareLicenseType.CM.getName())) {
+            // CM
+            UrlBuilder urlBuilder = UrlBuilder.ofHttp(url);
+            urlStr = urlBuilder.toString();
+        } else if (StrUtil.equals(typeName, Constant.SoftwareLicenseType.NZ.getName())) {
+            // NZ
+            UrlBuilder urlBuilder = UrlBuilder.ofHttp(url);
+            UrlPath urlPath = UrlPath.of("/sys/license/upload", Charset.forName("UTF-8"));
+            urlStr = urlBuilder.setPath(urlPath).toString();
+        }
+
+        // 设置 form data
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+
+        File tempFile = null;
+        try {
+            tempFile = Tool.FileUtil.file(Tool.StrUtil.concat(true, Constant.TEMP_PATH, File.separator, multipartFile.getOriginalFilename()));
+            FileUtils.copyInputStreamToFile(multipartFile.getInputStream(), tempFile);
+
+            body.add("file", new FileSystemResource(tempFile));
+
+            HttpEntity<MultiValueMap<String, Object>> httpEntity = new HttpEntity<>(body, headers);
+
+            // 发送 请求
+            ResponseEntity<String> responseEntity = null;
+            try {
+                responseEntity = restTemplate.exchange(new URI(urlStr), HttpMethod.POST, httpEntity, String.class);
+            } catch (Exception e) {
+                log.error(e, "[uploadV2CToLicenseService] [error] [url: {}]", urlStr);
+            }
+
+            Integer statusCodeValue = Opt.ofNullable(responseEntity).map(ResponseEntity::getStatusCodeValue).get();
+            String responseBody = Opt.ofNullable(responseEntity).map(ResponseEntity::getBody).get();
+
+            log.info("[uploadV2CToLicenseService] [url: {}] [responseStatus: {}] [responseBody: {}]", urlStr, statusCodeValue, responseBody);
+            if (Tool.ObjectUtil.notEqual(HttpStatus.OK.value(), statusCodeValue)) {
+                throw new NZException(RCode.LICENSE_UPLOAD_V2CFILE_FAILED.setParam(ObjectUtil.defaultIfNull(responseBody, HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase())));
+            } else {
+                // CM
+                if (StrUtil.equals(typeName, Constant.SoftwareLicenseType.CM.getName())) {
+                    JSONObject data = JSONUtil.parseObj(responseBody);
+                    if (!StrUtil.equals("true", data.getStr("success"))) {
+                        throw new NZException(RCode.LICENSE_UPLOAD_V2CFILE_FAILED.setParam(data.getStr("msg")));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error(e, "[uploadV2CToLicenseService] [error] [type: {}] [said: {}]", typeName, softwareAsset.getId());
             throw e;
         } finally {
             FileUtil.del(tempFile);
@@ -280,11 +492,6 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
 
         SoftwareAsset softwareAsset = softwareAssetService.getById(saId);
         ValidateUtils.is(softwareAsset).notNull(RCode.SOFTWARE_ASSET_NOT_EXIST);
-
-//        SoftwareType softwareType = softwareTypeService.getById(softwareAsset.getTypeId());
-//        if (Tool.ObjectUtil.notEqual("ACC", softwareType.getName())) {
-//            throw new NZException(RCode.LICENSE_MGMT_NOT_ACC_ASSET);
-//        }
 
         Map<String, Object> softwareAssetParam = JSONUtil.toBean(StrUtil.utf8Str(softwareAsset.getParams()), Map.class);
         String accIp = Tool.MapUtil.getStr(softwareAssetParam, "acc_ip", "");

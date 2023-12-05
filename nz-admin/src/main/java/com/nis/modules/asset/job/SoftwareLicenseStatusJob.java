@@ -90,14 +90,14 @@ public class SoftwareLicenseStatusJob extends QuartzJobBean {
      * update license status
      */
     private void updateLicenseStatus() {
-        String[] licenseTypeNameArr = Arrays.stream(SoftwareLicenseStatusJob.SoftwareLicenseType.values()).map(SoftwareLicenseStatusJob.SoftwareLicenseType::getName).toArray(String[]::new);
+        String[] licenseTypeNameArr = Arrays.stream(Constant.SoftwareLicenseType.values()).map(Constant.SoftwareLicenseType::getName).toArray(String[]::new);
 
         List<SoftwareAsset> licenseAssetList = softwareAssetService.getSoftwareAssetListByTypeName(licenseTypeNameArr);
         log.info("[updateLicenseStatus] [license software asset list] [size: {}]", Tool.CollUtil.size(licenseAssetList));
 
         for (SoftwareAsset softwareAsset : licenseAssetList) {
             SoftwareType type = softwareAsset.getType();
-            SoftwareLicenseType instance = SoftwareLicenseType.getInstance(type.getName());
+            Constant.SoftwareLicenseType instance = Constant.SoftwareLicenseType.getInstance(type.getName());
             switch (instance) {
                 // query ACC service
                 case TSG_OS_STANDALONE:
@@ -385,32 +385,6 @@ public class SoftwareLicenseStatusJob extends QuartzJobBean {
         // license info
         softwareAssetService.saveOrUpdate(softwareAsset);
         log.info("[updateCMLicenseStatus] [finshed] [said: {}]", said);
-    }
-
-    enum SoftwareLicenseType {
-        TSG_OS_CONCENTRATE("TSG-OS Concentrate"),
-        TSG_OS_STANDALONE("TSG-OS Stand-alone"),
-        CM("TSG-CM"),
-        NZ("Network Zodiac");
-
-        private String name;
-
-        SoftwareLicenseType(String name) {
-            this.name = name;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public static SoftwareLicenseType getInstance(String name) {
-            for (SoftwareLicenseType type : SoftwareLicenseType.values()) {
-                if (StrUtil.equals(type.getName(), name)) {
-                    return type;
-                }
-            }
-            return null;
-        }
     }
 }
 
