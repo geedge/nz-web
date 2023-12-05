@@ -10,7 +10,7 @@ public interface LicenseManagementService {
 
 	List<JSONObject> queryLicenseProductList(Integer saId, Integer islocal);
 
-	void downloadC2V(Integer saId, String haspid, HttpServletResponse response) throws Exception;
+	void downloadC2V(Integer saId, HttpServletResponse response) throws Exception;
 
 	void uploadV2C(Integer saId, MultipartFile file) throws Exception;
 

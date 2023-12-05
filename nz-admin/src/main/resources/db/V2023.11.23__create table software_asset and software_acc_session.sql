@@ -34,6 +34,7 @@ CREATE TABLE `software_asset`  (
     `cid` int(10) NOT NULL COMMENT '添加用户id',
     `uts` bigint(20) NOT NULL COMMENT '更新时间戳',
     `uid` int(10) NOT NULL COMMENT '更新用户id',
+    `hasp_id` varchar(128) NOT NULL DEFAULT '' COMMENT '锁ID',
     `last_scan_ts` bigint(20) NOT NULL DEFAULT -1 COMMENT '最后扫描时间,单位：ms',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;

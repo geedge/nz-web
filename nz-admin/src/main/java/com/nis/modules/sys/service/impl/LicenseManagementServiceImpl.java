@@ -166,11 +166,12 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
     }
 
     @Override
-    public void downloadC2V(Integer saId, String haspid, HttpServletResponse response) throws Exception {
+    public void downloadC2V(Integer saId, HttpServletResponse response) throws Exception {
         SoftwareAsset softwareAsset = softwareAssetService.getById(saId);
         ValidateUtils.is(softwareAsset).notNull(RCode.SOFTWARE_ASSET_NOT_EXIST);
 
         SoftwareType softwareType = softwareTypeService.getById(softwareAsset.getTypeId());
+        String haspid = softwareAsset.getHaspId();
         log.info("[downloadC2V] [begin] [type: {}] [saId: {}] [haspid: {}]", softwareType.getName(), saId, haspid);
 
         Constant.SoftwareLicenseType instance = Constant.SoftwareLicenseType.getInstance(softwareType.getName());

@@ -39,13 +39,10 @@ public class LicenseManagementController {
 
     @GetMapping("/license/downloadC2V")
     @SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.LICENSE)
-    public void downloadC2V(@RequestParam(value = "saId", required = false) Integer saId,
-                            @RequestParam(value = "haspid", required = false) String haspid,
-                            HttpServletResponse response)  throws Exception {
-
+    public void downloadC2V(@RequestParam(value = "saId", required = false) Integer saId, HttpServletResponse response) throws Exception {
         ValidateUtils.is(saId).notNull(RCode.SOFTWARE_ASSET_ID_ISNULL);
 
-        licenseManagementService.downloadC2V(saId, haspid, response);
+        licenseManagementService.downloadC2V(saId, response);
     }
 
 

@@ -159,6 +159,9 @@ public class SoftwareLicenseStatusJob extends QuartzJobBean {
                 String logincount = tsgProduct.getStr("logincount");
                 softwareAsset.setLogins(Tool.NumberUtil.parseInt(logincount));
 
+                String haspId = tsgProduct.getStr("haspid");
+                softwareAsset.setHaspId(haspId);
+
                 // 已授权
                 softwareAsset.setStatus(1);
 

@@ -102,6 +102,11 @@ public class SoftwareAsset implements Serializable {
     private Integer uid;
 
     /**
+     * 锁 ID
+     */
+    private String haspId;
+
+    /**
      * 最后扫描时间,单位：ms
      */
     private Long lastScanTs;
