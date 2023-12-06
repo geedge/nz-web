@@ -356,6 +356,16 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             }
             params.put("innerAssetIdsByComment", assetIds);
         }
+
+        // 是否补全未关联 软件资产 的 TSG 硬件资产 license 状态
+        String licenseStatusCompleteTsgDevice = sysConfService.getValueOrDefault("license_status_complete_tsg_device", "0");
+        String licenseStatusCompleteTsgDeviceModelIds = sysConfService.getValue("license_status_complete_tsg_device_model_ids");
+        if (StrUtil.equals("1", licenseStatusCompleteTsgDevice) && StrUtil.isNotEmpty(licenseStatusCompleteTsgDeviceModelIds)) {
+            params.put("licenseStatusCompleteTsgDevice", 1);
+            params.put("licenseStatusCompleteTsgDeviceModelIds", StrUtil.split(licenseStatusCompleteTsgDeviceModelIds, ","));
+        } else {
+            params.put("licenseStatusCompleteTsgDevice", 0);
+        }
     }
 
     @Override

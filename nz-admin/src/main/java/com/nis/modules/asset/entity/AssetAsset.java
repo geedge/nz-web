@@ -9,6 +9,7 @@ import lombok.Data;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -310,6 +311,9 @@ public class AssetAsset implements Serializable {
     
     @TableField(exist = false)
     private List<AssetAsset> children;
+
+    @TableField(exist = false)
+    private Map<String, Object> license;
     
     public String getPrivateKeyPath() {
         if (this.authType != null && this.authUsername != null) {
