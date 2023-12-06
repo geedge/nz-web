@@ -85,7 +85,7 @@
     		and locate(#{params.name} , afm.name)
     	</if>
     	<if test="params.key!=null and params.key !=''">
-    		and locate(#{params.key} , afm.meta_key)
+			and afm.meta_key = #{params.key}
     	</if>
     	<if test="params.groupIds!=null and params.groupIds.size>0">
     		and afm.group_id in 
