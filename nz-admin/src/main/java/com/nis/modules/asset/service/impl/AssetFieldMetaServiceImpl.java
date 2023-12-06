@@ -100,6 +100,11 @@ public class AssetFieldMetaServiceImpl extends ServiceImpl<AssetFieldMetaDao,Ass
 			if (ObjectUtil.isNotEmpty(assetFieldValue) && !oldAssetFieldMeta.getType().equalsIgnoreCase(type)){
 				throw new NZException(RCode.ASSET_FIELD_META_REFERENCED);
 			}
+
+			// key 不能修改
+			if (ObjectUtil.isNotNull(oldAssetFieldMeta) && ObjectUtil.notEqual(key, oldAssetFieldMeta.getMetaKey())) {
+				throw new NZException(RCode.ASSET_FIELD_META_KEY_CANNOT_MODIFIED);
+			}
 		}
 
 		if(ObjectUtil.isEmpty(assetFieldMeta.getParam())){
