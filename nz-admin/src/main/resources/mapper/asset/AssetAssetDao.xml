@@ -143,7 +143,7 @@
 			LEFT JOIN ( SELECT asset_id, count( 1 ) AS alertNum FROM alert_message_active WHERE asset_id IS NOT NULL GROUP BY asset_id ) msg ON asset.id = msg.asset_id
             LEFT JOIN ( SELECT IF(COUNT(1) > 0, 1, 0) AS starred,tid FROM sys_user_starred WHERE type = "asset" AND uid = #{params.userId} GROUP BY tid) sus ON asset.id = sus.tid
             LEFT JOIN software_acc_session accses ON asset.manage_ip = accses.ip
-            LEFT JOIN software_asset swasset ON accses.said = swasset.name
+            LEFT JOIN software_asset swasset ON accses.said = swasset.id
         <where>
 
              <if test="params.ids != null">

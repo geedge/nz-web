@@ -28,4 +28,6 @@ public interface SoftwareAssetService extends IService<SoftwareAsset> {
     List<SoftwareAsset> getSoftwareAssetListByTypeName(String... nameArr);
 
     List<SoftwareAsset> getSoftwareAssetListByTypeId(Integer... idArr);
+
+    void updateLicenseStatus(String saIds);
 }

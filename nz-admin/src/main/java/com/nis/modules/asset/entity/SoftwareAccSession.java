@@ -22,7 +22,7 @@ public class SoftwareAccSession implements Serializable {
     private Integer id;
 
     /**
-     * 软件名称
+     * software asset id
      */
     private String said;
 

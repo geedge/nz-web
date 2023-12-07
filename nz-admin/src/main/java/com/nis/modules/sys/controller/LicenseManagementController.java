@@ -6,6 +6,7 @@ import com.alibaba.fastjson2.JSONWriter;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
+import com.nis.modules.asset.service.SoftwareAssetService;
 import com.nis.modules.sys.service.LicenseManagementService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,9 @@ import java.util.Map;
 @RestController
 @RequestMapping
 public class LicenseManagementController {
+
+    @Autowired
+    private SoftwareAssetService softwareAssetService;
 
     @Autowired
     private LicenseManagementService licenseManagementService;
@@ -55,6 +59,13 @@ public class LicenseManagementController {
                 .and(file).notNull(RCode.LICENSE_UPLOAD_V2CFILE_ISNULL);
 
         licenseManagementService.uploadV2C(saId, file);
+        return R.ok();
+    }
+
+    @GetMapping("/license/scan")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.LICENSE)
+    public R licenseScan(@RequestParam(value = "saIds", required = false) String saIds) {
+        softwareAssetService.updateLicenseStatus(saIds);
         return R.ok();
     }
 
