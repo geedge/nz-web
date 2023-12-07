@@ -139,9 +139,11 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
                     productFlatMap.put("typename", haspTypename);
 
                     Object haspProddate = JSONUtil.getByPath(productJsonObject, "hasp.proddate");
-                    SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH);
-                    DateTime tempProddate = DateUtil.parse(haspProddate.toString(), dateFormat);
-                    productFlatMap.put("production_date", tempProddate.getTime() / 1000);
+                    if (ObjectUtil.isNotNull(haspProddate)) {
+                        SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH);
+                        DateTime tempProddate = DateUtil.parse(haspProddate.toString(), dateFormat);
+                        productFlatMap.put("production_date", tempProddate.getTime() / 1000);
+                    }
                     productFlatMap.put("licenseType", feature.get("licenseType"));
                     Object expDate = feature.get("expDate");
                     if (expDate != null) {
@@ -784,9 +786,12 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
                 // 获取当前生效范围最大的证书
                 JSONObject largestActivationRange = tempProductList.stream().filter(product -> {
                             // 当前时间 大于 锁生效时间
-                            String haspProddateStr = StrUtil.toString(JSONUtil.getByPath(product, "hasp.proddate"));
-                            DateTime haspProddate = DateUtil.parse(haspProddateStr, dateFormat);
-                            return currentTimeMillis > haspProddate.getTime();
+                            Object haspProddateObj = JSONUtil.getByPath(product, "hasp.proddate");
+                            if (haspProddateObj != null) {
+                                DateTime haspProddate = DateUtil.parse(StrUtil.toString(haspProddateObj), dateFormat);
+                                return currentTimeMillis > haspProddate.getTime();
+                            }
+                            return true;
                         }).filter(product -> {
                             // 当前时间 小于 锁过期时间
                             List<Integer> expDateList = (List<Integer>) JSONUtil.getByPath(product, "features.expDate");
@@ -815,9 +820,15 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
                 // 获取签发时间最后的一个 永久 证书
                 JSONObject last = perpetualTypeProductList.stream()
                         .sorted((p1, p2) -> {
-                            String p1HaspProddate = StrUtil.toString(JSONUtil.getByPath(p1, "hasp.proddate"));
-                            String p2HaspProddate = StrUtil.toString(JSONUtil.getByPath(p2, "hasp.proddate"));
-                            return DateUtil.compare(DateUtil.parse(p1HaspProddate, dateFormat), DateUtil.parse(p2HaspProddate, dateFormat)) * -1;
+                            Object p1HaspProddate = JSONUtil.getByPath(p1, "hasp.proddate");
+                            Object p2HaspProddate = JSONUtil.getByPath(p2, "hasp.proddate");
+                            if (p1HaspProddate == null || p2HaspProddate == null) {
+                                return 1;
+                            } else {
+                                DateTime pd1 = DateUtil.parse(StrUtil.toString(p1HaspProddate), dateFormat);
+                                DateTime pd2 = DateUtil.parse(StrUtil.toString(p2HaspProddate), dateFormat);
+                                return DateUtil.compare(pd1, pd2) * -1;
+                            }
                         })
                         .findFirst()
                         .get();
