@@ -2,12 +2,15 @@ package com.nis.modules.agent.controller;
 
 import cn.hutool.core.net.url.UrlBuilder;
 import cn.hutool.log.Log;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.agent.entity.Agent;
+import com.nis.modules.agent.entity.MonitorEventLog;
 import com.nis.modules.agent.service.AgentService;
+import com.nis.modules.agent.service.MonitorEventLogService;
 import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.sys.service.SysConfService;
 import freemarker.template.Template;
@@ -17,8 +20,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -55,7 +56,7 @@ public class AgentController {
 	private ThreadPoolExecutor otaExecutor;
 
 	@Autowired
-	private RedisTemplate redisTemplate;
+	private MonitorEventLogService monitorEventLogService;
 
 	/**
 	 * 详情
@@ -252,13 +253,8 @@ public class AgentController {
 	@RequiresPermissions({"agent:update"})
 	@SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.AGENT)
 	public R resetConfig() {
-		HashOperations opsForHash = redisTemplate.opsForHash();
-		Map<String, String> confEvent = opsForHash.entries(Constant.REDIS_KEY_CONF_EVENT);
-		if(!Tool.MapUtil.isNotEmpty(confEvent)) {
-			return R.error(500, "confEvent is empty");
-		}
-		log.info("confEvent: {}", Tool.JSONUtil.toJsonStr(confEvent));
-		opsForHash.delete(Constant.REDIS_KEY_CONF_EVENT,confEvent.keySet().toArray());
+		monitorEventLogService.update(new LambdaUpdateWrapper<MonitorEventLog>()
+				.set(MonitorEventLog::getSync, -1));
 		return R.ok();
 	}
 	

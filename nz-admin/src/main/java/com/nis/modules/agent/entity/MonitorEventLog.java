@@ -20,4 +20,6 @@ public class MonitorEventLog implements Serializable{
 
 	private Integer counter;
 
+	private Integer sync;
+
 }

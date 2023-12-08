@@ -1,6 +1,7 @@
 package com.nis.modules.agent.job;
 
 import cn.hutool.cache.impl.TimedCache;
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.hash.MurmurHash;
@@ -12,6 +13,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.nis.common.utils.*;
 import com.nis.modules.agent.dao.MonitorEventLogDao;
 import com.nis.modules.agent.entity.Agent;
@@ -35,7 +37,6 @@ import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
@@ -96,43 +97,18 @@ public class AgentConfigUtil {
 	 */
 	public boolean compareDataChanges(String... filterKeys) {
 		boolean flag = false;
-		Boolean hasKey = redisTemplate.hasKey(Constant.REDIS_KEY_CONF_EVENT);
+		List<MonitorEventLog> list = confEventDao.selectList(new LambdaQueryWrapper<MonitorEventLog>()
+				.in(ObjectUtil.isNotEmpty(filterKeys), MonitorEventLog::getEvent, filterKeys)
+				.apply("counter != sync"));
 
-		// 第一次时 为 true 全量更新
-		if (!hasKey) {
+		if (CollUtil.isNotEmpty(list)) {
 			flag = true;
-			List<MonitorEventLog> eventList = confEventDao.selectList(null);
-			if (ToolUtil.isNotEmpty(filterKeys)) {
-				eventList = eventList.stream()
-						.filter(monitorConfEvent -> Arrays.asList(filterKeys).contains(monitorConfEvent.getEvent()))
-						.collect(Collectors.toList());
-			}
-			Map<String, String> map = eventList.stream().collect(Collectors.toMap(MonitorEventLog::getEvent,
-					monitorConfEvent -> String.valueOf(monitorConfEvent.getCounter())));
-			redisTemplate.opsForHash().putAll(Constant.REDIS_KEY_CONF_EVENT, map);
-			return flag;
-		}
-
-		HashOperations opsForHash = redisTemplate.opsForHash();
-		Map<String, String> confEvent = opsForHash.entries(Constant.REDIS_KEY_CONF_EVENT);
-
-		List<MonitorEventLog> eventList = confEventDao.selectList(null);
-		if (ToolUtil.isNotEmpty(filterKeys)) {
-			eventList = eventList.stream()
-					.filter(monitorConfEvent -> Arrays.asList(filterKeys).contains(monitorConfEvent.getEvent()))
-					.collect(Collectors.toList());
-		}
-		for (MonitorEventLog data : eventList) {
-			if (ToolUtil.isEmpty(confEvent.get(data.getEvent()))
-					|| !data.getCounter().equals(Integer.valueOf(confEvent.get(data.getEvent())))) {
-				flag = true;
+			for (MonitorEventLog eventLog : list) {
+				confEventDao.update(new MonitorEventLog(), new LambdaUpdateWrapper<MonitorEventLog>()
+						.set(MonitorEventLog::getSync, eventLog.getCounter())
+						.eq(MonitorEventLog::getEvent, eventLog.getEvent()));
 			}
 		}
-		// 更新 redis 中 conf_event 数据
-		Map<String, String> map = eventList.stream().collect(Collectors.toMap(MonitorEventLog::getEvent,
-				monitorConfEvent -> String.valueOf(monitorConfEvent.getCounter())));
-		opsForHash.delete(Constant.REDIS_KEY_CONF_EVENT, map.keySet().toArray());
-		opsForHash.putAll(Constant.REDIS_KEY_CONF_EVENT, map);
 		return flag;
 	}
 

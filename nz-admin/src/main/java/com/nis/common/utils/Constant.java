@@ -115,11 +115,6 @@ public class Constant {
 	public static final String REDIS_KEY_SUPPORT_ALERT_AGENT_ID = "support_alert_agent_id";
 
 	/**
-	 * 记录
-	 */
-	public static final String REDIS_KEY_CONF_EVENT = "conf_event";
-
-	/**
 	 * 告警消息邮件通知
 	 */
 	public static final String REDIS_KEY_EMAIL_ALERT_MESSAGE = "alert_message_list";
