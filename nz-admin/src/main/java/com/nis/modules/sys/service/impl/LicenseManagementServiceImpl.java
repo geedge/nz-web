@@ -496,10 +496,25 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
         SoftwareAsset softwareAsset = softwareAssetService.getById(saId);
         ValidateUtils.is(softwareAsset).notNull(RCode.SOFTWARE_ASSET_NOT_EXIST);
 
-        Map<String, Object> softwareAssetParam = JSONUtil.toBean(StrUtil.utf8Str(softwareAsset.getParams()), Map.class);
-        String accIp = Tool.MapUtil.getStr(softwareAssetParam, "acc_ip", "");
-        String accPort = Tool.MapUtil.getStr(softwareAssetParam, "acc_port", "1947");
-        String accPin = Tool.MapUtil.getStr(softwareAssetParam, "acc_password", "");
+        JSONObject softwareAssetParam = JSONUtil.parseObj(StrUtil.utf8Str(softwareAsset.getParams()));
+        JSONArray connectorAttributeKeys = softwareAssetParam.getJSONArray("connectorAttributeKeys");
+        connectorAttributeKeys = ObjectUtil.defaultIfNull(connectorAttributeKeys, new JSONArray());
+
+        String accIp = connectorAttributeKeys.stream()
+                .filter(obj -> StrUtil.equals("acc_ip", ((JSONObject) obj).getStr("key")))
+                .findFirst()
+                .map(obj -> ((JSONArray) ((JSONObject) obj).get("value")).getFirst().toString())
+                .orElse("");
+        String accPort = connectorAttributeKeys.stream()
+                .filter(obj -> StrUtil.equals("acc_port", ((JSONObject) obj).getStr("key")))
+                .findFirst()
+                .map(obj -> ((JSONArray) ((JSONObject) obj).get("value")).getFirst().toString())
+                .orElse("1947");
+        String accPin = connectorAttributeKeys.stream()
+                .filter(obj -> StrUtil.equals("acc_password", ((JSONObject) obj).getStr("key")))
+                .findFirst()
+                .map(obj -> ((JSONArray) ((JSONObject) obj).get("value")).getFirst().toString())
+                .orElse("");
 
         if (StrUtil.isEmpty(accIp) && ObjectUtil.notEqual(-1, softwareAsset.getAssetId())) {
             log.info("[queryLicenseProductList] [fill acc ip] [saId: {}] [assetId: {}]", saId, softwareAsset.getAssetId());
