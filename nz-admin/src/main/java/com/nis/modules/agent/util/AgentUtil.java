@@ -405,7 +405,7 @@ public class AgentUtil {
 					StandardCharsets.UTF_8).toString();
 
 			String method = request.getMethod();
-			ResponseEntity<byte[]> exchange = restTemplate.exchange(new URI(urlStr), HttpMethod.resolve(method),
+			ResponseEntity<byte[]> exchange = restTemplate.exchange(new URI(urlStr), HttpMethod.valueOf(method),
 					httpEntity, byte[].class);
 
 			int statusCode = exchange.getStatusCodeValue();
