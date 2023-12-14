@@ -904,4 +904,37 @@
 		</where>
 	</select>
 
+	<select id="queryAlertMessageByHashKey" resultMap="alertMessageMap">
+		SELECT
+			am.*,
+			ar.id as r_id ,
+			ar.name as r_name,
+			ar.type as r_type,
+			ar.trb_shot as r_trb_shot,
+			p.id as p_id,
+			p.name as p_name,
+			m.id as m_id,
+			m.name as m_name,
+			e.id as e_id,
+			e.name as e_name,
+			ass.id as ass_id,
+			ass.name as ass_name,
+			alsc.id as alsc_id,
+			alsc.name as alsc_name,
+			alsc.color as alsc_color,
+			dc.id as dc_id,
+			dc.name as dc_name
+		FROM ${tableName} am
+		LEFT JOIN alert_rule ar ON am.rule_id = ar.id
+		LEFT JOIN monitor_project p on am.project_id = p.id
+		LEFT JOIN monitor_module m on am.module_id = m.id
+		LEFT JOIN monitor_endpoint e on am.endpoint_id = e.id
+		LEFT JOIN asset_asset ass on am.asset_id = ass.id
+		LEFT JOIN alert_severity_conf alsc on am.severity_id = alsc.id
+		LEFT JOIN dc dc on am.dc_id = dc.id
+		WHERE
+		    am.hash_key = #{hashKey}
+		LIMIT 1
+	</select>
+
 </mapper>

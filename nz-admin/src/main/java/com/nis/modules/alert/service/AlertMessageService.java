@@ -26,7 +26,7 @@ public interface AlertMessageService extends IService<AlertMessageEntity> {
 
 	void removeAllData();
 
-	void leftPushAlertMessageToRedis(String messages);
+	void leftPushAlertMessageToCache(String messages);
 
 	void cleanExpiredDataByTime(DateTime startCleanAlertMessageTime);
 	

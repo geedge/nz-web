@@ -15,7 +15,6 @@ import com.nis.common.exception.NZException;
 import com.nis.common.protobuf.Remote.WriteRequest;
 import com.nis.common.protobuf.Types.Label;
 import com.nis.common.protobuf.Types.TimeSeries;
-import com.nis.common.protobuf.Types.TimeSeries.Builder;
 import com.nis.common.utils.CommonUtils;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
@@ -47,6 +46,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 
 @Configuration
 @SuppressWarnings("all")
@@ -188,10 +188,22 @@ public class AgentUtil {
 		headers.add("User-Agent","network zodiac");
 		headers.add("X-Prometheus-Remote-Write-Version", "0.1.0");
 		// 遍历 timeseries 添加 nz_agent_id 标签，避免Global prometheus缺少数据的问题
-		for(int i = 0, j = timeSeriesList.size(); i < j; i++) {
+		for (int i = 0, j = timeSeriesList.size(); i < j; i++) {
 			TimeSeries ts = timeSeriesList.get(i);
-			TimeSeries nts = ts.toBuilder().addLabels(label).build();
-			timeSeriesList.set(i, nts);
+			List<Label> labelsList = ts.toBuilder().getLabelsList();
+			labelsList = Tool.CollUtil.defaultIfEmpty(labelsList, Tool.ListUtil.list(true));
+			Label nzAgentIdLabel = labelsList.stream().filter(tempLabel -> StrUtil.equals(tempLabel.getName(), "nz_agent_id")).findFirst().orElse(null);
+			if (ObjectUtil.isNotNull(nzAgentIdLabel)) {
+				List<Label> finalLabelsList = labelsList;
+				int index = IntStream.range(0, labelsList.size())
+						.filter(value -> StrUtil.equals("nz_agent_id", finalLabelsList.get(value).getName()))
+						.findFirst().orElse(-1);
+				TimeSeries nts = ts.toBuilder().removeLabels(index).addLabels(label).build();
+				timeSeriesList.set(i, nts);
+			} else {
+				TimeSeries nts = ts.toBuilder().addLabels(label).build();
+				timeSeriesList.set(i, nts);
+			}
 		}
 		//protobuf 序列化
 		WriteRequest writeRequest = WriteRequest.newBuilder().addAllTimeseries(timeSeriesList).build();

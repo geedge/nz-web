@@ -209,7 +209,7 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 				}
 			}
 			if (messages.size() > 0) {
-				alertMessageService.leftPushAlertMessageToRedis(Tool.JSONUtil.toJsonStr(messages));
+				alertMessageService.leftPushAlertMessageToCache(Tool.JSONUtil.toJsonStr(messages));
 			}
 			if (evalMessages.size() > 0) {
 				evalLog.setMessages(evalMessages);

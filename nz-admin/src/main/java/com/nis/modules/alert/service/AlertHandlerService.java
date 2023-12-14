@@ -121,5 +121,24 @@ public interface AlertHandlerService  {
 	PageUtils queryAlertMessageRelList(Map params);
 
 	void alertMessageAck(List<Map<String, Object>> mapList);
+
+	/**
+	 * 根据 hash_key 查询 alert msg，仅适用于 active，silence
+	 *
+	 * @param tableName
+	 * @param hashKey
+	 * @return
+	 */
+	AlertMessageEntity queryAlertMessageByHashKey(String tableName, String hashKey);
+
+
+	/**
+	 * 根据 alert message info 更新 alert_message_active & alert_message_silence 状态
+	 *
+	 * @param state
+	 * @param message
+	 */
+	void updateAlertMessageStateCacheByEntity(Integer state, AlertMessageEntity message);
+
 }
 

@@ -2,6 +2,7 @@ package com.nis.modules.alert.service.impl;
 
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUnit;
+import cn.hutool.core.lang.Opt;
 import cn.hutool.core.net.URLDecoder;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
@@ -14,6 +15,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
+import com.nis.modules.alert.backend.AlertContext;
 import com.nis.modules.alert.dao.AlertHandlerDao;
 import com.nis.modules.alert.dao.AlertSilenceDao;
 import com.nis.modules.alert.entity.*;
@@ -48,7 +50,6 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service("alertMessageHandlerService")
@@ -105,11 +106,17 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			log.warn("alert message tablename is null,content:{}", Tool.JSONUtil.toJsonStr(message));
 			throw new NZException(RCode.ERROR);
 		}
+		// 更新 cache 超时时间
 		if (Constant.ALERT_MESSAGE_ACTIVE_TABLE.equalsIgnoreCase(tableName)) {
-			// 更新 redis 超时时间
-			redisTemplate.expire(Tool.StrUtil.concat(true, Constant.ALERT_MESSAGE_ACTIVE_PRIX, hashKey),this.getKeyTimeout(endAt), TimeUnit.MILLISECONDS);
+			Map<Object, Object> value = AlertContext.ALERT_MESSAGE_ACTIVE_CACHE.get(hashKey, false);
+			if (ObjectUtil.isNotNull(value)) {
+				AlertContext.ALERT_MESSAGE_ACTIVE_CACHE.put(hashKey, value, this.getKeyTimeout(endAt));
+			}
 		} else if (Constant.ALERT_MESSAGE_SILENCE_TABLE.equalsIgnoreCase(tableName)) {
-			redisTemplate.expire(Tool.StrUtil.concat(true, Constant.ALERT_MESSAGE_SILENCE_PRIX, hashKey),this.getKeyTimeout(endAt), TimeUnit.MILLISECONDS);
+			Map<Object, Object> value = AlertContext.ALERT_MESSAGE_SILENCE_CACHE.get(hashKey, false);
+			if (ObjectUtil.isNotNull(value)) {
+				AlertContext.ALERT_MESSAGE_SILENCE_CACHE.put(hashKey, value, this.getKeyTimeout(endAt));
+			}
 		}
 		// 更新库表
 		msgHandlerDao.updateMessageEndAt(message);
@@ -196,16 +203,13 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		if (Tool.CollUtil.isEmpty(msgList)) {
 			return;
 		}
-		String tableName = Constant.ALERT_MESSAGE_ACTIVE_TABLE;
 		Integer state = Constant.ALERT_MESSAGE_ACTIVE_STATE;
 		for(AlertMessageEntity message : msgList) {//逐个设置 key 缓存，邮件通知
-			String hashKey = message.getHashKey();
-			Long messageId = message.getId();
-			Date endAt = message.getEndAt();
 			message.setState(state);
-			//缓存 到redis
-			redisTemplate.opsForValue().set(Tool.StrUtil.concat(true, Constant.ALERT_MESSAGE_ACTIVE_PRIX, hashKey),String.valueOf(messageId),this.getKeyTimeout(endAt),TimeUnit.MILLISECONDS);
-			this.pushMessageNotifyList(message);
+            // update cache
+            this.updateAlertMessageStateCacheByEntity(state, message);
+
+            this.pushMessageNotifyList(message);
 			// 入库删除 labels.severity_id
 			Map<String, String> labelMap = Tool.JSONUtil.toBean(message.getLabels(), HashMap.class);
 			Tool.MapUtil.removeAny(labelMap, Constant.LABEL_SEVERITY_ID_KEY);
@@ -230,9 +234,6 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		Integer state = Constant.ALERT_MESSAGE_SILENCE_STATE;
 		List<AlertSilenceMessageRel> smRels = Tool.ListUtil.list(true);
 		for(AlertMessageEntity message : msgList) {//逐个设置 key 缓存，邮件通知
-			String hashKey = message.getHashKey();
-			Long messageId = message.getId();
-			Date endAt = message.getEndAt();
 			message.setState(state);
 			List<AlertSilenceConf> silenceList = message.getSilenceList();
 			if(Tool.CollUtil.isNotEmpty(silenceList)) {
@@ -248,8 +249,8 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			Map<String, String> labelMap = Tool.JSONUtil.toBean(message.getLabels(), HashMap.class);
 			Tool.MapUtil.removeAny(labelMap, Constant.LABEL_SEVERITY_ID_KEY);
 			message.setLabels(Tool.JSONUtil.toJsonStr(labelMap));
-			//缓存 到redis
-			redisTemplate.opsForValue().set(Tool.StrUtil.concat(true, Constant.ALERT_MESSAGE_SILENCE_PRIX, hashKey),String.valueOf(messageId),this.getKeyTimeout(endAt),TimeUnit.MILLISECONDS);
+			// update cache
+			this.updateAlertMessageStateCacheByEntity(state, message);
 		}
 		msgHandlerDao.saveMessageBatch(msgList, tableName);//批量保存
 		msgHandlerDao.saveAlertSilenceMessageRel(smRels);
@@ -287,12 +288,12 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 				message.setState(state);//修改状态
 				hashKey = fromMessage.getHashKey();
 				ids.add(fromMessage.getId());
-				redisTemplate.delete(Tool.StrUtil.concat(true, Constant.ALERT_MESSAGE_ACTIVE_PRIX, hashKey));
+				AlertContext.ALERT_MESSAGE_ACTIVE_CACHE.remove(hashKey);
 				this.pushMessageNotifyList(fromMessage);
 			}
 			if(Constant.ALERT_MESSAGE_SILENCE_STATE.equals(fromState)) {
 				ids.add(message.getId());
-				redisTemplate.delete(Tool.StrUtil.concat(true, Constant.ALERT_MESSAGE_SILENCE_PRIX, hashKey));
+				AlertContext.ALERT_MESSAGE_SILENCE_CACHE.remove(hashKey);
 			}
 			// 入库删除 labels.severity_id
 			Map<String, String> labelMap = Tool.JSONUtil.toBean(message.getLabels(), HashMap.class);
@@ -392,7 +393,7 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			List<AlertSilenceMessageRel> smRel = msgHandlerDao.selectAlertMessageIdsOneByOneSilencConfId(confId);
 			if(Tool.CollUtil.isNotEmpty(smRel)) {
 				for(AlertSilenceMessageRel rel : smRel) {
-					redisTemplate.delete(Tool.StrUtil.concat(true, Constant.ALERT_MESSAGE_SILENCE_PRIX, rel.getHashKey()));
+					AlertContext.ALERT_MESSAGE_SILENCE_CACHE.remove(rel.getHashKey());
 					msgIds.add(rel.getMessageId());
 				}
 			}
@@ -437,7 +438,7 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			}
 			message.setSilenceList(list);
 			messageIds.add(message.getId());
-			redisTemplate.delete(Tool.StrUtil.concat(true, Constant.ALERT_MESSAGE_ACTIVE_PRIX,message.getHashKey()));
+			AlertContext.ALERT_MESSAGE_ACTIVE_CACHE.remove(message.getHashKey());
 		}
 		//更新 silence conf 状态
 		List<Integer> confIds = Tool.ListUtil.list(false);
@@ -987,4 +988,47 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			msgHandlerDao.updateMessageEndAck(alertMessageEntity);
 		}
 	}
+
+	@Override
+	public AlertMessageEntity queryAlertMessageByHashKey(String tableName, String hashKey) {
+		return msgHandlerDao.queryAlertMessageByHashKey(tableName, hashKey);
+	}
+
+	@Override
+	public void updateAlertMessageStateCacheByEntity(Integer state, AlertMessageEntity message) {
+		if (message == null) {
+			return;
+		}
+		String hashKey = message.getHashKey();
+		Date endAt = message.getEndAt();
+
+		Integer ruleType = Opt.ofNullable(message.getAlertRule()).map(AlertRuleEntity::getType).get();
+		Map<Object, Object> value = Tool.MapUtil.builder()
+				.put("id", message.getId()).put("labels", message.getLabels())
+				.put("project_id", ObjectUtil.defaultIfNull(message.getProjectId(), -1))
+				.put("project", Opt.ofNullable(message.getProject()).map(MonitorProject::getName).get())
+				.put("module_id", ObjectUtil.defaultIfNull(message.getModuleId(), -1))
+				.put("module", Opt.ofNullable(message.getModule()).map(MonitorModule::getName).get())
+				.put("endpoint_id", ObjectUtil.defaultIfNull(message.getEndpointId(), -1))
+				.put("endpoint", Opt.ofNullable(message.getEndpoint()).map(MonitorEndpoint::getName).get())
+				.put("datacenter_id", ObjectUtil.defaultIfNull(message.getDcId(), -1))
+				.put("datacenter", Opt.ofNullable(message.getDc()).map(Dc::getName).get())
+				.put("asset_id", ObjectUtil.defaultIfNull(message.getAssetId(), -1))
+				.put("asset", Opt.ofNullable(message.getAsset()).map(AssetAsset::getName).get())
+				.put("rule_id", message.getRuleId())
+				.put("rule_name", Opt.ofNullable(message.getAlertRule()).map(AlertRuleEntity::getName).get())
+				.put("rule_type", ruleType == null ? null : ruleType == 1 ? "metrics" : "logs")
+				.put("severity_id", message.getSeverityId())
+				.put("severity_name", Opt.ofNullable(message.getSeverity()).map(AlertSeverityConf::getName).get())
+				.map();
+
+		if (ObjectUtil.equal(Constant.ALERT_MESSAGE_ACTIVE_STATE, state)) {
+			AlertContext.ALERT_MESSAGE_ACTIVE_CACHE.put(hashKey, value, this.getKeyTimeout(endAt));
+		}
+
+		if (ObjectUtil.equal(Constant.ALERT_MESSAGE_SILENCE_STATE, state)) {
+			AlertContext.ALERT_MESSAGE_SILENCE_CACHE.put(hashKey, value, this.getKeyTimeout(endAt));
+		}
+	}
+
 }

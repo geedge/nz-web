@@ -182,4 +182,14 @@ public interface AlertHandlerDao {
 	 * @return
 	 */
 	List<AlertMessageEntity> queryAlertMessageFullText(IPage page, Map<String, Object> params);
+
+	/**
+	 * 根据 hash_key 查询 alert msg，仅适用于 active，silence
+	 *
+	 * @param tableName
+	 * @param hashKey
+	 * @return
+	 */
+	AlertMessageEntity queryAlertMessageByHashKey(@Param("tableName") String tableName, @Param("hashKey") String hashKey);
+
 }

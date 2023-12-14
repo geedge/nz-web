@@ -3,8 +3,8 @@ package com.nis.modules.alert.service.impl;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
+import com.nis.modules.alert.backend.AlertContext;
 import com.nis.modules.alert.dao.AlertHandlerDao;
 import com.nis.modules.alert.dao.AlertMessageDao;
 import com.nis.modules.alert.entity.AlertMessageEntity;
@@ -12,8 +12,6 @@ import com.nis.modules.alert.service.AlertMessageService;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.ListOperations;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,10 +28,8 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
     private AlertMessageDao alertMessageDao;
     @Autowired
     private AlertHandlerDao msgHandlerDao;
-	@Autowired
-	private RedisTemplate<String, String> redisTemplate;
 	@Value("${redis.maxAlertMessageSize:10000}")
-    private Long maxQueueLength;//redis队列长度
+    private Integer maxQueueLength;//redis队列长度
 	
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -118,21 +114,23 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		this.baseMapper.removeAllData();
 	}
 
-	@Override
-	public void leftPushAlertMessageToRedis(String messages) {
-		if(Tool.StrUtil.isBlank(messages)) {
-			return;
-		}
-		ListOperations<String, String> operations = redisTemplate.opsForList();
-		operations.leftPush(Constant.ALERT_MESSAGE_RECV, Tool.JSONUtil.toJsonStr(messages));
-		Long size = operations.size(Constant.ALERT_MESSAGE_RECV);
-		//判断是否超出所设置的队列最大长度
-		if(size > maxQueueLength) {
-			redisTemplate.opsForList().trim(Constant.ALERT_MESSAGE_RECV, 0, maxQueueLength-1);
-			log.debug("trim alert_message_recv size : {}",size - maxQueueLength);
-		}
-		log.debug("alert_message_recv size : {}",size);
-	}
+    @Override
+    public void leftPushAlertMessageToCache(String messages) {
+        if (Tool.StrUtil.isBlank(messages)) {
+            return;
+        }
+        AlertContext.ALERT_MESSAGE_RECV_QUEUE.offer(Tool.JSONUtil.toJsonStr(messages));
+        int size = AlertContext.ALERT_MESSAGE_RECV_QUEUE.size();
+        // 判断是否超出所设置的队列最大长度
+        if (size > maxQueueLength) {
+            int removeCount = size - maxQueueLength;
+            for (int i = 0; i < removeCount; i++) {
+                AlertContext.ALERT_MESSAGE_RECV_QUEUE.poll();
+            }
+            log.debug("trim alert_message_recv size : {}", removeCount);
+        }
+        log.debug("alert_message_recv size : {}", size);
+    }
 
     @Override
     public void cleanExpiredDataByTime(DateTime startCleanAlertMessageTime) {

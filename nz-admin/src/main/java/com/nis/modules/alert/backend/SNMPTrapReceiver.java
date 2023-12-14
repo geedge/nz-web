@@ -215,7 +215,7 @@ public class SNMPTrapReceiver implements CommandResponder, ApplicationRunner {
 			if (dto != null) {
 				// 发送到 缓存队列
 				ArrayList<AlertMessageReceiveDTO> list = Tool.ListUtil.toList(dto);
-				messageService.leftPushAlertMessageToRedis(Tool.JSONUtil.toJsonStr(list));
+				messageService.leftPushAlertMessageToCache(Tool.JSONUtil.toJsonStr(list));
 			}
 		} catch (Exception e) {
 			log.error(e, "snmp trap error");

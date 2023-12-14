@@ -39,7 +39,7 @@ public class AlertMessageReceiveController {
     		if(logger.isDebugEnabled()) {
     			logger.debug("alert receive: {}", receiveStr);
     		}
-    		alertMessageService.leftPushAlertMessageToRedis(receiveStr);
+		    alertMessageService.leftPushAlertMessageToCache(receiveStr);
     	} catch (RuntimeException e) {
     		logger.error(e, "alert message receive error,host:{}, msg:{}", request.getRemoteAddr(),receiveStr);
 			throw new NZException(RCode.ALERTMSG_PARSE_ERROR);
@@ -53,7 +53,7 @@ public class AlertMessageReceiveController {
     		if(logger.isDebugEnabled()) {
     			logger.debug("alert receive: {}", receiveStr);
     		}
-    		alertMessageService.leftPushAlertMessageToRedis(receiveStr);
+		    alertMessageService.leftPushAlertMessageToCache(receiveStr);
     	} catch (RuntimeException e) {
     		logger.error(e, "alert message receive error,host:{}, msg:{}", request.getRemoteAddr(),receiveStr);
 			throw new NZException(RCode.ALERTMSG_PARSE_ERROR);

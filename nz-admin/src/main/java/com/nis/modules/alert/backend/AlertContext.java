@@ -1,10 +1,13 @@
 package com.nis.modules.alert.backend;
 
+import cn.hutool.cache.CacheUtil;
+import cn.hutool.cache.impl.TimedCache;
 import cn.hutool.log.Log;
 import com.nis.common.utils.Tool;
 import com.nis.modules.alert.entity.AlertRuleEntity;
 
 import java.util.Map;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class AlertContext {
 	private static final Log log = Log.get();
@@ -16,6 +19,21 @@ public class AlertContext {
 	public static final String JOB_DATA_KEY_ALERT_RULE_ENTITY = "alert_rule_entity";
 	
 	public final static Map<String,AlertRuleEntity> ALL_SNMP_ALERT_RULE = Tool.MapUtil.newConcurrentHashMap();
+
+	/**
+	 * alert_message_recv_queue cache
+	 */
+	public static final LinkedBlockingQueue<String> ALERT_MESSAGE_RECV_QUEUE = new LinkedBlockingQueue<>();
+
+	/**
+	 * alert_message_active_cache
+	 */
+	public static final TimedCache<String, Map<Object, Object>> ALERT_MESSAGE_ACTIVE_CACHE = CacheUtil.newTimedCache(0);
+
+	/**
+	 * alert_message_silence_cache
+	 */
+	public static final TimedCache<String, Map<Object, Object>> ALERT_MESSAGE_SILENCE_CACHE = CacheUtil.newTimedCache(0);
 
 	/**
 	 * alert 状态 key
