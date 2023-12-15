@@ -1,8 +1,5 @@
 package com.nis.common.config;
 
-import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler;
-import io.micrometer.observation.*;
-import io.micrometer.prometheus.PrometheusMeterRegistry;
 import org.apache.hc.client5.http.ConnectionKeepAliveStrategy;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -22,14 +19,14 @@ import org.apache.hc.core5.util.Timeout;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.protocol.HTTP;
 import org.apache.http.ssl.TrustStrategy;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.client.*;
-import org.springframework.http.client.observation.DefaultClientRequestObservationConvention;
+import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.DefaultResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
 
@@ -75,9 +72,6 @@ public class RestTemplateConfig {
 	@Value("${http-pool.keep-alive-time:60}")
 	private int keepAliveTime;
 
-	@Autowired
-	private PrometheusMeterRegistry registry;
-
 	@Bean
 	public RestTemplate restTemplate(RestTemplateBuilder builder, ClientHttpRequestFactory requestFactory) {
 		RestTemplate restTemplate =  builder.build();
@@ -85,7 +79,7 @@ public class RestTemplateConfig {
 		restTemplate.setErrorHandler(new DefaultResponseErrorHandler() {
 			@Override
 			public boolean hasError(ClientHttpResponse response) throws IOException {
-				int rawStatusCode = response.getStatusCode().value();
+				int rawStatusCode = response.getRawStatusCode();
 				HttpStatus statusCode = HttpStatus.resolve(rawStatusCode);
 				return (statusCode != null ? statusCode.isError() : hasError(rawStatusCode));
 			}
@@ -99,10 +93,6 @@ public class RestTemplateConfig {
 			public void handleError(ClientHttpResponse response) throws IOException {
 			}
 		});
-		ObservationRegistry observationRegistry = ObservationRegistry.create();
-		observationRegistry.observationConfig().observationHandler(new DefaultMeterObservationHandler(registry));
-		restTemplate.setObservationRegistry(observationRegistry);
-		restTemplate.setObservationConvention(new DefaultClientRequestObservationConvention());
 		return restTemplate;
 	}
 

@@ -130,6 +130,6 @@ management:
   endpoint:
     health:
       show-details: always  # always允许访问详细数据
-  observations:
-    key-values:
+  metrics:
+    tags:
       application: nz-web # prometheus application tag ，标志一个应用
