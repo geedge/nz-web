@@ -193,10 +193,9 @@ public class AgentConfigUtil {
 	 *
 	 * @param agent
 	 * @param globalAgentList
-	 * @param isAlert
 	 * @return
 	 */
-	public Map generateCortexYml(Agent agent, List<Agent> globalAgentList, Boolean isAlert) {
+	public Map generateCortexYml(Agent agent, List<Agent> globalAgentList) {
 		log.debug("cortex.yml 开始生成");
 		Map params = new LinkedHashMap(8);
 		
@@ -228,8 +227,7 @@ public class AgentConfigUtil {
 
 		TimedCache<String, Object> sysConfiMap = TimedCacheManager.getNeverExpireCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
 		params.put("systemConfig", sysConfiMap);
-
-		params.put("isAlert", isAlert);
+		params.put("isAlert", false);
 
 		Map map = new HashMap();
 		String content = "";
@@ -304,7 +302,7 @@ public class AgentConfigUtil {
 	 * @param healthyAgents
 	 * @return
 	 */
-	public Integer getSupportAlertPromId(List<Agent> healthyAgents) {
+	/*public Integer getSupportAlertPromId(List<Agent> healthyAgents) {
 		Object supportAlertPromId = redisTemplate.opsForValue().get(Constant.REDIS_KEY_SUPPORT_ALERT_AGENT_ID);
 		supportAlertPromId = ToolUtil.isEmpty(supportAlertPromId) ? "" : supportAlertPromId;
 
@@ -326,7 +324,7 @@ public class AgentConfigUtil {
 					supportAlertPromId.toString());
 		}
 		return Integer.valueOf(supportAlertPromId.toString());
-	}
+	}*/
 
 	/**
 	 * 组装 snmp.yml

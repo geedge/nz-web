@@ -211,11 +211,11 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             boolean cortexChangeFlag = configUtil.compareDataChanges("cortex");
             log.info("[setUpAgentConfig] [conf_event cortex state] [change: {}]", cortexChangeFlag);
 
-            boolean ruleChangeFlag = configUtil.compareDataChanges("rule");
-            log.info("[setUpAgentConfig] [conf_event rule state] [change: {}]", ruleChangeFlag);
+//            boolean ruleChangeFlag = configUtil.compareDataChanges("rule");
+//            log.info("[setUpAgentConfig] [conf_event rule state] [change: {}]", ruleChangeFlag);
 
             // 是否更新 rule.yml 配置
-            String alertConfUpdate = sysConfService.getValue("nz_alert_rule_eval_enable");
+//            String alertConfUpdate = sysConfService.getValue("nz_alert_rule_eval_enable");
 //            Map alertYmlMap = configUtil.generateRuleYml();
 //            if (ruleChangeFlag && StrUtil.equals("0", StrUtil.emptyToDefault(alertConfUpdate, "1"))) {
 //                // 生成 alert.yml
@@ -695,7 +695,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
      * @param alertYmlMap
      * @param healthyPromServers
      */
-    private void justUpdateRuleConf(Map alertYmlMap, List<Agent> healthyPromServers) {
+    /*private void justUpdateRuleConf(Map alertYmlMap, List<Agent> healthyPromServers) {
         // 先判断 redis 中是否存在 alert 告警标识
         Boolean aBoolean = redisTemplate.hasKey(Constant.REDIS_KEY_SUPPORT_ALERT_AGENT_ID);
         Integer supportAlertPromId = configUtil.getSupportAlertPromId(healthyPromServers);
@@ -726,12 +726,11 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         } else {
             configUtil.afterRequestApi(path, result, agent);
         }
-    }
+    }*/
 
     /**
      * cortex 配置下发
      *
-     * @param alertYmlMap
      * @param healthyAgents
      */
     private void updateCortexConf(List<Agent> healthyAgents) {
@@ -747,20 +746,15 @@ public class AutoConfigAgentJob extends QuartzJobBean {
 
         // healthy agent config cortex.yml
         ThreadUtil.execAsync(() -> {
-            // 获取当前支持 alert 的 agent id
-            Integer supportAlertPromId = configUtil.getSupportAlertPromId(healthyAgents);
-            // 调用 agent/cortex 接口 更新 cortex config and rule.yml
+            // 调用 agent/cortex 接口 更新 cortex config
             List<Agent> globalAgentList = healthyAgents.stream().filter(pojo -> ObjectUtil.equal(Constant.AgentType.GLOBAL.getValue(), pojo.getType())).collect(Collectors.toList());
             for (Agent agent : globalAgentList) {
-                Boolean isAlert = ObjectUtil.equal(agent.getId(), supportAlertPromId);
                 // generate Cortex Yml
-                Map cortexYml = configUtil.generateCortexYml(agent, globalAgentList, isAlert);
+                Map cortexYml = configUtil.generateCortexYml(agent, globalAgentList);
 
                 Map<String, Object> cortexConfigBody = new HashMap<>(4);
                 cortexConfigBody.put("config", cortexYml);
-//                if ((supportAlertPromId == null || agent.getId().equals(supportAlertPromId)) && MapUtil.isNotEmpty(alertYmlMap)) {
-//                    cortexConfigBody.put("rule", alertYmlMap);
-//                }
+
                 String result = null;
                 String path = "/cortex/config";
                 try {
