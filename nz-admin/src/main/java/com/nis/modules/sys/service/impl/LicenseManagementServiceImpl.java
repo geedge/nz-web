@@ -287,9 +287,20 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
      * @throws IOException
      */
     private void downloadC2VFileFromLicenseService(String typeName, SoftwareAsset softwareAsset, HttpServletResponse response) throws IOException {
-        Map<String, Object> softwareAssetParam = cn.hutool.json.JSONUtil.toBean(StrUtil.utf8Str(softwareAsset.getParams()), Map.class);
-        String url = Tool.MapUtil.getStr(softwareAssetParam, "url", "");
-        String token = Tool.MapUtil.getStr(softwareAssetParam, "token", "");
+        JSONObject softwareAssetParam = JSONUtil.parseObj(StrUtil.utf8Str(softwareAsset.getParams()));
+        JSONArray connectorAttributeKeys = softwareAssetParam.getJSONArray("connectorAttributeKeys");
+        connectorAttributeKeys = ObjectUtil.defaultIfNull(connectorAttributeKeys, new JSONArray());
+
+        String url = connectorAttributeKeys.stream()
+                .filter(obj -> StrUtil.equals("url", ((JSONObject) obj).getStr("key")))
+                .findFirst()
+                .map(obj -> ((JSONArray) ((JSONObject) obj).get("value")).getFirst().toString())
+                .orElse("");
+        String token = connectorAttributeKeys.stream()
+                .filter(obj -> StrUtil.equals("token", ((JSONObject) obj).getStr("key")))
+                .findFirst()
+                .map(obj -> ((JSONArray) ((JSONObject) obj).get("value")).getFirst().toString())
+                .orElse("");
 
         HttpHeaders headers = new HttpHeaders();
         if (StrUtil.isNotEmpty(token)) {
@@ -418,9 +429,20 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
      * @throws IOException
      */
     private void uploadV2CToLicenseService(String typeName, SoftwareAsset softwareAsset, MultipartFile multipartFile) throws IOException {
-        Map<String, Object> softwareAssetParam = cn.hutool.json.JSONUtil.toBean(StrUtil.utf8Str(softwareAsset.getParams()), Map.class);
-        String url = Tool.MapUtil.getStr(softwareAssetParam, "url", "");
-        String token = Tool.MapUtil.getStr(softwareAssetParam, "token", "");
+        JSONObject softwareAssetParam = JSONUtil.parseObj(StrUtil.utf8Str(softwareAsset.getParams()));
+        JSONArray connectorAttributeKeys = softwareAssetParam.getJSONArray("connectorAttributeKeys");
+        connectorAttributeKeys = ObjectUtil.defaultIfNull(connectorAttributeKeys, new JSONArray());
+
+        String url = connectorAttributeKeys.stream()
+                .filter(obj -> StrUtil.equals("url", ((JSONObject) obj).getStr("key")))
+                .findFirst()
+                .map(obj -> ((JSONArray) ((JSONObject) obj).get("value")).getFirst().toString())
+                .orElse("");
+        String token = connectorAttributeKeys.stream()
+                .filter(obj -> StrUtil.equals("token", ((JSONObject) obj).getStr("key")))
+                .findFirst()
+                .map(obj -> ((JSONArray) ((JSONObject) obj).get("value")).getFirst().toString())
+                .orElse("");
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
