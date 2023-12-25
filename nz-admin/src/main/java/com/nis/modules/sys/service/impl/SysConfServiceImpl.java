@@ -6,7 +6,6 @@ import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
-import com.alibaba.fastjson.JSONArray;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -15,30 +14,17 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
-import com.nis.modules.agent.entity.Agent;
-import com.nis.modules.agent.service.AgentService;
 import com.nis.modules.agent.service.MonitorEventLogService;
-import com.nis.modules.agent.util.AgentUtil;
-import com.nis.modules.alert.entity.AlertMessageEntity;
-import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.sys.dao.SysConfDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysService;
-import com.nis.modules.sys.shiro.ShiroUtils;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
 import org.quartz.*;
 import org.quartz.impl.matchers.GroupMatcher;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
@@ -48,9 +34,7 @@ import javax.naming.Context;
 import javax.naming.NamingException;
 import javax.naming.directory.InitialDirContext;
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 @Service("sysConfService")
 public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity> implements SysConfService {
@@ -105,15 +89,6 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
     public static final String[] LDAP_REQUIRED={"ldap_address","ldap_dn","ldap_user_filter","ldap_mapping","ldap_enable","ldap_timeout"};
 
     private static final Log logger = Log.get();
-
-    @Autowired
-    private AgentService agentService;
-    @Autowired
-    private AlertMessageService alertMessageService;
-    @Autowired
-    private RedisTemplate<String,String> redisTemplate;
-    @Value("${nezha.userId.expire}")
-    private int expire;
 
     @Autowired
     private MailUtil mailUtil;
@@ -298,7 +273,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
      * 系统设置重置
      * @param param
      */
-    @Override
+    /*@Override
     @Transactional(rollbackFor = Exception.class)
     public void resetConfig(Map<String, Object> param) throws IOException,RuntimeException{
         String pin = StrUtil.str(param.get(Constant.PIN).toString());
@@ -334,11 +309,11 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
         }catch (IOException | RuntimeException e){
             throw e;
         }
-    }
+    }*/
     /**
      * 重置metric
      */
-    private void resetMetric() throws IOException{
+    /*private void resetMetric() throws IOException{
         String seriesUri = "/api/v1/admin/tsdb/delete_series";
         String tombstonesUri = "/api/v1/admin/tsdb/clean_tombstones";
         // 获取正常的监控服务列表
@@ -353,19 +328,19 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
             	logger.info("request result: {}",result);
             });
         }
-    }
+    }*/
 
     /**
      * 重置alert
      */
-    private void resetAlert() throws RuntimeException{
+    /*private void resetAlert() throws RuntimeException{
         alertMessageService.remove(new LambdaQueryWrapper<AlertMessageEntity>());
-    }
+    }*/
 
     /**
      * 清除用户输入数据
      */
-    @Transactional(rollbackFor = Exception.class)
+    /*@Transactional(rollbackFor = Exception.class)
     public void resetEnterData() {
         try {
             // redis写入当前用户id
@@ -386,7 +361,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
             logger.error("nezha reset fail",e);
             throw new NZException(RCode.SYS_CONFIG_RESET_FAIL);
         }
-    }
+    }*/
 
     @Override
     public String getValue(String key) {
@@ -591,17 +566,6 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
     }
 
     @Override
-    public boolean checkHaMode() {
-        Map<String, String> configMap = this.batchQuery("ha_mode", "ha_vip");
-        if ("2".equals(configMap.get("ha_mode"))) {
-            if (!CommonUtils.getInetIpAddress().contains(configMap.get("ha_vip"))) {
-                return false;
-            }
-        }
-        return false;
-    }
-
-    @Override
     @Transactional(rollbackFor = Exception.class)
     public void saveMonitor(Map<String, String> params) {
         // 过滤非法的key
@@ -644,16 +608,6 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
         this.handleMoniotEventLog(result);
         //保存
         this.saveOrUpdateConfsBatch(result);
-
-        //更新 缓存中的 metrics_query_max_series
-        String metricsQueryMaxSeries = params.get(Constant.METRICS_QUERY_MAX_SERIES);
-        ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
-        String queryMaxSeries = valueOperations.get(Constant.METRICS_QUERY_MAX_SERIES);
-
-        if (!StrUtil.equals(metricsQueryMaxSeries, queryMaxSeries)) {
-            valueOperations.set(Constant.METRICS_QUERY_MAX_SERIES, metricsQueryMaxSeries, 30, TimeUnit.MINUTES);
-            logger.info("Prometheus query_range 查询最大条数限制更改为 " + metricsQueryMaxSeries);
-        }
     }
 
     @Override

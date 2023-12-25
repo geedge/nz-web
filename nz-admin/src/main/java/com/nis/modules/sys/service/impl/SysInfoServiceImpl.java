@@ -14,11 +14,6 @@ import com.nis.modules.sys.service.SysInfoService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataAccessException;
-import org.springframework.data.redis.connection.RedisConnection;
-import org.springframework.data.redis.connection.RedisServerCommands;
-import org.springframework.data.redis.core.RedisCallback;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -34,9 +29,6 @@ public class SysInfoServiceImpl implements SysInfoService {
 
     @Autowired
     private AgentDao agentDao;
-
-    @Autowired
-    private RedisTemplate redisTemplate;
 
     @Override
     public Map getAboutInfo() {
@@ -61,18 +53,18 @@ public class SysInfoServiceImpl implements SysInfoService {
         componentVersionInfoList.add(componentVersion);
 
         // ② redis version
-        Object redisVersion = redisTemplate.execute(new RedisCallback<String>() {
-            @Override
-            public String doInRedis(RedisConnection connection) throws DataAccessException {
-                RedisServerCommands redisServerCommands = connection.serverCommands();
-                Properties info = redisServerCommands.info();
-                return info.get("redis_version").toString();
-            }
-        });
-        componentVersion = new HashMap(4);
-        componentVersion.put("name", "Redis");
-        componentVersion.put("version", redisVersion.toString());
-        componentVersionInfoList.add(componentVersion);
+        // Object redisVersion = redisTemplate.execute(new RedisCallback<String>() {
+        //     @Override
+        //     public String doInRedis(RedisConnection connection) throws DataAccessException {
+        //         RedisServerCommands redisServerCommands = connection.serverCommands();
+        //         Properties info = redisServerCommands.info();
+        //         return info.get("redis_version").toString();
+        //     }
+        // });
+        // componentVersion = new HashMap(4);
+        // componentVersion.put("name", "Redis");
+        // componentVersion.put("version", redisVersion.toString());
+        // componentVersionInfoList.add(componentVersion);
 
         // ③ prometheus version 随机获取可用 agent
         List<Agent> healthyAgentList = agentDao.selectList(new QueryWrapper<Agent>().lambda().eq(true, Agent::getStatus, 1));

@@ -106,7 +106,7 @@ public class SysConfController {
      * @param param
      * @return
      */
-    @PutMapping("/reset")
+    /*@PutMapping("/reset")
     @SysLog(operation = OperationEnum.RESET,type = TypeEnum.SYS_CONF)
     @RequiresPermissions({"sys:config:reset"})
     public R resetConfig(@RequestBody Map<String, Object> param) throws IOException,RuntimeException{
@@ -116,7 +116,7 @@ public class SysConfController {
             throw e;
         }
         return R.ok();
-    }
+    }*/
 
     @GetMapping("/key/{configKey}")
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYS_CONF)

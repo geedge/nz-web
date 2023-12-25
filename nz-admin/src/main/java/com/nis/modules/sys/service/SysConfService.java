@@ -33,9 +33,7 @@ public interface SysConfService extends IService<SysConfigEntity> {
 
     void saveLdap(Map<String, String> params);
 
-    void resetConfig(Map<String, Object> param) throws IOException;
-
-    boolean checkHaMode();
+    // void resetConfig(Map<String, Object> param) throws IOException;
 
     void saveMonitor(Map<String, String> params);
 

@@ -18,7 +18,6 @@ import com.nis.modules.sys.service.*;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,9 +43,6 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
 
     @Autowired
     private SysMenuDao sysMenuDao;
-
-    @Autowired
-    private RedisTemplate redisTemplate;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -162,7 +158,6 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
 
         List<Long> userIds = userList.stream().map(SysUserEntity::getId).distinct().collect(Collectors.toList());
 
-        // 删除 redis 中的 token
         List<String> removeKeys = new ArrayList<>();
         try {
             Map<String, SysUserEntity> shiroSessionInfoMap = ShiroUtils.getShiroSessionInfoMap();
@@ -173,7 +168,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
                 }
             }
         } catch (RuntimeException e) {
-            log.error(String.format("从redis中获取用户登录信息失败,错误信息是：%s,角色Id是：%s", e.getMessage(), roleId), e);
+            log.error(e, "[handleRoleMenuRelation] [error] [roleId: {}]", roleId);
         } finally {
             // 删除 关联key
             if (CollectionUtils.isNotEmpty(removeKeys)) {
