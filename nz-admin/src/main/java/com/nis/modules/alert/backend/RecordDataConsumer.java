@@ -8,12 +8,8 @@ import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.election.dao.LeaderElectionDao;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.QueryTimeoutException;
-import org.springframework.data.redis.core.ListOperations;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -21,7 +17,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * record data 消费线程 1、从 redis中获取 record data 2、处理内容 3、rewrite 发送到
+ * record data 消费线程 1、从本地 cache 中获取 record data 2、处理内容 3、rewrite 发送到
  * prometheus/cortex
  * 
  * @author ThinkPad
@@ -32,8 +28,6 @@ public class RecordDataConsumer implements Runnable {
 	private static final Log log = Log.get();
 
 	private static final String THREAD_NAME = "RecordDataConsumer";
-	@Autowired
-	private RedisTemplate<String, Object> redisTemplate;
 	/**
 	 * 最大 发送间隔，单位 ： ms
 	 */
@@ -65,12 +59,8 @@ public class RecordDataConsumer implements Runnable {
 				}
 
 				// 当前队列数量
-				ListOperations<String, Object> opsForList = redisTemplate.opsForList();
-				Long cacheSize = 0L;
-				if (redisTemplate.hasKey(Constant.RECORD_DATA_CACHE)) {
-					cacheSize = opsForList.size(Constant.RECORD_DATA_CACHE);
-					log.debug("record_data_cache size : {}", cacheSize);
-				}
+				Long cacheSize = Long.valueOf(Tool.CollUtil.size(AlertContext.RECORD_DATA_CACHE));
+				log.debug("record_data_cache size : {}", cacheSize);
 
 				// 判断是否需要发送
 				// 数量 或 时间 其中一个条件满足即可发送
@@ -117,22 +107,19 @@ public class RecordDataConsumer implements Runnable {
 	}
 
 	/**
-	 * 从redis 中批量 获取 record data
+	 * 从本地 cache 中批量 获取 record data
 	 * 
 	 * @param size
 	 * @return
 	 */
 	@SuppressWarnings("all")
 	private List<TimeSeries> leftPopRecordData(Long size) throws InvalidProtocolBufferException {
-		List<TimeSeries> result = Tool.ListUtil.list(false);
-		List<String> cacheList = (List) redisTemplate.executePipelined((SessionCallback) operations -> {
-			ListOperations opsForList = operations.opsForList();
-			for (int i = 0; i < size; i++) {
-				opsForList.leftPop(Constant.RECORD_DATA_CACHE);
-			}
-			return null;
-		});
+		List<String> cacheList = Tool.ListUtil.list(false);
+		while (cacheList.size() < size && !AlertContext.RECORD_DATA_CACHE.isEmpty()) {
+			cacheList.add(AlertContext.RECORD_DATA_CACHE.poll());
+		}
 
+		List<TimeSeries> result = Tool.ListUtil.list(false);
 		if (cacheList.size() > 0) {
 			for (int i = 0, j = cacheList.size(); i < j; i++) {
 				TimeSeries timeSeries = TimeSeries.parseFrom(Tool.HexUtil.decodeHex(cacheList.get(i)));

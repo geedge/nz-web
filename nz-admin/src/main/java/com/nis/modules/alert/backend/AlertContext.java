@@ -26,6 +26,16 @@ public class AlertContext {
 	public static final LinkedBlockingQueue<String> ALERT_MESSAGE_RECV_QUEUE = new LinkedBlockingQueue<>();
 
 	/**
+	 * record_data_cache
+	 */
+	public static final LinkedBlockingQueue<String> RECORD_DATA_CACHE = new LinkedBlockingQueue<>();
+
+	/**
+	 * alert_message_notify cache
+	 */
+	public static final LinkedBlockingQueue<String> ALERT_MESSAGE_NOTIFY_QUEUE = new LinkedBlockingQueue<>();
+
+	/**
 	 * alert_message_active_cache
 	 */
 	public static final TimedCache<String, Map<Object, Object>> ALERT_MESSAGE_ACTIVE_CACHE = CacheUtil.newTimedCache(0);

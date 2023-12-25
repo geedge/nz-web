@@ -24,13 +24,13 @@ public interface RecordRuleService extends IService<RecordRuleEntity> {
     void deleteRecordRule(Integer[] ids);
 
 	/**
-	 * 存放 record data 到 redis 需要额外线程消费队列中的内容
+	 * 存放 record data 到本地 cache 需要额外线程消费队列中的内容
 	 * 
 	 * @param recordData
 	 */
-	void rightPushRecordToRedis(List<TimeSeries> timeSeriesList);
+	void rightPushRecordToCache(List<TimeSeries> timeSeriesList);
 
-	void rightPushRecordToRedis(TimeSeries timeSeries);
+	void rightPushRecordToCache(TimeSeries timeSeries);
 
 	void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException;
 

@@ -111,8 +111,8 @@ public class RecordRuleEvalJob extends QuartzJobBean {
 				// 处理结果，修改__name__ value, 格式改为 matrix
 				List<TimeSeries> timeSeries = this.coverToTimeSeries(result, recordRuleEntity);
 				if (timeSeries.size() > 0) {
-					// 存放到 redis
-					recordRuleService.rightPushRecordToRedis(timeSeries);
+					// 存放到本地 cache
+					recordRuleService.rightPushRecordToCache(timeSeries);
 				}
 			}
 			log.info("RecordRuleEvalJob end, ruleId:{}, interval:{}s, type:{}, result size: {}", recordRuleId,
@@ -139,7 +139,7 @@ public class RecordRuleEvalJob extends QuartzJobBean {
 				Sample stateSample = Sample.newBuilder().setTimestamp(evalLog.getStts()).setValue(evalLog.getState()).build();
 				TimeSeries durationTs = TimeSeries.newBuilder().addLabels(recordLabel).addLabels(durationMetric).addSamples(durationSample).build();
 				TimeSeries stateTs = TimeSeries.newBuilder().addLabels(recordLabel).addLabels(stateMetric).addSamples(stateSample).build();
-				recordRuleService.rightPushRecordToRedis(Tool.ListUtil.of(durationTs,stateTs));
+				recordRuleService.rightPushRecordToCache(Tool.ListUtil.of(durationTs,stateTs));
 			} catch (Exception e) {
 				log.warn(e, "save record rule eval log error");
 			}

@@ -16,8 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 
  * 接收prometheus 推送的告警消息
- * 1、直接存到 redis
- * 2、后续 例外线程在redis 中读取解析之后再处理
+ * 1、直接存到本地 cache
+ * 2、后续 例外线程在本地 cache 中读取解析之后再处理
  */
 @RestController
 @RequestMapping("api")

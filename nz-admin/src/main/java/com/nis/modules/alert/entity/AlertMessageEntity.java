@@ -104,7 +104,7 @@ public class AlertMessageEntity implements Serializable {
 	private  Integer dcId;
 
 	/**
-	 * redis hash key
+	 * hash key
 	 * */
 	private String hashKey;
 

@@ -24,8 +24,6 @@ import freemarker.template.TemplateException;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.QueryTimeoutException;
-import org.springframework.data.redis.core.ListOperations;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
@@ -38,7 +36,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 告警邮件发送线程 1、redis 中读取 需要发送的告警消息 2、检查告警消息发送方式 3、发送 4、记录发送状态
+ * 告警邮件发送线程 1、本地 cache 中读取 需要发送的告警消息 2、检查告警消息发送方式 3、发送 4、记录发送状态
  * 
  * @author ThinkPad
  *
@@ -48,8 +46,6 @@ public class AlertMessageNotifyThread implements Runnable {
 	private static final Log logger = Log.get();
 
 	private static final String THREAD_NAME = "Alert Message Notify Handler";
-	@Autowired
-	private RedisTemplate<String, String> redisTemplate;
 	@Autowired
 	private SysConfService sysConfService;
 
@@ -90,15 +86,12 @@ public class AlertMessageNotifyThread implements Runnable {
 					logger.debug("sleep 10000ms :{}", sleep);
 					continue;
 				}
-				ListOperations<String, String> opsForList = redisTemplate.opsForList();
-				if(redisTemplate.hasKey(Constant.ALERT_MESSAGE_NOTIFY)) {
-					Long size = opsForList.size(Constant.ALERT_MESSAGE_NOTIFY);
-		    		logger.debug("alert_message_notify size : {}",size);
-				}
+				Long size = Long.valueOf(Tool.CollUtil.size(AlertContext.ALERT_MESSAGE_NOTIFY_QUEUE));
+				logger.debug("alert_message_notify size : {}", size);
 				//从队列中取一条 需要通知的 alertmessage
-				String messageStr = opsForList.rightPop(Constant.ALERT_MESSAGE_NOTIFY,30,TimeUnit.SECONDS);
+				String messageStr = AlertContext.ALERT_MESSAGE_NOTIFY_QUEUE.poll(30, TimeUnit.SECONDS);
 				if(logger.isDebugEnabled()) {
-					logger.debug("从redis获取到的告警消息内容:{}", messageStr);
+					logger.debug("从cache获取到的告警消息内容:{}", messageStr);
 				}
 				AlertMessageEntity messageEntity = Tool.JSONUtil.toBean(messageStr, AlertMessageEntity.class);
 				// 1、rule查询需要 接收通知的人

@@ -28,7 +28,7 @@ public interface AlertHandlerService  {
 
 	/**
 	 * 1、更新 silence || active message endat
-	 * 2、更新 redis key 超时时间
+	 * 2、更新本地 cache key 超时时间
 	 * @param message
 	 */
 	void updateMessageEndAt(AlertMessageEntity message);

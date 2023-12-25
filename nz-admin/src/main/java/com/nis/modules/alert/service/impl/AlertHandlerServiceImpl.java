@@ -42,7 +42,6 @@ import com.nis.setup.controller.TimezoneController;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -73,8 +72,6 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	@Autowired
 	private DcService dcService;
 	@Autowired
-	private RedisTemplate<String, Object> redisTemplate;
-	@Autowired
 	private AlertHandlerDao msgHandlerDao;
 	@Autowired
 	private AlertSilenceDao alertSilenceDao;
@@ -86,7 +83,7 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	private FullTextSearchService fullTextSearchService;
 
 	@Value("${redis.maxQueueLength:100}")
-    private Long maxQueueLength;//redis队列长度
+    private Long maxQueueLength;// cache 队列长度
 	/**
 	 * alert message 超时时间
 	 */
@@ -674,12 +671,17 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		//补充message 内容
 		message = getAlertMessageLinkObject(message);
 		//添加到邮件通知队列
-		redisTemplate.opsForList().leftPush(Constant.ALERT_MESSAGE_NOTIFY, Tool.JSONUtil.toJsonStr(message));
+		AlertContext.ALERT_MESSAGE_NOTIFY_QUEUE.offer(Tool.JSONUtil.toJsonStr(message));
 		//判断是否超出所设置的队列最大长度
-		Long size = redisTemplate.opsForList().size(Constant.ALERT_MESSAGE_NOTIFY);
-		if(size > maxQueueLength) {
-			redisTemplate.opsForList().trim(Constant.ALERT_MESSAGE_NOTIFY, 0, maxQueueLength-1);
+		Long size = Long.valueOf(Tool.CollUtil.size(AlertContext.ALERT_MESSAGE_NOTIFY_QUEUE));
+		if (size > maxQueueLength) {
+			long removeCount = size - maxQueueLength;
+			for (int i = 0; i < removeCount; i++) {
+				AlertContext.ALERT_MESSAGE_NOTIFY_QUEUE.poll();
+			}
+			log.debug("trim alert_message_notify size : {}", removeCount);
 		}
+		log.debug("alert_message_notify size : {}", size);
 	}
 	
 	/**

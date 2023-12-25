@@ -21,9 +21,9 @@ import java.util.List;
 /**
  * 告警消息 超时判断线程，主要用于处理因为alert message 未能正常改为 expired 状态的消息
  * 1、查询 alert_message_active表 endAt < now 的告警消息
- * 2、将 查出来的告警消息 写入到  expired 表&删除redis key
+ * 2、将 查出来的告警消息 写入到  expired 表&删除本地 cache key
  * 3、查询 alert_message_silence 表 endAt < now  的告警消息
- * 4、将 查出来的告警消息 写入到  expired 表&删除redis key
+ * 4、将 查出来的告警消息 写入到  expired 表&删除本地 cache key
  * @author ThinkPad
  *
  */
@@ -49,7 +49,7 @@ public class AlertMessageExpiredJob extends QuartzJobBean{
             sw.start("message active to expired");
             // 1、查询 alert_message_active表 endAt < now-resolveTime 的告警消息
             List<AlertMessageEntity> messageList = messageHandlerService.selectMessagegtNow(Constant.ALERT_MESSAGE_ACTIVE_TABLE,limit);
-            // 2、将 查出来的告警消息 写入到  expired 表&删除redis key
+            // 2、将 查出来的告警消息 写入到  expired 表&删除本地 cache key
             if(Tool.CollUtil.isNotEmpty(messageList)) {
             	messageHandlerService.handleMessageExpiredBatch(messageList, Constant.ALERT_MESSAGE_ACTIVE_STATE);
             }
@@ -58,7 +58,7 @@ public class AlertMessageExpiredJob extends QuartzJobBean{
             sw.start("message silence to expired");
             // 3、查询 alert_message_silence 表 endAt < now  的告警消息
             messageList = messageHandlerService.selectMessagegtNow(Constant.ALERT_MESSAGE_SILENCE_TABLE,limit);
-            // 4、将 查出来的告警消息 写入到  expired 表&删除redis key
+            // 4、将 查出来的告警消息 写入到  expired 表&删除本地 cache key
             if(Tool.CollUtil.isNotEmpty(messageList)) {
             	messageHandlerService.handleMessageExpiredBatch(messageList, Constant.ALERT_MESSAGE_SILENCE_STATE);
             }

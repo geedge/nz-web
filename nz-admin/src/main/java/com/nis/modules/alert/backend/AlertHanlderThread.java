@@ -26,7 +26,10 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -38,7 +41,8 @@ import java.util.concurrent.TimeUnit;
  * 5、判断 是否匹配的 alert slience规则 
  * 6、匹配 slience 消息存到 alert_message_slience 表 
  * 7、否则 消息存放到 alert_message_active表 
- * 8、需要告警 将 告警内容 存到 redis alert_message_send 队列中
+ * 8、需要告警 将 告警内容 存到 alert_message_notify 队列中
+ * 9、将 active message 保存到 prometheus
  * 
  * @author ThinkPad
  *
@@ -293,7 +297,7 @@ public class AlertHanlderThread implements Runnable {
 				builder.addLabels(l);
 			}
 			TimeSeries timeSeries = builder.build();
-			recordRuleService.rightPushRecordToRedis(timeSeries);
+			recordRuleService.rightPushRecordToCache(timeSeries);
 		}
 	}
 

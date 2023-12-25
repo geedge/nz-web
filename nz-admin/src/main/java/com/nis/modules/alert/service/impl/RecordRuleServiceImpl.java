@@ -15,6 +15,7 @@ import com.nis.common.exception.NZException;
 import com.nis.common.protobuf.Types.TimeSeries;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
+import com.nis.modules.alert.backend.AlertContext;
 import com.nis.modules.alert.dao.RecordRuleDao;
 import com.nis.modules.alert.entity.RecordRuleEntity;
 import com.nis.modules.alert.entity.RecordRuleEnum;
@@ -30,11 +31,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataAccessException;
-import org.springframework.data.redis.core.ListOperations;
-import org.springframework.data.redis.core.RedisOperations;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -58,9 +54,6 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 
 	@Autowired
 	private RecordRuleDao recordRuleDao;
-
-	@Autowired
-	private RedisTemplate<String, Object> redisTemplate;
 
 	@Autowired
 	private SysConfService sysConfService;
@@ -204,33 +197,29 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 	}
 
 	/**
-	 * 存放 record data 到 redis 需要额外线程消费队列中的内容
+	 * 存放 record data 到本地 cache 需要额外线程消费队列中的内容
 	 * 
 	 * @param recordData
 	 */
 	@Override
 	@SuppressWarnings("all")
-	public void rightPushRecordToRedis(List<TimeSeries> timeSeriesList) {
+	public void rightPushRecordToCache(List<TimeSeries> timeSeriesList) {
 		if (Tool.CollUtil.isEmpty(timeSeriesList)) {
 			return;
 		}
-		redisTemplate.executePipelined(new SessionCallback() {
-			@Override
-			public Object execute(RedisOperations operations) throws DataAccessException {
-				ListOperations opsForList = operations.opsForList();
-				timeSeriesList.forEach(ts -> {
-					opsForList.rightPush(Constant.RECORD_DATA_CACHE, Tool.HexUtil.encodeHexStr(ts.toByteArray()));
-				});
-				return null;
-			}
+
+		timeSeriesList.forEach(ts -> {
+			AlertContext.RECORD_DATA_CACHE.offer(Tool.HexUtil.encodeHexStr(ts.toByteArray()));
 		});
-		ListOperations opsForList = redisTemplate.opsForList();
-		Long size = opsForList.size(Constant.RECORD_DATA_CACHE);
+
+		Long size = Long.valueOf(Tool.CollUtil.size(AlertContext.RECORD_DATA_CACHE));
 		// 判断是否超出所设置的队列最大长度
 		if (size > maxRecordSize) {
-			// 删除较老的数据
-			opsForList.trim(Constant.RECORD_DATA_CACHE, -maxRecordSize, -1);
-			log.warn("trim record_data_cache size : {}", size - maxRecordSize);
+			Long removeCount = size - maxRecordSize;
+			for (int i = 0; i < removeCount; i++) {
+				AlertContext.RECORD_DATA_CACHE.poll();
+			}
+			log.warn("trim record_data_cache size : {}", removeCount);
 		}
 		if(log.isDebugEnabled()) {
 			log.debug("add record data cache size : {}", timeSeriesList.size());
@@ -239,18 +228,20 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 	
 	@Override
 	@SuppressWarnings("all")
-	public void rightPushRecordToRedis(TimeSeries timeSeries) {
+	public void rightPushRecordToCache(TimeSeries timeSeries) {
 		if (timeSeries == null) {
 			return;
 		}
-		ListOperations opsForList = redisTemplate.opsForList();
-		opsForList.rightPush(Constant.RECORD_DATA_CACHE, Tool.HexUtil.encodeHexStr(timeSeries.toByteArray()));
-		Long size = opsForList.size(Constant.RECORD_DATA_CACHE);
+		AlertContext.RECORD_DATA_CACHE.offer(Tool.HexUtil.encodeHexStr(timeSeries.toByteArray()));
+		Long size = Long.valueOf(Tool.CollUtil.size(AlertContext.RECORD_DATA_CACHE));
 		// 判断是否超出所设置的队列最大长度
 		if (size > maxRecordSize) {
 			// 删除较老的数据
-			opsForList.trim(Constant.RECORD_DATA_CACHE, -maxRecordSize, -1);
-			log.warn("trim record_data_cache size : {}", size - maxRecordSize);
+			Long removeCount = size - maxRecordSize;
+			for (int i = 0; i < removeCount; i++) {
+				AlertContext.RECORD_DATA_CACHE.poll();
+			}
+			log.warn("trim record_data_cache size : {}", removeCount);
 		}
 	}
 

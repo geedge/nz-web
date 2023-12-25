@@ -106,7 +106,7 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 			}
 
 			// 查询结果 1、结果不能为空 2、结果状态 必须为 success 3、结果数据类型必须为 vector
-			JSONObject result = this.queryVetor(agent, alertRuleEntity);
+			JSONObject result = this.queryVetor(alertRuleEntity);
 			ValidateUtils.is(result).notNull(RCode.ALERT_JUDGE_RESULT_ISNULL).and(result.getString("status"))
 					.equalsIgnoreCase("success", RCode.ALERT_JUDGE_RESULT_FAILE)
 					.and(result.getJSONObject("data").getString("resultType"))
@@ -242,7 +242,7 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 				Sample stateSample = Sample.newBuilder().setTimestamp(evalLog.getStts()).setValue(evalLog.getState()).build();
 				TimeSeries durationTs = TimeSeries.newBuilder().addLabels(recordLabel).addLabels(durationMetric).addSamples(durationSample).build();
 				TimeSeries stateTs = TimeSeries.newBuilder().addLabels(recordLabel).addLabels(stateMetric).addSamples(stateSample).build();
-				recordRuleService.rightPushRecordToRedis(Tool.ListUtil.of(durationTs,stateTs));
+				recordRuleService.rightPushRecordToCache(Tool.ListUtil.of(durationTs,stateTs));
 			} catch (Exception e) {
 				log.warn(e, "save alert rule eval log error");
 			}
@@ -255,12 +255,11 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 
 	/**
 	 * 查询结果
-	 * 
-	 * @param agent
+	 *
 	 * @param rule
 	 * @return
 	 */
-	private JSONObject queryVetor(Agent agent, AlertRuleEntity rule) {
+	private JSONObject queryVetor(AlertRuleEntity rule) {
 		// 组合表达式
 		String expression = rule.getExpression();
 		// type 类型，1：metrics，2：logs

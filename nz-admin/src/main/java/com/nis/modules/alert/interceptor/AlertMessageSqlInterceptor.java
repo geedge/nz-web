@@ -94,7 +94,7 @@ public class AlertMessageSqlInterceptor implements Interceptor {
                             // 去重
                             alertMsgList = alertMsgList.stream().distinct().collect(Collectors.toList());
 
-                            // push redis record_data_cache 队列，等待消费
+                            // push local cache record_data_cache 队列，等待消费
                             if (Tool.CollUtil.isNotEmpty(alertMsgList)) {
                                 List tsList = Tool.ListUtil.list(true);
                                 for (AlertMessageEntity entity : alertMsgList) {
@@ -102,7 +102,7 @@ public class AlertMessageSqlInterceptor implements Interceptor {
                                     TimeSeries timeSeries = this.buildAlertTimeSeries(entity);
                                     tsList.add(timeSeries);
                                 }
-                                recordRuleService.rightPushRecordToRedis(tsList);
+                                recordRuleService.rightPushRecordToCache(tsList);
                             }
                             break;
                         default:

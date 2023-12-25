@@ -40,10 +40,6 @@ public class Constant {
 	 * 排序方式
 	 */
 	public static final String ORDER = "orderBy";
-	/**
-	 * 升序
-	 */
-	public static final String ASC = "asc";
 
 	/**
 	 * mysql text 最大长度 65535
@@ -99,10 +95,6 @@ public class Constant {
 	 * 告警信息状态
 	 */
 	public static final List<Integer> ALERTMESSAGE_STATE;
-	/**
-	 * redis告警信息的key
-	 */
-	public static final String REDIS_KEY_ALERTMESSAGE = "ALERT_MESSAGE";
 
 	/**
 	 * 记录endpoint和proserver 对应关系
@@ -113,11 +105,6 @@ public class Constant {
 	 * 支持告警的 agent id (prometheus)
 	 */
 	public static final String REDIS_KEY_SUPPORT_ALERT_AGENT_ID = "support_alert_agent_id";
-
-	/**
-	 * 告警消息邮件通知
-	 */
-	public static final String REDIS_KEY_EMAIL_ALERT_MESSAGE = "alert_message_list";
 
 	/**
 	 * agent 配置下发 cortex/loke redis 下发标识
@@ -164,9 +151,6 @@ public class Constant {
 	public static final String MODULE_TYPE_HTTP = "http";
 	public static final String MODULE_TYPE_SNMP = "snmp";
 	public static final String MODULE_TYPE_HTTPS = "https";
-
-	// module http 类型默认 path
-	public static final String MODULE_HTTP_DEFAULT_PATH = "/metrics";
 
 	public static final Integer SNMP_DEFAULT_PORT = 161;
 
@@ -547,36 +531,6 @@ public class Constant {
 	 */
 	public static final String DICT_NAME_LANG = "lang";
 
-	/**
-	 * 定时任务状态
-	 */
-	public enum ScheduleStatus {
-		/**
-		 * 正常
-		 */
-		NORMAL(0),
-		/**
-		 * 暂停
-		 */
-		PAUSE(1);
-
-		private int value;
-
-		ScheduleStatus(int value) {
-			this.value = value;
-		}
-
-		public int getValue() {
-			return value;
-		}
-	}
-
-	// delFlag
-	public static final String DELFLAG_FALSE = "0"; // 未删除
-
-	public static final Integer AUTH_PASSWORD = 1;// 密码认证
-	public static final Integer AUTH_CERTIFICATE = 2;// 私钥证书认证
-
 	public static final String AUTH_TOKEN_CODE = "Authorization";
 	public static final String LANGUAGE = "language";
 	public static final Integer SNMPV1 = 1;
@@ -754,17 +708,8 @@ public class Constant {
 	// 目前机柜最大值限制
 	public static final Integer CURRENT_CABINET_MAXU = 47;
 
-	// 默认告警间隔为15s
-	public static final Integer ALERT_INTERVAL = 15;
-
 	// ip 校验正则
 	public static final String REGEX_IP = "(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d|\\*)\\.(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d|\\*)\\.(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d|\\*)\\.(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d|\\*)";
-
-	// 二级域名
-	public static final String REGEX_DOMAIN = "(\\w*\\.?){2}\\.(com.cn|net.cn|gov.cn|org\\.nz|org.cn|com|net|org|gov|cc|biz|info|cn|co)$";
-
-	// 配置表中 告警间隔 key
-	public static final String SYSCONFIG_KEY_ALERTINTERVAL = "alert_interval";
 
 	// 配置表中 刮取周期 key
 	public static final String SYSCONFIG_KEY_SCRAPEINTERVAL = "default_scrape_interval";
@@ -867,9 +812,6 @@ public class Constant {
 	public static final String SYSCONFIG_KEY_CORTEX_UPDATE_TIMEOUT = "cortex_update_timeout";
 	public static final String SYSCONFIG_KEY_LOKI_UPDATE_TIMEOUT = "loki_update_timeout";
 
-	// 邮件告警开关
-	public static final String SYSCONFIG_KEY_EMAIL_ENABLE = "email_enable";
-
 	// nezha 系统版本
 	public static final String SYSCONFIG_KEY_SYSTEM_VERSION = "system_version";
 
@@ -900,12 +842,6 @@ public class Constant {
 
 	// 新增 endpoint 添加chart配置
 	public static final String SYSCONFIG_KEY_ENDPOINT_CHART_TPL = "endpoint_chart_tpl";
-
-	// 新增model 添加chart配置
-	public static final String SYSCONFIG_KEY_MODEL_CHART_TPL = "model_chart_tpl";
-
-	// 新增project 添加chart配置
-	public static final String SYSCONFIG_KEY_PROJECT_CHART_TPL = "project_chart_tpl";
 
 	// asset 导入表头
 	public static final String SYSCONFIG_KEY_ASSET_ASSET_EXPORT_HEADER = "asset_asset_export_header";
@@ -940,15 +876,6 @@ public class Constant {
 
 	// 登录时 ldap template 超时时间
 	public static final String SYSCONFIG_KEY_LDAP_QUERY_TIMEOUT = "ldap_query_timeout";
-
-	// 告警级别 高
-	public static final String ALERT_SEVERITY_HIGH = "P1";
-
-	// 告警级别 中
-	public static final String ALERT_SEVERITY_MEDIUM = "P2";
-
-	// 告警级别 低
-	public static final String ALERT_SEVERITY_LOW = "P3";
 
 	// account protocol ssh协议
 	public static final String ACCOUNT_SSH_PROTOCOL = "SSH";
@@ -1001,11 +928,6 @@ public class Constant {
 	// 开关关闭状态
 	public static final String SWITCH_CLOSE = "off";
 
-	// 资产服务器类型
-	public static final String ASSET_SERVER_TYPE = "server";
-
-
-
 
 	// 连接smtp邮箱服务器超时时间 10秒
 	public static final String CONNECTION_SMTP_TIMEOUT = "10000";
@@ -1023,32 +945,15 @@ public class Constant {
 	// snmp browser 中返回oid 与 mib文件中name对应，当前截取位置为 倒数1位
 	public static final int OIDNAME_TRUNCATION_INDEX = 1;
 
-	// 图表 url类型
-	public static final String CHART_URL_TYPE = "url";
-
-	// 图表 singleStat 类型
-	public static final String CHART_SINGLESTAT_TYPE = "stat";
-
-	// 图表singleStat 类型 paramkey名称
-	public static final String CHART_SINGLESTAT_PARAMkEY = "statistics";
 
 	// prometheus loki labelname 正则校验表达式
 	public static final String PROMETHEUS_LABELNAME_EXPRESSION = "[a-zA-Z_][a-zA-Z0-9_]*";
-
-	// node_exporter shell 脚本中 替换路径的名称
-	public static final String NODEEXPORTER_SHELLREPLACE_PATH = "target_path";
 
 	// 测试邮件发送标题
 	public static final String TESTEMAIL_SEND_TITLE = "Test";
 
 	// reset操作处理的表信息数据
 	public static final String RESET_TABLE_INFOS = "reset_table_infos";
-
-	// 图表类型为line bar stackArea
-	public static final String CHART_DEFAULT_PARAMkEY = "threshold";
-
-	// 图表类型为 diagram
-	public static final String CHART_DIAGRAM_TYPE = "diagram";
 
 	// 图表类型为 text
 	public static final String CHART_TEXT_TYPE = "text";
@@ -1059,34 +964,9 @@ public class Constant {
 	// 图表类型为 endpointInfo
 	public static final String CHART_ENDPOINTINFO_TYPE = "endpointInfo";
 
-	// 图表类型为 endpointInfo
-	public static final String CHART_TREEMAP_TYPE = "treemap";
-	// 图表类型为 endpointInfo
-	public static final String CHART_MAP_TYPE = "map";
-	// 图表类型为 endpointInfo
-	public static final String CHART_TOPOLOGY_TYPE = "topology";
-
+	// 图表类型为 group
 	public static final String CHART_GROUP_TYPE = "group";
 
-	public static final String CHART_ELEMENT_EXPERT_TYPE = "expert";
-
-	// endpoint state功能是否开启 0 不开启 1 开启
-	public static final String ENDPOINT_ALERT_PUSH = "endpoint_alert_push";
-
-	// endpoint state告警规则
-	public static final String ENDPOINT_ALERT_RULE = "endpoint_alert_rule";
-
-	// 存放prometheus推送过来的告警消息
-	public static final String ALERT_MESSAGE_RECV = "alert_message_recv";
-	/**
-	 * 存放 record 执行结果
-	 */
-	public static final String RECORD_DATA_CACHE = "record_data_cache";
-
-	/**
-	 * 存放 active 状态 告警消息
-	 */
-	public static final String ALERT_MESSAGE_ACTIVE_PRIX = "alert_message_active_";
 	/**
 	 * 通过redis 自增实现 alert message 表中id 全局唯一
 	 */
@@ -1095,20 +975,8 @@ public class Constant {
 	 * alert message 自增主键时间前缀
 	 */
 	public static final SimpleDateFormat ALERT_MESSAGE_ID_FORMAT = new SimpleDateFormat("yyMMddHHmm");
-	/**
-	 * 存放 silence 状态 告警消息
-	 */
-	public static final String ALERT_MESSAGE_SILENCE_PRIX = "alert_message_silence_";
-
-	// 存放prometheus已经处理过的告警信息
-	public static final String ALERT_MESSAGE_SILENCE = "alert_message_silence";
-
-	// 存放需要通知的告警信息
-	public static final String ALERT_MESSAGE_NOTIFY = "alert_message_notify";
 
 	public static final SimpleDateFormat ALERT_MESSAGE_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-
-	public static final Integer ADMIN_USER_ID = 1;
 
 	public static final String PIN = "pin";
 
@@ -1153,10 +1021,6 @@ public class Constant {
 
 	public static final String SYSCONFIG_SNMP_PORT_KEY = "snmp_trap_listen_port";
 	public static final String SYSCONFIG_SESSION_TIMEOUT_KEY = "session_timeout";
-
-	public static final String REPORT_TOPIC_NAME = "report_topic";
-
-	public static final String BACKUP_TOPIC_NAME = "backup_topic";
 
 	public static final String REPORT_JOB_GROUP = "report_job_group";
 
