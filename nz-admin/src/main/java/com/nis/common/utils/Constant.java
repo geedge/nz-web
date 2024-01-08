@@ -968,9 +968,9 @@ public class Constant {
 	public static final String CHART_GROUP_TYPE = "group";
 
 	/**
-	 * 通过redis 自增实现 alert message 表中id 全局唯一
+	 * 通过 mysql 乐观锁实现 alert message 表中 id 全局唯一
 	 */
-	public static final String ALERT_MESSAGE_ID_PRIX = "alert_message_id_";
+	public static final String SYS_LOCK_ALERT_MESSAGE_ID = "alert_message_id";
 	/**
 	 * alert message 自增主键时间前缀
 	 */

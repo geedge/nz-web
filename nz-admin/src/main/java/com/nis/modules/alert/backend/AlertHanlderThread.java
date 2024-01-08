@@ -7,6 +7,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.nis.common.protobuf.Types.Label;
 import com.nis.common.protobuf.Types.Sample;
 import com.nis.common.protobuf.Types.TimeSeries;
@@ -19,13 +20,13 @@ import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
 import com.nis.modules.alert.service.AlertHandlerService;
 import com.nis.modules.alert.service.RecordRuleService;
 import com.nis.modules.election.dao.LeaderElectionDao;
+import com.nis.modules.sys.dao.SysLockDao;
+import com.nis.modules.sys.entity.SysLock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.QueryTimeoutException;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -53,16 +54,18 @@ public class AlertHanlderThread implements Runnable {
 
 	private static final String THREAD_NAME = "Alert Message Handler";
 	@Autowired
-	private RedisTemplate<String, Object> redisTemplate;
-	@Autowired
 	private AlertHandlerService messageHandlerService;
 	@Autowired
 	private RecordRuleService recordRuleService;
+	@Autowired
+	private SysLockDao sysLockDao;
 	/**
 	 * alert message 超时时间
 	 */
 	@Value("${alert.message.resolve.timeout:300}")
 	private Integer resolveTimeout;
+
+	private String currentDatetime = this.getCurrentDatetime();
 	
 	@Override
 	public void run() {
@@ -254,22 +257,43 @@ public class AlertHanlderThread implements Runnable {
 
 
 	/**
-	 * 使用 redis 维护 alert message id，确保三个表中全局唯一
+	 * 使用 mysql 乐观锁实现 alert message 表中 id 全局唯一
 	 * @return
 	 */
 	public Long getAlertMessageId() {
-		DateTime now = Tool.DateUtil.date();
-		//yyyyMMddHHmm
-		String datePrefix = Tool.DateUtil.format(now, Constant.ALERT_MESSAGE_ID_FORMAT);
-		String idKey = Tool.StrUtil.concat(true, Constant.ALERT_MESSAGE_ID_PRIX,datePrefix);
-		Object val = redisTemplate.opsForValue().get(idKey);
-		Long increment = redisTemplate.opsForValue().increment(idKey);
-		if(Tool.ObjectUtil.isNull(val)) {//设置超时时间，有效期一天，超时时间不是很精准
-			redisTemplate.expire(idKey,Duration.ofMinutes(2).toMillis(),TimeUnit.MILLISECONDS);
+		SysLock sysLock = sysLockDao.selectByKey(Constant.SYS_LOCK_ALERT_MESSAGE_ID);
+		Integer lockValue = Integer.valueOf(sysLock.getLockValue());
+
+		// 检查是否需要重置 lock_value
+		String datePrefix = getCurrentDatetime();
+		if (!currentDatetime.equals(datePrefix)) {
+			currentDatetime = datePrefix;
+			lockValue = 10000;
 		}
-		String middleId = Tool.StrUtil.concat(true, "0000",String.valueOf(increment));
-		middleId = StrUtil.sub(middleId,middleId.length()-5, middleId.length());
-		return Tool.NumberUtil.parseLong(Tool.StrUtil.concat(true, datePrefix,middleId));
+
+		// updateWithOptimisticLock
+		int update = sysLockDao.update(new SysLock(), new LambdaUpdateWrapper<SysLock>()
+				.set(SysLock::getLockValue, lockValue + 1)
+				.set(SysLock::getVersion, sysLock.getVersion() + 1)
+				.eq(SysLock::getLockKey, Constant.SYS_LOCK_ALERT_MESSAGE_ID)
+				.eq(SysLock::getVersion, sysLock.getVersion()));
+		if (update == 0) {
+			// version 冲突，再次尝试获取
+			return this.getAlertMessageId();
+		} else {
+			return Tool.NumberUtil.parseLong(StrUtil.concat(true, datePrefix, lockValue + ""));
+		}
+	}
+
+	/**
+	 * alertMessageId prefix
+	 *
+	 * @return
+	 */
+	private String getCurrentDatetime() {
+		DateTime now = Tool.DateUtil.date();
+		// yyyyMMddHHmm
+		return Tool.DateUtil.format(now, Constant.ALERT_MESSAGE_ID_FORMAT);
 	}
 
 	/**
