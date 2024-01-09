@@ -22,4 +22,8 @@ CREATE TABLE `sys_lock`  (
 -- ----------------------------
 INSERT INTO `sys_lock` VALUES ('alert_message_id', '1', '10000', 1);
 
+INSERT IGNORE INTO sys_lock ( `lock_key`, `lock_type`, `lock_value`, `version` )
+VALUES
+	( 'last_vsys_task_id', '1', ( SELECT IFNULL( MAX( id ), 0 ) FROM vsys_task ), 1 );
+
 SET FOREIGN_KEY_CHECKS = 1;

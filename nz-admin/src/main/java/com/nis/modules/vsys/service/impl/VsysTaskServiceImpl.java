@@ -37,7 +37,6 @@ import com.nis.modules.vsys.service.VsysTaskService;
 import com.nis.modules.vsys.utils.VsysConfigUtil;
 import com.nis.modules.vsys.utils.VsysConstant;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,9 +50,6 @@ import java.util.stream.Collectors;
 public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> implements VsysTaskService {
 
     private static Log log = Log.get();
-
-    @Autowired
-    private RedisTemplate<String, String> redisTemplate;
 
     @Autowired
     private SysConfService sysConfService;
@@ -260,10 +256,6 @@ public class VsysTaskServiceImpl extends ServiceImpl<VsysTaskDao, VsysTask> impl
         info.setState(1);
         info.setTs(System.currentTimeMillis());
         vsysInfoService.save(info);
-
-        // save redis
-        redisTemplate.opsForList().leftPush(VsysConstant.VSYS_TASK_QUEUE, JSONObject.toJSONString(vsysTask));
-        log.info("push vsys task to redis, key: {}, data: {}", VsysConstant.VSYS_TASK_QUEUE, JSONObject.toJSONString(vsysTask));
     }
 
     /**
