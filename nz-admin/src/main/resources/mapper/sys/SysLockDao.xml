@@ -4,14 +4,4 @@
 <mapper namespace="com.nis.modules.sys.dao.SysLockDao">
 
 
-    <select id="selectByKey" resultType="com.nis.modules.sys.entity.SysLock">
-        SELECT
-            *
-        FROM
-            `sys_lock`
-        WHERE
-            `lock_key` = #{key} FOR UPDATE;
-    </select>
-
-
 </mapper>

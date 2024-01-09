@@ -8,6 +8,4 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface SysLockDao extends BaseMapper<SysLock> {
 
-    SysLock selectByKey(@Param("key") String key);
-
 }

@@ -7,6 +7,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.nis.common.protobuf.Types.Label;
 import com.nis.common.protobuf.Types.Sample;
@@ -261,7 +262,7 @@ public class AlertHanlderThread implements Runnable {
 	 * @return
 	 */
 	public Long getAlertMessageId() {
-		SysLock sysLock = sysLockDao.selectByKey(Constant.SYS_LOCK_ALERT_MESSAGE_ID);
+		SysLock sysLock = sysLockDao.selectOne(new LambdaQueryWrapper<SysLock>().eq(SysLock::getLockKey,Constant.SYS_LOCK_ALERT_MESSAGE_ID));
 		Integer lockValue = Integer.valueOf(sysLock.getLockValue());
 
 		// 检查是否需要重置 lock_value
