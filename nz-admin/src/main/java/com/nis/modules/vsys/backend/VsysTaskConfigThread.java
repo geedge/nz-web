@@ -12,13 +12,13 @@ import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.election.dao.LeaderElectionDao;
 import com.nis.modules.sys.dao.SysLockDao;
 import com.nis.modules.sys.entity.SysLock;
-import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.vsys.entity.VsysResult;
 import com.nis.modules.vsys.entity.VsysTask;
 import com.nis.modules.vsys.service.VsysResultService;
 import com.nis.modules.vsys.service.VsysTaskService;
 import com.nis.modules.vsys.utils.VsysConstant;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
@@ -29,6 +29,12 @@ import java.util.stream.Collectors;
 public class VsysTaskConfigThread implements Runnable {
 
     private static final Log log = Log.get();
+
+    /**
+     * 任务循环间隔，默认：10s，单位：ms
+     */
+    @Value("${nezha.vsysTaskInterval:10000}")
+    private long vsysTaskInterval;
 
     @Autowired
     private AssetAssetService assetService;
@@ -42,9 +48,6 @@ public class VsysTaskConfigThread implements Runnable {
     @Autowired
     private SysLockDao sysLockDao;
 
-    @Autowired
-    private SysConfService sysConfService;
-
     static final String SYS_LOCK_LAST_VSYS_TASK_ID = "last_vsys_task_id";
 
     @Override
@@ -54,15 +57,11 @@ public class VsysTaskConfigThread implements Runnable {
 
         while (true) {
             try {
-                // 循环间隔，默认：10s，单位：ms
-                String vsysTaskIntervalStr = sysConfService.getValueOrDefault("vsys_task_interval", "10000");
-                Integer vsysTaskInterval = Integer.valueOf(vsysTaskIntervalStr);
-
                 // 检查 HA_LOCK
                 LeaderElectionDao dao = LeaderElectionDao.getInstance();
                 if (Tool.BooleanUtil.negate(dao.isLeader(Constant.SYS_HA_LOCK, Constant.SERVER_ID))) {
-                    boolean sleep = Tool.ThreadUtil.sleep(vsysTaskInterval);
-                    log.info("vsys task config thread sleep {} ms :{}", vsysTaskInterval, sleep);
+                    boolean sleep = Tool.ThreadUtil.sleep(this.vsysTaskInterval);
+                    log.info("vsys task config thread sleep {} ms :{}", this.vsysTaskInterval, sleep);
                     continue;
                 }
 
@@ -72,8 +71,8 @@ public class VsysTaskConfigThread implements Runnable {
 
                 VsysTask vsysTask = vsysTaskService.getOne(new LambdaQueryWrapper<VsysTask>().gt(VsysTask::getId, lastVsysTaskId).orderByAsc(VsysTask::getId).last("limit 1"));
                 if (vsysTask == null) {
-                    boolean sleep = Tool.ThreadUtil.sleep(vsysTaskInterval);
-                    log.warn("get vsys task is null, thread sleep {} ms :{}", vsysTaskInterval, sleep);
+                    boolean sleep = Tool.ThreadUtil.sleep(this.vsysTaskInterval);
+                    log.warn("get vsys task is null, thread sleep {} ms :{}", this.vsysTaskInterval, sleep);
                     continue;
                 }
 
