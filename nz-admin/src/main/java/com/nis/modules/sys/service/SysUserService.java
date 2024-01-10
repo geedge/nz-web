@@ -62,5 +62,5 @@ public interface SysUserService extends IService<SysUserEntity> {
     
     void checkPin(SysUserEntity user,boolean isLogin);
     
-    void checkRedisRetry(SysUserEntity user);
+    void checkCacheRetry(SysUserEntity user);
 }

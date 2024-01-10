@@ -1,6 +1,7 @@
 package com.nis.modules.sys.controller;
 
 
+import cn.hutool.cache.impl.TimedCache;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
@@ -15,11 +16,11 @@ import com.nis.modules.sys.dao.SysLoginSessionDao;
 import com.nis.modules.sys.entity.AuthTokenEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.entity.SysUserPreference;
-import com.nis.modules.sys.redis.SysLoginRedis;
 import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysUserPrefService;
 import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import com.nis.modules.sys.utils.MfaTokenManager;
 import com.nis.setup.controller.TimezoneController;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,7 +30,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authc.*;
 import org.apache.shiro.subject.Subject;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -56,16 +56,13 @@ public class SysLoginController extends AbstractController {
     private Producer producer;
 
     @Autowired
-    private RedisTemplate<String, String> redisTemplate;
-
-    @Autowired
     private SysConfService sysConfService;
 
     @Autowired
     private SysUserService sysUserService;
 
     @Autowired
-    private SysLoginRedis sysLoginRedis;
+    private MfaTokenManager mfaTokenManager;
 
     @Autowired
     private SysLoginSessionDao sysLoginSessionDao;
@@ -117,7 +114,7 @@ public class SysLoginController extends AbstractController {
             String sessionId = subject.getSession().getId().toString();
             String mfaAuthEnableStr = sysConfService.getValueOrDefault("mfa_auth_enable", "0");
             int mfaAuthEnable = StrUtil.isEmpty(mfaAuthEnableStr) ? 0 : Integer.valueOf(mfaAuthEnableStr);
-            //登录成功后: sys_user.mfa_level > 0 || sys_config.mfa_auth_enable == 1 则响应 authFlag=1 & 生成 authToken （临时token，储存到redis，过期时间 30min）
+            //登录成功后: sys_user.mfa_level > 0 || sys_config.mfa_auth_enable == 1 则响应 authFlag=1 & 生成 authToken （临时token，储存到cache，过期时间 30min）
             SysUserEntity u = sysUserService.getOne(new QueryWrapper<SysUserEntity>().lambda().eq(SysUserEntity::getUsername, username));
             int mfaLevel = u.getMfaLevel();
             String otpKey = u.getOtpKey();
@@ -128,13 +125,13 @@ public class SysLoginController extends AbstractController {
                 authFlag = 1;
                 authBind = Tool.StrUtil.isBlank(otpKey) ? 1 : 0;
                 String authToken = MfaUtils.getAuthToken();
-                //临时token，储存到redis，过期时间 30min
+                //临时token，储存到cache，过期时间 30min
                 AuthTokenEntity authTokenEntity = new AuthTokenEntity();
                 authTokenEntity.setUserId(u.getId());
                 authTokenEntity.setAuthKey(u.getOtpKey());
                 authTokenEntity.setC(1);
                 authTokenEntity.setToken(sessionId);
-                sysLoginRedis.saveOrUpdate(authTokenEntity, 30l * 60l, authToken);
+                mfaTokenManager.saveOrUpdate(authTokenEntity, 30l * 60l, authToken);
                 //需要mfa 验证
                 result.put("authToken", authToken);
             } else {
@@ -208,11 +205,12 @@ public class SysLoginController extends AbstractController {
             throw new NZException(RCode.SYS_LOGIN_ACCOUNTAUTH);
         } finally {
             if (!flag) {
-                sysUserService.checkRedisRetry(sysUser);
+                // 登录失败
+                sysUserService.checkCacheRetry(sysUser);
             } else {
                 // 登录成功清除可能之前密码错误保留的缓存
-                String redisKey = String.format("sysUserLogin_%s", sysUser.getUsername());
-                redisTemplate.delete(redisKey);
+                TimedCache<String, Object> cache = TimedCacheManager.getCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_LOGIN_LOCKOUT_CACHE_KEY);
+                cache.remove(String.format("sysUserLogin_%s", sysUser.getUsername()));
             }
         }
     }

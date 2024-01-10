@@ -1,5 +1,7 @@
 package com.nis.modules.sys.service.impl;
 
+import cn.hutool.cache.impl.CacheObj;
+import cn.hutool.cache.impl.TimedCache;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
@@ -36,14 +38,13 @@ import org.apache.shiro.session.Session;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.subject.support.DefaultSubjectContext;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @Service("sysUserService")
 public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> implements SysUserService {
@@ -61,9 +62,6 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 
 	@Autowired
 	private SysMenuService sysMenuService;
-
-	@Autowired
-	private RedisTemplate redisTemplate;
 
 	@Autowired
 	private SysConfService sysConfService;
@@ -514,16 +512,21 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 						throw new NZException(RCode.SYS_USER_PIN_LONGTIME_NO_MODIFY.setParam(valid));
 					}
 				}
-				if(retry>0 && lockTime>0) {
+				if (retry > 0 && lockTime > 0) {
 					// 校验用户登录次数以及封锁时间
-					ValueOperations<String,String> opsForValue = redisTemplate.opsForValue();
-					String redisKey = String.format("sysUserLogin_%s", user.getUsername());
-					String redisValue = opsForValue.get(redisKey);
-					if(StrUtil.isNotBlank(redisValue)) {
-						Integer redisRetry = Integer.valueOf(redisValue);
-						Long time = redisTemplate.getExpire(redisKey)/60;
-						if(redisRetry >= retry) {
-							throw new NZException(RCode.SYS_USER_PIN_RETRY_ERROR.setParam(retry,time));
+					TimedCache<String, Object> cache = TimedCacheManager.getCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_LOGIN_LOCKOUT_CACHE_KEY);
+					String key = String.format("sysUserLogin_%s", user.getUsername());
+					String value = StrUtil.toStringOrNull(cache.get(key, false));
+					if (StrUtil.isNotBlank(value)) {
+						Iterable<CacheObj<String, Object>> iterable = () -> cache.cacheObjIterator();
+						CacheObj<String, Object> obj = StreamSupport.stream(iterable.spliterator(), false)
+								.filter(cacheObj -> StrUtil.equals(key, cacheObj.getKey()))
+								.findFirst()
+								.orElse(null);
+						Integer cacheRetry = Integer.valueOf(value);
+						if (cacheRetry >= retry && obj != null) {
+							long time = obj.getTtl() - (System.currentTimeMillis() - obj.getLastAccess());
+							throw new NZException(RCode.SYS_USER_PIN_RETRY_ERROR.setParam(retry, TimeUnit.MILLISECONDS.toMinutes(time)));
 						}
 					}
 				}
@@ -532,33 +535,31 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 	}
 
 	@Override
-	public void checkRedisRetry(SysUserEntity user) {
+	public void checkCacheRetry(SysUserEntity user) {
 		Integer retry = 0;
 		Integer lockTime = 30;
 		String pinPolicy = sysConfService.getValue("pin_policy");
-		if(ToolUtil.isNotEmpty(pinPolicy)) {
-			Map<String,Object> pinPolicyInfo = (Map<String, Object>) JSON.parse(pinPolicy);
+		if (ToolUtil.isNotEmpty(pinPolicy)) {
+			Map<String, Object> pinPolicyInfo = (Map<String, Object>) JSON.parse(pinPolicy);
 			retry = (Integer) pinPolicyInfo.get("retry");
 			lockTime = (Integer) pinPolicyInfo.get("lockTime");
 		}
-		ValueOperations<String,String> opsForValue = redisTemplate.opsForValue();
-		String redisKey = String.format("sysUserLogin_%s", user.getUsername());
-		String redisValue = opsForValue.get(redisKey);
-		if(ToolUtil.isNotEmpty(redisValue)&&retry!=0) {
-			Integer redisRetry = Integer.valueOf(redisValue);
-			if(retry<=redisRetry) {
+		String key = String.format("sysUserLogin_%s", user.getUsername());
+		TimedCache<String, Object> cache = TimedCacheManager.getCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_LOGIN_LOCKOUT_CACHE_KEY);
+		String value = StrUtil.toStringOrNull(cache.get(key, false));
+		if (ToolUtil.isNotEmpty(value) && retry != 0) {
+			Integer cacheRetry = Integer.valueOf(value);
+			if (retry <= cacheRetry) {
 				return;
 			}
-			redisRetry+=1;
-			opsForValue.set(redisKey, redisRetry.toString());
-			if(retry.equals(redisRetry)) {
-				redisTemplate.expire(redisKey, lockTime, TimeUnit.MINUTES);
-			}else{
-				redisTemplate.expire(redisKey, 5, TimeUnit.MINUTES);
+			cacheRetry += 1;
+			if (retry.equals(cacheRetry)) {
+				cache.put(key, cacheRetry.toString(), TimeUnit.MINUTES.toMillis(lockTime));
+			} else {
+				cache.put(key, cacheRetry.toString(), TimeUnit.MINUTES.toMillis(5));
 			}
-		}else {
-			opsForValue.set(redisKey, "1");
-			redisTemplate.expire(redisKey, 5, TimeUnit.MINUTES);
+		} else {
+			cache.put(key, "1", TimeUnit.MINUTES.toMillis(5));
 		}
 	}
 }

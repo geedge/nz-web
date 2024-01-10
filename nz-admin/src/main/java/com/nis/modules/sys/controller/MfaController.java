@@ -7,10 +7,10 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.sys.entity.AuthTokenEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.redis.SysLoginRedis;
 import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import com.nis.modules.sys.utils.MfaTokenManager;
 import com.nis.setup.controller.TimezoneController;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.StringUtils;
@@ -34,7 +34,7 @@ public class MfaController extends AbstractController {
 	@Autowired
 	private SysUserService sysUserService;
 	@Autowired
-	private SysLoginRedis sysLoginRedis;
+	private MfaTokenManager mfaTokenManager;
 
 	@PostMapping(value = "/genkey")
 	public R genKey(@RequestBody SysUserEntity sysUser) {
@@ -49,8 +49,8 @@ public class MfaController extends AbstractController {
 		String newAuthToken = MfaUtils.getAuthToken();
 		String authKey = MfaUtils.generateSecretKey();// 是否需要存入用户表的otp_key:是
 		AuthTokenEntity authTokenEntity = new AuthTokenEntity();
-		if (user == null) {// 未成功登录，从 redis 中获取临时令牌
-			authTokenEntity = sysLoginRedis.get(authToken);
+		if (user == null) {// 未成功登录，从 cache 中获取临时令牌
+			authTokenEntity = mfaTokenManager.get(authToken);
 			if (authTokenEntity == null) {
 				return R.error(RCode.SYS_AUTHTOKEN_ISVALID);
 			}
@@ -62,7 +62,7 @@ public class MfaController extends AbstractController {
 		obj.put("authKey", authKey);
 		obj.put("username", userName);
 		obj.put("otpauth", MfaUtils.getAuthenticatorBarCode(authKey, userName));
-		// 更新 redis 缓存的 authToken 信息
+		// 更新 cache 缓存的 authToken 信息
 		boolean r = updateAuthToken(authToken, user.getId(), newAuthToken, authKey, sysUser.getMfaLevel());
 		if(!r) {
 			return R.error(RCode.SYS_TOKEN_REFRESH_FREQUENT);// 超过10 响应操作频繁，请30分钟后重试
@@ -73,14 +73,14 @@ public class MfaController extends AbstractController {
 	private boolean updateAuthToken(String oldAuthToken, Long userId, String newAuthToken, String authKey,
 			Integer mfaLevel) {
 		// 更新authToken
-		AuthTokenEntity authTokenEntity = sysLoginRedis.get(oldAuthToken);
+		AuthTokenEntity authTokenEntity = mfaTokenManager.get(oldAuthToken);
 		if (authTokenEntity == null) {
 			authTokenEntity = new AuthTokenEntity();
 			authTokenEntity.setUserId(userId);
 			authTokenEntity.setAuthKey(authKey);
 			authTokenEntity.setC(1);
 			authTokenEntity.setMfaLevel(mfaLevel);
-			sysLoginRedis.saveOrUpdate(authTokenEntity, 30l * 60l, newAuthToken);
+			mfaTokenManager.saveOrUpdate(authTokenEntity, 30l * 60l, newAuthToken);
 		} else {
 			int c = authTokenEntity.getC();
 			if (c >= 10) {
@@ -90,8 +90,8 @@ public class MfaController extends AbstractController {
 			authTokenEntity.setAuthKey(authKey);
 			authTokenEntity.setC(c + 1);
 			authTokenEntity.setMfaLevel(mfaLevel);
-			sysLoginRedis.delete(oldAuthToken);
-			sysLoginRedis.saveOrUpdate(authTokenEntity, 30l * 60l, newAuthToken);
+			mfaTokenManager.delete(oldAuthToken);
+			mfaTokenManager.saveOrUpdate(authTokenEntity, 30l * 60l, newAuthToken);
 		}
 
 		return true;
@@ -105,7 +105,7 @@ public class MfaController extends AbstractController {
 		ValidateUtils.is(authToken).notNull(RCode.SYS_AUTHTOKEN_ISNULL).and(authCode)
 				.notNull(RCode.SYS_AUTHCODE_ISNULL);
 
-		AuthTokenEntity authTokenEntity = sysLoginRedis.get(authToken);
+		AuthTokenEntity authTokenEntity = mfaTokenManager.get(authToken);
 		if (authTokenEntity == null) {
 			return R.error(RCode.SYS_AUTHTOKEN_ISVALID);
 		}
@@ -128,7 +128,7 @@ public class MfaController extends AbstractController {
 				entity.setMfaLevel(mfaLevel);
 			}
 			sysUserService.update(entity, new UpdateWrapper<SysUserEntity>().lambda().eq(SysUserEntity::getId, userId));
-			sysLoginRedis.delete(authToken);
+			mfaTokenManager.delete(authToken);
 			return R.ok(result);
 		}
 		/**
@@ -136,7 +136,7 @@ public class MfaController extends AbstractController {
 		 */
 		//重新生成 authToken,authKey
 		String newAuthToken = MfaUtils.getAuthToken();
-		// 更新 redis 缓存的 authToken 信息
+		// 更新 cache 缓存的 authToken 信息
 		boolean r = updateAuthToken(authToken, userId, newAuthToken, authKey, mfaLevel);
 		if(!r) {
 			return R.error(RCode.SYS_TOKEN_REFRESH_FREQUENT);// 超过10 响应操作频繁，请30分钟后重试
@@ -151,7 +151,7 @@ public class MfaController extends AbstractController {
 		String authCode = sysUser.getAuthCode();// 验证码（超过6位是 recovery code）
 		ValidateUtils.is(authToken).notNull(RCode.SYS_AUTHTOKEN_ISNULL);
 		
-		AuthTokenEntity authTokenEntity = sysLoginRedis.get(authToken);
+		AuthTokenEntity authTokenEntity = mfaTokenManager.get(authToken);
 		if (authTokenEntity == null ) {
 			return R.error(RCode.SYS_AUTHTOKEN_ISVALID);
 		}
@@ -193,7 +193,7 @@ public class MfaController extends AbstractController {
 				sysUserService.update(entity,new UpdateWrapper<SysUserEntity>().lambda().eq(SysUserEntity::getId, userId));
 			}
 		}
-		sysLoginRedis.delete(authToken);
+		mfaTokenManager.delete(authToken);
 		//校验通过，返回登录成功token
 		String token = authTokenEntity.getToken();
 		obj.put("token", token);

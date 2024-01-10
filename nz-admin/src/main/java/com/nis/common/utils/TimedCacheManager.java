@@ -1,6 +1,8 @@
 package com.nis.common.utils;
 
+import cn.hutool.cache.Cache;
 import cn.hutool.cache.CacheUtil;
+import cn.hutool.cache.impl.FIFOCache;
 import cn.hutool.cache.impl.TimedCache;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,8 +20,7 @@ public class TimedCacheManager {
      */
     private static final Integer DEFAULT_SCHEDULE_PRUNE = 60;
 
-
-    private static ConcurrentHashMap<String, TimedCache<String, Object>> CACHE_MAP = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<String, Cache<String, Object>> CACHE_MAP = new ConcurrentHashMap<>();
 
     /**
      * getCache
@@ -28,7 +29,7 @@ public class TimedCacheManager {
      * @return
      */
     public static TimedCache<String, Object> getCache(String prefix, String name) {
-        TimedCache<String, Object> cache = CACHE_MAP.computeIfAbsent(Tool.StrUtil.concat(true, prefix, name), s -> {
+        TimedCache<String, Object> cache = (TimedCache<String, Object>) CACHE_MAP.computeIfAbsent(Tool.StrUtil.concat(true, prefix, name), s -> {
             TimedCache<String, Object> timedCache = CacheUtil.newTimedCache(TimeUnit.SECONDS.toMillis(DEFAULT_TIMEOUT));
             timedCache.schedulePrune(TimeUnit.SECONDS.toMillis(DEFAULT_SCHEDULE_PRUNE));
             return timedCache;
@@ -45,7 +46,7 @@ public class TimedCacheManager {
      * @return
      */
     public static TimedCache<String, Object> getCache(String prefix, String name, Integer timeout, Integer delay) {
-        TimedCache<String, Object> cache = CACHE_MAP.computeIfAbsent(Tool.StrUtil.concat(true, prefix, name), s -> {
+        TimedCache<String, Object> cache = (TimedCache<String, Object>) CACHE_MAP.computeIfAbsent(Tool.StrUtil.concat(true, prefix, name), s -> {
             TimedCache<String, Object> timedCache = CacheUtil.newTimedCache(TimeUnit.SECONDS.toMillis(timeout));
             if (Tool.ObjectUtil.notEqual(0, timeout)) {
                 timedCache.schedulePrune(TimeUnit.SECONDS.toMillis(delay));
@@ -63,9 +64,25 @@ public class TimedCacheManager {
      * @return
      */
     public static TimedCache<String, Object> getNeverExpireCache(String prefix, String name) {
-        TimedCache<String, Object> cache = CACHE_MAP.computeIfAbsent(Tool.StrUtil.concat(true, prefix, name), s -> {
+        TimedCache<String, Object> cache = (TimedCache<String, Object>) CACHE_MAP.computeIfAbsent(Tool.StrUtil.concat(true, prefix, name), s -> {
             TimedCache<String, Object> timedCache = CacheUtil.newTimedCache(0);
             return timedCache;
+        });
+        return cache;
+    }
+
+    /**
+     * get FIFO Cache
+     *
+     * @param prefix
+     * @param name
+     * @param capacity
+     * @return
+     */
+    public static FIFOCache<String, Object> getFIFOCache(String prefix, String name, int capacity) {
+        FIFOCache<String, Object> cache = (FIFOCache<String, Object>) CACHE_MAP.computeIfAbsent(Tool.StrUtil.concat(true, prefix, name), s -> {
+            FIFOCache<String, Object> fifoCache = Tool.CacheUtil.newFIFOCache(capacity);
+            return fifoCache;
         });
         return cache;
     }

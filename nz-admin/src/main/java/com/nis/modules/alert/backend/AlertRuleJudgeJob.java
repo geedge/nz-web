@@ -1,5 +1,6 @@
 package com.nis.modules.alert.backend;
 
+import cn.hutool.cache.impl.TimedCache;
 import cn.hutool.core.date.StopWatch;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
@@ -11,6 +12,7 @@ import com.nis.common.protobuf.Types.TimeSeries;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.RCode;
+import com.nis.common.utils.TimedCacheManager;
 import com.nis.common.utils.Tool;
 import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.service.LokiApiService;
@@ -29,8 +31,6 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.stereotype.Component;
 
@@ -47,9 +47,6 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 
 	@Autowired
 	private LokiApiService lokiApiService;
-
-	@Autowired
-	private RedisTemplate<String, String> redisTemplate;
 
 	@Autowired
 	private AlertRuleEvalLogService evalLogService;
@@ -93,8 +90,6 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 		evalLog.setState(200);
 		evalLog.setMsg("success");
 		try {
-			// redis hash
-			HashOperations<String, String, String> hashOperations = redisTemplate.opsForHash();
 			/*
 			 * 1、获取 当前可用 agent 2、query 3、根据返回结果处理
 			 * 
@@ -115,7 +110,7 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 			// 获取 data 结果
 			JSONArray dataArr = result.getJSONObject("data").getJSONArray("result");
 			// 当前所有触发过的 告警消息，包括 ：pending，active
-			Map<String, String> entries = hashOperations.entries(ruleCacheKey);
+			TimedCache<String, Object> cache = TimedCacheManager.getCache(Constant.ALERT_CACHE_PREFIX, ruleCacheKey);
 
 			Set<String> newAlertHash = Tool.CollUtil.newHashSet();
 			List<AlertMessageReceiveDTO> messages = Tool.ListUtil.list(true);
@@ -145,10 +140,12 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 					if (severityId != null) {
 						newAlertHash.add(hash);// 下一步 判断 expired 的告警消息
 					}
-					Long firstTime = Tool.MapUtil.getLong(entries, hash);// 根据 firstTime 是否为null 判断是否第一次符合条件
+					// 根据 firstTime 是否为null 判断是否第一次符合条件
+					Long firstTime = Optional.ofNullable(cache.get(hash)).map(String::valueOf).map(Long::valueOf).orElse(null);
 					if (severityId != null && firstTime == null) {// 符合告警条件，且第一次达到告警阈值
 						// 将第一次 触发的时间 作为 value 保存，后续根据此计算 达到 for 的条件
-						hashOperations.put(ruleCacheKey, hash, timestamp.toString());
+						// hash 缓存设置超时时间，防止 意外不能删除, interval + 5min
+						cache.put(hash, timestamp.toString(), TimeUnit.SECONDS.toMillis(alertRuleEntity.getInr() + 5 * 60));
 						AlertMessageReceiveDTO message = this.genAlertMessageFromVector(alertRuleEntity, severityId, metric, values.getString(1),
 								null, null);
 						message.setActs((long) (values.getDoubleValue(0) * 1000L));
@@ -184,11 +181,11 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 
 			// 遍历已有 告警消息，判断是否已经过期
 			long nowTs = Tool.DateUtil.current() - (alertRuleEntity.getInr() * 500);
-			Iterator<String> iterator = entries.keySet().iterator();
+			Iterator<String> iterator = cache.keySet().iterator();
 			while (iterator.hasNext()) {
 				String activeHash = iterator.next();
 				if (!newAlertHash.contains(activeHash)) {
-					Long firstTime = Tool.NumberUtil.parseLong(entries.get(activeHash));
+					Long firstTime = Optional.ofNullable(cache.get(activeHash)).map(String::valueOf).map(Long::valueOf).orElse(null);
 					if (nowTs - firstTime > alertRuleEntity.getLast() * 1000) {
 						// 说明之前发送过 告警消息，需要发送已经失效的告警消息，endAt < now
 						AlertMessageReceiveDTO message = this.genAlertMessageFromVector(alertRuleEntity, null,
@@ -205,7 +202,7 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 						}
 					}
 					// 没有 到达 for 时长，还没有发送过告警消息，可以直接删除
-					hashOperations.delete(ruleCacheKey, activeHash);
+					cache.remove(activeHash);
 				}
 			}
 			if (messages.size() > 0) {
@@ -226,10 +223,6 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 				evalLog.setMsg(Tool.StrUtil.subPre(e.getMessage(), 128));
 			}
 		} finally {
-			if (redisTemplate.hasKey(ruleCacheKey)) {
-				// hash 缓存设置超时时间，防止 意外不能删除, interval + 5min
-				redisTemplate.expire(ruleCacheKey, alertRuleEntity.getInr() + 5 * 60, TimeUnit.SECONDS);
-			}
 			try {
 				// 保存执行日志
 				evalLog.setEtts(Tool.DateUtil.current());

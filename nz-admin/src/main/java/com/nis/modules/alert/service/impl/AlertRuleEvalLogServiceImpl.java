@@ -1,28 +1,24 @@
 package com.nis.modules.alert.service.impl;
 
+import cn.hutool.cache.impl.CacheObj;
+import cn.hutool.cache.impl.FIFOCache;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.TimedCacheManager;
 import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
 import com.nis.modules.alert.dao.AlertRuleEvalLogDao;
 import com.nis.modules.alert.entity.AlertRuleEvalLog;
 import com.nis.modules.alert.service.AlertRuleEvalLogService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.ListOperations;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 @Service("alertRuleEvalLogService")
 public class AlertRuleEvalLogServiceImpl extends ServiceImpl<AlertRuleEvalLogDao,AlertRuleEvalLog> implements AlertRuleEvalLogService{
-	
-	@Autowired
-	private RedisTemplate<String, String> redisTemplate;
 	
 	@Value("${alertRule.evalLog.size:20}")
 	private Integer alertRuleEvalLogSize;
@@ -32,26 +28,27 @@ public class AlertRuleEvalLogServiceImpl extends ServiceImpl<AlertRuleEvalLogDao
 	
 	@Override
 	public boolean save(AlertRuleEvalLog entity) {
-		ListOperations<String, String> listOperations = redisTemplate.opsForList();
-		String ruleId = String.format("alertRuleEvalLog:%s", entity.getRuleId());
-		Long size = listOperations.leftPush(ruleId, Tool.JSONUtil.toJsonStr(entity));
-		if(size > alertRuleEvalLogSize) {
-			listOperations.trim(ruleId, 0, alertRuleEvalLogSize-1);
-		}
-		redisTemplate.expire(ruleId, alertRuleEvalLogTimeout, TimeUnit.SECONDS);
+		String key = String.format("alertRuleEvalLog:%s", entity.getRuleId());
+		FIFOCache<String, Object> fifoCache = TimedCacheManager.getFIFOCache(Constant.ALERT_CACHE_PREFIX, key, alertRuleEvalLogSize);
+		fifoCache.put(Tool.StrUtil.toString(System.currentTimeMillis()), Tool.JSONUtil.toJsonStr(entity), TimeUnit.SECONDS.toMillis(alertRuleEvalLogTimeout));
 		return true;
 	}
 
 	@Override
 	public List<AlertRuleEvalLog> queryListByRuleId(Integer id) {
-		ListOperations<String, String> opsForList = redisTemplate.opsForList();
 		String key = String.format("alertRuleEvalLog:%s", id);
-		List<String> datas = opsForList.range(key, 0, -1);
-		if(ToolUtil.isNotEmpty(datas)) {
-			List<AlertRuleEvalLog> results = datas.stream().map(data -> JSONObject.parseObject(data, AlertRuleEvalLog.class)).collect(Collectors.toList());
-			return results;
-		}else {
-			return new ArrayList<AlertRuleEvalLog>();
+		FIFOCache<String, Object> fifoCache = TimedCacheManager.getFIFOCache(Constant.ALERT_CACHE_PREFIX, key, alertRuleEvalLogSize);
+
+		List<AlertRuleEvalLog> results = Tool.ListUtil.list(true);
+		Iterator<CacheObj<String, Object>> iterator = fifoCache.cacheObjIterator();
+		while (iterator.hasNext()) {
+			CacheObj<String, Object> next = iterator.next();
+			Object value = next.getValue();
+			if (value != null) {
+				AlertRuleEvalLog alertRuleEvalLog = JSONObject.parseObject((String) value, AlertRuleEvalLog.class);
+				results.add(alertRuleEvalLog);
+			}
 		}
+		return Tool.CollUtil.reverse(results);
 	}
 }

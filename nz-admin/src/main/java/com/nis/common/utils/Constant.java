@@ -1140,7 +1140,14 @@ public class Constant {
 
 	public static final String SYS_CACHE_PREFIX = "SYS_";
 
+	public static final String ALERT_CACHE_PREFIX = "ALERT_";
+
 	public static final String SYS_CONFIG_CACHE_KEY = "sys_config";
+
+	public static final String SYS_LOGIN_LOCKOUT_CACHE_KEY = "login_lockout";
+
+	public static final String SYS_MFA_CACHE_KEY = "mfa";
+
 	public static final String SYS_STATE_CACHE_PREFIX = "SYS_STATE_";
 
 	public static final String ENDPOINT_METRICS_STATE_CACHE_KEY = "endpoint_metrics_state";

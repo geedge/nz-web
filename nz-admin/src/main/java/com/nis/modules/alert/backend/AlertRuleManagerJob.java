@@ -3,6 +3,8 @@ package com.nis.modules.alert.backend;
 import cn.hutool.core.date.StopWatch;
 import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.TimedCacheManager;
 import com.nis.common.utils.Tool;
 import com.nis.modules.agent.service.MonitorEventLogService;
 import com.nis.modules.alert.entity.AlertRuleEntity;
@@ -12,7 +14,6 @@ import org.quartz.*;
 import org.quartz.impl.matchers.GroupMatcher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.stereotype.Component;
 
@@ -32,8 +33,6 @@ import java.util.TimeZone;
 @DisallowConcurrentExecution
 public class AlertRuleManagerJob extends QuartzJobBean {
 	private static final Log log = Log.get();
-	@Autowired
-	private RedisTemplate<String, Object> redisTemplate;
 	@Autowired
 	private MonitorEventLogService eventLogService;
 	@Autowired
@@ -154,7 +153,7 @@ public class AlertRuleManagerJob extends QuartzJobBean {
 						// 删除 alert rule judge job
 						scheduler.deleteJob(this.getAlertRuleJudgeJobKey(en.getKey(), en.getValue()));
 						// 清除缓存
-						redisTemplate.delete(AlertContext.getRedisCacheKey(en.getValue()));
+						TimedCacheManager.removeCache(Constant.ALERT_CACHE_PREFIX, AlertContext.getRedisCacheKey(en.getValue()));
 					} catch (Exception e) {
 						log.warn(e, "delete alert for state key error");
 					}
