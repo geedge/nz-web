@@ -153,7 +153,7 @@ public class AlertRuleManagerJob extends QuartzJobBean {
 						// 删除 alert rule judge job
 						scheduler.deleteJob(this.getAlertRuleJudgeJobKey(en.getKey(), en.getValue()));
 						// 清除缓存
-						TimedCacheManager.removeCache(Constant.ALERT_CACHE_PREFIX, AlertContext.getRedisCacheKey(en.getValue()));
+						TimedCacheManager.removeCache(Constant.ALERT_CACHE_PREFIX, AlertContext.getCacheKey(en.getValue()));
 					} catch (Exception e) {
 						log.warn(e, "delete alert for state key error");
 					}

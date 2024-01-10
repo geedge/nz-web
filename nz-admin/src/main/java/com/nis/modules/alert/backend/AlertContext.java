@@ -58,11 +58,11 @@ public class AlertContext {
 		currentIndex = newIndex;
 	}
 
-	public static String getRedisCacheKey(AlertRuleEntity alertRuleEntity) {
-		return getRedisCacheKey(alertRuleEntity.getId());
+	public static String getCacheKey(AlertRuleEntity alertRuleEntity) {
+		return getCacheKey(alertRuleEntity.getId());
 	}
 
-	public static String getRedisCacheKey(Integer ruleId) {
+	public static String getCacheKey(Integer ruleId) {
 		return String.format(ALERT_FOR_STATE_KEY_FORMAT, ruleId);
 	}
 }

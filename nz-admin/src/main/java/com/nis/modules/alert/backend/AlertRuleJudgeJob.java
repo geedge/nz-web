@@ -83,7 +83,7 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 		Integer type = alertRuleEntity.getType();
 		log.info("judge start,ruleId:{},interval:{}s,type:{}", alertRuleId, alertRuleEntity.getInr(), type);
 		// 获取当前所有缓存的keys
-		String ruleCacheKey = AlertContext.getRedisCacheKey(alertRuleId);
+		String ruleCacheKey = AlertContext.getCacheKey(alertRuleId);
 		AlertRuleEvalLog evalLog = new AlertRuleEvalLog();
 		evalLog.setRuleId(alertRuleId);
 		evalLog.setStts(Tool.DateUtil.current());
