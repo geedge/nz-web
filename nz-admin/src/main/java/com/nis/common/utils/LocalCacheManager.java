@@ -8,7 +8,7 @@ import cn.hutool.cache.impl.TimedCache;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-public class TimedCacheManager {
+public class LocalCacheManager {
 
     /**
      * 默认超时时间,2分钟
@@ -23,13 +23,14 @@ public class TimedCacheManager {
     private static ConcurrentHashMap<String, Cache<String, Object>> CACHE_MAP = new ConcurrentHashMap<>();
 
     /**
-     * getCache
+     * TimedCache
      *
      * @param name
      * @return
      */
-    public static TimedCache<String, Object> getCache(String prefix, String name) {
-        TimedCache<String, Object> cache = (TimedCache<String, Object>) CACHE_MAP.computeIfAbsent(Tool.StrUtil.concat(true, prefix, name), s -> {
+    public static TimedCache<String, Object> getTimedCache(String prefix, String name) {
+        String key = Tool.StrUtil.concat(true, prefix, name);
+        TimedCache<String, Object> cache = (TimedCache<String, Object>) CACHE_MAP.computeIfAbsent(key, s -> {
             TimedCache<String, Object> timedCache = CacheUtil.newTimedCache(TimeUnit.SECONDS.toMillis(DEFAULT_TIMEOUT));
             timedCache.schedulePrune(TimeUnit.SECONDS.toMillis(DEFAULT_SCHEDULE_PRUNE));
             return timedCache;
@@ -38,41 +39,24 @@ public class TimedCacheManager {
     }
 
     /**
-     * getCache
-     *
-     * @param name
-     * @param timeout
-     * @param delay
-     * @return
-     */
-    public static TimedCache<String, Object> getCache(String prefix, String name, Integer timeout, Integer delay) {
-        TimedCache<String, Object> cache = (TimedCache<String, Object>) CACHE_MAP.computeIfAbsent(Tool.StrUtil.concat(true, prefix, name), s -> {
-            TimedCache<String, Object> timedCache = CacheUtil.newTimedCache(TimeUnit.SECONDS.toMillis(timeout));
-            if (Tool.ObjectUtil.notEqual(0, timeout)) {
-                timedCache.schedulePrune(TimeUnit.SECONDS.toMillis(delay));
-            }
-            return timedCache;
-        });
-        return cache;
-    }
-
-    /**
-     * get never expire cache
+     * TimedCache,NeverExpire
      *
      * @param prefix
      * @param name
      * @return
      */
-    public static TimedCache<String, Object> getNeverExpireCache(String prefix, String name) {
-        TimedCache<String, Object> cache = (TimedCache<String, Object>) CACHE_MAP.computeIfAbsent(Tool.StrUtil.concat(true, prefix, name), s -> {
+    public static TimedCache<String, Object> getNeverExpireTimedCache(String prefix, String name) {
+        String key = Tool.StrUtil.concat(true, prefix, name);
+        TimedCache<String, Object> cache = (TimedCache<String, Object>) CACHE_MAP.computeIfAbsent(key, s -> {
             TimedCache<String, Object> timedCache = CacheUtil.newTimedCache(0);
+            timedCache.schedulePrune(TimeUnit.SECONDS.toMillis(DEFAULT_SCHEDULE_PRUNE));
             return timedCache;
         });
         return cache;
     }
 
     /**
-     * get FIFO Cache
+     * FIFOCache
      *
      * @param prefix
      * @param name
@@ -80,7 +64,8 @@ public class TimedCacheManager {
      * @return
      */
     public static FIFOCache<String, Object> getFIFOCache(String prefix, String name, int capacity) {
-        FIFOCache<String, Object> cache = (FIFOCache<String, Object>) CACHE_MAP.computeIfAbsent(Tool.StrUtil.concat(true, prefix, name), s -> {
+        String key = Tool.StrUtil.concat(true, prefix, name);
+        FIFOCache<String, Object> cache = (FIFOCache<String, Object>) CACHE_MAP.computeIfAbsent(key, s -> {
             FIFOCache<String, Object> fifoCache = Tool.CacheUtil.newFIFOCache(capacity);
             return fifoCache;
         });
@@ -94,9 +79,12 @@ public class TimedCacheManager {
      * @param name
      */
     public static void removeCache(String prefix, String name) {
-        TimedCache<String, Object> cache = getCache(prefix, name);
-        cache.clear();
-        CACHE_MAP.remove(Tool.StrUtil.concat(true, prefix, name));
+        String key = Tool.StrUtil.concat(true, prefix, name);
+        Cache<String, Object> cache = CACHE_MAP.get(key);
+        if (cache != null) {
+            cache.clear();
+            CACHE_MAP.remove(Tool.StrUtil.concat(true, prefix, name));
+        }
     }
 
 }

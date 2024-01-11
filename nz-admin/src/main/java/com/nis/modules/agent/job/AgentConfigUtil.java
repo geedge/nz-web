@@ -225,7 +225,7 @@ public class AgentConfigUtil {
 		params.put("interfaceNameList", interfaceNameList);
 		params.put("instanceInterfaceNames", CollectionUtil.isNotEmpty(interfaceNameList));
 
-		TimedCache<String, Object> sysConfiMap = TimedCacheManager.getNeverExpireCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
+		TimedCache<String, Object> sysConfiMap = LocalCacheManager.getNeverExpireTimedCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
 		params.put("systemConfig", sysConfiMap);
 		params.put("isAlert", false);
 
@@ -279,7 +279,7 @@ public class AgentConfigUtil {
 		params.put("secret", sysConfService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_S3_SECRET_ACCESS_KEY));
 		params.put("insecure", sysConfService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_S3_INSECURE));
 
-		TimedCache<String, Object> sysConfiMap = TimedCacheManager.getNeverExpireCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
+		TimedCache<String, Object> sysConfiMap = LocalCacheManager.getNeverExpireTimedCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
 		params.put("systemConfig", sysConfiMap);
 
 		Map map = new HashMap();
@@ -355,7 +355,7 @@ public class AgentConfigUtil {
 	 * @return
 	 */
 	public Map<String, String> generatePrometheusCmdLine(Agent currentAgent) {
-		TimedCache<String, Object> sysConfiMap = TimedCacheManager.getNeverExpireCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
+		TimedCache<String, Object> sysConfiMap = LocalCacheManager.getNeverExpireTimedCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
 
 		Map params = Tool.MapUtil.builder()
 				.put("currentAgent", currentAgent)
@@ -677,7 +677,7 @@ public class AgentConfigUtil {
 		}
 		params.put("remoteWriteUrlInfos", remoteWriteUrlInfoMapList);
 
-		TimedCache<String, Object> sysConfiMap = TimedCacheManager.getNeverExpireCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
+		TimedCache<String, Object> sysConfiMap = LocalCacheManager.getNeverExpireTimedCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
 		params.put("systemConfig", sysConfiMap);
 		params.put("currentAgent", agent);
 
@@ -1100,7 +1100,7 @@ public class AgentConfigUtil {
 
 		params.put("jobList", jobList);
 
-		TimedCache<String, Object> sysConfiMap = TimedCacheManager.getNeverExpireCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
+		TimedCache<String, Object> sysConfiMap = LocalCacheManager.getNeverExpireTimedCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
 		params.put("systemConfig", sysConfiMap);
 		params.put("currentAgent", currentAgent);
 
@@ -1430,7 +1430,7 @@ public class AgentConfigUtil {
 		agent.setStatusInfo(getPromStatusInfoErrorMsg());
 		agent.setCheckTime(new Date());
 		// 缓存和数据库需同时更新
-		TimedCache<String, Object> cache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.AGENT_STATE_CACHE_KEY);
+		TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.AGENT_STATE_CACHE_KEY);
 		cache.put(agent.getId().toString(), JSON.toJSONString(agent));
 		agentService.updateById(agent);
 	}
@@ -1441,7 +1441,7 @@ public class AgentConfigUtil {
 	 * @return
 	 */
 	public Map generateInitCortexYml() {
-		TimedCache<String, Object> sysConfiMap = TimedCacheManager.getNeverExpireCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
+		TimedCache<String, Object> sysConfiMap = LocalCacheManager.getNeverExpireTimedCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
 
 		// template variables
 		Map<Object, Object> params = Tool.MapUtil.builder()
@@ -1472,7 +1472,7 @@ public class AgentConfigUtil {
 	 * @return
 	 */
 	public Map generateInitLokiYml() {
-		TimedCache<String, Object> sysConfiMap = TimedCacheManager.getNeverExpireCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
+		TimedCache<String, Object> sysConfiMap = LocalCacheManager.getNeverExpireTimedCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
 
 		// template variables
 		Map<Object, Object> params = Tool.MapUtil.builder()

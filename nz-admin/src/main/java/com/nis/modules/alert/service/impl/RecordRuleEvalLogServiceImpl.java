@@ -5,7 +5,7 @@ import cn.hutool.cache.impl.FIFOCache;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.Constant;
-import com.nis.common.utils.TimedCacheManager;
+import com.nis.common.utils.LocalCacheManager;
 import com.nis.common.utils.Tool;
 import com.nis.modules.alert.dao.ReocrdRuleEvalLogDao;
 import com.nis.modules.alert.entity.RecordRuleEvalLog;
@@ -29,7 +29,7 @@ public class RecordRuleEvalLogServiceImpl extends ServiceImpl<ReocrdRuleEvalLogD
 	@Override
 	public boolean save(RecordRuleEvalLog entity) {
  		String key = String.format("recordRuleEvalLog:%s", entity.getRuleId());
-		FIFOCache<String, Object> fifoCache = TimedCacheManager.getFIFOCache(Constant.ALERT_CACHE_PREFIX, key, recordRuleEvalLogSize);
+		FIFOCache<String, Object> fifoCache = LocalCacheManager.getFIFOCache(Constant.ALERT_CACHE_PREFIX, key, recordRuleEvalLogSize);
 		fifoCache.put(Tool.StrUtil.toString(System.currentTimeMillis()), Tool.JSONUtil.toJsonStr(entity), TimeUnit.SECONDS.toMillis(recordRuleEvalLogTimeout));
 		return true;
 	}
@@ -37,7 +37,7 @@ public class RecordRuleEvalLogServiceImpl extends ServiceImpl<ReocrdRuleEvalLogD
 	@Override
 	public List<RecordRuleEvalLog> queryListByRuleId(Integer id) {
 		String key = String.format("recordRuleEvalLog:%s", id);
-		FIFOCache<String, Object> fifoCache = TimedCacheManager.getFIFOCache(Constant.ALERT_CACHE_PREFIX, key, recordRuleEvalLogSize);
+		FIFOCache<String, Object> fifoCache = LocalCacheManager.getFIFOCache(Constant.ALERT_CACHE_PREFIX, key, recordRuleEvalLogSize);
 
 		List<RecordRuleEvalLog> results = Tool.ListUtil.list(true);
 		Iterator<CacheObj<String, Object>> iterator = fifoCache.cacheObjIterator();

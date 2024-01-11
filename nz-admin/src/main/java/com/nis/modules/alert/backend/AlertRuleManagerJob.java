@@ -4,7 +4,7 @@ import cn.hutool.core.date.StopWatch;
 import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.Constant;
-import com.nis.common.utils.TimedCacheManager;
+import com.nis.common.utils.LocalCacheManager;
 import com.nis.common.utils.Tool;
 import com.nis.modules.agent.service.MonitorEventLogService;
 import com.nis.modules.alert.entity.AlertRuleEntity;
@@ -153,7 +153,7 @@ public class AlertRuleManagerJob extends QuartzJobBean {
 						// 删除 alert rule judge job
 						scheduler.deleteJob(this.getAlertRuleJudgeJobKey(en.getKey(), en.getValue()));
 						// 清除缓存
-						TimedCacheManager.removeCache(Constant.ALERT_CACHE_PREFIX, AlertContext.getCacheKey(en.getValue()));
+						LocalCacheManager.removeCache(Constant.ALERT_CACHE_PREFIX, AlertContext.getCacheKey(en.getValue()));
 					} catch (Exception e) {
 						log.warn(e, "delete alert for state key error");
 					}

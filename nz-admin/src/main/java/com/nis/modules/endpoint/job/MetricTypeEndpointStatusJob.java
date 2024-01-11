@@ -147,7 +147,7 @@ public class MetricTypeEndpointStatusJob extends QuartzJobBean {
         log.info("[updateEndpointStatus] [update metrics endpoints] [total size: {}]", updateMetricsEndpointStateList.size());
 
         //  判断查询数据与缓存中变化的信息
-        TimedCache<String, Object> metricsTypeEndpointStateCache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
+        TimedCache<String, Object> metricsTypeEndpointStateCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
         if (BooleanUtil.negate(metricsTypeEndpointStateCache.isEmpty()) && counter % forceSync != 0) {
             log.info("[updateEndpointStatus] [incrementally update the metrics endpoint state in redis]");
             for (int i = updateMetricsEndpointStateList.size() - 1; i >= 0; i--) {
@@ -373,7 +373,7 @@ public class MetricTypeEndpointStatusJob extends QuartzJobBean {
             endpointStateService.saveBatch(saveBatchEndpointStatusList);
 
             // cache
-            TimedCache<String, Object> metricsTypeEndpointStateCache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
+            TimedCache<String, Object> metricsTypeEndpointStateCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
             Map<String, String> updateMetricsEndpointsInRedis = saveBatchEndpointStatusList.stream().collect(Collectors.toMap(state -> StrUtil.toString(state.getEndpointId()), state -> JSONUtil.toJsonStr(state)));
             for (Map.Entry<String, String> entry : updateMetricsEndpointsInRedis.entrySet()) {
                 metricsTypeEndpointStateCache.put(entry.getKey(), entry.getValue());

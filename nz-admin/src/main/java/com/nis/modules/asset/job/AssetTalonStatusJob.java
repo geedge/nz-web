@@ -10,7 +10,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.R;
-import com.nis.common.utils.TimedCacheManager;
+import com.nis.common.utils.LocalCacheManager;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.asset.entity.AssetAsset;
@@ -195,7 +195,7 @@ public class AssetTalonStatusJob extends QuartzJobBean {
 
         Map<Integer, AssetTalonStatus> map = talonUpdateStatusList.stream().collect(Collectors.toMap(AssetTalonStatus::getAssetId, Function.identity()));
         //判断查询数据与缓存中变化的信息
-        TimedCache<String, Object> assetTalonStatusCache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ASSET_TALON_STATUS_CACHE_KEY);
+        TimedCache<String, Object> assetTalonStatusCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ASSET_TALON_STATUS_CACHE_KEY);
         if (BooleanUtil.negate(assetTalonStatusCache.isEmpty()) && counter % forceSync != 0) {
             for (int i = talonUpdateStatusList.size() - 1; i >= 0; i--) {
                 AssetTalonStatus assetTalonStatus = talonUpdateStatusList.get(i);
@@ -250,7 +250,7 @@ public class AssetTalonStatusJob extends QuartzJobBean {
             logStateList.add(new MonitorEndpointState(conf.getEndpointId(), conf.getId(), conf.getType(), state, talonStatus.getVersion(), StrUtil.EMPTY, new Date()));
         }
         //判断查询数据与缓存中变化的信息
-        TimedCache<String, Object> logTypeEndpointStateCache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
+        TimedCache<String, Object> logTypeEndpointStateCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
         if (BooleanUtil.negate(logTypeEndpointStateCache.isEmpty()) && counter % forceSync != 0) {
             for (int i = logStateList.size() - 1; i >= 0; i--) {
                 MonitorEndpointState endpointState = logStateList.get(i);

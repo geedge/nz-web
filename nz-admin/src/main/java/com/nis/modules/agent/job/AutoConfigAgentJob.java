@@ -82,7 +82,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         log.info("[AutoConfigAgentJob] [Begin]");
         try {
             List<Agent> healthyAgents = Tool.ListUtil.list(true);
-            TimedCache<String, Object> agentCaches = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.AGENT_STATE_CACHE_KEY);
+            TimedCache<String, Object> agentCaches = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.AGENT_STATE_CACHE_KEY);
             if (BooleanUtil.negate(agentCaches.isEmpty())) {
                 Iterator<Object> iterator = agentCaches.iterator();
                 while (iterator.hasNext()) {

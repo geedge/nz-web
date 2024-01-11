@@ -1,8 +1,9 @@
 package com.nis.modules.alert.backend;
 
-import cn.hutool.cache.CacheUtil;
 import cn.hutool.cache.impl.TimedCache;
 import cn.hutool.log.Log;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.LocalCacheManager;
 import com.nis.common.utils.Tool;
 import com.nis.modules.alert.entity.AlertRuleEntity;
 
@@ -38,12 +39,12 @@ public class AlertContext {
 	/**
 	 * alert_message_active_cache
 	 */
-	public static final TimedCache<String, Map<Object, Object>> ALERT_MESSAGE_ACTIVE_CACHE = CacheUtil.newTimedCache(0);
+	public static final TimedCache<String, Object> ALERT_MESSAGE_ACTIVE_CACHE = LocalCacheManager.getNeverExpireTimedCache(Constant.ALERT_CACHE_PREFIX, "alert_message_active");
 
 	/**
 	 * alert_message_silence_cache
 	 */
-	public static final TimedCache<String, Map<Object, Object>> ALERT_MESSAGE_SILENCE_CACHE = CacheUtil.newTimedCache(0);
+	public static final TimedCache<String, Object> ALERT_MESSAGE_SILENCE_CACHE = LocalCacheManager.getNeverExpireTimedCache(Constant.ALERT_CACHE_PREFIX, "alert_message_silence");
 
 	/**
 	 * alert 状态 key

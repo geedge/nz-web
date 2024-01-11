@@ -116,7 +116,7 @@ public class AlertHanlderThread implements Runnable {
 						String hash = dto.genHashKey();// 计算hash 值，不包含 severity_id
 
 						// 本地缓存是否存在，value 为 msg info
-						Map<Object, Object> activeMsgMap = AlertContext.ALERT_MESSAGE_ACTIVE_CACHE.get(hash, false);
+						Map<Object, Object> activeMsgMap = (Map<Object, Object>) AlertContext.ALERT_MESSAGE_ACTIVE_CACHE.get(hash, false);
 						String activeRk = Tool.MapUtil.getStr(activeMsgMap, "id");
 						if (ObjectUtil.isNull(activeRk)) {
 							AlertMessageEntity activeMsgInDb = messageHandlerService.queryAlertMessageByHashKey(Constant.ALERT_MESSAGE_ACTIVE_TABLE, hash);
@@ -125,7 +125,7 @@ public class AlertHanlderThread implements Runnable {
 							messageHandlerService.updateAlertMessageStateCacheByEntity(Constant.ALERT_MESSAGE_ACTIVE_STATE, activeMsgInDb);
 						}
 
-						Map<Object, Object> silenceMsgMap = AlertContext.ALERT_MESSAGE_SILENCE_CACHE.get(hash, false);
+						Map<Object, Object> silenceMsgMap = (Map<Object, Object>) AlertContext.ALERT_MESSAGE_SILENCE_CACHE.get(hash, false);
 						String silenceRk = Tool.MapUtil.getStr(silenceMsgMap, "id");
 						if (ObjectUtil.isNull(silenceRk)) {
 							AlertMessageEntity silenceMsgInDb = messageHandlerService.queryAlertMessageByHashKey(Constant.ALERT_MESSAGE_SILENCE_TABLE, hash);
@@ -181,7 +181,7 @@ public class AlertHanlderThread implements Runnable {
 								//更新表中数据同时更新 cache 超时时间
 								messageHandlerService.updateMessageEndAt(message);
 								// 在prometheus中保存一份
-								Map<Object, Object> activeMsgCache = AlertContext.ALERT_MESSAGE_ACTIVE_CACHE.get(hash, false);
+								Map<Object, Object> activeMsgCache = (Map<Object, Object>) AlertContext.ALERT_MESSAGE_ACTIVE_CACHE.get(hash, false);
 								this.sendToTimeSeries(message.getId(), nowDate, "active", activeMsgCache, dto);
 								continue;
 							}
@@ -191,7 +191,7 @@ public class AlertHanlderThread implements Runnable {
 								//更新表中数据同时更新 cache 超时时间
 								messageHandlerService.updateMessageEndAt(message);
 								// 在prometheus中保存一份
-								Map<Object, Object> silenceMsgCache = AlertContext.ALERT_MESSAGE_SILENCE_CACHE.get(hash, false);
+								Map<Object, Object> silenceMsgCache = (Map<Object, Object>) AlertContext.ALERT_MESSAGE_SILENCE_CACHE.get(hash, false);
 								this.sendToTimeSeries(message.getId(), nowDate, "silence", silenceMsgCache, dto);
 								continue;
 							}
@@ -226,7 +226,7 @@ public class AlertHanlderThread implements Runnable {
 							message.setTableName(Constant.ALERT_MESSAGE_ACTIVE_TABLE);
 							messageHandlerService.handleMessageActiveBatch(Tool.ListUtil.toList(message));
 							// 在prometheus中保存一份
-							Map<Object, Object> activeMsgCache = AlertContext.ALERT_MESSAGE_ACTIVE_CACHE.get(hash, false);
+							Map<Object, Object> activeMsgCache = (Map<Object, Object>) AlertContext.ALERT_MESSAGE_ACTIVE_CACHE.get(hash, false);
 							this.sendToTimeSeries(message.getId(), nowDate, "active", activeMsgCache, dto);
 							continue;
 						}
@@ -236,7 +236,7 @@ public class AlertHanlderThread implements Runnable {
 						message.setSilenceList(silenceList);
 						messageHandlerService.handleMessageSilenceBatch(Tool.ListUtil.toList(message));
 						// 在prometheus中保存一份
-						Map<Object, Object> silenceMsgCache = AlertContext.ALERT_MESSAGE_SILENCE_CACHE.get(hash, false);
+						Map<Object, Object> silenceMsgCache = (Map<Object, Object>) AlertContext.ALERT_MESSAGE_SILENCE_CACHE.get(hash, false);
 						this.sendToTimeSeries(message.getId(), nowDate, "silence", silenceMsgCache, dto);
 					} catch (RuntimeException e) {
 						log.warn(e, "alert message foreach error");

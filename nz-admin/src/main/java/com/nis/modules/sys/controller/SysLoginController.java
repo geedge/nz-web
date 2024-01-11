@@ -209,7 +209,7 @@ public class SysLoginController extends AbstractController {
                 sysUserService.checkCacheRetry(sysUser);
             } else {
                 // 登录成功清除可能之前密码错误保留的缓存
-                TimedCache<String, Object> cache = TimedCacheManager.getCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_LOGIN_LOCKOUT_CACHE_KEY);
+                TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_LOGIN_LOCKOUT_CACHE_KEY);
                 cache.remove(String.format("sysUserLogin_%s", sysUser.getUsername()));
             }
         }

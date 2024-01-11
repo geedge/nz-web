@@ -164,7 +164,7 @@ public class AgentHealthCheckJob extends QuartzJobBean {
 
 		try {
 			List<Future<Agent>> futures = exec.invokeAll(tasks);
-			TimedCache<String, Object> cache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.AGENT_STATE_CACHE_KEY);
+			TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.AGENT_STATE_CACHE_KEY);
 			for (Future<Agent> future : futures) {
 				if (!future.isCancelled()) {
 					Agent agent = future.get();

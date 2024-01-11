@@ -105,12 +105,12 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		}
 		// 更新 cache 超时时间
 		if (Constant.ALERT_MESSAGE_ACTIVE_TABLE.equalsIgnoreCase(tableName)) {
-			Map<Object, Object> value = AlertContext.ALERT_MESSAGE_ACTIVE_CACHE.get(hashKey, false);
+			Map<Object, Object> value = (Map<Object, Object>) AlertContext.ALERT_MESSAGE_ACTIVE_CACHE.get(hashKey, false);
 			if (ObjectUtil.isNotNull(value)) {
 				AlertContext.ALERT_MESSAGE_ACTIVE_CACHE.put(hashKey, value, this.getKeyTimeout(endAt));
 			}
 		} else if (Constant.ALERT_MESSAGE_SILENCE_TABLE.equalsIgnoreCase(tableName)) {
-			Map<Object, Object> value = AlertContext.ALERT_MESSAGE_SILENCE_CACHE.get(hashKey, false);
+			Map<Object, Object> value = (Map<Object, Object>) AlertContext.ALERT_MESSAGE_SILENCE_CACHE.get(hashKey, false);
 			if (ObjectUtil.isNotNull(value)) {
 				AlertContext.ALERT_MESSAGE_SILENCE_CACHE.put(hashKey, value, this.getKeyTimeout(endAt));
 			}

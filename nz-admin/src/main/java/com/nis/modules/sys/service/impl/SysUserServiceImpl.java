@@ -514,7 +514,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 				}
 				if (retry > 0 && lockTime > 0) {
 					// 校验用户登录次数以及封锁时间
-					TimedCache<String, Object> cache = TimedCacheManager.getCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_LOGIN_LOCKOUT_CACHE_KEY);
+					TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_LOGIN_LOCKOUT_CACHE_KEY);
 					String key = String.format("sysUserLogin_%s", user.getUsername());
 					String value = StrUtil.toStringOrNull(cache.get(key, false));
 					if (StrUtil.isNotBlank(value)) {
@@ -545,7 +545,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 			lockTime = (Integer) pinPolicyInfo.get("lockTime");
 		}
 		String key = String.format("sysUserLogin_%s", user.getUsername());
-		TimedCache<String, Object> cache = TimedCacheManager.getCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_LOGIN_LOCKOUT_CACHE_KEY);
+		TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_LOGIN_LOCKOUT_CACHE_KEY);
 		String value = StrUtil.toStringOrNull(cache.get(key, false));
 		if (ToolUtil.isNotEmpty(value) && retry != 0) {
 			Integer cacheRetry = Integer.valueOf(value);

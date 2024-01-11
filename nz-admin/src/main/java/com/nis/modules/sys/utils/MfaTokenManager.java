@@ -4,7 +4,7 @@ package com.nis.modules.sys.utils;
 import cn.hutool.cache.impl.TimedCache;
 import com.alibaba.fastjson.JSON;
 import com.nis.common.utils.Constant;
-import com.nis.common.utils.TimedCacheManager;
+import com.nis.common.utils.LocalCacheManager;
 import com.nis.common.utils.Tool;
 import com.nis.modules.sys.entity.AuthTokenEntity;
 import org.springframework.stereotype.Component;
@@ -21,26 +21,26 @@ public class MfaTokenManager {
             return;
         }
         String key = this.getMfaKey(keyTmp);
-        TimedCache<String, Object> cache = TimedCacheManager.getCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_MFA_CACHE_KEY);
+        TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_MFA_CACHE_KEY);
         cache.put(key, toJson(token), TimeUnit.SECONDS.toMillis(expire));
     }
 
     public void delete(String keyTmp) {
         String key = this.getMfaKey(keyTmp);
-        TimedCache<String, Object> cache = TimedCacheManager.getCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_MFA_CACHE_KEY);
+        TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_MFA_CACHE_KEY);
         cache.remove(key);
     }
 
     public AuthTokenEntity get(String keyTmp) {
         String key = this.getMfaKey(keyTmp);
-        TimedCache<String, Object> cache = TimedCacheManager.getCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_MFA_CACHE_KEY);
+        TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_MFA_CACHE_KEY);
         String value = Tool.StrUtil.toStringOrNull(cache.get(key, false));
         return value == null ? null : fromJson(value, AuthTokenEntity.class);
     }
 
     public boolean hasKey(String keyTmp) {
         String key = this.getMfaKey(keyTmp);
-        TimedCache<String, Object> cache = TimedCacheManager.getCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_MFA_CACHE_KEY);
+        TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_MFA_CACHE_KEY);
         if (cache.containsKey(key)) {
             return true;
         }

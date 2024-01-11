@@ -7,7 +7,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.Constant;
-import com.nis.common.utils.TimedCacheManager;
+import com.nis.common.utils.LocalCacheManager;
 import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.agent.service.PromApiService;
@@ -160,7 +160,7 @@ public class AssetPingStatusJob extends QuartzJobBean {
                 .collect(Collectors.toMap(AssetPing::getAssetId, AssetPing::getStatus,
                         (entity1, entity2) -> entity1)); // 重复就返回第一个
         // 更新缓存
-        TimedCache<String, Object> cache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_PING);
+        TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_PING);
         if (BooleanUtil.negate(cache.isEmpty())) {
             for (int i = updatePingStatusList.size() - 1; i >= 0; i--) {
                 AssetPing assetPing = updatePingStatusList.get(i);

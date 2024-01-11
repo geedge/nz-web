@@ -197,7 +197,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         asset.setDc(dc);
 
         AssetPing assetPing = assetPingService.getOne(new QueryWrapper<AssetPing>().lambda().eq(AssetPing::getAssetId, asset.getId()));
-        TimedCache<String, Object> cache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_PING);
+        TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_PING);
         Object object = cache.get(asset.getId().toString());
         if (ToolUtil.isNotEmpty(object)) {
             assetPing = JSON.parseObject((String) object, AssetPing.class);
@@ -468,7 +468,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         List<AssetFieldMeta> metaInfoList = assetFieldMetaService.getAssetFieldMetaListByAssetId(null);
         Map<Integer, List<AssetFieldMeta>> assetIdAndMetaInfoList = metaInfoList.stream().collect(Collectors.groupingBy(AssetFieldMeta::getAssetId));
 
-        TimedCache<String, Object> cache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_PING);
+        TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_PING);
         List<AssetPing> assetPinglist = assetPingService.list();
         Map<Integer, AssetPing> assetPings = assetPinglist.stream().collect(Collectors.toMap(AssetPing::getAssetId, Function.identity(), (entity1, entity2) -> entity1));
 
@@ -1026,10 +1026,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
      */
     private void afterUpdateAsset(Integer assetId) {
         assetPingService.remove(new QueryWrapper<AssetPing>().lambda().eq(AssetPing::getAssetId, assetId));
-        TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_PING).remove(assetId.toString());
+        LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_PING).remove(assetId.toString());
 
         assetTalonStatusService.removeById(assetId);
-        TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ASSET_TALON_STATUS_CACHE_KEY).remove(assetId.toString());
+        LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ASSET_TALON_STATUS_CACHE_KEY).remove(assetId.toString());
     }
 
     private void saveAssetRelData(AssetAsset asset) {
@@ -1131,12 +1131,12 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // asset Ping
         List<String> removeRelInRedisIdList = removeAssetIdList.stream().map(id -> id.toString()).collect(Collectors.toList());
         assetPingService.remove(new LambdaQueryWrapper<AssetPing>().in(AssetPing::getAssetId, removeAssetIdList));
-        TimedCache<String, Object> assetPingCache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_PING);
+        TimedCache<String, Object> assetPingCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_PING);
         removeRelInRedisIdList.parallelStream().forEach(key -> assetPingCache.remove(key));
 
         // asset Talon
         assetTalonStatusService.removeByIds(removeAssetIdList);
-        TimedCache<String, Object> assetTalonCache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ASSET_TALON_STATUS_CACHE_KEY);
+        TimedCache<String, Object> assetTalonCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ASSET_TALON_STATUS_CACHE_KEY);
         removeRelInRedisIdList.parallelStream().forEach(key -> assetTalonCache.remove(key));
 
         // field

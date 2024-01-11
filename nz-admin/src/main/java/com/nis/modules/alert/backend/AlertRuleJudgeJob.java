@@ -12,7 +12,7 @@ import com.nis.common.protobuf.Types.TimeSeries;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.RCode;
-import com.nis.common.utils.TimedCacheManager;
+import com.nis.common.utils.LocalCacheManager;
 import com.nis.common.utils.Tool;
 import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.service.LokiApiService;
@@ -110,7 +110,7 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 			// 获取 data 结果
 			JSONArray dataArr = result.getJSONObject("data").getJSONArray("result");
 			// 当前所有触发过的 告警消息，包括 ：pending，active
-			TimedCache<String, Object> cache = TimedCacheManager.getCache(Constant.ALERT_CACHE_PREFIX, ruleCacheKey);
+			TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(Constant.ALERT_CACHE_PREFIX, ruleCacheKey);
 
 			Set<String> newAlertHash = Tool.CollUtil.newHashSet();
 			List<AlertMessageReceiveDTO> messages = Tool.ListUtil.list(true);

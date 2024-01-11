@@ -17,7 +17,7 @@ import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
-import com.nis.common.utils.TimedCacheManager;
+import com.nis.common.utils.LocalCacheManager;
 import com.nis.common.utils.Tool;
 import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.service.AgentService;
@@ -103,7 +103,7 @@ public class PingController {
         m.put("task", task);
 
         // ping stat in cache
-        TimedCache<String, Object> cache = TimedCacheManager.getCache(ToolConstant.PING_CACHE_PREFIX, tid);
+        TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(ToolConstant.PING_CACHE_PREFIX, tid);
         String stat = Tool.StrUtil.concat(true, "test_ping_stat_", tid);
         cache.put(stat, JSONObject.toJSONString(task));
 
@@ -127,7 +127,7 @@ public class PingController {
 
     @GetMapping("/ping/result/{tid}")
     public R pingResult(@PathVariable(value = "tid", required = true) String tid) {
-        TimedCache<String, Object> cache = TimedCacheManager.getCache(ToolConstant.PING_CACHE_PREFIX, tid);
+        TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(ToolConstant.PING_CACHE_PREFIX, tid);
 
         String pingStatKey = Tool.StrUtil.concat(true, "test_ping_stat_", tid);
         String pingStatStr = (String) cache.get(pingStatKey);
@@ -173,7 +173,7 @@ public class PingController {
             });
         }
 
-        TimedCacheManager.removeCache(ToolConstant.PING_CACHE_PREFIX, tid);
+        LocalCacheManager.removeCache(ToolConstant.PING_CACHE_PREFIX, tid);
         return R.ok();
     }
 
@@ -321,7 +321,7 @@ public class PingController {
 
             lock.lock();
             try {
-                TimedCache<String, Object> cache = TimedCacheManager.getCache(ToolConstant.PING_CACHE_PREFIX, tid);
+                TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(ToolConstant.PING_CACHE_PREFIX, tid);
 
                 // result cache
                 String resultKey = Tool.StrUtil.concat(true, "test_ping_result_", tid);

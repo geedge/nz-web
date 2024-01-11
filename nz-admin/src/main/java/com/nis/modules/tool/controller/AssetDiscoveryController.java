@@ -166,7 +166,7 @@ public class AssetDiscoveryController {
         log.info("[createDiscoveryTask] [finshed] [tid: {}] [subnet size: {}] [discovery ip size: {}]", tid, ipamSubnetList.size(), totalDiscoveryIpNum);
 
         // stat in cache
-        TimedCache<String, Object> cache = TimedCacheManager.getCache(ToolConstant.ASSET_DISCOVERY_CACHE_PREFIX, tid);
+        TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(ToolConstant.ASSET_DISCOVERY_CACHE_PREFIX, tid);
         String stat = Tool.StrUtil.concat(true, "discovery_stat_", tid);
         cache.put(stat, JSONObject.toJSONString(task));
         return R.ok(m);
@@ -181,7 +181,7 @@ public class AssetDiscoveryController {
      */
     @GetMapping("/discovery/{tid}")
     public R queryResult(@PathVariable(value = "tid", required = true) String tid) {
-        TimedCache<String, Object> cache = TimedCacheManager.getCache(ToolConstant.ASSET_DISCOVERY_CACHE_PREFIX, tid);
+        TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(ToolConstant.ASSET_DISCOVERY_CACHE_PREFIX, tid);
 
         String statKey = Tool.StrUtil.concat(true, "discovery_stat_", tid);
         String statJsonStr = (String) cache.get(statKey);
@@ -245,7 +245,7 @@ public class AssetDiscoveryController {
         }
 
         // remove cache
-        TimedCacheManager.removeCache(ToolConstant.ASSET_DISCOVERY_CACHE_PREFIX, tid);
+        LocalCacheManager.removeCache(ToolConstant.ASSET_DISCOVERY_CACHE_PREFIX, tid);
         return R.ok();
     }
 
@@ -375,7 +375,7 @@ public class AssetDiscoveryController {
                         lock.lock();
                         try {
                             // update resule
-                            TimedCache<String, Object> cache = TimedCacheManager.getCache(ToolConstant.ASSET_DISCOVERY_CACHE_PREFIX, tid);
+                            TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(ToolConstant.ASSET_DISCOVERY_CACHE_PREFIX, tid);
 
                             // result cache
                             String resultKey = Tool.StrUtil.concat(true, "discovery_result_", tid);

@@ -36,7 +36,6 @@ import com.nis.modules.terminal.service.TerminalSftpLogService;
 import com.nis.modules.terminal.utils.SFTPUploadMonitor;
 import com.nis.modules.terminal.utils.TelnetUtil;
 import com.nis.modules.terminal.utils.TerminalConstant;
-import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.time.DateUtils;
@@ -54,6 +53,7 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.text.ParseException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service("terminalSessionService")
@@ -82,17 +82,9 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
     /**
      * upload progress cache
      */
-    private static TimedCache<String, SFTPUploadMonitor> UPLOAD_PROGRESS_CACHE;
+    private static TimedCache<String, Object> UPLOAD_PROGRESS_CACHE = LocalCacheManager.getNeverExpireTimedCache(Constant.SYS_CACHE_PREFIX, "Terminal_SFTPUploadMonitor");
 
     private static Map<String, SftpUploadRunnable> SFTP_UPLOAD_THREAD_MAP = Tool.MapUtil.newConcurrentHashMap();
-
-    @PostConstruct
-    public void init() {
-        log.info("Setup sftp upload progress cache begin...");
-        // 默认 30 分钟失效
-        UPLOAD_PROGRESS_CACHE = Tool.CacheUtil.newTimedCache(60000 * 30);
-        log.info("Setup sftp upload progress cache finished");
-    }
 
     /**
      * 处理请求参数
@@ -627,7 +619,7 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
 
     @Override
     public Map<Object, Object> querySftpUploadProcess(String tid) {
-        SFTPUploadMonitor sftpUploadMonitor = UPLOAD_PROGRESS_CACHE.get(tid);
+        SFTPUploadMonitor sftpUploadMonitor = (SFTPUploadMonitor) UPLOAD_PROGRESS_CACHE.get(tid);
         if (ObjectUtil.isNull(sftpUploadMonitor)) {
             throw new NZException(RCode.TERMINAL_UPLOAD_PROGRESS_NOT_FOUND);
         }
@@ -929,7 +921,7 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
             try {
                 // SFTP Upload Monitor   query upload progress
                 SFTPUploadMonitor sftpUploadMonitor = new SFTPUploadMonitor(tempFile.length());
-                UPLOAD_PROGRESS_CACHE.put(tid, sftpUploadMonitor);
+                UPLOAD_PROGRESS_CACHE.put(tid, sftpUploadMonitor, TimeUnit.MINUTES.toMinutes(30));
 
                 log.info("upload file begin... tid: {}, path: {}", tid, path);
                 // upload
@@ -969,7 +961,7 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
             SFTP_UPLOAD_THREAD_MAP.remove(tid);
 
             // progress
-            SFTPUploadMonitor sftpUploadMonitor = UPLOAD_PROGRESS_CACHE.get(tid);
+            SFTPUploadMonitor sftpUploadMonitor = (SFTPUploadMonitor) UPLOAD_PROGRESS_CACHE.get(tid);
             log.warn("upload file thread is interrupted. tid: {}, progress: {}, path: {}", tid, sftpUploadMonitor.getUploadProgress() + '%', path);
         }
     }

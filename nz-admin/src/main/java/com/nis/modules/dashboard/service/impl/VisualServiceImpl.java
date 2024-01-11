@@ -108,7 +108,7 @@ public class VisualServiceImpl implements VisualService {
     @Autowired
     private MonitorEndpointService monitorEndpointService;
 
-    private static volatile TimedCache<String, Object> SNAPSHOT_CACHE;
+    private static volatile TimedCache<String, Object> SNAPSHOT_CACHE = LocalCacheManager.getNeverExpireTimedCache(Constant.SYS_CACHE_PREFIX, "SNAPSHOT");
 
     /**
      * 存储 thread Executor ，用以中断线程
@@ -121,11 +121,6 @@ public class VisualServiceImpl implements VisualService {
         // System.setProperty("webdriver.chrome.driver", "./lib/chromedriver.exe");
         // System.setProperty("webdriver.http.factory", "jdk-http-client");
         System.setProperty("webdriver.chrome.driver", "./lib/chromedriver");
-
-        log.info("Setup dashboard snapshot cache begin...");
-        // 创建缓存，默认 snapshotTimeout * 5
-        SNAPSHOT_CACHE = Tool.CacheUtil.newTimedCache(timeout * 5);
-        log.info("Setup dashboard snapshot cache finished");
     }
 
     private synchronized ExecutorService getSnapshotThreadPoolByTid(String tid) {
@@ -292,7 +287,7 @@ public class VisualServiceImpl implements VisualService {
 
         log.info("dashboard snapshot start. taskId: {}, dashboardId:{} total: {}", taskId, dashboardId, allChartList.size());
         String stat = StrUtil.concat(true, DashboardConstant.DASHBOARD_SNAPSHOT_TYPE, "_snapshot_stat_", taskId);
-        SNAPSHOT_CACHE.put(stat, taskStat);
+        SNAPSHOT_CACHE.put(stat, taskStat, timeout * 5);
 
         ThreadUtil.execAsync(() -> {
             // 计算步长
@@ -498,7 +493,7 @@ public class VisualServiceImpl implements VisualService {
 
         log.info("[createNotebookSnapshotTask] [notebook snapshot] [taskId: {}] [notebookId: {}] [total: {}]", taskId, notebookId, allChartList.size());
         String stat = StrUtil.concat(true, DashboardConstant.NOTEBOOK_SNAPSHOT_TYPE, "_snapshot_stat_", taskId);
-        SNAPSHOT_CACHE.put(stat, taskStat);
+        SNAPSHOT_CACHE.put(stat, taskStat, timeout * 5);
 
         ThreadUtil.execAsync(() -> {
             // 计算步长
@@ -1186,7 +1181,7 @@ public class VisualServiceImpl implements VisualService {
                 snapshotResultList = Tool.CollUtil.defaultIfEmpty(snapshotResultList, Tool.ListUtil.list(true));
 
                 Tool.CollUtil.addAll(snapshotResultList, resultData);
-                SNAPSHOT_CACHE.put(snapshotResultKey, snapshotResultList);
+                SNAPSHOT_CACHE.put(snapshotResultKey, snapshotResultList, timeout * 5);
 
                 // snapshot task process
                 String snapshotStatKey = StrUtil.concat(true, type, "_snapshot_stat_", tid);
@@ -1200,7 +1195,7 @@ public class VisualServiceImpl implements VisualService {
                 snapshotStatMap.put("process", percent.replace("%", ""));
                 snapshotStatMap.put("done", done);
                 snapshotStatMap.put("total", total);
-                SNAPSHOT_CACHE.put(snapshotStatKey, snapshotStatMap);
+                SNAPSHOT_CACHE.put(snapshotStatKey, snapshotStatMap, timeout * 5);
 
                 log.info("snapshot result updated, type: {}, taskId: {}, total: {}, done: {}, process: {}", type, tid, total, done, percent);
             } catch (Exception e) {

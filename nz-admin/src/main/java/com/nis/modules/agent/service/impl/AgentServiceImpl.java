@@ -56,7 +56,7 @@ public class AgentServiceImpl extends ServiceImpl<AgentDao, Agent> implements Ag
 		IPage page = new Query(Agent.class).getPage(params);
 		List<Agent> agentList = agentDao.queryList(page, params);
 		// 获取缓存中检查时间信息
-		TimedCache<String, Object> cache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.AGENT_STATE_CACHE_KEY);
+		TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.AGENT_STATE_CACHE_KEY);
 		if (BooleanUtil.negate(cache.isEmpty())) {
 			for (Agent prom : agentList) {
 				Object promCache = cache.get(prom.getId().toString());

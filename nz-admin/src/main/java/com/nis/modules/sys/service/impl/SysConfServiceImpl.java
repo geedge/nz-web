@@ -365,7 +365,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
 
     @Override
     public String getValue(String key) {
-        TimedCache<String, Object> cache = TimedCacheManager.getNeverExpireCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
+        TimedCache<String, Object> cache = LocalCacheManager.getNeverExpireTimedCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
 
         Object value = cache.get(key);
         if (value == null) {
@@ -798,7 +798,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
     public synchronized void reloadSysConfigToCache() {
         logger.info("[reloadSysConfigToCache] [begin]");
         try {
-            TimedCache<String, Object> cache = TimedCacheManager.getNeverExpireCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
+            TimedCache<String, Object> cache = LocalCacheManager.getNeverExpireTimedCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
             // clear
             cache.clear();
 

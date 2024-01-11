@@ -192,8 +192,8 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     // 获取 endpointConfigs 及其 state
     private List<MonitorEndpointConfig> getEndpointConfigs(MonitorEndpoint endpoint){
-        TimedCache<String, Object> metricsTypeEndpointStateCache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
-        TimedCache<String, Object> logTypeEndpointStateCache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
+        TimedCache<String, Object> metricsTypeEndpointStateCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
+        TimedCache<String, Object> logTypeEndpointStateCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
 
         List<MonitorEndpointConfig> endpointConfigs = endpointConfigService.list(new LambdaQueryWrapper<MonitorEndpointConfig>().eq(MonitorEndpointConfig::getEndpointId, endpoint.getId()).orderByDesc(MonitorEndpointConfig::getType));
         for (MonitorEndpointConfig endpointConfig : endpointConfigs) {
@@ -681,8 +681,8 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 	private void handleResuleList(List<MonitorEndpoint> endpointList) {
         List<MonitorEndpointConfig> endpointConfigs = endpointConfigService.list(new LambdaQueryWrapper<MonitorEndpointConfig>().orderByDesc(MonitorEndpointConfig::getType));
 
-        TimedCache<String, Object> metricsTypeEndpointStateCache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
-        TimedCache<String, Object> logTypeEndpointStateCache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
+        TimedCache<String, Object> metricsTypeEndpointStateCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
+        TimedCache<String, Object> logTypeEndpointStateCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
         // 获取agent
         Map endpointProm = redisTemplate.opsForHash().entries(Constant.REDIS_KEY_ENDPOINT_PROM);
         List<Agent> agentList = agentService.list();
@@ -838,8 +838,8 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         // 删除 endpoint state
         endpointStateService.removeByIds(ids);
         List<String> deleteList = ids.stream().map(id-> id.toString()).collect(Collectors.toList());
-        TimedCache<String, Object> metricsTypeEndpointStateCache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
-        TimedCache<String, Object> logTypeEndpointStateCache = TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
+        TimedCache<String, Object> metricsTypeEndpointStateCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
+        TimedCache<String, Object> logTypeEndpointStateCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
         deleteList.stream().forEach(key -> {
             metricsTypeEndpointStateCache.remove(key);
             logTypeEndpointStateCache.remove(key);
@@ -1293,8 +1293,8 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
         endpointStateService.removeById(endpointId);
 
-        TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_METRICS_STATE_CACHE_KEY).remove(endpointId.toString());
-        TimedCacheManager.getCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_LOGS_STATE_CACHE_KEY).remove(endpointId.toString());
+        LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_METRICS_STATE_CACHE_KEY).remove(endpointId.toString());
+        LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_LOGS_STATE_CACHE_KEY).remove(endpointId.toString());
     }
 
     /**

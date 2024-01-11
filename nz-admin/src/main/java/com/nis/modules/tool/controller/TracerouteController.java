@@ -17,7 +17,7 @@ import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
-import com.nis.common.utils.TimedCacheManager;
+import com.nis.common.utils.LocalCacheManager;
 import com.nis.common.utils.Tool;
 import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.service.AgentService;
@@ -103,7 +103,7 @@ public class TracerouteController {
         m.put("task", task);
 
         // traceroute stat in cache
-        TimedCache<String, Object> cache = TimedCacheManager.getCache(ToolConstant.TRACEROUTE_CACHE_PREFIX, tid);
+        TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(ToolConstant.TRACEROUTE_CACHE_PREFIX, tid);
         String stat = Tool.StrUtil.concat(true, "test_traceroute_stat_", tid);
         cache.put(stat, JSONObject.toJSONString(task));
 
@@ -127,7 +127,7 @@ public class TracerouteController {
 
     @GetMapping("/traceroute/result/{tid}")
     public R tracerouteResult(@PathVariable(value = "tid", required = true) String tid) {
-        TimedCache<String, Object> cache = TimedCacheManager.getCache(ToolConstant.TRACEROUTE_CACHE_PREFIX, tid);
+        TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(ToolConstant.TRACEROUTE_CACHE_PREFIX, tid);
 
         String tracerouteStatKey = Tool.StrUtil.concat(true, "test_traceroute_stat_", tid);
         String tracerouteStatStr = (String) cache.get(tracerouteStatKey);
@@ -173,7 +173,7 @@ public class TracerouteController {
             });
         }
 
-        TimedCacheManager.removeCache(ToolConstant.TRACEROUTE_CACHE_PREFIX, tid);
+        LocalCacheManager.removeCache(ToolConstant.TRACEROUTE_CACHE_PREFIX, tid);
         return R.ok();
     }
 
@@ -316,7 +316,7 @@ public class TracerouteController {
 
             lock.lock();
             try {
-                TimedCache<String, Object> cache = TimedCacheManager.getCache(ToolConstant.TRACEROUTE_CACHE_PREFIX, tid);
+                TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(ToolConstant.TRACEROUTE_CACHE_PREFIX, tid);
 
                 // result cache
                 String resultKey = Tool.StrUtil.concat(true, "test_traceroute_result_", tid);
