@@ -260,29 +260,27 @@ public class AlertHanlderThread implements Runnable {
 	 * @return
 	 */
 	public Long getAlertMessageId() {
-		SysLock sysLock = sysLockDao.selectOne(new LambdaQueryWrapper<SysLock>().eq(SysLock::getLockKey, Constant.SYS_LOCK_ALERT_MESSAGE_ID));
-		Integer lockValue = Integer.valueOf(sysLock.getLockValue());
+		int updateNum = 0, seqId;
+		do {
+			SysLock sysLock = sysLockDao.selectOne(new LambdaQueryWrapper<SysLock>().eq(SysLock::getLockKey, Constant.SYS_LOCK_ALERT_MESSAGE_ID));
+			Integer lockValue = Integer.valueOf(sysLock.getLockValue());
 
-		Integer seqId = (lockValue == 99999) ? 1 : ++lockValue;
-		// updateWithOptimisticLock
-		int update = sysLockDao.update(new SysLock(), new LambdaUpdateWrapper<SysLock>()
-				.set(SysLock::getLockValue, seqId)
-				.set(SysLock::getVersion, sysLock.getVersion() + 1)
-				.eq(SysLock::getLockKey, Constant.SYS_LOCK_ALERT_MESSAGE_ID)
-				.eq(SysLock::getVersion, sysLock.getVersion()));
+			seqId = (lockValue == 99999) ? 1 : ++lockValue;
+			// updateWithOptimisticLock
+			updateNum = sysLockDao.update(new SysLock(), new LambdaUpdateWrapper<SysLock>()
+					.set(SysLock::getLockValue, seqId)
+					.set(SysLock::getVersion, sysLock.getVersion() + 1)
+					.eq(SysLock::getLockKey, Constant.SYS_LOCK_ALERT_MESSAGE_ID)
+					.eq(SysLock::getVersion, sysLock.getVersion()));
+		} while (updateNum == 0);
 
-		if (update == 0) {
-			// version 冲突，再次尝试获取
-			return this.getAlertMessageId();
-		} else {
-			DateTime now = Tool.DateUtil.date();
-			// yyyyMMddHHmm
-			String datePrefix = Tool.DateUtil.format(now, Constant.ALERT_MESSAGE_ID_FORMAT);
+		DateTime now = Tool.DateUtil.date();
+		// yyyyMMddHHmm
+		String datePrefix = Tool.DateUtil.format(now, Constant.ALERT_MESSAGE_ID_FORMAT);
 
-			String middleId = Tool.StrUtil.concat(true, "0000", String.valueOf(seqId));
-			middleId = StrUtil.sub(middleId, middleId.length() - 5, middleId.length());
-			return Tool.NumberUtil.parseLong(Tool.StrUtil.concat(true, datePrefix, middleId));
-		}
+		String middleId = Tool.StrUtil.concat(true, "0000", String.valueOf(seqId));
+		middleId = StrUtil.sub(middleId, middleId.length() - 5, middleId.length());
+		return Tool.NumberUtil.parseLong(Tool.StrUtil.concat(true, datePrefix, middleId));
 	}
 
 	/**
