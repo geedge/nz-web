@@ -362,7 +362,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 			publishMap.putAll(newParamMap);
 
 			// notify message
-			sysService.notifySysMessage(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.DASHBOARD_REPORT.getName(), JSONObject.toJSONString(publishMap));
+			sysService.notifySysMessageByComponentName(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.DASHBOARD_REPORT.getName(), JSONObject.toJSONString(publishMap));
 		}
 		if(Tool.CollUtil.isNotEmpty(visualDashboardList)) dashboardService.updateBatchById(visualDashboardList);
 

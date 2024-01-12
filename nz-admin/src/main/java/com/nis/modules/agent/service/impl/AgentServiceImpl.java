@@ -169,4 +169,20 @@ public class AgentServiceImpl extends ServiceImpl<AgentDao, Agent> implements Ag
 		agent.setDc(dc);
 		return agent;
 	}
+
+	@Override
+	public void syncAgentStateCache(String agentJsonStr) {
+		try {
+			// remove
+			LocalCacheManager.removeCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.AGENT_STATE_CACHE_KEY);
+			// add
+			TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.AGENT_STATE_CACHE_KEY);
+			Map<String, String> dataMap = JSONUtil.toBean(agentJsonStr, Map.class);
+			for (Map.Entry<String, String> entry : dataMap.entrySet()) {
+				cache.put(entry.getKey(), entry.getValue());
+			}
+		} catch (Exception e) {
+			log.error(e, "[syncAgentStateCache] [error]");
+		}
+	}
 }

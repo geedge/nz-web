@@ -608,7 +608,7 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 			publishMap.putAll(JSONObject.parseObject(dashboard.getParam().toString(), Map.class));
 
 			// notify message
-			sysService.notifySysMessage(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.DASHBOARD_REPORT.getName(), JSONObject.toJSONString(publishMap));
+			sysService.notifySysMessageByComponentName(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.DASHBOARD_REPORT.getName(), JSONObject.toJSONString(publishMap));
 		}
 	}
 
@@ -678,7 +678,7 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 			publishMap.putAll(newParamMap);
 
 			// notify message
-			sysService.notifySysMessage(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.DASHBOARD_REPORT.getName(), JSONObject.toJSONString(publishMap));
+			sysService.notifySysMessageByComponentName(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.DASHBOARD_REPORT.getName(), JSONObject.toJSONString(publishMap));
 		}
 	}
 
@@ -767,7 +767,7 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 			publishMap.putAll(JSONObject.parseObject(dashboard.getParam().toString(), Map.class));
 
 			// notify message
-			sysService.notifySysMessage(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.DASHBOARD_REPORT.getName(), JSONObject.toJSONString(publishMap));
+			sysService.notifySysMessageByComponentName(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.DASHBOARD_REPORT.getName(), JSONObject.toJSONString(publishMap));
 		}
 
 		// 复制dashboard 下的 charts

@@ -45,5 +45,6 @@ public interface AlertRuleService extends IService<AlertRuleEntity> {
 	 */
 	boolean isTaskInSched(AlertRuleEntity alertRule);
 
+    void syncAlertForStateCache(String alertForStateJsonStr);
 }
 

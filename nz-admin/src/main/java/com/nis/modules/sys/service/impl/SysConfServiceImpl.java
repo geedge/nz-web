@@ -215,7 +215,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
         if(ToolUtil.isEmpty(snmpTrapConf)||!StrUtil.equals(snmpTrapConf.getParamValue(),params.get(SNMP_TRAP_KEY))){
             // notify message
             String message = params.get(Constant.SYSCONFIG_SNMP_PORT_KEY);
-            sysService.notifySysMessage(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.SNMP_TRAP_PORT.getName(), message);
+            sysService.notifySysMessageByComponentName(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.SNMP_TRAP_PORT.getName(), message);
         }
 
         // timezone offset变更，更新 cronJob.timezone
@@ -493,7 +493,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
         this.saveOrUpdateBatch(map.values());
 
         // notify message
-        sysService.notifySysMessage(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.SYS_CONFIG_RELOAD.getName(), StrUtil.EMPTY);
+        sysService.notifySysMessageByComponentName(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.SYS_CONFIG_RELOAD.getName(), StrUtil.EMPTY);
 
         return map;
     }
@@ -786,7 +786,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
         }
 
         // notify message
-        sysService.notifySysMessage(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.SYS_CONFIG_RELOAD.getName(), StrUtil.EMPTY);
+        sysService.notifySysMessageByComponentName(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.SYS_CONFIG_RELOAD.getName(), StrUtil.EMPTY);
     }
 
     @Override

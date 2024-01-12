@@ -11,5 +11,7 @@ import com.nis.modules.asset.entity.AssetPing;
  */
 public interface AssetPingService extends IService<AssetPing> {
 
+    void syncAssetPingStateCache(String assetPingJsonStr);
+
 }
 

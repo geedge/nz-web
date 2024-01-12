@@ -109,6 +109,9 @@ public class JobConfig {
     @Value("${nezha.softwareLicenseStatusJobCron:0 0/5 * * * ? *}")
     private String softwareLicenseStatusJobCron;
 
+    @Value("${nezha.localCacheSyncJobCron:0/10 * * * * ?}")
+    private String localCacheSyncJobCron;
+
     @Autowired
     private Scheduler scheduler;
     @Autowired
@@ -138,6 +141,7 @@ public class JobConfig {
     private String sysBackFileSyncJob = "SYS_BACKUP_SYNC_JOB";
     private String sysLoginSessionCleanJob = "SYS_LOGIN_SESSION_CLEAN_JOB";
     private String softwareLicenseStatusJobName = "SOFTWARE_LICENSE_STATUS_JOB";
+    private String localCacheSyncJobName = "LOCAL_CACHE_SYNC_JOB";
 
     @Bean
     public JobDetail agentCronJobDetail() {
@@ -249,6 +253,11 @@ public class JobConfig {
         return JobBuilder.newJob(SoftwareLicenseStatusJob.class).withIdentity(JOB_NAME + softwareLicenseStatusJobName).storeDurably().build();
     }
 
+    @Bean
+    public JobDetail localCacheSyncJobDetail() {
+        return JobBuilder.newJob(LocalCacheSyncJob.class).withIdentity(JOB_NAME + localCacheSyncJobName).storeDurably().build();
+    }
+
     @PostConstruct
     public void init() throws SchedulerException {
         // agent 健康检查定时任务
@@ -316,6 +325,9 @@ public class JobConfig {
 
         // softwareLicenseStatusJob
         createCronScheduleJob(softwareLicenseStatusJobName, softwareLicenseStatusJobDetail(), Tool.StrUtil.emptyToDefault(softwareLicenseStatusJobCron, "0 0/5 * * * ? *"));
+
+        // LocalCacheSyncJob
+        createCronScheduleJob(localCacheSyncJobName, localCacheSyncJobDetail(), Tool.StrUtil.emptyToDefault(localCacheSyncJobCron, "0/10 * * * * ?"));
     }
     
     /**

@@ -9,5 +9,7 @@ import java.util.List;
 public interface RecordRuleEvalLogService extends IService<RecordRuleEvalLog>{
 	
 	List<RecordRuleEvalLog> queryListByRuleId(Integer id);
-	
+
+	void syncRecordRuleEvalLogCache(String ruleEvalLogJsonStr);
+
 }

@@ -4,12 +4,22 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONPath;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
+import com.nis.modules.agent.service.AgentService;
 import com.nis.modules.alert.backend.SNMPTrapReceiver;
+import com.nis.modules.alert.service.AlertRuleEvalLogService;
+import com.nis.modules.alert.service.AlertRuleService;
+import com.nis.modules.alert.service.RecordRuleEvalLogService;
+import com.nis.modules.asset.service.AssetPingService;
 import com.nis.modules.report.job.ReportJobManager;
+import com.nis.modules.sys.entity.SysComponent;
 import com.nis.modules.sys.job.SysBackJobManager;
+import com.nis.modules.sys.service.SysComponentService;
 import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.service.SysService;
 import org.quartz.SchedulerException;
@@ -40,6 +50,24 @@ public class SysController {
     @Autowired
     private SysBackJobManager sysBackJobManager;
 
+    @Autowired
+    private SysComponentService sysComponentService;
+
+    @Autowired
+    private AgentService agentService;
+
+    @Autowired
+    private AssetPingService assetPingService;
+
+    @Autowired
+    private AlertRuleService alertRuleService;
+
+    @Autowired
+    private AlertRuleEvalLogService alertRuleEvalLogService;
+
+    @Autowired
+    private RecordRuleEvalLogService recordRuleEvalLogService;
+
     @GetMapping("/appearance")
     public R queryAppearance() {
         Map<String, String> result = sysService.queryAppearance();
@@ -54,10 +82,16 @@ public class SysController {
      * @return
      */
     @PostMapping("/component/message")
-    public R processSystemMessage(@RequestBody Map<String, Object> params) {
+    public R processSystemMessage(@RequestHeader(name = "Authorization") String token, @RequestBody Map<String, String> params) {
+        // validate
+        SysComponent component = sysComponentService.getOne(new LambdaQueryWrapper<SysComponent>()
+                .eq(SysComponent::getComponent, Constant.NZ_WEB_COMPONENT_NAME)
+                .eq(SysComponent::getServerid, token));
+        ValidateUtils.is(component).notNull(RCode.ERROR);
+
         String topicName = Tool.MapUtil.getStr(params, "topic");
-        Object messageObj = Tool.MapUtil.get(params, "message", Object.class, "");
-        log.info("[processSystemMessage] [topicName: {}]", topicName);
+        String messageObj = Tool.MapUtil.get(params, "message", String.class, "");
+        log.info("[processSystemMessage] [topicName: {}] [message length: {}]", topicName, messageObj.length());
 
         Constant.SysTopicNameEnum instance = Constant.SysTopicNameEnum.getInstanceByName(topicName);
         if (ObjectUtil.isNull(instance)) {
@@ -128,6 +162,12 @@ public class SysController {
                     log.info("Sys-backup consumer message, finished");
                 }
                 case SYS_CONFIG_RELOAD -> sysConfService.reloadSysConfigToCache();
+                case SYNC_CACHE_ALERT_RULE_EVAL_LOG -> alertRuleEvalLogService.syncAlertRuleEvalLogCache(messageObj);
+                case SYNC_CACHE_RECORD_RULE_EVAL_LOG -> recordRuleEvalLogService.syncRecordRuleEvalLogCache(messageObj);
+                case SYNC_CACHE_ALERT_FOR_STATE -> alertRuleService.syncAlertForStateCache(messageObj);
+                case SYNC_CACHE_ASSET_PING -> assetPingService.syncAssetPingStateCache(messageObj);
+                case SYNC_CACHE_AGENT_STATE -> agentService.syncAgentStateCache(messageObj);
+                case SYNC_CACHE_SYSTEM_LOGIN -> sysService.syncSystemLoginCache(messageObj);
             }
         }
         return R.ok();

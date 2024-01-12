@@ -22,4 +22,6 @@ public interface AgentService extends IService<Agent> {
      */
     Agent queryAgentDetails(Integer id);
 
+    void syncAgentStateCache(String agentJsonStr);
+
 }

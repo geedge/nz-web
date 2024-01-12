@@ -1,11 +1,14 @@
 package com.nis.modules.sys.service.impl;
 
+import cn.hutool.cache.impl.TimedCache;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.JSONUtil;
+import com.nis.common.utils.LocalCacheManager;
 import com.nis.common.utils.Tool;
 import com.nis.modules.sys.dao.SysDao;
 import com.nis.modules.sys.entity.SysComponent;
@@ -14,11 +17,11 @@ import com.nis.modules.sys.service.SysComponentService;
 import com.nis.modules.sys.service.SysService;
 import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -59,11 +62,14 @@ public class SysServiceImpl extends ServiceImpl<SysDao, SysConfigEntity> impleme
     }
 
     @Override
-    public void notifySysMessage(String componentName, String topic, Object message) {
+    public void notifySysMessageByComponentName(String componentName, String topic, String message) {
         Tool.ThreadUtil.execAsync(() -> {
-            log.info("[notifySysMessage] [begin] [topic: {}]", topic);
+            log.info("[notifySysMessageByComponentName] [begin] [topic: {}] [message length: {}]", topic, message.length());
             StopWatch sw = new StopWatch();
             sw.start();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.AUTHORIZATION, Constant.SERVER_ID);
 
             // requestBody
             Map<Object, Object> requestBody = Tool.MapUtil.builder()
@@ -81,17 +87,53 @@ public class SysServiceImpl extends ServiceImpl<SysDao, SysConfigEntity> impleme
                 String host = component.getProtocol() + "://" + component.getHost() + ":" + component.getPort();
                 String url = String.format("%s%s", host, "/sys/component/message");
                 try {
-                    ResponseEntity<Map> entity = restTemplate.postForEntity(url, requestBody, Map.class);
+                    ResponseEntity<Map> entity = restTemplate.exchange(new URI(url), HttpMethod.POST, new HttpEntity(requestBody, headers), Map.class);
                     HttpStatusCode statusCode = entity.getStatusCode();
-                    log.info("[notifySysMessage] [url: {}] [responseStatus: {}] [result: {}]", url, statusCode.value(), Tool.JSONUtil.toJsonStr(entity));
+                    log.info("[notifySysMessageByComponentName] [url: {}] [responseStatus: {}] [result: {}]", url, statusCode.value(), Tool.JSONUtil.toJsonStr(entity));
                 } catch (Exception e) {
-                    log.error(e, "[notifySysMessage] [error] [url: {}] [message: {}]", url, message);
+                    log.error(e, "[notifySysMessageByComponentName] [error] [url: {}] [message: {}]", url, message);
                 }
             }
 
             sw.stop();
-            log.info("[notifySysMessage] [finshed] [Run time: {}]", sw.toString());
+            log.info("[notifySysMessageByComponentName] [finshed] [Run time: {}]", sw.toString());
         });
+    }
+
+    @Override
+    public void notifySysMessageByComponent(SysComponent component, String topic, String message) {
+        if (log.isDebugEnabled()) {
+            log.debug("[notifySysMessageByComponent] [begin] [topic: {}] [message length: {}]", topic, message.length());
+        }
+        StopWatch sw = new StopWatch();
+        sw.start();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.AUTHORIZATION, Constant.SERVER_ID);
+
+        // requestBody
+        Map<Object, Object> requestBody = Tool.MapUtil.builder()
+                .put("topic", topic)
+                .put("message", message)
+                .build();
+
+        // notify message
+        String host = component.getProtocol() + "://" + component.getHost() + ":" + component.getPort();
+        String url = String.format("%s%s", host, "/sys/component/message");
+        try {
+            ResponseEntity<Map> entity = restTemplate.exchange(new URI(url), HttpMethod.POST, new HttpEntity(requestBody, headers), Map.class);
+            HttpStatusCode statusCode = entity.getStatusCode();
+            if (log.isDebugEnabled()) {
+                log.debug("[notifySysMessageByComponent] [url: {}] [responseStatus: {}] [result: {}]", url, statusCode.value(), Tool.JSONUtil.toJsonStr(entity));
+            }
+        } catch (Exception e) {
+            log.error(e, "[notifySysMessageByComponent] [error] [url: {}] [message: {}]", url, message);
+        }
+
+        sw.stop();
+        if (log.isDebugEnabled()) {
+            log.debug("[notifySysMessageByComponent] [finshed] [Run time: {}]", sw.toString());
+        }
     }
 
     @Override
@@ -115,5 +157,27 @@ public class SysServiceImpl extends ServiceImpl<SysDao, SysConfigEntity> impleme
             log.warn("[processSysRestore] [serverId is invalid,not found web component] [serverId: {}]", serverId);
         }
         log.info("[processSysRestore] [finshed]");
+    }
+
+    @Override
+    public void syncSystemLoginCache(String sysLoginLockoutJsonStr) {
+        try {
+            // remove
+            LocalCacheManager.removeCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_LOGIN_LOCKOUT_CACHE_KEY);
+
+            TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_LOGIN_LOCKOUT_CACHE_KEY);
+            // add
+            Map<String, Map<String, String>> dataMap = JSONUtil.toBean(sysLoginLockoutJsonStr, Map.class);
+            for (Map.Entry<String, Map<String, String>> entry : dataMap.entrySet()) {
+                String key = entry.getKey();
+                Map<String, String> cacheObjcet = entry.getValue();
+                Long ttl = Long.valueOf(cacheObjcet.get("ttl"));
+                Long lastAccess = Long.valueOf(cacheObjcet.get("lastAccess"));
+                long timeout = (lastAccess + ttl) - System.currentTimeMillis();
+                cache.put(key, cacheObjcet.get("retry"), timeout);
+            }
+        } catch (Exception e) {
+            log.error(e, "[syncSystemLoginCache] [error]");
+        }
     }
 }

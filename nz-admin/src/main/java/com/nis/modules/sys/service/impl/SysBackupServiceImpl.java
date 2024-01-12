@@ -83,7 +83,7 @@ public class SysBackupServiceImpl implements SysBackupService {
         Map oldParamMap = JSONObject.parseObject(StrUtil.emptyToDefault(backupConfigJsonStr, StrUtil.EMPTY_JSON), LinkedHashMap.class);
         if (!oldParamMap.equals(params)) {
             // notify message
-            sysService.notifySysMessage(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.SYS_BACKUP.getName(), JSONObject.toJSONString(params));
+            sysService.notifySysMessageByComponentName(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.SYS_BACKUP.getName(), JSONObject.toJSONString(params));
         }
     }
 
@@ -343,7 +343,7 @@ public class SysBackupServiceImpl implements SysBackupService {
 
             // notify restore message
             String message = Constant.SERVER_ID;
-            sysService.notifySysMessage(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.SYS_RESTORE.getName(), message);
+            sysService.notifySysMessageByComponentName(Constant.NZ_WEB_COMPONENT_NAME, Constant.SysTopicNameEnum.SYS_RESTORE.getName(), message);
         } else {
             log.warn("[restore] [file not found] [filename: {}]", filename);
             throw new NZException(RCode.SYS_BACKUP_FILENAME_NOTEXIST);

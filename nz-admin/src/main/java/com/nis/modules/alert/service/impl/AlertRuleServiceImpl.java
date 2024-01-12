@@ -1,5 +1,6 @@
 package com.nis.modules.alert.service.impl;
 
+import cn.hutool.cache.impl.TimedCache;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.date.DateUtil;
@@ -19,6 +20,7 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.smartvalidate.utils.RegexUtil;
 import com.nis.common.utils.*;
 import com.nis.common.utils.Constant.AlertRuleType;
+import com.nis.modules.alert.backend.AlertContext;
 import com.nis.modules.alert.dao.AlertRuleDao;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.entity.AlertNotifyMethod;
@@ -49,6 +51,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -877,6 +880,30 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         }
         log.info("[isTaskInSched] [rule: {}] [schedEnable: {}] [inSched: {}]", rule.getId(), rule.getSchedEnable(), isTaskInSched);
         return isTaskInSched;
+    }
+
+    @Override
+    public void syncAlertForStateCache(String alertForStateJsonStr) {
+        try {
+            List<AlertRuleEntity> allRuleList = this.list(new LambdaQueryWrapper<AlertRuleEntity>().eq(AlertRuleEntity::getState, 1).in(AlertRuleEntity::getType, Tool.ListUtil.of(1, 2)));
+
+            Map dataMap = JSONUtil.toBean(alertForStateJsonStr, Map.class);
+            for (AlertRuleEntity rule : allRuleList) {
+                String key = AlertContext.getCacheKey(rule);
+                // remove
+                LocalCacheManager.removeCache(Constant.ALERT_CACHE_PREFIX, key);
+                // add
+                Map<String, String> ruleStateMap = (Map<String, String>) dataMap.get(rule.getId().toString());
+                if (MapUtil.isNotEmpty(ruleStateMap)) {
+                    TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(Constant.ALERT_CACHE_PREFIX, key);
+                    for (Map.Entry<String, String> entry : ruleStateMap.entrySet()) {
+                        cache.put(entry.getKey(), entry.getValue(), TimeUnit.SECONDS.toMillis(rule.getInr() + 5 * 60));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error(e, "[syncAlertForStateCache] [error]");
+        }
     }
 
 }

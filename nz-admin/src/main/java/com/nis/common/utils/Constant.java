@@ -1220,7 +1220,19 @@ public class Constant {
 
 		SYS_RESTORE("sys_restore"),
 
-		SYS_CONFIG_RELOAD("sys_config_reload");
+		SYS_CONFIG_RELOAD("sys_config_reload"),
+
+		SYNC_CACHE_ALERT_FOR_STATE("sync_cache_alert_for_state"),
+
+		SYNC_CACHE_ALERT_RULE_EVAL_LOG("sync_cache_alert_rule_eval_log"),
+
+		SYNC_CACHE_RECORD_RULE_EVAL_LOG("sync_cache_record_rule_eval_log"),
+
+		SYNC_CACHE_ASSET_PING("sync_cache_asset_ping"),
+
+		SYNC_CACHE_AGENT_STATE("sync_cache_agent_state"),
+
+		SYNC_CACHE_SYSTEM_LOGIN("sync_cache_system_login");
 
 		private String name;
 
