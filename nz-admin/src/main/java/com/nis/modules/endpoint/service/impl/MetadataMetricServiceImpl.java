@@ -8,9 +8,8 @@ import com.nis.common.utils.Tool;
 import com.nis.modules.agent.service.PromApiService;
 import com.nis.modules.endpoint.entity.MetadataMetric;
 import com.nis.modules.endpoint.service.MetadataMetricService;
+import com.nis.modules.endpoint.service.MonitorEndpointAgentMapService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -24,26 +23,22 @@ public class MetadataMetricServiceImpl implements MetadataMetricService {
 	private static Log logger = Log.get();
 
 	@Autowired
-	private RedisTemplate<String, String> redisTemplate;
-	@Autowired
 	private PromApiService promApiService;
+
+	@Autowired
+	private MonitorEndpointAgentMapService endpointAgentMapService;
 	
 	@Override
 	public List<MetadataMetric> metadata(Integer endpointId) throws IOException {
 		// 返回结果
 		List<MetadataMetric> metrics = new ArrayList<>();
 
-		Integer pid = null;
-		if (endpointId != null) {// endpointId 不为空则通过 redis key 获取prometheus id
-			HashOperations<String, String, String> opsForHash = redisTemplate.opsForHash();
-			String pidStr = opsForHash.get(Constant.REDIS_KEY_ENDPOINT_PROM, endpointId.toString());
-			pid = Tool.NumberUtil.parseInt(pidStr);
-		}
+		Integer agentId = endpointAgentMapService.getAgentId(endpointId);
 
 		String queryEndpoint = "{" + Constant.PROMSERVERUP_ENDPOINT_LABEL + "=\"" + endpointId + "\"}";
 
 		// 发送请求
-		JSONObject result = promApiService.targetsMetadata(null, pid.toString(), null, null, queryEndpoint, null, null);
+		JSONObject result = promApiService.targetsMetadata(null, Tool.StrUtil.toStringOrNull(agentId), null, null, queryEndpoint, null, null);
 		if (result != null && "success".equals(result.get("status"))) {
 			JSONArray array = (JSONArray) result.get("data");
 			JSONObject jsonObject;

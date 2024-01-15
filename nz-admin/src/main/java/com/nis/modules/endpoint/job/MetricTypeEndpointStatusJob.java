@@ -149,7 +149,7 @@ public class MetricTypeEndpointStatusJob extends QuartzJobBean {
         //  判断查询数据与缓存中变化的信息
         TimedCache<String, Object> metricsTypeEndpointStateCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
         if (BooleanUtil.negate(metricsTypeEndpointStateCache.isEmpty()) && counter % forceSync != 0) {
-            log.info("[updateEndpointStatus] [incrementally update the metrics endpoint state in redis]");
+            log.info("[updateEndpointStatus] [incrementally update the metrics endpoint state in local cache]");
             for (int i = updateMetricsEndpointStateList.size() - 1; i >= 0; i--) {
                 MonitorEndpointState endpointState = updateMetricsEndpointStateList.get(i);
                 if (metricsTypeEndpointStateCache.containsKey(endpointState.getEndpointId().toString())) {
@@ -166,8 +166,8 @@ public class MetricTypeEndpointStatusJob extends QuartzJobBean {
             }
         } else {
             log.info("[updateEndpointStatus] [Full update cache]");
-            Map<String, String> updateMetricsEndpointsInRedis = updateMetricsEndpointStateList.stream().collect(Collectors.toMap(state -> StrUtil.toString(state.getEndpointId()), state -> JSONUtil.toJsonStr(state)));
-            for (Map.Entry<String, String> entry : updateMetricsEndpointsInRedis.entrySet()) {
+            Map<String, String> updateMetricsEndpointsInCache = updateMetricsEndpointStateList.stream().collect(Collectors.toMap(state -> StrUtil.toString(state.getEndpointId()), state -> JSONUtil.toJsonStr(state)));
+            for (Map.Entry<String, String> entry : updateMetricsEndpointsInCache.entrySet()) {
                 metricsTypeEndpointStateCache.put(entry.getKey(), entry.getValue());
             }
         }
@@ -347,7 +347,7 @@ public class MetricTypeEndpointStatusJob extends QuartzJobBean {
 
     /**
      * update All Metric Type Endpoints To Down
-     * db & redis
+     * db & local cache
      */
     private void updateAllMetricTypeEndpointsToDown() {
         log.info("[updateAllMetricTypeEndpointsToDown] [begin]");
@@ -374,8 +374,8 @@ public class MetricTypeEndpointStatusJob extends QuartzJobBean {
 
             // cache
             TimedCache<String, Object> metricsTypeEndpointStateCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
-            Map<String, String> updateMetricsEndpointsInRedis = saveBatchEndpointStatusList.stream().collect(Collectors.toMap(state -> StrUtil.toString(state.getEndpointId()), state -> JSONUtil.toJsonStr(state)));
-            for (Map.Entry<String, String> entry : updateMetricsEndpointsInRedis.entrySet()) {
+            Map<String, String> updateMetricsEndpointsInCache = saveBatchEndpointStatusList.stream().collect(Collectors.toMap(state -> StrUtil.toString(state.getEndpointId()), state -> JSONUtil.toJsonStr(state)));
+            for (Map.Entry<String, String> entry : updateMetricsEndpointsInCache.entrySet()) {
                 metricsTypeEndpointStateCache.put(entry.getKey(), entry.getValue());
             }
         }

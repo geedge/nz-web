@@ -20,14 +20,13 @@ import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.entity.MonitorEventLog;
 import com.nis.modules.agent.service.AgentService;
 import com.nis.modules.agent.util.AgentUtil;
-import com.nis.modules.alert.service.AlertRuleService;
-import com.nis.modules.alert.service.AlertSeverityService;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.asset.service.DcService;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.entity.MonitorEndpointConfig;
 import com.nis.modules.endpoint.entity.MonitorEndpointState;
+import com.nis.modules.endpoint.service.MonitorEndpointAgentMapService;
 import com.nis.modules.endpoint.service.MonitorEndpointStateService;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
@@ -37,7 +36,6 @@ import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
@@ -66,12 +64,6 @@ public class AgentConfigUtil {
 	private DcService dcService;
 
 	@Autowired
-	private RedisTemplate redisTemplate;
-
-	@Autowired
-	private AlertRuleService ruleService;
-
-	@Autowired
 	private AgentService agentService;
 
 	@Autowired
@@ -81,13 +73,13 @@ public class AgentConfigUtil {
 	private SysConfService sysConfService;
 
 	@Autowired
-	private AlertSeverityService alertSeverityService;
-
-	@Autowired
 	private MonitorModuleService monitorModuleService;
 
 	@Autowired
 	private MonitorEndpointStateService endpointStateService;
+
+	@Autowired
+	private MonitorEndpointAgentMapService endpointAgentMapService;
 
 	/**
 	 * 判断配置相关信息是否发生改变
@@ -1370,17 +1362,13 @@ public class AgentConfigUtil {
 	}
 
 	/**
-	 * 更新 redis 中 endpointid 和 agent id对应关系 endpoint_prom
+	 * update endpoint agent mapping
 	 *
-	 * @param endpointIdAndPromIdMap
+	 * @param endpointAgentMap
 	 */
-	public void updateEndpointPromInRedis(Map<Integer, Integer> endpointIdAndPromIdMap) {
-		// 先删后增
-		Map<String, String> tempStringMap = new LinkedHashMap<>();
-		endpointIdAndPromIdMap.forEach((k, v) -> tempStringMap.put(k.toString(), v.toString()));
-
-		redisTemplate.delete(Constant.REDIS_KEY_ENDPOINT_PROM);
-		redisTemplate.opsForHash().putAll(Constant.REDIS_KEY_ENDPOINT_PROM, tempStringMap);
+	public void updateEndpointAgentMapping(Map<Integer, Integer> endpointAgentMap) {
+		// update
+		endpointAgentMapService.updateMapping(endpointAgentMap);
 	}
 
 	/**

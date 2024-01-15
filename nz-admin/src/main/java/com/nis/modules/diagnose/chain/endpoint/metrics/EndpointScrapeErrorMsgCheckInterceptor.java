@@ -4,15 +4,13 @@ package com.nis.modules.diagnose.chain.endpoint.metrics;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
-import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 import com.nis.modules.agent.service.PromApiService;
 import com.nis.modules.diagnose.chain.DiagnoseClient;
 import com.nis.modules.diagnose.chain.DiagnoseInterceptor;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
+import com.nis.modules.endpoint.service.MonitorEndpointAgentMapService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -31,14 +29,14 @@ public class EndpointScrapeErrorMsgCheckInterceptor implements DiagnoseIntercept
 
     private static final Log log = Log.get();
 
-    private static RedisTemplate redisTemplate;
-
     private static PromApiService promApiService;
 
+    private static MonitorEndpointAgentMapService endpointAgentMapService;
+
     @Autowired
-    public void initBean(RedisTemplate redisTemplate, PromApiService promApiService) {
-        EndpointScrapeErrorMsgCheckInterceptor.redisTemplate = redisTemplate;
+    public void initBean(PromApiService promApiService, MonitorEndpointAgentMapService endpointAgentMapService) {
         EndpointScrapeErrorMsgCheckInterceptor.promApiService = promApiService;
+        EndpointScrapeErrorMsgCheckInterceptor.endpointAgentMapService = endpointAgentMapService;
     }
 
     @Override
@@ -75,12 +73,11 @@ public class EndpointScrapeErrorMsgCheckInterceptor implements DiagnoseIntercept
      * @return
      */
     private Map<Object, Object> checkScrapeJobStatus(Integer endpointId) {
-        HashOperations<String, String, String> opsForHash = redisTemplate.opsForHash();
-        String agentId = opsForHash.get(Constant.REDIS_KEY_ENDPOINT_PROM, Tool.StrUtil.toString(endpointId));
-        log.info("[checkScrapeJobStatus] [get agent id from redis] [key: {}] [agentId: {}]", Constant.REDIS_KEY_ENDPOINT_PROM, agentId);
+        Integer agentId = endpointAgentMapService.getAgentId(endpointId);
+        log.info("[checkScrapeJobStatus] [get agent id] [endpointId: {}] [agentId: {}]", endpointId, agentId);
 
         // nz 系统内已存在 agent & endpoint 对应关系，通过查询 /target api 确认是否为 timeout 问题
-        JSONObject targets = promApiService.targets(null, agentId, null, null, Tool.ListUtil.empty(), null);
+        JSONObject targets = promApiService.targets(null, Tool.StrUtil.toStringOrNull(agentId), null, null, Tool.ListUtil.empty(), null);
         Object activeTargets = JSONPath.read(targets.toJSONString(), "data.activeTargets");
         List<JSONObject> activeTargetList = (List) Tool.ObjectUtil.defaultIfNull(activeTargets, Tool.ListUtil.empty());
 

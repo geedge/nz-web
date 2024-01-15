@@ -44,6 +44,7 @@ import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.entity.MonitorEndpointConfig;
 import com.nis.modules.endpoint.entity.MonitorEndpointImportEnum;
 import com.nis.modules.endpoint.entity.MonitorEndpointState;
+import com.nis.modules.endpoint.service.MonitorEndpointAgentMapService;
 import com.nis.modules.endpoint.service.MonitorEndpointConfigService;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.endpoint.service.MonitorEndpointStateService;
@@ -61,8 +62,6 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.shiro.ShiroException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
@@ -116,9 +115,6 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     private DataSourceTransactionManager dataSourceTransactionManager;
 
     @Autowired
-    private RedisTemplate redisTemplate;
-
-    @Autowired
     private SysUserStarredService starredService;
 
     @Autowired
@@ -144,6 +140,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     @Autowired
     private SoftwareAssetService softwareAssetService;
+
+    @Autowired
+    private MonitorEndpointAgentMapService endpointAgentMapService;
     
     @Override
     public MonitorEndpoint queryEndpointEntity(Integer id) {
@@ -181,11 +180,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             // 快照线程无法获取ShiroSession
         }
         // 获取agent信息
-        Map endpointProm = redisTemplate.opsForHash().entries(Constant.REDIS_KEY_ENDPOINT_PROM);
-        if(ToolUtil.isNotEmpty(endpointProm)) {
-            String agentId = ToolUtil.toStr(endpointProm.get("" + id));
-            if(StrUtil.isNotBlank(agentId))
-                endpoint.setAgent(agentService.getById(Integer.valueOf(agentId)));
+        Integer agentId = endpointAgentMapService.getAgentId(endpoint.getId());
+        if (agentId != null) {
+            endpoint.setAgent(agentService.getById(agentId));
         }
         return endpoint;
     }
@@ -684,7 +681,6 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         TimedCache<String, Object> metricsTypeEndpointStateCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
         TimedCache<String, Object> logTypeEndpointStateCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
         // 获取agent
-        Map endpointProm = redisTemplate.opsForHash().entries(Constant.REDIS_KEY_ENDPOINT_PROM);
         List<Agent> agentList = agentService.list();
         Map<Integer, Agent> agentMap = agentList.stream().collect(Collectors.toMap(Agent::getId, o -> o));
 
@@ -719,10 +715,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 endpointConfig.setLastUpdate(endpointStateByConfigId.getTime());
             }
             endpoint.setConfigs(configsByEndpointId);
-            if(ToolUtil.isNotEmpty(endpointProm)) {
-                String agentId = ToolUtil.toStr(endpointProm.get("" + endpoint.getId()));
-                if(StrUtil.isNotBlank(agentId))
-                    endpoint.setAgent(agentMap.get(Integer.valueOf(agentId)));
+            Integer agentId = endpointAgentMapService.getAgentId(endpoint.getId());
+            if (agentId != null) {
+                endpoint.setAgent(agentMap.get(agentId));
             }
         }
     }
@@ -1788,9 +1783,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         }
         // 获取 endpoint 对应的 agent
         Agent agent = null;
-        HashOperations<String, String, String> opsForHash = redisTemplate.opsForHash();
-        if(ToolUtil.isNotEmpty(opsForHash)){
-            agent = agentService.getById(opsForHash.get(Constant.REDIS_KEY_ENDPOINT_PROM, endpoint.getId().toString()));
+        Integer agentId = endpointAgentMapService.getAgentId(endpoint.getId());
+        if (agentId != null) {
+            agent = agentService.getById(agentId);
         }
 
         resultList.add(this.metricDiagnose(metricsConfigs, metricsState, agent, request));

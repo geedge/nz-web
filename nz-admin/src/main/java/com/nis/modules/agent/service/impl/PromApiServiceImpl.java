@@ -17,14 +17,13 @@ import com.nis.modules.agent.dao.AgentDao;
 import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.service.PromApiService;
 import com.nis.modules.agent.util.AgentUtil;
+import com.nis.modules.endpoint.service.MonitorEndpointAgentMapService;
 import com.nis.modules.sys.service.SysConfService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -35,10 +34,10 @@ public class PromApiServiceImpl extends ServiceImpl<AgentDao, Agent> implements 
     private static Log log = Log.get();
 
     @Autowired
-    private RedisTemplate redisTemplate;
+    private SysConfService sysConfService;
 
     @Autowired
-    private SysConfService sysConfService;
+    private MonitorEndpointAgentMapService endpointAgentMapService;
 
     @Override
     public String getPromApiProxyPathPrefix() {
@@ -71,8 +70,7 @@ public class PromApiServiceImpl extends ServiceImpl<AgentDao, Agent> implements 
         // endpointId 不为空 先根据 endpointId 获取
         Agent server = null;
         if (endpointId != null) {
-            HashOperations<String, String, String> opsForHash = redisTemplate.opsForHash();
-            String serverId = opsForHash.get(Constant.REDIS_KEY_ENDPOINT_PROM, endpointId.toString());
+            Integer serverId = endpointAgentMapService.getAgentId(endpointId);
             server = this.getById(serverId);
         }
 

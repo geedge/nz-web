@@ -97,16 +97,6 @@ public class Constant {
 	public static final List<Integer> ALERTMESSAGE_STATE;
 
 	/**
-	 * 记录endpoint和proserver 对应关系
-	 */
-	public static final String REDIS_KEY_ENDPOINT_PROM = "endpoint_prom";
-
-	/**
-	 * 支持告警的 agent id (prometheus)
-	 */
-	public static final String REDIS_KEY_SUPPORT_ALERT_AGENT_ID = "support_alert_agent_id";
-
-	/**
 	 * agent 配置下发 cortex/loke redis 下发标识
 	 */
 	public static final String REDIS_KEY_CORTEX_UPDATE = "cortex_update";

@@ -454,31 +454,31 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         boolean fedeEnabled = StrUtil.equals("1", sysConfService.getValue(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED));
 
         List<MonitorEndpoint> endpointList = new ArrayList<>();
-        Map<Integer, Integer> assetIdAndPromIdMap, endpointIdAndPromIdMap = new HashMap<>();
+        Map<Integer, Integer> assetAgentMap, endpointAgentMap = new HashMap<>();
         List<AssetAsset> blackboxAssetInfoList = assetService.getBlackboxAssetInfoList();
         // 开启联邦
         if (fedeEnabled) {
             String assetPingFrom = sysConfService.getValue(Constant.SYSCONFIG_KEY_ASSET_PING_FROM);
             // blackbox 源为 global
-            assetIdAndPromIdMap = StrUtil.equals("1", assetPingFrom) ? configUtil.consistentHashingAssignAsset(globalPromServers, blackboxAssetInfoList) : new HashMap<>(2);
+            assetAgentMap = StrUtil.equals("1", assetPingFrom) ? configUtil.consistentHashingAssignAsset(globalPromServers, blackboxAssetInfoList) : new HashMap<>(2);
         } else {
-            // 联邦关闭 global 直接进行 black box 采集  , endpoint 信息
-            assetIdAndPromIdMap = configUtil.consistentHashingAssignAsset(globalPromServers, blackboxAssetInfoList);
+            // 联邦关闭；global scrape black_box、endpoint
+            assetAgentMap = configUtil.consistentHashingAssignAsset(globalPromServers, blackboxAssetInfoList);
             endpointList = endpointService.getEnableMetricsEndpointInfoListForAgent();
             // 分配 endpoint
-            endpointIdAndPromIdMap = configUtil.consistentHashingAssignEndpoint(globalPromServers, endpointList);
-            // 保存 redis 中 endpointid 和　agent id对应关系
-            configUtil.updateEndpointPromInRedis(endpointIdAndPromIdMap);
+            endpointAgentMap = configUtil.consistentHashingAssignEndpoint(globalPromServers, endpointList);
+            // update endpoint agent mapping
+            configUtil.updateEndpointAgentMapping(endpointAgentMap);
         }
 
         // global config 配置文件处理 联邦
         for (int i = 0; i < globalPromServers.size(); i++) {
             Agent agent = globalPromServers.get(i);
 
-            List<Integer> assetIdListForThisAgent = assetIdAndPromIdMap.entrySet().stream().filter(entry -> agent.getId().equals(entry.getValue())).map(Map.Entry::getKey).collect(Collectors.toList());
+            List<Integer> assetIdListForThisAgent = assetAgentMap.entrySet().stream().filter(entry -> agent.getId().equals(entry.getValue())).map(Map.Entry::getKey).collect(Collectors.toList());
             List<AssetAsset> assetListForThisAgent = blackboxAssetInfoList.stream().filter(asset -> assetIdListForThisAgent.contains(asset.getId())).collect(Collectors.toList());
 
-            List<Integer> endpointIdListForThisAgent = endpointIdAndPromIdMap.entrySet().stream().filter(entry -> agent.getId().equals(entry.getValue())).map(Map.Entry::getKey).collect(Collectors.toList());
+            List<Integer> endpointIdListForThisAgent = endpointAgentMap.entrySet().stream().filter(entry -> agent.getId().equals(entry.getValue())).map(Map.Entry::getKey).collect(Collectors.toList());
             List<MonitorEndpoint> endpointListForThisAgent = endpointList.stream().filter(endpoint -> endpointIdListForThisAgent.contains(endpoint.getId())).collect(Collectors.toList());
 
             Map gloablAgentYmlMap = configUtil.generateGlobalYml(agent, globalPromServers, perDataCenterPromServers, assetListForThisAgent, endpointListForThisAgent, false, i == 0);
@@ -532,32 +532,30 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         // blackbox 所需 asset 信息
         List<AssetAsset> blackboxAssetInfoList = assetService.getBlackboxAssetInfoList();
 
-        // 维护 redis 中 endpoint id and agent id map
-        Map<Integer, Integer> updateRedisEndpointPromMap = new LinkedHashMap<>(16);
+        Map<Integer, Integer> endpointAgentMap = new LinkedHashMap<>(16);
         for (Map.Entry<Integer, List<Agent>> entry : dcIdAndAgents.entrySet()) {
             Integer dcId = entry.getKey();
-            List<Agent> agentListByDc = entry.getValue();
-            List<MonitorEndpoint> endpointListByDc = enableEndpointInfoList.stream().filter(endpoint -> dcId.equals(endpoint.getDc().getId())).collect(Collectors.toList());
+            List<Agent> agentList = entry.getValue();
+            List<MonitorEndpoint> endpointList = enableEndpointInfoList.stream().filter(endpoint -> dcId.equals(endpoint.getDc().getId())).collect(Collectors.toList());
 
-            // endpoint id 和 promerver id 对应 map
-            Map<Integer, Integer> endpointIdAndPromIdMap = configUtil.consistentHashingAssignEndpoint(agentListByDc, endpointListByDc);
-
+            // 数据中心下 endpoint & agent 关系映射
+            Map<Integer, Integer> endpointAgentMapForDc = configUtil.consistentHashingAssignEndpoint(agentList, endpointList);
 
             // per-datacenter 支持 asset ping job
-            List<AssetAsset> assetListByDc = blackboxAssetInfoList.stream().filter(asset -> dcId.equals(asset.getDcId())).collect(Collectors.toList());
-            Map<Integer, Integer> assetIdAndPromIdMap = new HashMap<>();
+            List<AssetAsset> assetList = blackboxAssetInfoList.stream().filter(asset -> dcId.equals(asset.getDcId())).collect(Collectors.toList());
+            Map<Integer, Integer> assetAgentMapForDc = new HashMap<>();
             String assetPingFrom = sysConfService.getValue(Constant.SYSCONFIG_KEY_ASSET_PING_FROM);
             if (StrUtil.equals("2", assetPingFrom)) {
-                assetIdAndPromIdMap = configUtil.consistentHashingAssignAsset(agentListByDc, assetListByDc);
+                assetAgentMapForDc = configUtil.consistentHashingAssignAsset(agentList, assetList);
             }
 
             // 生成 per-datacenter 配置信息,并下发配置
-            this.updatePerDatacenterYml(agentListByDc, endpointListByDc, endpointIdAndPromIdMap, assetListByDc, assetIdAndPromIdMap, globalPromServers);
+            this.updatePerDatacenterYml(agentList, endpointList, endpointAgentMapForDc, assetList, assetAgentMapForDc, globalPromServers);
 
-            updateRedisEndpointPromMap.putAll(endpointIdAndPromIdMap);
+            endpointAgentMap.putAll(endpointAgentMapForDc);
         }
-        // 保存 redis 中 endpointid 和　agent id对应关系
-        configUtil.updateEndpointPromInRedis(updateRedisEndpointPromMap);
+        // update endpoint agent mapping
+        configUtil.updateEndpointAgentMapping(endpointAgentMap);
     }
 
     /**
