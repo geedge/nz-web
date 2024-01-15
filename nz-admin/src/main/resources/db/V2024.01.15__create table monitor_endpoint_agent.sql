@@ -14,4 +14,9 @@ CREATE TABLE `monitor_endpoint_agent`  (
     PRIMARY KEY (`endpoint_id`) USING BTREE
 ) ENGINE = InnoDB ROW_FORMAT = Dynamic;
 
+-- ----------------------------
+-- 触发一次配置下发
+-- ----------------------------
+UPDATE monitor_event_log SET counter = counter + 1 WHERE `event` = "prometheus";
+
 SET FOREIGN_KEY_CHECKS = 1;
