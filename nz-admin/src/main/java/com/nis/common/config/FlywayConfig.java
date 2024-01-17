@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Configuration
-@DependsOn(value = {"dataSourceConfig", "redisConfig"})
+@DependsOn(value = {"dataSourceConfig"})
 public class FlywayConfig implements ApplicationContextAware {
 
     private static final Log log = Log.get();

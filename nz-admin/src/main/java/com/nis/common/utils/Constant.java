@@ -97,10 +97,10 @@ public class Constant {
 	public static final List<Integer> ALERTMESSAGE_STATE;
 
 	/**
-	 * agent 配置下发 cortex/loke redis 下发标识
+	 * agent 配置下发中 cortex/loke 组件更新标识
 	 */
-	public static final String REDIS_KEY_CORTEX_UPDATE = "cortex_update";
-	public static final String REDIS_KEY_LOKI_UPDATE = "loki_update";
+	public static final String CACHE_KEY_CORTEX_UPDATE = "cortex_update";
+	public static final String CACHE_KEY_LOKI_UPDATE = "loki_update";
 
 	/**
 	 * prometheus query range 代理接口 限制查询最大条数
@@ -1144,9 +1144,12 @@ public class Constant {
 
 	public static final String ENDPOINT_LOGS_STATE_CACHE_KEY = "endpoint_logs_state";
 
-	public static final String ASSET_TALON_STATUS_CACHE_KEY = "asset_talon_status";
+	public static final String ASSET_TALON_STATE_CACHE_KEY = "asset_talon_state";
 
 	public static final String AGENT_STATE_CACHE_KEY = "agent_state";
+
+	// cortex_update & loki_update
+	public static final String AGENT_COMPONENT_UPDATE_STATE_CACHE_KEY = "agent_component_update_state";
 
 	public static final String SYSCONFIG_KEY_IPAMSUBNET_IMPORT_HEADER="ipam_subnet_import_header";
 

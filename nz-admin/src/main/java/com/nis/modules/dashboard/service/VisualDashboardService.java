@@ -45,9 +45,9 @@ public interface VisualDashboardService extends IService<VisualDashboard> {
 
     VisualDashboard queryDashboardIncludeChartInfo(Integer dashboardId);
 
-    void addReportConfigInRedis(VisualDashboard dashboard);
+    void addReportConfigInCache(VisualDashboard dashboard);
 
-    void updateReportConfigInRedis(VisualDashboard oldDashboard, VisualDashboard newDashboard);
+    void updateReportConfigInCache(VisualDashboard oldDashboard, VisualDashboard newDashboard);
 
     // template dashboard , add assetInfo or endpointInfo chart
     void addLinkObjectInfoChart(VisualDashboard dashboard);

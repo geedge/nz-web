@@ -224,11 +224,11 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		if (StringUtils.isBlank(user.getPin())) {
 			user.setPin(null);
 		} else {
-			// 如果不是本人更改 自己密码的话，删除 redis 中用户session
+			// 如果不是本人更改 自己密码的话，删除用户 session
 			Long loginUserId = ShiroUtils.getUserId();
 			if (!loginUserId.equals(user.getId())) {
-				// 通过 userId 删除 redis 中记录的 登录信息
-				this.removeUserInfoInRedis(user.getId());
+				// remove user session
+				this.removeUserSession(user.getId());
 			}
 			SysUserEntity userEntity = this.getById(user.getId());
 			user.setPin(ShiroUtils.sha256(user.getPin(), userEntity.getSalt()));
@@ -263,8 +263,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		// 角色变更
 		sysUserRoleService.saveOrUpdate(userId, roleIds);
 
-		// 通过 userId 删除 redis 中记录的 登录信息
-		this.removeUserInfoInRedis(userId);
+		// remove user session
+		this.removeUserSession(userId);
 
 		// 变更 sys_api_key role_id  注：当前 用户只能关联一个角色
 		String updateRoleId = Arrays.asList(roleIds.split(",")).get(0);
@@ -272,12 +272,11 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 	}
 
 	/**
-	 * 通过 userId 删除 redis 中记录的 登录信息
+	 * remove user session
 	 *
 	 * @param userId
 	 */
-	private void removeUserInfoInRedis(Long userId) {
-		// 删除 redis 中的 token
+	private void removeUserSession(Long userId) {
 		List<String> removeKeys = new ArrayList<>();
 		try {
 			Map<String, SysUserEntity> shiroSessionInfoMap = ShiroUtils.getShiroSessionInfoMap();
@@ -288,7 +287,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 				}
 			}
 		} catch (Exception e) {
-            log.error(e, "[removeUserInfoInRedis] [error] [userId: {}]", userId);
+            log.error(e, "[removeUserSession] [error] [userId: {}]", userId);
 		} finally {
 			// 删除 关联key
 			if (CollectionUtils.isNotEmpty(removeKeys)) {
@@ -366,7 +365,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		}
 		if(Tool.CollUtil.isNotEmpty(visualDashboardList)) dashboardService.updateBatchById(visualDashboardList);
 
-        // 先查询，redis 中的 api key 同样需要删除
+        // 用户创建的 api key
         List<SysApiKey> apiKeyList = sysApiKeyService.list(new LambdaUpdateWrapper<SysApiKey>().in(SysApiKey::getCreateBy, idList));
         // 删除相关 sys_api_key
         sysApiKeyService.remove(new LambdaUpdateWrapper<SysApiKey>().in(SysApiKey::getCreateBy, idList));
@@ -377,7 +376,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		// sys user preference
 		sysUserPrefService.remove(new LambdaQueryWrapper<SysUserPreference>().in(SysUserPreference::getUid, idList));
 
-		// 删除 redis 中 用户token 信息
+		// session token list
 		List<String> removeKeys = new ArrayList<>();
 		List<Long> userIdList = new ArrayList<>(split.length);
 		for (int i = 0; i < split.length; i++) {

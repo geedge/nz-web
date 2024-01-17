@@ -110,9 +110,10 @@ public class ShiroUtils {
 		}
 		return userList;
 	}
-	
+
+
 	/**
-	 * 从 redis 中获取 token 和 用户信息
+	 * getActiveSessions
 	 *
 	 * @return
 	 */

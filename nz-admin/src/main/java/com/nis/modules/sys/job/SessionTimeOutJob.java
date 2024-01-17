@@ -44,7 +44,8 @@ public class SessionTimeOutJob extends QuartzJobBean {
 		if (BooleanUtil.negate(isLeader)) return;
 
 		Thread.currentThread().setName("SessionTimeOutJob");
-		// 获取redis中所有的token信息
+
+		// active sessions
 		Map<String, SysUserEntity> shiroSessionInfoMap = ShiroUtils.getShiroSessionInfoMap();
 		
 		// 获取所有登录用户的信息

@@ -74,7 +74,7 @@ public class TokenCheckFilter extends AccessControlFilter {
 		// 查询sys_api_key是否有该token记录
 		SysApiKey apiKey = sysApiKeyDao.selectOne(new QueryWrapper<SysApiKey>().lambda().eq(SysApiKey::getToken, token).and(
 						wrapper -> wrapper.ge(SysApiKey::getExpireAt, time).or().isNull(SysApiKey::getExpireAt)));
-		// 如果有的话则认证通过 同时将该值存放到redis里
+		// 如果有的话则认证通过 同时将该值存放到session里
 		if (ToolUtil.isEmpty(apiKey)) {
 			// 如果没有则 返回响应值
 			return false;

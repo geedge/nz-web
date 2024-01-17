@@ -195,7 +195,7 @@ public class AssetTalonStatusJob extends QuartzJobBean {
 
         Map<Integer, AssetTalonStatus> map = talonUpdateStatusList.stream().collect(Collectors.toMap(AssetTalonStatus::getAssetId, Function.identity()));
         //判断查询数据与缓存中变化的信息
-        TimedCache<String, Object> assetTalonStatusCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ASSET_TALON_STATUS_CACHE_KEY);
+        TimedCache<String, Object> assetTalonStatusCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ASSET_TALON_STATE_CACHE_KEY);
         if (BooleanUtil.negate(assetTalonStatusCache.isEmpty()) && counter % forceSync != 0) {
             for (int i = talonUpdateStatusList.size() - 1; i >= 0; i--) {
                 AssetTalonStatus assetTalonStatus = talonUpdateStatusList.get(i);

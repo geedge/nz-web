@@ -25,7 +25,6 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>21</java.version>
 		<junit.version>4.12</junit.version>
-		<jedis.version>2.9.0</jedis.version>
 		<druid.version>1.2.8</druid.version>
 		<mybatisplus.version>3.5.3.2</mybatisplus.version>
 		<mysql.version>8.0.27</mysql.version>
@@ -69,19 +68,10 @@
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-context-support</artifactId>
 		</dependency>
-<!-- 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-redis</artifactId>
-		</dependency> -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-configuration-processor</artifactId>
 			<optional>true</optional>
-		</dependency>
-		<dependency>
-			<groupId>redis.clients</groupId>
-			<artifactId>jedis</artifactId>
-			<version>${jedis.version}</version>
 		</dependency>
 		<!-- mysql驱动 -->
 		<dependency>

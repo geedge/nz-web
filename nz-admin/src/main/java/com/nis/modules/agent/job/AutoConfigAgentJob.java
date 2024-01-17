@@ -26,7 +26,6 @@ import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
@@ -46,9 +45,6 @@ import java.util.stream.Collectors;
 public class AutoConfigAgentJob extends QuartzJobBean {
 
     private static final Log log = Log.get();
-
-    @Autowired
-    private RedisTemplate redisTemplate;
 
     @Autowired
     private AgentConfigUtil configUtil;
@@ -92,7 +88,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
                         healthyAgents.add(agentInCache);
                     }
                 }
-                log.info("[AutoConfigAgentJob] [Get healthy agent list from redis] [size: {}]", healthyAgents.size());
+                log.info("[AutoConfigAgentJob] [Get healthy agent list from cache] [size: {}]", healthyAgents.size());
             } else {
                 healthyAgents = agentService.list(new LambdaQueryWrapper<Agent>().eq(Agent::getStatus, 1));
                 log.info("[AutoConfigAgentJob] [Get healthy agent list from db] [size: {}]", healthyAgents.size());
@@ -210,20 +206,6 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         ThreadUtil.execAsync(() -> {
             boolean cortexChangeFlag = configUtil.compareDataChanges("cortex");
             log.info("[setUpAgentConfig] [conf_event cortex state] [change: {}]", cortexChangeFlag);
-
-//            boolean ruleChangeFlag = configUtil.compareDataChanges("rule");
-//            log.info("[setUpAgentConfig] [conf_event rule state] [change: {}]", ruleChangeFlag);
-
-            // 是否更新 rule.yml 配置
-//            String alertConfUpdate = sysConfService.getValue("nz_alert_rule_eval_enable");
-//            Map alertYmlMap = configUtil.generateRuleYml();
-//            if (ruleChangeFlag && StrUtil.equals("0", StrUtil.emptyToDefault(alertConfUpdate, "1"))) {
-//                // 生成 alert.yml
-//                // 如果 cortex 没有变更 就只更新 rule
-//                if (!cortexChangeFlag) {
-//                    this.justUpdateRuleConf(alertYmlMap, healthyPromServers);
-//                }
-//            }
             if (cortexChangeFlag) {
                 this.updateCortexConf(healthyPromServers);
             }
@@ -655,9 +637,11 @@ public class AutoConfigAgentJob extends QuartzJobBean {
                 }
             }
 
-            // 配置下发后向 redis 记录配置更新  默认五分钟 单位 s
-            String cortexUpdateTimeout = Tool.ObjectUtil.defaultIfNull(sysConfService.getValue(Constant.SYSCONFIG_KEY_LOKI_UPDATE_TIMEOUT), "300");
-            redisTemplate.opsForValue().set(Constant.REDIS_KEY_LOKI_UPDATE, "1", Integer.valueOf(cortexUpdateTimeout), TimeUnit.SECONDS);
+            // 配置下发后向 local cahce 记录配置更新 默认五分钟 单位 s
+            String lokiUpdateTimeout = Tool.ObjectUtil.defaultIfNull(sysConfService.getValue(Constant.SYSCONFIG_KEY_LOKI_UPDATE_TIMEOUT), "300");
+
+            TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.AGENT_COMPONENT_UPDATE_STATE_CACHE_KEY);
+            cache.put(Constant.CACHE_KEY_LOKI_UPDATE, "1", TimeUnit.SECONDS.toMillis(Integer.valueOf(lokiUpdateTimeout)));
         });
     }
 
@@ -686,45 +670,6 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             }
         }
     }
-
-    /**
-     * prometheus cortex 都没有变更 ， 只更新 rule.yml
-     *
-     * @param alertYmlMap
-     * @param healthyPromServers
-     */
-    /*private void justUpdateRuleConf(Map alertYmlMap, List<Agent> healthyPromServers) {
-        // 先判断 redis 中是否存在 alert 告警标识
-        Boolean aBoolean = redisTemplate.hasKey(Constant.REDIS_KEY_SUPPORT_ALERT_AGENT_ID);
-        Integer supportAlertPromId = configUtil.getSupportAlertPromId(healthyPromServers);
-        Agent agent = agentService.getById(supportAlertPromId);
-
-
-       // 无论对象存储与否  全部由于 cortex 支持 rule
-        Map<String, Object> updateRuleConfigBody = new HashMap<>(2);
-        updateRuleConfigBody.put("rule", alertYmlMap);
-        // 告警标识不存在 则需要同时下发 cortex 配置
-        if (!aBoolean) {
-            List<Agent> globalPromServerList = healthyPromServers.stream().filter(agentEntity -> Constant.AgentType.GLOBAL.getValue().equals(agentEntity.getType())).collect(Collectors.toList());
-            Map cortexYml = configUtil.generateCortexYml(agent, globalPromServerList, true);
-            updateRuleConfigBody.put("config", cortexYml);
-        }
-        
-        String result = null;
-        String path = "/cortex/config";
-        try {
-        	result = AgentUtil.request(agent, HttpMethod.POST,path, null, updateRuleConfigBody, String.class);
-        } catch (RuntimeException e) {
-        	log.error(e,"request error,path:{},agent:{}",path,Tool.JSONUtil.toJsonStr(agent));
-        }
-        
-        log.debug("rule 更新请求返回结果 {}", result);
-        if (result == null) {
-            configUtil.updateAgentStatus(agent, 0);
-        } else {
-            configUtil.afterRequestApi(path, result, agent);
-        }
-    }*/
 
     /**
      * cortex 配置下发
@@ -773,9 +718,11 @@ public class AutoConfigAgentJob extends QuartzJobBean {
                 }
             }
 
-            // 配置下发后向 redis 记录配置更新  默认五分钟 单位 s
+            // 配置下发后向 local cahce 记录配置更新 默认五分钟 单位 s
             String cortexUpdateTimeout = Tool.ObjectUtil.defaultIfNull(sysConfService.getValue(Constant.SYSCONFIG_KEY_CORTEX_UPDATE_TIMEOUT), "300");
-            redisTemplate.opsForValue().set(Constant.REDIS_KEY_CORTEX_UPDATE, "1", Integer.valueOf(cortexUpdateTimeout), TimeUnit.SECONDS);
+
+            TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.AGENT_COMPONENT_UPDATE_STATE_CACHE_KEY);
+            cache.put(Constant.CACHE_KEY_CORTEX_UPDATE, "1", TimeUnit.SECONDS.toMillis(Integer.valueOf(cortexUpdateTimeout)));
         });
     }
 

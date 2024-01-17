@@ -10,6 +10,7 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.dashboard.service.VisualService;
 import com.nis.modules.dashboard.utils.DashboardConstant;
+import com.nis.modules.election.dao.LeaderElectionDao;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/visual")
@@ -26,9 +28,6 @@ public class VisualController {
 
 	@Autowired
 	private VisualService visualService;
-
-	@Autowired
-	private RedisLock redisLock;
 
 	/**
 	 * explore 快照
@@ -136,9 +135,12 @@ public class VisualController {
 			return R.error(RCode.DASHBOARD_TEMPLATE_SYNC_PARAM_ISNULL);
 
 		// get lock
+		LeaderElectionDao dao = LeaderElectionDao.getInstance();
+
 		String uuid = Tool.StrUtil.uuid();
+		dao.attemptLeadership(DashboardConstant.TEMPLATE_SYNC_LOCK_KEY, uuid, TimeUnit.SECONDS.toMillis(300));
 		try {
-			if (redisLock.lock(DashboardConstant.TEMPLATE_SYNC_LOCK_KEY, uuid, 300L)) {
+			if (dao.isLeader(DashboardConstant.TEMPLATE_SYNC_LOCK_KEY, uuid)) {
 				log.info("[syncTemplateDashboard] [Get lock and start synchronization template]");
 
 				// sync Template On dashboard
@@ -148,8 +150,11 @@ public class VisualController {
 				log.warn("[syncTemplateDashboard] [Failed to get lock and do not perform template synchronization]");
 				return R.error(RCode.DASHBOARD_TEMPLATE_SYNC_FAILED_GET_LOCK);
 			}
+		} catch (Exception e) {
+			log.error(e, "[syncTemplateDashboard] [error]");
+			throw new NZException(RCode.ERROR);
 		} finally {
-			redisLock.unlock(DashboardConstant.TEMPLATE_SYNC_LOCK_KEY, uuid);
+			dao.forceReElection(DashboardConstant.TEMPLATE_SYNC_LOCK_KEY, uuid);
 		}
 	}
 

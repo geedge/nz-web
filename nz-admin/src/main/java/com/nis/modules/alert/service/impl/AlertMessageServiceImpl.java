@@ -28,8 +28,8 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
     private AlertMessageDao alertMessageDao;
     @Autowired
     private AlertHandlerDao msgHandlerDao;
-	@Value("${redis.maxAlertMessageSize:10000}")
-    private Integer maxQueueLength;//redis队列长度
+	@Value("${cache.maxAlertMessageSize:10000}")
+    private Integer maxQueueLength;// 队列长度
 	
     @Override
     @Transactional(rollbackFor = Exception.class)

@@ -20,6 +20,7 @@ import org.springframework.scheduling.quartz.QuartzJobBean;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.List;
 
 /**
  * 系统组件 状态检查线程 1、更新当前组件的状态 a、当设置了host时，直接使用 host b、没有设置host时，通过socket 连接 数据库
@@ -41,10 +42,8 @@ public class SysComponentJob extends QuartzJobBean {
 	private String host;
 	@Value("${server.port}")
 	private Integer port;
-	@Value("${database.host}")
-	private String dbHost;
-	@Value("${database.port:3306}")
-	private Integer dbPort;
+	@Value("${database.url}")
+	private String databaseUrl;
 	@Value("${server.ssl.enabled:false}")
 	private boolean sslEnabled;
 
@@ -53,7 +52,9 @@ public class SysComponentJob extends QuartzJobBean {
 	protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
 		Thread.currentThread().setName("SysComponentJob");
 		// 获取本机ip
-		String localHost = Tool.StrUtil.isNotBlank(host) ? host : Tool.NetUtil.getLocalIPBySocket(dbHost, dbPort);
+		List<String> urlList = Tool.ListUtil.list(false, this.databaseUrl.split(","));
+		String[] urlArr = urlList.get(0).split(":");
+		String localHost = Tool.StrUtil.isNotBlank(host) ? host : Tool.NetUtil.getLocalIPBySocket(urlArr[0], Integer.valueOf(urlArr[1]));
 		String protocol = sslEnabled ? "https" : "http";
 		// 正确得到本机ip，更新 sys_component 表
 		if (Tool.StrUtil.isNotBlank(localHost)) {

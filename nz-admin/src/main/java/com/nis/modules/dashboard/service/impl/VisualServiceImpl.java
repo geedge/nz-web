@@ -1006,8 +1006,8 @@ public class VisualServiceImpl implements VisualService {
             updateDashboardObject.setUts(System.currentTimeMillis());
             dashboardService.updateById(updateDashboardObject);
 
-            // update Report Config In Redis
-            dashboardService.updateReportConfigInRedis(syncDashboard, updateDashboardObject);
+            // update Report Config In Cache
+            dashboardService.updateReportConfigInCache(syncDashboard, updateDashboardObject);
 
             // insert chart
             Map<Integer, Integer> groupIdMapping = new HashMap<>();

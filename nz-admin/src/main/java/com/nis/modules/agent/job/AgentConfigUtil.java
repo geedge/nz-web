@@ -121,66 +121,6 @@ public class AgentConfigUtil {
 	}
 
 	/**
-	 * 生成 rule.yml
-	 *
-	 * @return
-	 */
-//	public Map generateRuleYml() {
-//		log.debug("rule.yml 开始生成");
-//		// sys_config 配置表信息
-//		List<SysConfigEntity> configEntityList = sysConfService.list();
-//		Map<String, String> configMap = configEntityList.stream()
-//				.collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
-//
-//		List<AlertRuleEntity> alertRuleEntities = ruleService.list(new LambdaQueryWrapper<AlertRuleEntity>()
-//				.ne(AlertRuleEntity::getBuildIn, 1).eq(AlertRuleEntity::getState, 1));
-//		List<AlertSeverityConf> severityConfs = alertSeverityService.list();
-//		Map<Integer, String> alertSeverityIdAndNameMap = severityConfs.stream()
-//				.collect(Collectors.toMap(AlertSeverityConf::getId, AlertSeverityConf::getName));
-//
-//		List<Map> ruleList = new ArrayList<>();
-//		for (AlertRuleEntity entity : alertRuleEntities) {
-//			Map map = new LinkedHashMap(16);
-//			map.put("id", entity.getId());
-//			map.put("expr", ToolUtil.string2Json(entity.getExpr()));
-//			map.put("operator", entity.getOperator());
-//			// 以字符串方式替换 double 类型，保证不丢失精度
-//			map.put("threshold", entity.getThreshold() + "");
-//			map.put("last", entity.getLast());
-//
-//			String severityName = alertSeverityIdAndNameMap.get(entity.getSeverityId());
-//			map.put("severity_name", ToolUtil.string2Json(severityName));
-//			map.put("severity_id", entity.getSeverityId());
-//			map.put("summary", ToolUtil.string2Json(entity.getSummary()));
-//			map.put("description", ToolUtil.string2Json(entity.getDescription()));
-//			ruleList.add(map);
-//		}
-//
-//		Map params = new LinkedHashMap(4);
-//		// alert 方式实现 endpoint state -- 该方案不再使用，兼容未删除
-//		String endpointAlertPush = configMap.get(Constant.ENDPOINT_ALERT_PUSH);
-//		if (StrUtil.equals(endpointAlertPush, "1")) {
-//			params.put("endpointAlert", true);
-//		} else {
-//			params.put("endpointAlert", false);
-//		}
-//		params.put("ruleList", ruleList);
-//
-//		Map map = new HashMap();
-//		String content = "";
-//		try {
-//			Template template = TemplateUtil.stringToTemplate(configMap.get(Constant.SYSCONFIG_KEY_PROM_RULE_TMPL),
-//					Constant.SYSCONFIG_KEY_PROM_RULE_TMPL);
-//			content = FreeMarkerTemplateUtils.processTemplateIntoString(template, params);
-//			map = JSONObject.parseObject(content, LinkedHashMap.class, Feature.OrderedField);
-//		} catch (IOException | TemplateException | RuntimeException e) {
-//			log.error("rule 模板生成失败，模板内容:" + JSONObject.toJSONString(content), e);
-//		}
-//		log.debug("rule.yml 生成结束");
-//		return map;
-//	}
-
-	/**
 	 * 生成 cortex.yml
 	 *
 	 * @param agent
@@ -287,36 +227,6 @@ public class AgentConfigUtil {
 		log.debug("loki.yml 生成结束");
 		return map;
 	}
-
-	/**
-	 * 获取当前支持 alert 的 agent id , 如果获取失败 则获取 global 第一个 agent
-	 *
-	 * @param healthyAgents
-	 * @return
-	 */
-	/*public Integer getSupportAlertPromId(List<Agent> healthyAgents) {
-		Object supportAlertPromId = redisTemplate.opsForValue().get(Constant.REDIS_KEY_SUPPORT_ALERT_AGENT_ID);
-		supportAlertPromId = ToolUtil.isEmpty(supportAlertPromId) ? "" : supportAlertPromId;
-
-		// 当前支持 alert 的 agent ， 判断是否存在,不存在则重新 找一个 agent 下发配置
-		if (StrUtil.isNotEmpty(supportAlertPromId.toString())) {
-			Agent agentById = agentService.getById(supportAlertPromId.toString());
-			if (agentById == null || agentById.getStatus() != 1) {
-				supportAlertPromId = "";
-			}
-		}
-
-		// 第一个 健康的 gloabl cortex 支持 alert
-		if (StrUtil.isEmpty(supportAlertPromId.toString())) {
-			Agent supportAlertAgent = healthyAgents.stream()
-					.filter(agent -> Constant.AgentType.GLOBAL.getValue().equals(agent.getType()))
-					.sorted(Comparator.comparing(Agent::getId)).findFirst().orElse(null);
-			supportAlertPromId = supportAlertAgent.getId();
-			redisTemplate.opsForValue().set(Constant.REDIS_KEY_SUPPORT_ALERT_AGENT_ID,
-					supportAlertPromId.toString());
-		}
-		return Integer.valueOf(supportAlertPromId.toString());
-	}*/
 
 	/**
 	 * 组装 snmp.yml

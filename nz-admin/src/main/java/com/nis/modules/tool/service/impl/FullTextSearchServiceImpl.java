@@ -100,7 +100,7 @@ public class FullTextSearchServiceImpl implements FullTextSearchService {
             return new PageUtils(page);
         } else {
 
-            // TODO REDIS
+            // TODO CACHE
             return new PageUtils(null);
         }
     }

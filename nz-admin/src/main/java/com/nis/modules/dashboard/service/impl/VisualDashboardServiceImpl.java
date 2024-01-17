@@ -544,8 +544,8 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 		// add assetInfo or endpointInfo chart
 		this.addLinkObjectInfoChart(dashboard);
 
-		// add Report Config In Redis
-		this.addReportConfigInRedis(dashboard);
+		// add Report Config In Cache
+		this.addReportConfigInCache(dashboard);
 	}
 
 	/**
@@ -583,15 +583,15 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 	}
 
 	/**
-	 * add Report Config In Redis
+	 * add Report Config In Cache
 	 *
 	 * @param dashboard
 	 */
 	@Override
-	public void addReportConfigInRedis(VisualDashboard dashboard) {
+	public void addReportConfigInCache(VisualDashboard dashboard) {
 		String type = dashboard.getType();
 		if (StrUtil.equals(DashboardConstant.Type.TEMPLATE.getValue(), type)) {
-			log.warn("[addReportConfigInRedis] [template dashboard does not support report config] [dashboardId: {}] [type: {}]", dashboard.getId(), type);
+			log.warn("[addReportConfigInCache] [template dashboard does not support report config] [dashboardId: {}] [type: {}]", dashboard.getId(), type);
 			return;
 		}
 
@@ -600,7 +600,7 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 			reportEnable = JSONPath.read(dashboard.getParam().toString(), "report.enable").toString();
 		}
 
-		log.info("[addReportConfigInRedis] [publish config to redis] [enable: {}]", reportEnable);
+		log.info("[addReportConfigInCache] [publish config to nz-web component] [enable: {}]", reportEnable);
 		// publish report config when reportEnable is true
 		if (Tool.StrUtil.equalsIgnoreCase("true", StrUtil.nullToDefault(reportEnable, "false"))) {
 			Map publishMap = new HashMap(4);
@@ -643,21 +643,21 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 		// 修改
 		this.updateById(dashboard);
 
-		// update Report Config In Redis
-		this.updateReportConfigInRedis(oldDashboard, dashboard);
+		// update Report Config In Cache
+		this.updateReportConfigInCache(oldDashboard, dashboard);
 	}
 
 	/**
-	 * update Report Config In Redis
+	 * update Report Config In Cache
 	 *
 	 * @param oldDashboard
 	 * @param newDashboard
 	 */
 	@Override
-	public void updateReportConfigInRedis(VisualDashboard oldDashboard, VisualDashboard newDashboard) {
+	public void updateReportConfigInCache(VisualDashboard oldDashboard, VisualDashboard newDashboard) {
 		String type = newDashboard.getType();
 		if (StrUtil.equals(DashboardConstant.Type.TEMPLATE.getValue(), type)) {
-			log.warn("[updateReportConfigInRedis] [template dashboard does not support report config] [DashboardId: {}] [type: {}]", newDashboard.getId(), type);
+			log.warn("[updateReportConfigInCache] [template dashboard does not support report config] [DashboardId: {}] [type: {}]", newDashboard.getId(), type);
 			return;
 		}
 
@@ -671,7 +671,7 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 
 		boolean isUpdate = !oldParamMap.equals(newParamMap);
 
-		log.info("[updateReportConfigInRedis] [publish config to redis] [isUpdate: {}]", isUpdate);
+		log.info("[updateReportConfigInCache] [publish config to nz-web component] [isUpdate: {}]", isUpdate);
 		if (isUpdate) {
 			Map publishMap = new HashMap(4);
 			publishMap.put("dashboardId", newDashboard.getId());
@@ -1564,15 +1564,15 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 			dashboard.setWeight(oldDashboard.getWeight());
 			this.updateById(dashboard);
 
-			// update Report Config In Redis
-			this.updateReportConfigInRedis(oldDashboard, dashboard);
+			// update Report Config In Cache
+			this.updateReportConfigInCache(oldDashboard, dashboard);
 		} else {
 			params.put("save", true);
 			// insert
 			this.save(dashboard);
 
-			// add Report Config In Redis
-			this.addReportConfigInRedis(dashboard);
+			// add Report Config In Cache
+			this.addReportConfigInCache(dashboard);
 
 			// add assetInfo or endpointInfo chart
 			this.addLinkObjectInfoChart(dashboard);

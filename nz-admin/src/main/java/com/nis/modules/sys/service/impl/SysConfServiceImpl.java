@@ -343,9 +343,9 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
     /*@Transactional(rollbackFor = Exception.class)
     public void resetEnterData() {
         try {
-            // redis写入当前用户id
+            // cache 写入当前用户id
             Long userId = ShiroUtils.getUserId();
-            redisTemplate.opsForValue().set("reset",String.valueOf(userId),expire, TimeUnit.SECONDS);
+            cache.set("reset",String.valueOf(userId),expire, TimeUnit.SECONDS);
             // 删除用户输入的数据
             String jsonTables = this.getValue(Constant.RESET_TABLE_INFOS);
             if(StringUtils.isNotEmpty(jsonTables)) {
@@ -354,8 +354,8 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
                     this.baseMapper.clearData((String)table);
                 });
             }
-            // 删除redis中key=reset的数据
-            redisTemplate.delete("reset");
+            // 删除cache中key=reset的数据
+            cache.delete("reset");
             logger.info("nezha reset success");
         } catch (RuntimeException e) {
             logger.error("nezha reset fail",e);

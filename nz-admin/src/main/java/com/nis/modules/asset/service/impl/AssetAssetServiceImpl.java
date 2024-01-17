@@ -1029,7 +1029,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_PING).remove(assetId.toString());
 
         assetTalonStatusService.removeById(assetId);
-        LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ASSET_TALON_STATUS_CACHE_KEY).remove(assetId.toString());
+        LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ASSET_TALON_STATE_CACHE_KEY).remove(assetId.toString());
     }
 
     private void saveAssetRelData(AssetAsset asset) {
@@ -1136,7 +1136,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         // asset Talon
         assetTalonStatusService.removeByIds(removeAssetIdList);
-        TimedCache<String, Object> assetTalonCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ASSET_TALON_STATUS_CACHE_KEY);
+        TimedCache<String, Object> assetTalonCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ASSET_TALON_STATE_CACHE_KEY);
         tempIdListForRemoveCache.parallelStream().forEach(key -> assetTalonCache.remove(key));
 
         // field

@@ -47,7 +47,7 @@ import java.util.Map;
  *
  */
 @Configuration
-@DependsOn(value = { "mybatisPlusConfig", "redisConfig" })
+@DependsOn(value = {"mybatisPlusConfig"})
 public class ShiroConfig {
 
 	@Autowired

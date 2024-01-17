@@ -10,7 +10,7 @@ public class DashboardConstant {
     /**
      * dashboard 模板同步锁 key
      */
-    public static final String TEMPLATE_SYNC_LOCK_KEY = "dashboardTemplateSynchronizationLock";
+    public static final String TEMPLATE_SYNC_LOCK_KEY = "dashboard_template_sync_lock";
 
 
     /**

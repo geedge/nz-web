@@ -121,7 +121,7 @@ public class SysApiKeyServiceImpl extends ServiceImpl<SysApiKeyDao,SysApiKey> im
 				new LambdaQueryWrapper<SysApiKey>().in(SysApiKey::getId, Arrays.asList(ids.split(",")))
 						.eq(SysApiKey::getCreateBy, ShiroUtils.getUserId().intValue())
 		);
-		// 删除 redis 中 api key
+		// 删除 api key 对应的 shiro session
 		List<String> tokens = sysApiKeys.stream().map(k -> k.getToken()).collect(Collectors.toList());
 		ShiroUtils.deleteSession(tokens);
 

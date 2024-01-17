@@ -22,6 +22,7 @@ import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.modules.vsys.backend.VsysTaskConfigThread;
 import com.nis.setup.entity.SetupEntity;
+import com.nis.setup.entity.SystemEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
@@ -145,17 +146,30 @@ public class SetupRunner implements CommandLineRunner{
 		if(file.exists()) {
 			log.info("start inited setup");
 			String jsonStr = Tool.FileUtil.readUtf8String(file);
-	        SetupEntity setupEntity = Tool.JSONUtil.toBean(jsonStr, SetupEntity.class);
-			sysConfService.updateValueByKey("alert_api",setupEntity.getSystem().getAlertPath()==null ? "":setupEntity.getSystem().getAlertPath());
-			sysConfService.updateValueByKey("prometheus_federation_enabled",setupEntity.getSystem().getFederationEnabled());
-	        log.info("update db config");
-	        SysUserEntity sysUser =  sysUserService.getById(adminId);
-	        sysUser.setId(Long.parseLong(adminId));
-	        sysUser.setUsername(setupEntity.getSystem().getUsername());
-	        sysUser.setPin(ShiroUtils.sha256(setupEntity.getSystem().getPin(), sysUser.getSalt()));
-	        log.info("update admin user");
-	        sysUserService.updateById(sysUser);
-	        Tool.FileUtil.del(file);//删除临时配置文件
+			SetupEntity setupEntity = Tool.JSONUtil.toBean(jsonStr, SetupEntity.class);
+			// adminUser
+			SysUserEntity adminUser = setupEntity.getAdminUser();
+			SysUserEntity sysUser = sysUserService.getById(adminId);
+			sysUser.setId(Long.parseLong(adminId));
+			sysUser.setUsername(adminUser.getUsername());
+			sysUser.setPin(ShiroUtils.sha256(adminUser.getPin(), sysUser.getSalt()));
+			sysUserService.updateById(sysUser);
+			log.info("update admin user");
+
+			// system
+			SystemEntity system = setupEntity.getSystem();
+			Map<String, String> updateSysConfMap = Tool.MapUtil.newHashMap();
+			updateSysConfMap.put("timezone", system.getTimezone());
+			updateSysConfMap.put("language", system.getLanguage());
+			updateSysConfMap.put("prometheus_federation_enabled", system.getFederationEnabled());
+			updateSysConfMap.put("asset_ping_from", system.getAsset_ping_from());
+			updateSysConfMap.put("asset_ping_interval", system.getAsset_ping_interval());
+			updateSysConfMap.put("default_scrape_interval", system.getDefault_scrape_interval());
+			updateSysConfMap.put("default_scrape_timeout", system.getDefault_scrape_timeout());
+			updateSysConfMap.put("snmp_trap_listen_port", system.getSnmp_trap_listen_port());
+			sysConfService.saveOrUpdateConfsBatch(updateSysConfMap);
+			log.info("update db config");
+			Tool.FileUtil.del(file);//删除临时配置文件
 		}
 		//配置文件
     	boolean absolutePath = Tool.FileUtil.isAbsolutePath(nezhaConfigPath);

@@ -64,7 +64,7 @@ public class RecordRuleServiceImpl extends ServiceImpl<RecordRuleDao, RecordRule
 	/**
 	 * record list max size
 	 */
-	@Value("${redis.maxRecordDataSize:100000}")
+	@Value("${cache.maxRecordDataSize:100000}")
 	private Long maxRecordSize;
 
 	@Override

@@ -42,7 +42,7 @@ public class SysInfoServiceImpl implements SysInfoService {
 
         resultMap.put("nezha", sysVersionMap);
 
-        // 2. 组件版本信息  mariaDB redis prometheus
+        // 2. 组件版本信息  mariaDB prometheus
         List<Map> componentVersionInfoList = new ArrayList<>();
 
         // ① mariaDB version
@@ -52,27 +52,13 @@ public class SysInfoServiceImpl implements SysInfoService {
         componentVersion.put("version", dataBasesVersion);
         componentVersionInfoList.add(componentVersion);
 
-        // ② redis version
-        // Object redisVersion = redisTemplate.execute(new RedisCallback<String>() {
-        //     @Override
-        //     public String doInRedis(RedisConnection connection) throws DataAccessException {
-        //         RedisServerCommands redisServerCommands = connection.serverCommands();
-        //         Properties info = redisServerCommands.info();
-        //         return info.get("redis_version").toString();
-        //     }
-        // });
-        // componentVersion = new HashMap(4);
-        // componentVersion.put("name", "Redis");
-        // componentVersion.put("version", redisVersion.toString());
-        // componentVersionInfoList.add(componentVersion);
-
-        // ③ prometheus version 随机获取可用 agent
+        // ② prometheus version 随机获取可用 agent
         List<Agent> healthyAgentList = agentDao.selectList(new QueryWrapper<Agent>().lambda().eq(true, Agent::getStatus, 1));
         if (CollectionUtils.isNotEmpty(healthyAgentList)) {
             Agent server = healthyAgentList.get(RandomUtils.nextInt(0, healthyAgentList.size()));
             String path = "/prometheus/proxy/api/v1/status/buildinfo";
             try {
-            	String result = AgentUtil.requestGet(server,path, null, String.class);
+                String result = AgentUtil.requestGet(server, path, null, String.class);
                 R resultObj = JSONObject.parseObject(result, R.class);
                 if (RCode.SUCCESS.getCode().equals((Integer) resultObj.get("code"))) {
                     Object data = resultObj.get("data");

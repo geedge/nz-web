@@ -18,7 +18,6 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
 import java.util.*;
@@ -33,8 +32,6 @@ public class AgentHealthCheckJob extends QuartzJobBean {
 	private AgentService agentService;
 	@Autowired
 	private SysConfService sysConfService;
-	@Autowired
-	private RedisTemplate redisTemplate;
 	private static ExecutorService exec = Executors.newCachedThreadPool();
 
 	// 计数器，每 forceSync 个周期 执行一次强制执行
@@ -120,17 +117,16 @@ public class AgentHealthCheckJob extends QuartzJobBean {
 										// 认证失败
 										agent.setStatus(-1);
 									} else {
+										TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.AGENT_COMPONENT_UPDATE_STATE_CACHE_KEY);
 										// 状态不为 down ，继续判断 可用状态
 										if (unavailable.equals(cortexState)) {
-											Boolean cortexUpdateExist = redisTemplate
-													.hasKey(Constant.REDIS_KEY_CORTEX_UPDATE);
+											Boolean cortexUpdateExist = cache.containsKey(Constant.CACHE_KEY_CORTEX_UPDATE);
 											// 返回为 UNAVAILABLE 但不存在更新标识，认为其不可用
 											if (!cortexUpdateExist)
 												agent.setStatus(0);
 										}
 										if (unavailable.equals(lokiState)) {
-											Boolean lokiUpdateExist = redisTemplate
-													.hasKey(Constant.REDIS_KEY_LOKI_UPDATE);
+											Boolean lokiUpdateExist = cache.containsKey(Constant.CACHE_KEY_LOKI_UPDATE);
 											// 返回为 UNAVAILABLE 但不存在更新标识，认为其不可用
 											if (!lokiUpdateExist)
 												agent.setStatus(0);

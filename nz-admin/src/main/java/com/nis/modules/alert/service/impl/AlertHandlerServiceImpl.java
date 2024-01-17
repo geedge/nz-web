@@ -82,7 +82,7 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	@Autowired
 	private FullTextSearchService fullTextSearchService;
 
-	@Value("${redis.maxQueueLength:100}")
+	@Value("${cache.maxQueueLength:100}")
     private Long maxQueueLength;// cache 队列长度
 	/**
 	 * alert message 超时时间
