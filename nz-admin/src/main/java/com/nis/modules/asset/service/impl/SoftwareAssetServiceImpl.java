@@ -1,20 +1,40 @@
 package com.nis.modules.asset.service.impl;
 
-import cn.hutool.core.lang.Opt;
-import cn.hutool.core.net.url.UrlBuilder;
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONArray;
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
-import cn.hutool.log.Log;
+import java.net.URI;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
+
 import com.alibaba.fastjson.JSONPath;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.*;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.Query;
+import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.asset.dao.SoftwareAssetDao;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.SoftwareAccSession;
@@ -27,17 +47,15 @@ import com.nis.modules.asset.service.SoftwareTypeService;
 import com.nis.modules.sys.service.LicenseManagementService;
 import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 
-import java.net.URI;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
+import cn.hutool.core.lang.Opt;
+import cn.hutool.core.net.url.UrlBuilder;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
+import cn.hutool.log.Log;
 
 /**
  * Software Asset Service Implement
@@ -168,6 +186,13 @@ public class SoftwareAssetServiceImpl extends ServiceImpl<SoftwareAssetDao, Soft
         if (ObjectUtil.isNull(id)) {
             softwareAsset.setCid(ShiroUtils.getUserId().intValue());
             softwareAsset.setCts(System.currentTimeMillis());
+            softwareAsset.setConcurrency(null);
+            softwareAsset.setDateExpires(null);
+            softwareAsset.setDateIssued(null);
+            softwareAsset.setLogins(null);
+            softwareAsset.setLastScanTs(null);
+            softwareAsset.setStatus(null);
+            softwareAsset.setLastScanMsg(null);
         } else {
             SoftwareAsset tempSoftwareAssetForJudge = this.getById(id);
             if (ObjectUtil.isNull(tempSoftwareAssetForJudge)) {
@@ -346,6 +371,7 @@ public class SoftwareAssetServiceImpl extends ServiceImpl<SoftwareAssetDao, Soft
             log.error(e, "[updateTSGLicenseStatus] [error] [said: {}]", said);
             // 未知错误（网络无法访问）
             softwareAsset.setStatus(2);
+            softwareAsset.setLastScanMsg(Tool.StrUtil.subWithLength(e.getMessage(), 0, 256));
         }
 
         // last_scan_ts
@@ -377,8 +403,9 @@ public class SoftwareAssetServiceImpl extends ServiceImpl<SoftwareAssetDao, Soft
      *
      * @param softwareAsset
      * @return
+     * @throws Exception 
      */
-    private String requestLicenseApi(SoftwareAsset softwareAsset) {
+    private String requestLicenseApi(SoftwareAsset softwareAsset) throws Exception {
         JSONObject softwareAssetParam = JSONUtil.parseObj(StrUtil.utf8Str(softwareAsset.getParams()));
         JSONArray connectorAttributeKeys = softwareAssetParam.getJSONArray("connectorAttributeKeys");
         connectorAttributeKeys = ObjectUtil.defaultIfNull(connectorAttributeKeys, new JSONArray());
@@ -400,25 +427,17 @@ public class SoftwareAssetServiceImpl extends ServiceImpl<SoftwareAssetDao, Soft
         }
 
         HttpEntity httpEntity = new HttpEntity(headers);
-
         String urlStr = UrlBuilder.ofHttp(url).toString();
 
         // 发送 请求
-        ResponseEntity<String> responseEntity = null;
-        try {
-            responseEntity = restTemplate.exchange(new URI(urlStr), HttpMethod.GET, httpEntity, String.class);
-        } catch (Exception e) {
-            log.error(e, "[requestLicenseApi] [error] [url: {}]", urlStr);
-        }
-
+        ResponseEntity<String> responseEntity = restTemplate.exchange(new URI(urlStr), HttpMethod.GET, httpEntity, String.class);
         Integer getStatusCodeValue = Opt.ofNullable(responseEntity).map(ResponseEntity::getStatusCodeValue).get();
         String responseBody = Opt.ofNullable(responseEntity).map(ResponseEntity::getBody).get();
-
         log.info("[requestLicenseApi] [url: {}] [responseStatus: {}] [body: {}]", urlStr, getStatusCodeValue, responseBody);
-        if (Tool.ObjectUtil.equal(HttpStatus.OK.value(), getStatusCodeValue)) {
-            return responseBody;
+        if (!Tool.ObjectUtil.equal(HttpStatus.OK.value(), getStatusCodeValue)) {
+            throw new NZException(getStatusCodeValue.toString());
         }
-        return StrUtil.EMPTY;
+        return responseBody;
     }
 
     /**
@@ -505,6 +524,7 @@ public class SoftwareAssetServiceImpl extends ServiceImpl<SoftwareAssetDao, Soft
         } catch (Exception e) {
             log.error(e, "[updateNZLicenseStatus] [error] [said: {}]", said);
             softwareAsset.setStatus(2);
+            softwareAsset.setLastScanMsg(Tool.StrUtil.subWithLength(e.getMessage(), 0, 256));
         }
         // last_scan_ts
         softwareAsset.setLastScanTs(System.currentTimeMillis());
@@ -566,6 +586,7 @@ public class SoftwareAssetServiceImpl extends ServiceImpl<SoftwareAssetDao, Soft
         } catch (Exception e) {
             log.error(e, "[updateCMLicenseStatus] [error] [said: {}]", said);
             softwareAsset.setStatus(2);
+            softwareAsset.setLastScanMsg(Tool.StrUtil.subWithLength(e.getMessage(), 0, 256));
         }
         // last_scan_ts
         softwareAsset.setLastScanTs(System.currentTimeMillis());

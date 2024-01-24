@@ -110,6 +110,11 @@ public class SoftwareAsset implements Serializable {
      * 最后扫描时间,单位：ms
      */
     private Long lastScanTs;
+    
+    /**
+     * 最后一次扫描错误信息
+     */
+    private String lastScanMsg;
 
 
     @TableField(exist = false)

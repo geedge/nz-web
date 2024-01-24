@@ -21,6 +21,7 @@
         <result property="uts" column="uts"/>
         <result property="uid" column="uid"/>
         <result property="lastScanTs" column="last_scan_ts"/>
+        <result property="lastScanMsg" column="last_scan_msg"/>
 
         <association property="asset" columnPrefix="ass_" javaType="com.nis.modules.asset.entity.AssetAsset">
             <result property="id" column="id"/>
