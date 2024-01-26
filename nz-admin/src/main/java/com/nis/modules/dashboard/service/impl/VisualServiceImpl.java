@@ -77,7 +77,12 @@ public class VisualServiceImpl implements VisualService {
      */
     @Value("${dashboard.snapshot.timeout:300000}")
     private Integer timeout;
-
+    
+    @Value("${dashboard.snapshot.chrome.option:--headless,--disable-cache,--disable-dev-shm-usage,--no-sandbox,--window-size=1920x1080,--lang=zh-CN.UTF-8}")
+    private String[] chromeOption;
+    
+    @Value("${dashboard.snapshot.chrome.path:./lib/chrome-linux64/chrome}")
+    private String chromePath;
     @Autowired
     private SysI18nService sysI18nService;
 
@@ -656,17 +661,10 @@ public class VisualServiceImpl implements VisualService {
      */
     private ChromeDriver createChromeDriver() {
         final var chromeOptions = new ChromeOptions();
-        chromeOptions.addArguments(
-                "--headless",
-                "--disable-cache",
-                "--disable-dev-shm-usage",
-                "--no-sandbox",
-                "--window-size=1920x1080",
-                "--lang=zh-CN.UTF-8"
-        );
-        chromeOptions.setBinary("./lib/chrome-linux64/chrome");
-
+        chromeOptions.addArguments(chromeOption);
+        chromeOptions.setBinary(chromePath);
         ChromeDriver chromeDriver = new ChromeDriver(chromeOptions);
+        log.info("chrome options: {}", chromeOptions.toString());
         return chromeDriver;
     }
 
