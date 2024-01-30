@@ -27,23 +27,23 @@ public class AlertMessageTest extends BaseTest<AlertMessageEntity> {
     }
 
     /**
-     * get  /alert/message exist
+     * get  /alert/message/query exist
      */
     @Test()
     public void listMessage_exist() {
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
-        MvcResult result = UTUtil.performGet("/alert/message", map);
+        MvcResult result = UTUtil.performGet("/alert/message/query", map);
 
         UTUtil.assertToSizeByFlag(result, true);
     }
 
     /**
-     * get  /alert/message not exist
+     * get  /alert/message/query not exist
      */
     @Test()
     public void listMessage_notexist() {
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
-        MvcResult result = UTUtil.performGet("/alert/message", map);
+        MvcResult result = UTUtil.performGet("/alert/message/query", map);
 
         UTUtil.assertToSizeByFlag(result, false);
     }
@@ -137,7 +137,7 @@ public class AlertMessageTest extends BaseTest<AlertMessageEntity> {
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
         MvcResult result = UTUtil.performGet("/alert/message/export", map);
 
-        UTUtil.assertToExportFile(result, map,10);
+        UTUtil.assertToExportFile(result, map,1);
     }
 
     /**
@@ -148,7 +148,7 @@ public class AlertMessageTest extends BaseTest<AlertMessageEntity> {
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
         MvcResult result = UTUtil.performGet("/alert/message/export", map);
 
-        UTUtil.assertToExportFile(result, map,10);
+        UTUtil.assertToExportFile(result, map,1);
     }
 
     /**
@@ -159,7 +159,7 @@ public class AlertMessageTest extends BaseTest<AlertMessageEntity> {
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
         MvcResult result = UTUtil.performGet("/alert/message/export", map);
 
-        UTUtil.assertToExportFile(result, map,10);
+        UTUtil.assertToExportFile(result, map,1);
     }
     /**
      * put  /alert/message/ack

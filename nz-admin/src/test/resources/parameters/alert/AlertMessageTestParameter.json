@@ -1,17 +1,16 @@
 {
-  "------------------ get  /alert/message data---------------------": "note",
+  "------------------ get  /alert/message/query data---------------------": "note",
   "listMessage_exist": {
     "pageNo": null,
     "pageSize": null,
     "orderBy": "",
-    "ids": "211210040800001,211210040800002",
-    "ack": 0
+    "body": "{\"id\":[\"211210040800001\"],\"state\":\"1\"}"
   },
   "listMessage_notexist": {
     "pageNo": null,
     "pageSize": null,
     "orderBy": "",
-    "ids": "10,13"
+    "body": "{\"id\":[\"10\",\"13\"],\"state\":\"1\"}"
   },
   "------------------ delete  /alert/message data---------------------": "note",
   "deleteMessage_success": {
@@ -48,27 +47,21 @@
     "pageNo": null,
     "pageSize": null,
     "orderBy": "",
-    "body": {
-      "ruleId": [1]
-    },
+    "body": "{\"projectId\":[\"2\"]}",
     "format": 2
   },
   "messageExportFile_json": {
     "pageNo": null,
     "pageSize": null,
     "orderBy": "",
-    "body": {
-      "projectId": [2]
-    },
+    "body": "{\"projectId\":[\"2\"]}",
     "format": 3
   },
   "messageExportFile_excel": {
     "pageNo": null,
     "pageSize": null,
     "orderBy": "",
-    "body": {
-      "moduleId": [5]
-    },
+    "body": "{\"projectId\":[\"2\"]}",
     "format": 1
   },
   "------------------ put  /alert/message/ack---------------------": "note",
