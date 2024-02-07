@@ -63,4 +63,6 @@ public class Agent {
 
 	@TableField(exist = false)
 	private Dc dc;
+	
+	private Integer priority;
 }

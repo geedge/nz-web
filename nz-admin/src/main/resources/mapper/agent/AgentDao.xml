@@ -14,6 +14,7 @@
 	<result property="statusInfo" column="status_info"/>
 	<result property="token" column="token"/>
 	<result property="name" column="name"/>
+	<result property="priority" column="priority"/>
 
 	<association property="dc" columnPrefix="d_" javaType="com.nis.modules.asset.entity.Dc">
 		<id property="id" column="id"/>

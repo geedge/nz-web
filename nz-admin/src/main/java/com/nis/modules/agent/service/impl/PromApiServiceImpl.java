@@ -57,6 +57,7 @@ public class PromApiServiceImpl extends ServiceImpl<AgentDao, Agent> implements 
         Agent avaliableGlobalAgent = this.getOne(new QueryWrapper<Agent>().lambda()
                 .eq(Agent::getStatus, 1)
                 .eq(Agent::getType, type)
+                .orderByDesc(Agent::getPriority)
                 .orderByAsc(Agent::getId)
                 .last("limit 1"));
 
