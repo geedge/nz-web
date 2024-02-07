@@ -3,6 +3,7 @@ package com.nis.modules.agent.job;
 import cn.hutool.cache.impl.TimedCache;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.hash.MurmurHash;
 import cn.hutool.core.util.ObjectUtil;
@@ -397,105 +398,18 @@ public class AgentConfigUtil {
 		List<Map> jobList = new ArrayList<>();
 
 		// prometheus_metric
-		Map promMetricsMap = new LinkedHashMap();
-		promMetricsMap.put("job_name", "prometheus_metric");
-		promMetricsMap.put("metrics_path",sysConfService.getValue(Constant.CONFAGENT_PATH) + "/prometheus/proxy/metrics");
-		promMetricsMap.put("scheme",agent.getProtocol());
-		
-		List promMetricsStaticConfigList = new ArrayList();
-		Map promMetricsStaticConfig = new LinkedHashMap(2);
-		List<String> promMetricsTargets = new ArrayList();
-		promMetricsTargets.add(agent.getHost() + ":" + agent.getPort());
-		promMetricsStaticConfig.put("targets", promMetricsTargets);
-
-		Map labels = new LinkedHashMap(4);
-		Dc dc = dcService.getById(agent.getDcId());
-		labels.put("datacenter", ToolUtil.string2Json(dc.getName()));
-		labels.put("type", Constant.AgentType.getAgentType(agent.getType()).getName());
-		labels.put("application", "prometheus");
-		labels.put("agent_name",agent.getName());
-		labels.put("nz_agent_id",agent.getId());
-		promMetricsStaticConfig.put("labels", labels);
-		promMetricsStaticConfigList.add(promMetricsStaticConfig);
-		promMetricsMap.put("staticConfigList", promMetricsStaticConfigList);
-		promMetricsMap.put("instanceRelabel", true);
-
+		Map prometheusMetricJob = this.getPrometheusMetricJob(agent, true);
 		// agent metrics
-		Map agentMetricsMap = new LinkedHashMap();
-		agentMetricsMap.put("job_name", "agent_metrics");
-		agentMetricsMap.put("metrics_path",sysConfService.getValue(Constant.CONFAGENT_PATH) + "/actuator/prometheus");
-		agentMetricsMap.put("scheme",agent.getProtocol());
-		
-		List agentMetricsStaticConfigList = new ArrayList();
-		Map agentMetricsStaticConfig = new LinkedHashMap(2);
-		List agentMetricsTargets = new ArrayList();
-		agentMetricsTargets.add(String.format("%s:%s", agent.getHost(), agent.getPort()));
-		agentMetricsStaticConfig.put("targets", agentMetricsTargets);
-
-		Map agentLabels = new LinkedHashMap(4);
-		agentLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
-		agentLabels.put("type", Constant.AgentType.getAgentType(agent.getType()).getName());
-		agentLabels.put("application", "nz-agent");
-		agentLabels.put("agent_name", agent.getName());
-		agentLabels.put("nz_agent_id",agent.getId());
-		agentMetricsStaticConfig.put("labels", agentLabels);
-
-		agentMetricsStaticConfigList.add(agentMetricsStaticConfig);
-		agentMetricsMap.put("staticConfigList", agentMetricsStaticConfigList);
-		agentMetricsMap.put("instanceRelabel", false);
-		
+		Map agentMetricsJob = this.getAgentMetricsJob(agent, false);
 		// snmp exporter metrics
-		Map snmpExporterMetricsMap = new LinkedHashMap();
-		snmpExporterMetricsMap.put("job_name", "snmp_exporter_metrics");
-		snmpExporterMetricsMap.put("metrics_path",sysConfService.getValue(Constant.SNMP_EXPORTER_MONITOR_PATH));
-		snmpExporterMetricsMap.put("scheme",sysConfService.getValue(Constant.SNMP_EXPORTER_MONITOR_SCHEME));
-		
-		List snmpExporterMetricsStaticConfigList = new ArrayList();
-		Map snmpExporterMetricsStaticConfig = new LinkedHashMap(2);
-		List snmpExporterMetricsTargets = new ArrayList();
-		snmpExporterMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfService.getValue(Constant.SNMP_EXPORTER_MONITOR_HOST))?agent.getHost():sysConfService.getValue(Constant.SNMP_EXPORTER_MONITOR_HOST), sysConfService.getValue(Constant.SNMP_EXPORTER_MONITOR_PORT)));
-		snmpExporterMetricsStaticConfig.put("targets", snmpExporterMetricsTargets);
-
-		Map snmpExporterLabels = new LinkedHashMap(4);
-		snmpExporterLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
-		snmpExporterLabels.put("type", Constant.AgentType.getAgentType(agent.getType()).getName());
-		snmpExporterLabels.put("application", "snmp-exporter");
-		snmpExporterLabels.put("agent_name",agent.getName());
-		snmpExporterLabels.put("nz_agent_id",agent.getId());
-		snmpExporterMetricsStaticConfig.put("labels", snmpExporterLabels);
-
-		snmpExporterMetricsStaticConfigList.add(snmpExporterMetricsStaticConfig);
-		snmpExporterMetricsMap.put("staticConfigList", snmpExporterMetricsStaticConfigList);
-		snmpExporterMetricsMap.put("instanceRelabel", false);
-		
+		Map snmpExporterMetricsJob = this.getSnmpExporterMetricsJob(agent, false);
 		// blackbox exporter metrics
-		Map blackboxExporterMetricsMap = new LinkedHashMap();
-		blackboxExporterMetricsMap.put("job_name", "blackbox_exporter_metrics");
-		blackboxExporterMetricsMap.put("metrics_path",sysConfService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PATH));
-		blackboxExporterMetricsMap.put("scheme",sysConfService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_SCHEME));
-		
-		List blackboxExporterMetricsStaticConfigList = new ArrayList();
-		Map blackboxExporterMetricsStaticConfig = new LinkedHashMap(2);
-		List blackboxExporterMetricsTargets = new ArrayList();
-		blackboxExporterMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_HOST))?agent.getHost():sysConfService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_HOST), sysConfService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PORT)));
-		blackboxExporterMetricsStaticConfig.put("targets", blackboxExporterMetricsTargets);
+		Map blackboxExporterMetrics = this.getBlackboxExporterMetricsJob(agent, false);
 
-		Map blackboxExporterLabels = new LinkedHashMap(4);
-		blackboxExporterLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
-		blackboxExporterLabels.put("type", Constant.AgentType.getAgentType(agent.getType()).getName());
-		blackboxExporterLabels.put("application", "blackbox-exporter");
-		blackboxExporterLabels.put("agent_name",agent.getName());
-		blackboxExporterLabels.put("nz_agent_id",agent.getId());
-		blackboxExporterMetricsStaticConfig.put("labels", blackboxExporterLabels);
-
-		blackboxExporterMetricsStaticConfigList.add(blackboxExporterMetricsStaticConfig);
-		blackboxExporterMetricsMap.put("staticConfigList", blackboxExporterMetricsStaticConfigList);
-		blackboxExporterMetricsMap.put("instanceRelabel", false);
-		
-		jobList.add(agentMetricsMap);
-		jobList.add(promMetricsMap);
-		jobList.add(snmpExporterMetricsMap);
-		jobList.add(blackboxExporterMetricsMap);
+		jobList.add(prometheusMetricJob);
+		jobList.add(agentMetricsJob);
+		jobList.add(snmpExporterMetricsJob);
+		jobList.add(blackboxExporterMetrics);
 		params.put("jobList", jobList);
 
 		// 处理 endpoint 配置项 为了适应模板
@@ -616,247 +530,38 @@ public class AgentConfigUtil {
 		log.debug("global prometheus.yml 开始生成");
 
 		boolean fedeEnabled = StrUtil.equals("1", sysConfService.getValue(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED));
-		// 关闭联邦 不启用 per-datecenter
-		if (!fedeEnabled)
-			perDataCenterAgents = new ArrayList<>();
 
 		List<Agent> allAgentList = new ArrayList<>();
 		allAgentList.addAll(globalAgents);
-		allAgentList.addAll(perDataCenterAgents);
+		if (fedeEnabled) {
+			allAgentList.addAll(perDataCenterAgents);
+		}
 
-		// agent 代理接口前缀
-		String proxyPath = sysConfService.getValue(Constant.CONFAGENT_PATH) + "/prometheus/proxy";
 		// federate
 		List<Map> federateMapList = new ArrayList<>();
-		// blackbox job 1: global 2: per-datacenter
-		String assetPingFrom = sysConfService.getValue(Constant.SYSCONFIG_KEY_ASSET_PING_FROM);
 		for (Agent server : allAgentList) {
-			// 联邦开启
-			/*if (fedeEnabled) {
-				// global 做 ping 检测，联邦排除自己
-				if ("1".equals(assetPingFrom)) {
-					if (server.getId().equals(currentAgent.getId()))
-						continue;
-				} else {
-					// per-datacenter 做 ping 检测，global 角色排除掉，不需要加入到 federate 中
-					if (Constant.PromserverType.GLOBAL.getValue().equals(server.getType()))
-						continue;
-				}
-			} else {
-				// 联邦关闭
-				if (server.getId().equals(currentAgent.getId()))
-					continue;
-			}*/
-
 			if (server.getId().equals(currentAgent.getId()))
 				continue;
 
-			Map federateMap = new LinkedHashMap();
-			federateMap.put("job_name", "federate_" + server.getId());
-			federateMap.put("metrics_path", proxyPath + "/federate");
-			federateMap.put("scheme", server.getProtocol());
-			
-			federateMap.put("isFederate", true);
-			// global 做 ping 检测，且 当前角色为 global
-			if ("1".equals(assetPingFrom) && Constant.AgentType.GLOBAL.getValue().equals(server.getType())) {
-				federateMap.put("scrapePing", true);
-			} else {
-				federateMap.put("scrapePing", false);
-			}
-			federateMap.put("instanceRelabel", true);
-			// 该标签为直接取值，不作为判断条件，所以布尔值用字符串表示
-			federateMap.put("honor_labels", "true");
-			federateMap.put("token", server.getToken());
-			federateMap.put("excludeAgentId", currentAgent.getId());
-			// 联邦开关
-			federateMap.put("fedeEnabled", fedeEnabled);
-
-			List federateStaticConfigList = new ArrayList();
-			Map federateStaticConfig = new LinkedHashMap(2);
-			List federateTargets = new ArrayList();
-			federateTargets.add(server.getHost() + ":" + server.getPort());
-			federateStaticConfig.put("targets", federateTargets);
-			federateStaticConfigList.add(federateStaticConfig);
-			federateMap.put("staticConfigList", federateStaticConfigList);
+			Map federateMap = this.getPrometheusFederateJob(server, currentAgent.getId());
 			federateMapList.add(federateMap);
 		}
 
 		// prometheus_metric
-		Map promMetricsMap = new LinkedHashMap();
-		promMetricsMap.put("job_name", "prometheus_metric");
-		promMetricsMap.put("metrics_path", proxyPath + "/metrics");
-		promMetricsMap.put("scheme", currentAgent.getProtocol());
-		promMetricsMap.put("isFederate", false);
-		promMetricsMap.put("instanceRelabel", true);
-
-		List promMetricsStaticConfigList = new ArrayList();
-		/*
-		 * for (Agent entity : allPromserverList) { Map promMetricsStaticConfig =
-		 * new LinkedHashMap(2); List<String> promMetricsTargets = new ArrayList();
-		 * promMetricsTargets.add(entity.getHost() + ":" + entity.getPort());
-		 * promMetricsStaticConfig.put("targets", promMetricsTargets);
-		 * 
-		 * Map labels = new LinkedHashMap(4); Dc dc =
-		 * dcService.getById(entity.getDcId()); labels.put("datacenter",
-		 * ToolUtil.string2Json(dc.getName())); labels.put("type",
-		 * Constant.PromserverType.getPromserverType(entity.getType()).getName());
-		 * labels.put("application", "prometheus");
-		 * promMetricsStaticConfig.put("labels", labels);
-		 * 
-		 * promMetricsStaticConfigList.add(promMetricsStaticConfig); }
-		 */
-		Map promMetricsStaticConfig = new LinkedHashMap(2);
-		List<String> promMetricsTargets = new ArrayList();
-		promMetricsTargets.add(currentAgent.getHost() + ":" + currentAgent.getPort());
-		promMetricsStaticConfig.put("targets", promMetricsTargets);
-
-		Map labels = new LinkedHashMap(4);
-		Dc dc = dcService.getById(currentAgent.getDcId());
-		labels.put("datacenter", ToolUtil.string2Json(dc.getName()));
-		labels.put("type", Constant.AgentType.getAgentType(currentAgent.getType()).getName());
-		labels.put("application", "prometheus");
-		labels.put("agent_name",currentAgent.getName());
-		labels.put("nz_agent_id",currentAgent.getId());
-		promMetricsStaticConfig.put("labels", labels);
-		promMetricsStaticConfigList.add(promMetricsStaticConfig);
-		promMetricsMap.put("staticConfigList", promMetricsStaticConfigList);
-
+		Map prometheusMetricJob = this.getPrometheusMetricJob(currentAgent, true);
 		// nezha_metrics
-		String alertApi = sysConfService.getValue(Constant.SYSCONFIG_KEY_ALERT_API);
-		String scheme = Tool.StrUtil.isBlank(alertApi) ? "http": alertApi.split("://")[0];
-		String target = Tool.StrUtil.isBlank(alertApi) ? "" : alertApi.replace(scheme + "://", "");
-		Map nezhaMetricsMap = new LinkedHashMap();
-		String[] split = alertApi.split("://");
-		nezhaMetricsMap.put("job_name", "nezha_metrics");
-		nezhaMetricsMap.put("metrics_path", sysConfService.getValue(Constant.SYSCONFIG_KEY_ALERT_PATH_PREFIX) + "/actuator/prometheus");
-		nezhaMetricsMap.put("isFederate", false);
-		nezhaMetricsMap.put("scheme", scheme); // 协议
-		nezhaMetricsMap.put("instanceRelabel", true);
-		List nezhaMetricsStaticConfigList = new ArrayList();
-		Map nezhaMetricsStaticConfig = new LinkedHashMap(2);
-		List nezhaMetricsTargets = new ArrayList();
-		nezhaMetricsTargets.add(target); // ip:port
-		nezhaMetricsStaticConfig.put("targets", nezhaMetricsTargets);
-		Map nezhaLabels = new LinkedHashMap(4);
-		nezhaLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
-		nezhaLabels.put("application", "nz-web");
-		nezhaLabels.put("agent_name", currentAgent.getName());
-		nezhaLabels.put("nz_agent_id", currentAgent.getId());
-		nezhaMetricsStaticConfig.put("labels",nezhaLabels);
-		nezhaMetricsStaticConfigList.add(nezhaMetricsStaticConfig);
-		nezhaMetricsMap.put("staticConfigList", nezhaMetricsStaticConfigList);
-
+		Map nezhaMetricsJob = this.getNezhaMetricsJob(currentAgent, true);
 		// agent metrics
-		Map agentMetricsMap = new LinkedHashMap();
-		agentMetricsMap.put("job_name", "agent_metrics");
-		agentMetricsMap.put("metrics_path", sysConfService.getValue(Constant.CONFAGENT_PATH) + "/actuator/prometheus");
-		agentMetricsMap.put("scheme", currentAgent.getProtocol());
-		agentMetricsMap.put("isFederate", false);
-		agentMetricsMap.put("instanceRelabel", true);
-
-		List agentMetricsStaticConfigList = new ArrayList();
-		Map agentMetricsStaticConfig = new LinkedHashMap(2);
-		List agentMetricsTargets = new ArrayList();
-		agentMetricsTargets.add(String.format("%s:%s", currentAgent.getHost(), currentAgent.getPort()));
-		agentMetricsStaticConfig.put("targets", agentMetricsTargets);
-		Map agentLabels = new LinkedHashMap(3);
-		agentLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
-		agentLabels.put("application", "nz-agent");
-		agentLabels.put("type", Constant.AgentType.getAgentType(currentAgent.getType()).getName());
-		agentLabels.put("agent_name", currentAgent.getName());
-		agentLabels.put("nz_agent_id",currentAgent.getId());
-		agentMetricsStaticConfig.put("labels", agentLabels);
-		agentMetricsStaticConfigList.add(agentMetricsStaticConfig);
-		agentMetricsMap.put("staticConfigList", agentMetricsStaticConfigList);
-
+		Map agentMetricsJob = this.getAgentMetricsJob(currentAgent, true);
 		// snmp exporter metrics
-		Map snmpExporterMetricsMap = new LinkedHashMap();
-		snmpExporterMetricsMap.put("job_name", "snmp_exporter_metrics");
-		snmpExporterMetricsMap.put("metrics_path",sysConfService.getValue(Constant.SNMP_EXPORTER_MONITOR_PATH));
-		snmpExporterMetricsMap.put("scheme",sysConfService.getValue(Constant.SNMP_EXPORTER_MONITOR_SCHEME));
-		snmpExporterMetricsMap.put("isFederate", false);
-		snmpExporterMetricsMap.put("instanceRelabel", true);
-		
-		List snmpExporterMetricsStaticConfigList = new ArrayList();
-		Map snmpExporterMetricsStaticConfig = new LinkedHashMap(2);
-		List snmpExporterMetricsTargets = new ArrayList();
-		snmpExporterMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfService.getValue(Constant.SNMP_EXPORTER_MONITOR_HOST))?currentAgent.getHost():sysConfService.getValue(Constant.SNMP_EXPORTER_MONITOR_HOST), sysConfService.getValue(Constant.SNMP_EXPORTER_MONITOR_PORT)));
-		snmpExporterMetricsStaticConfig.put("targets", snmpExporterMetricsTargets);
-
-		Map snmpExporterLabels = new LinkedHashMap(2);
-		snmpExporterLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
-		snmpExporterLabels.put("application", "snmp-exporter");
-		snmpExporterLabels.put("agent_name", currentAgent.getName());
-		snmpExporterLabels.put("nz_agent_id",currentAgent.getId());
-		snmpExporterMetricsStaticConfig.put("labels", snmpExporterLabels);
-		snmpExporterMetricsStaticConfigList.add(snmpExporterMetricsStaticConfig);
-		snmpExporterMetricsMap.put("staticConfigList", snmpExporterMetricsStaticConfigList);
-		
+		Map snmpExporterMetricsJob = this.getSnmpExporterMetricsJob(currentAgent, true);
 		// blackbox exporter metrics
-		Map blackboxExporterMetricsMap = new LinkedHashMap();
-		blackboxExporterMetricsMap.put("job_name", "blackbox_exporter_metrics");
-		blackboxExporterMetricsMap.put("metrics_path",sysConfService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PATH));
-		blackboxExporterMetricsMap.put("scheme",sysConfService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_SCHEME));
-		blackboxExporterMetricsMap.put("isFederate", false);
-		blackboxExporterMetricsMap.put("instanceRelabel", true);
-		
-		List blackboxExporterMetricsStaticConfigList = new ArrayList();
-		Map blackboxExporterMetricsStaticConfig = new LinkedHashMap(2);
-		List blackboxExporterMetricsTargets = new ArrayList();
-		blackboxExporterMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_HOST))?currentAgent.getHost():sysConfService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_HOST), sysConfService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PORT)));
-		blackboxExporterMetricsStaticConfig.put("targets", blackboxExporterMetricsTargets);
-
-		Map blackboxExporterLabels = new LinkedHashMap(2);
-		blackboxExporterLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
-		blackboxExporterLabels.put("application", "blackbox-exporter");
-		blackboxExporterLabels.put("agent_name",currentAgent.getName());
-		blackboxExporterLabels.put("nz_agent_id",currentAgent.getId());
-		blackboxExporterMetricsStaticConfig.put("labels", blackboxExporterLabels);
-		blackboxExporterMetricsStaticConfigList.add(blackboxExporterMetricsStaticConfig);
-		blackboxExporterMetricsMap.put("staticConfigList", blackboxExporterMetricsStaticConfigList);
-
+		Map blackboxExporterMetrics = this.getBlackboxExporterMetricsJob(currentAgent, true);
 		// loki metrics
-		Map lokiMetricsMap = new LinkedHashMap();
-		lokiMetricsMap.put("job_name", "loki_metrics");
-		lokiMetricsMap.put("metrics_path",sysConfService.getValue(Constant.LOKI_MONITOR_PATH));
-		lokiMetricsMap.put("scheme",sysConfService.getValue(Constant.LOKI_MONITOR_SCHEME));
-		lokiMetricsMap.put("isFederate", false);
-		lokiMetricsMap.put("instanceRelabel", true);
-		List lokiMetricsStaticConfigList = new ArrayList();
-		Map lokiMetricsStaticConfig = new LinkedHashMap(2);
-		List lokiMetricsTargets = new ArrayList();
-		lokiMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfService.getValue(Constant.LOKI_MONITOR_HOST))?currentAgent.getHost():sysConfService.getValue(Constant.LOKI_MONITOR_HOST), sysConfService.getValue(Constant.LOKI_MONITOR_PORT)));
-		lokiMetricsStaticConfig.put("targets", lokiMetricsTargets);
-		Map lokiLabels = new LinkedHashMap(2);
-		lokiLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
-		lokiLabels.put("application", "loki");
-		lokiLabels.put("agent_name",currentAgent.getName());
-		lokiLabels.put("nz_agent_id",currentAgent.getId());
-		lokiMetricsStaticConfig.put("labels", lokiLabels);
-		lokiMetricsStaticConfigList.add(lokiMetricsStaticConfig);
-		lokiMetricsMap.put("staticConfigList", lokiMetricsStaticConfigList);
-		
+		Map lokiMetricsJob = this.getLokiMetricsJob(currentAgent, true);
 		// cortex metrics
-		Map cortexMetricsMap = new LinkedHashMap();
-		cortexMetricsMap.put("job_name", "cortex_metrics");
-		cortexMetricsMap.put("metrics_path",sysConfService.getValue(Constant.CORTEX_MONITOR_PATH));
-		cortexMetricsMap.put("scheme",sysConfService.getValue(Constant.CORTEX_MONITOR_SCHEME));
-		cortexMetricsMap.put("isFederate", false);
-		cortexMetricsMap.put("instanceRelabel", true);
-		List cortexMetricsStaticConfigList = new ArrayList();
-		Map cortexMetricsStaticConfig = new LinkedHashMap(2);
-		List cortexMetricsTargets = new ArrayList();
-		cortexMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfService.getValue(Constant.CORTEX_MONITOR_HOST))?currentAgent.getHost():sysConfService.getValue(Constant.CORTEX_MONITOR_HOST), sysConfService.getValue(Constant.CORTEX_MONITOR_PORT)));
-		cortexMetricsStaticConfig.put("targets", cortexMetricsTargets);
-		Map cortexLabels = new LinkedHashMap(2);
-		cortexLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
-		cortexLabels.put("application", "cortex");
-		cortexLabels.put("agent_name", currentAgent.getName());
-		cortexLabels.put("nz_agent_id", currentAgent.getId());
-		cortexMetricsStaticConfig.put("labels", cortexLabels);
-		cortexMetricsStaticConfigList.add(cortexMetricsStaticConfig);
-		cortexMetricsMap.put("staticConfigList", cortexMetricsStaticConfigList);
-		
+		Map cortexMetricsJob = this.getCortexMetricsJob(currentAgent, true);
+
 		Map<String, Object> params = new LinkedHashMap();
 		params.put("scrape_interval", sysConfService.getValue(Constant.SYSCONFIG_KEY_SCRAPEINTERVAL));
 		params.put("scrape_timeout", sysConfService.getValue(Constant.SYSCONFIG_KEY_SCRAPETIMEOUT));
@@ -884,7 +589,7 @@ public class AgentConfigUtil {
 			// 本地存储 ， metrics 数据保存于 Prometheus , 弃用 cortex , global 接收 per-datacenter
 			// 推过来得数据，每一个 global 支持 nzweb 系统指标
 			if (isLocalStorage) {
-				jobList.add(nezhaMetricsMap);
+				jobList.add(nezhaMetricsJob);
 				// jobList.add(promMetricsMap);
 				// metrics 本地存储，弃用 cortex ，直接采用 prometheus , 根据 sys_config prometheus_fed_mode
 				// 确定 pull/push
@@ -923,8 +628,7 @@ public class AgentConfigUtil {
 				map.put("token", currentAgent.getToken());
 				remoteWriteUrlInfoMapList.add(map);
 				if (isSupportSysteMetrics) {
-					jobList.add(nezhaMetricsMap);
-					// jobList.add(promMetricsMap);
+					jobList.add(nezhaMetricsJob);
 				}
 			}
 		} else {
@@ -980,17 +684,15 @@ public class AgentConfigUtil {
 			}
 			// 不论 本地还是对象存储 ，有一个支持 nzweb 系统指标即可
 			if (isSupportSysteMetrics) {
-				jobList.add(nezhaMetricsMap);
-				// jobList.add(promMetricsMap);
+				jobList.add(nezhaMetricsJob);
 			}
 		}
-
-		jobList.add(promMetricsMap);
-		jobList.add(agentMetricsMap);
-		jobList.add(snmpExporterMetricsMap);
-		jobList.add(blackboxExporterMetricsMap);
-		jobList.add(lokiMetricsMap);
-		jobList.add(cortexMetricsMap);
+		jobList.add(prometheusMetricJob);
+		jobList.add(agentMetricsJob);
+		jobList.add(snmpExporterMetricsJob);
+		jobList.add(blackboxExporterMetrics);
+		jobList.add(lokiMetricsJob);
+		jobList.add(cortexMetricsJob);
 		
 		params.put("remoteWriteUrlInfos", remoteWriteUrlInfoMapList);
 
@@ -1394,5 +1096,348 @@ public class AgentConfigUtil {
 			log.error(e, "[generateInitLokiYml] [error] [content: {}]", content);
 		}
 		return Tool.MapUtil.empty();
+	}
+
+	/**
+	 * prometheus federate job
+	 *
+	 * @param server
+	 * @param excludeAgentId
+	 * @return
+	 */
+	private Map getPrometheusFederateJob(Agent server, Integer excludeAgentId) {
+		// agent 代理接口前缀
+		String proxyPath = sysConfService.getValue(Constant.CONFAGENT_PATH) + "/prometheus/proxy";
+
+		Map federateMap = new LinkedHashMap();
+		federateMap.put("job_name", "federate_" + server.getId());
+		federateMap.put("metrics_path", proxyPath + "/federate");
+		federateMap.put("scheme", server.getProtocol());
+
+		federateMap.put("isFederate", true);
+		federateMap.put("instanceRelabel", true);
+		// 该标签为直接取值，不作为判断条件，所以布尔值用字符串表示
+		federateMap.put("honor_labels", "true");
+		federateMap.put("token", server.getToken());
+		federateMap.put("excludeAgentId", excludeAgentId);
+
+		List federateStaticConfigList = new ArrayList();
+		Map federateStaticConfig = new LinkedHashMap(2);
+		List federateTargets = new ArrayList();
+		federateTargets.add(server.getHost() + ":" + server.getPort());
+		federateStaticConfig.put("targets", federateTargets);
+		federateStaticConfigList.add(federateStaticConfig);
+		federateMap.put("staticConfigList", federateStaticConfigList);
+		return federateMap;
+	}
+
+	/**
+	 * prometheus metrics job
+	 *
+	 * @param agent
+	 * @param saveInstanceLabel
+	 * @return
+	 */
+	private Map getPrometheusMetricJob(Agent agent, Boolean saveInstanceLabel) {
+		// prometheus_metric
+		Map promMetricsMap = new LinkedHashMap();
+		promMetricsMap.put("job_name", "prometheus_metric");
+		promMetricsMap.put("metrics_path", sysConfService.getValue(Constant.CONFAGENT_PATH) + "/prometheus/proxy/metrics");
+		promMetricsMap.put("scheme", agent.getProtocol());
+		promMetricsMap.put("isFederate", false);
+		promMetricsMap.put("instanceRelabel", saveInstanceLabel);
+
+		List promMetricsStaticConfigList = new ArrayList();
+		Map promMetricsStaticConfig = new LinkedHashMap(2);
+		List<String> promMetricsTargets = new ArrayList();
+		promMetricsTargets.add(agent.getHost() + ":" + agent.getPort());
+		promMetricsStaticConfig.put("targets", promMetricsTargets);
+
+		Map labels = new LinkedHashMap(4);
+		Dc dc = dcService.getById(agent.getDcId());
+		labels.put("datacenter", ToolUtil.string2Json(dc.getName()));
+		labels.put("type", Constant.AgentType.getAgentType(agent.getType()).getName());
+		labels.put("application", "prometheus");
+		labels.put("agent_name", agent.getName());
+		labels.put("nz_agent_id", agent.getId());
+		promMetricsStaticConfig.put("labels", labels);
+		promMetricsStaticConfigList.add(promMetricsStaticConfig);
+		promMetricsMap.put("staticConfigList", promMetricsStaticConfigList);
+		return promMetricsMap;
+	}
+
+	/**
+	 * prometheus nezha metrics job
+	 *
+	 * @param agent
+	 * @param saveInstanceLabel
+	 * @return
+	 */
+	private Map getNezhaMetricsJob(Agent agent, Boolean saveInstanceLabel) {
+		// nezha_metrics
+		String alertApi = sysConfService.getValue(Constant.SYSCONFIG_KEY_ALERT_API);
+		String scheme = Tool.StrUtil.isBlank(alertApi) ? "http" : alertApi.split("://")[0];
+		String target = Tool.StrUtil.isBlank(alertApi) ? "" : alertApi.replace(scheme + "://", "");
+		Map nezhaMetricsMap = new LinkedHashMap();
+		String[] split = alertApi.split("://");
+		nezhaMetricsMap.put("job_name", "nezha_metrics");
+		nezhaMetricsMap.put("metrics_path", sysConfService.getValue(Constant.SYSCONFIG_KEY_ALERT_PATH_PREFIX) + "/actuator/prometheus");
+		nezhaMetricsMap.put("isFederate", false);
+		nezhaMetricsMap.put("scheme", scheme); // 协议
+		nezhaMetricsMap.put("instanceRelabel", saveInstanceLabel);
+		List nezhaMetricsStaticConfigList = new ArrayList();
+		Map nezhaMetricsStaticConfig = new LinkedHashMap(2);
+		List nezhaMetricsTargets = new ArrayList();
+		nezhaMetricsTargets.add(target); // ip:port
+		nezhaMetricsStaticConfig.put("targets", nezhaMetricsTargets);
+		Map nezhaLabels = new LinkedHashMap(4);
+		Dc dc = dcService.getById(agent.getDcId());
+		nezhaLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
+		nezhaLabels.put("application", "nz-web");
+		nezhaLabels.put("agent_name", agent.getName());
+		nezhaLabels.put("nz_agent_id", agent.getId());
+		nezhaMetricsStaticConfig.put("labels", nezhaLabels);
+		nezhaMetricsStaticConfigList.add(nezhaMetricsStaticConfig);
+		nezhaMetricsMap.put("staticConfigList", nezhaMetricsStaticConfigList);
+		return nezhaMetricsMap;
+	}
+
+	/**
+	 * prometheus agent metrics job
+	 *
+	 * @param agent
+	 * @param saveInstanceLabel 保留 instance 标签，true:保留，false:删除
+	 * @return
+	 */
+	private Map getAgentMetricsJob(Agent agent, Boolean saveInstanceLabel) {
+		// agent metrics
+		Map agentMetricsMap = new LinkedHashMap();
+		agentMetricsMap.put("job_name", "agent_metrics");
+		agentMetricsMap.put("metrics_path", sysConfService.getValue(Constant.CONFAGENT_PATH) + "/actuator/prometheus");
+		agentMetricsMap.put("scheme", agent.getProtocol());
+		agentMetricsMap.put("isFederate", false);
+		agentMetricsMap.put("instanceRelabel", saveInstanceLabel);
+
+		List agentMetricsStaticConfigList = new ArrayList();
+		Map agentMetricsStaticConfig = new LinkedHashMap(2);
+		List agentMetricsTargets = new ArrayList();
+		agentMetricsTargets.add(String.format("%s:%s", agent.getHost(), agent.getPort()));
+		agentMetricsStaticConfig.put("targets", agentMetricsTargets);
+		Map agentLabels = new LinkedHashMap(3);
+		Dc dc = dcService.getById(agent.getDcId());
+		agentLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
+		agentLabels.put("type", Constant.AgentType.getAgentType(agent.getType()).getName());
+		agentLabels.put("application", "nz-agent");
+		agentLabels.put("agent_name", agent.getName());
+		agentLabels.put("nz_agent_id", agent.getId());
+		agentMetricsStaticConfig.put("labels", agentLabels);
+		agentMetricsStaticConfigList.add(agentMetricsStaticConfig);
+		agentMetricsMap.put("staticConfigList", agentMetricsStaticConfigList);
+		return agentMetricsMap;
+	}
+
+	/**
+	 * prometheus snmp_exporter metrics job
+	 *
+	 * @param currentAgent
+	 * @param saveInstanceLabel
+	 * @return
+	 */
+	private Map getSnmpExporterMetricsJob(Agent currentAgent, Boolean saveInstanceLabel) {
+		// snmp exporter metrics
+		Map snmpExporterMetricsMap = new LinkedHashMap();
+		snmpExporterMetricsMap.put("job_name", "snmp_exporter_metrics");
+		snmpExporterMetricsMap.put("metrics_path", sysConfService.getValue(Constant.SNMP_EXPORTER_MONITOR_PATH));
+		snmpExporterMetricsMap.put("scheme", sysConfService.getValue(Constant.SNMP_EXPORTER_MONITOR_SCHEME));
+		snmpExporterMetricsMap.put("isFederate", false);
+		snmpExporterMetricsMap.put("instanceRelabel", saveInstanceLabel);
+
+		List snmpExporterMetricsStaticConfigList = new ArrayList();
+		Map snmpExporterMetricsStaticConfig = new LinkedHashMap(2);
+		List snmpExporterMetricsTargets = new ArrayList();
+		snmpExporterMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfService.getValue(Constant.SNMP_EXPORTER_MONITOR_HOST)) ? currentAgent.getHost() : sysConfService.getValue(Constant.SNMP_EXPORTER_MONITOR_HOST), sysConfService.getValue(Constant.SNMP_EXPORTER_MONITOR_PORT)));
+		snmpExporterMetricsStaticConfig.put("targets", snmpExporterMetricsTargets);
+
+		Map snmpExporterLabels = new LinkedHashMap(2);
+		Dc dc = dcService.getById(currentAgent.getDcId());
+		snmpExporterLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
+		snmpExporterLabels.put("type", Constant.AgentType.getAgentType(currentAgent.getType()).getName());
+		snmpExporterLabels.put("application", "snmp-exporter");
+		snmpExporterLabels.put("agent_name", currentAgent.getName());
+		snmpExporterLabels.put("nz_agent_id", currentAgent.getId());
+		snmpExporterMetricsStaticConfig.put("labels", snmpExporterLabels);
+		snmpExporterMetricsStaticConfigList.add(snmpExporterMetricsStaticConfig);
+		snmpExporterMetricsMap.put("staticConfigList", snmpExporterMetricsStaticConfigList);
+		return snmpExporterMetricsMap;
+	}
+
+	/**
+	 * prometheus blackbox_exporter metrics job
+	 *
+	 * @param currentAgent
+	 * @param saveInstanceLabel
+	 * @return
+	 */
+	private Map getBlackboxExporterMetricsJob(Agent currentAgent, Boolean saveInstanceLabel) {
+		// blackbox exporter metrics
+		Map blackboxExporterMetricsMap = new LinkedHashMap();
+		blackboxExporterMetricsMap.put("job_name", "blackbox_exporter_metrics");
+		blackboxExporterMetricsMap.put("metrics_path", sysConfService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PATH));
+		blackboxExporterMetricsMap.put("scheme", sysConfService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_SCHEME));
+		blackboxExporterMetricsMap.put("isFederate", false);
+		blackboxExporterMetricsMap.put("instanceRelabel", saveInstanceLabel);
+
+		List blackboxExporterMetricsStaticConfigList = new ArrayList();
+		Map blackboxExporterMetricsStaticConfig = new LinkedHashMap(2);
+		List blackboxExporterMetricsTargets = new ArrayList();
+		blackboxExporterMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_HOST)) ? currentAgent.getHost() : sysConfService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_HOST), sysConfService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PORT)));
+		blackboxExporterMetricsStaticConfig.put("targets", blackboxExporterMetricsTargets);
+
+		Map blackboxExporterLabels = new LinkedHashMap(4);
+		Dc dc = dcService.getById(currentAgent.getDcId());
+		blackboxExporterLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
+		blackboxExporterLabels.put("type", Constant.AgentType.getAgentType(currentAgent.getType()).getName());
+		blackboxExporterLabels.put("application", "blackbox-exporter");
+		blackboxExporterLabels.put("agent_name", currentAgent.getName());
+		blackboxExporterLabels.put("nz_agent_id", currentAgent.getId());
+		blackboxExporterMetricsStaticConfig.put("labels", blackboxExporterLabels);
+		blackboxExporterMetricsStaticConfigList.add(blackboxExporterMetricsStaticConfig);
+		blackboxExporterMetricsMap.put("staticConfigList", blackboxExporterMetricsStaticConfigList);
+		return blackboxExporterMetricsMap;
+	}
+
+	/**
+	 * prometheus loki metrics job
+	 *
+	 * @param agent
+	 * @param saveInstanceLabel
+	 * @return
+	 */
+	private Map getLokiMetricsJob(Agent agent, Boolean saveInstanceLabel) {
+		// loki metrics
+		Map lokiMetricsMap = new LinkedHashMap();
+		lokiMetricsMap.put("job_name", "loki_metrics");
+		lokiMetricsMap.put("metrics_path", sysConfService.getValue(Constant.LOKI_MONITOR_PATH));
+		lokiMetricsMap.put("scheme", sysConfService.getValue(Constant.LOKI_MONITOR_SCHEME));
+		lokiMetricsMap.put("isFederate", false);
+		lokiMetricsMap.put("instanceRelabel", saveInstanceLabel);
+		List lokiMetricsStaticConfigList = new ArrayList();
+		Map lokiMetricsStaticConfig = new LinkedHashMap(2);
+		List lokiMetricsTargets = new ArrayList();
+		lokiMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfService.getValue(Constant.LOKI_MONITOR_HOST)) ? agent.getHost() : sysConfService.getValue(Constant.LOKI_MONITOR_HOST), sysConfService.getValue(Constant.LOKI_MONITOR_PORT)));
+		lokiMetricsStaticConfig.put("targets", lokiMetricsTargets);
+		Map lokiLabels = new LinkedHashMap(2);
+		Dc dc = dcService.getById(agent.getDcId());
+		lokiLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
+		lokiLabels.put("type", Constant.AgentType.getAgentType(agent.getType()).getName());
+		lokiLabels.put("application", "loki");
+		lokiLabels.put("agent_name", agent.getName());
+		lokiLabels.put("nz_agent_id", agent.getId());
+		lokiMetricsStaticConfig.put("labels", lokiLabels);
+		lokiMetricsStaticConfigList.add(lokiMetricsStaticConfig);
+		lokiMetricsMap.put("staticConfigList", lokiMetricsStaticConfigList);
+		return lokiMetricsMap;
+	}
+
+	/**
+	 * prometheus cortex metrics job
+	 *
+	 * @param agent
+	 * @param saveInstanceLabel
+	 * @return
+	 */
+	private Map getCortexMetricsJob(Agent agent, Boolean saveInstanceLabel) {
+		// cortex metrics
+		Map cortexMetricsMap = new LinkedHashMap();
+		cortexMetricsMap.put("job_name", "cortex_metrics");
+		cortexMetricsMap.put("metrics_path", sysConfService.getValue(Constant.CORTEX_MONITOR_PATH));
+		cortexMetricsMap.put("scheme", sysConfService.getValue(Constant.CORTEX_MONITOR_SCHEME));
+		cortexMetricsMap.put("isFederate", false);
+		cortexMetricsMap.put("instanceRelabel", saveInstanceLabel);
+		List cortexMetricsStaticConfigList = new ArrayList();
+		Map cortexMetricsStaticConfig = new LinkedHashMap(2);
+		List cortexMetricsTargets = new ArrayList();
+		cortexMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfService.getValue(Constant.CORTEX_MONITOR_HOST)) ? agent.getHost() : sysConfService.getValue(Constant.CORTEX_MONITOR_HOST), sysConfService.getValue(Constant.CORTEX_MONITOR_PORT)));
+		cortexMetricsStaticConfig.put("targets", cortexMetricsTargets);
+		Map cortexLabels = new LinkedHashMap(2);
+		Dc dc = dcService.getById(agent.getDcId());
+		cortexLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
+		cortexLabels.put("type", Constant.AgentType.getAgentType(agent.getType()).getName());
+		cortexLabels.put("application", "cortex");
+		cortexLabels.put("agent_name", agent.getName());
+		cortexLabels.put("nz_agent_id", agent.getId());
+		cortexMetricsStaticConfig.put("labels", cortexLabels);
+		cortexMetricsStaticConfigList.add(cortexMetricsStaticConfig);
+		cortexMetricsMap.put("staticConfigList", cortexMetricsStaticConfigList);
+		return cortexMetricsMap;
+	}
+
+	/**
+	 * prometheus replication
+	 *
+	 * @param agent
+	 * @param assetPingJobList
+	 * @param endpointJobList
+	 * @return
+	 */
+	public Map generatePrometheusReplicationYml(Agent agent, List<AssetAsset> assetPingJobList, List<MonitorEndpoint> endpointJobList) {
+		log.debug("[generatePrometheusReplicationYml] [begin] [agentId: {}]", agent.getId());
+		// prometheus_metric
+		Map prometheusMetricJob = this.getPrometheusMetricJob(agent, true);
+		// nezha_metrics
+		Map nezhaMetricsJob = this.getNezhaMetricsJob(agent, true);
+		// agent metrics
+		Map agentMetricsJob = this.getAgentMetricsJob(agent, true);
+		// snmp exporter metrics
+		Map snmpExporterMetricsJob = this.getSnmpExporterMetricsJob(agent, true);
+		// blackbox exporter metrics
+		Map blackboxExporterMetrics = this.getBlackboxExporterMetricsJob(agent, true);
+		// loki metrics
+		Map lokiMetricsJob = this.getLokiMetricsJob(agent, true);
+		// cortex metrics
+		Map cortexMetricsJob = this.getCortexMetricsJob(agent, true);
+
+		List<Map> jobList = new ArrayList<>();
+		jobList.add(prometheusMetricJob);
+		jobList.add(agentMetricsJob);
+		jobList.add(snmpExporterMetricsJob);
+		jobList.add(blackboxExporterMetrics);
+
+		jobList.add(nezhaMetricsJob);
+		jobList.add(lokiMetricsJob);
+		jobList.add(cortexMetricsJob);
+
+		Map<String, Object> params = new LinkedHashMap();
+		params.put("scrape_interval", sysConfService.getValue(Constant.SYSCONFIG_KEY_SCRAPEINTERVAL));
+		params.put("scrape_timeout", sysConfService.getValue(Constant.SYSCONFIG_KEY_SCRAPETIMEOUT));
+		params.put("path_prefix", sysConfService.getValue(Constant.SYSCONFIG_KEY_ALERT_PATH_PREFIX));
+		params.put("alert_url", sysConfService.getValue(Constant.SYSCONFIG_KEY_ALERT_API));
+		params.put("isGlobal", true);
+		params.put("isAlert", false);
+
+		// 处理 endpoint 配置项 为了适应模板
+		this.handleDataConfigForTmpl(agent, endpointJobList, assetPingJobList);
+
+		params.put("assetList", assetPingJobList);
+		params.put("endpointList", endpointJobList);
+
+		params.put("jobList", jobList);
+		params.put("remoteWriteUrlInfos", ListUtil.empty());
+
+		TimedCache<String, Object> sysConfiMap = LocalCacheManager.getNeverExpireTimedCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
+		params.put("systemConfig", sysConfiMap);
+		params.put("currentAgent", agent);
+
+		Map map = null;
+		String content = "";
+		try {
+			Template template = TemplateUtil.stringToTemplate(sysConfService.getValue(Constant.SYSCONFIG_KEY_PROM_YML_TMPL), Constant.SYSCONFIG_KEY_PROM_YML_TMPL);
+			content = FreeMarkerTemplateUtils.processTemplateIntoString(template, params);
+			map = JSONObject.parseObject(content, LinkedHashMap.class, Feature.OrderedField);
+		} catch (Exception e) {
+			log.error(e, "[generatePrometheusReplicationYml] [error] [template content: {}]", content);
+		}
+		log.debug("[generatePrometheusReplicationYml] [finshed] [agentId: {}]", agent.getId());
+		return map;
 	}
 }

@@ -821,6 +821,10 @@ public class Constant {
 	// 集中收集各个 per-datacenter数据
 	public static final String SYSCONFIG_KEY_PROM_FEDER_MODE = "prometheus_fed_mode";
 
+	// prometheus多副本模式，只在 非联邦，本地存储模式时有效. nz-agent(Global) 配置一致（互为备份）;
+	// 1：开启，0：关闭，默认关闭
+	public static final String SYSCONFIG_KEY_PROME_REPLICATION_MODE = "prometheus_replication_mode";
+
 	// 机柜默认大小
 	public static final String SYSCONFIG_KEY_DEFAULT_CABINETU = "default_cabinet_usize";
 

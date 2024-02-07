@@ -247,7 +247,6 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             
             if (result == null) {
                 configUtil.updateAgentStatus(globalProm, 0);
-                continue;
             } else {
                 configUtil.afterRequestApi("/config", result, globalProm);
             }
@@ -386,7 +385,6 @@ public class AutoConfigAgentJob extends QuartzJobBean {
                 
                 if (result == null) {
                     configUtil.updateAgentStatus(perDataCenterPromServer, 0);
-                    continue;
                 } else {
                     configUtil.afterRequestApi(path, result, perDataCenterPromServer);
                 }
@@ -423,7 +421,72 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         List<Agent> globalPromServers = healthyPromServers.stream().filter(pojo -> Constant.AgentType.GLOBAL.getValue().equals(pojo.getType())).collect(Collectors.toList());
 
         this.handlePerDatacenterMtericsConf(perDataCenterPromServers, globalPromServers);
-        this.handleGlobalMtericsConf(globalPromServers, perDataCenterPromServers);
+
+        // 联邦
+        String federationMode = sysConfService.getValueOrDefault(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED, "1");
+        // 指标存储类型，本地|远程
+        String metricsStorageType = sysConfService.getValueOrDefault(Constant.SYSCONFIG_KEY_METRICS_STORAGE_TYPE, "1");
+        // 多副本模式
+        String replicationMode = sysConfService.getValueOrDefault(Constant.SYSCONFIG_KEY_PROME_REPLICATION_MODE, "0");
+
+        log.info("[updatePrometheusConf] [federationMode: {}] [metricsStorageType: {}] [replicationMode: {}]", federationMode, metricsStorageType, replicationMode);
+        // 联邦关闭 & 本地存储 & 多副本开启
+        if (BooleanUtil.and(
+                StrUtil.equals("0", federationMode),
+                StrUtil.equals("1", metricsStorageType),
+                StrUtil.equals("1", replicationMode)
+        )) {
+            if (log.isDebugEnabled()) {
+                log.debug("[updatePrometheusConf] [prometheus_replication_mode enable]");
+            }
+            // 多副本配置
+            this.updatePrometheusReplicationConfig(globalPromServers);
+        } else {
+            // 非多副本配置
+            this.handleGlobalMtericsConf(globalPromServers, perDataCenterPromServers);
+        }
+    }
+
+    /**
+     * 多副本配置
+     *
+     * @param agentList
+     */
+    private void updatePrometheusReplicationConfig(List<Agent> agentList) {
+        List<AssetAsset> assetPingJobList = assetService.getBlackboxAssetInfoList();
+        List<MonitorEndpoint> endpointJobList = endpointService.getEnableMetricsEndpointInfoListForAgent();
+
+        // update endpoint agent mapping
+        Map<Integer, Integer> endpointAgentMap = endpointJobList.stream().collect(Collectors.toMap(MonitorEndpoint::getId, value -> agentList.getFirst().getId()));
+        configUtil.updateEndpointAgentMapping(endpointAgentMap);
+
+        for (Agent agent : agentList) {
+            Map<String, Object> requestBody = Tool.MapUtil.newHashMap();
+
+            Map prometheusYmlMap = configUtil.generatePrometheusReplicationYml(agent, assetPingJobList, endpointJobList);
+            requestBody.put("config", prometheusYmlMap);
+
+            Map<String, String> sysCmdLineMap = configUtil.generatePrometheusCmdLine(agent);
+            boolean cmdLineChangeFlag = this.compareCmdLineChanges(agent, sysCmdLineMap);
+            log.info("[updatePrometheusReplicationConfig] [cmdline config] [agentId: {}] [isUpdate: {}] ", agent.getId(), cmdLineChangeFlag);
+            if (cmdLineChangeFlag) {
+                requestBody.put("cmdline", sysCmdLineMap);
+            }
+
+            String result = null;
+            String path = "/prometheus/config";
+            try {
+                result = AgentUtil.request(agent, HttpMethod.POST, path, null, requestBody, String.class);
+            } catch (RuntimeException e) {
+                log.error(e, "[updatePrometheusReplicationConfig] [error] [path: {}] [agent: {}]", path, Tool.JSONUtil.toJsonStr(agent));
+            }
+
+            if (result == null) {
+                configUtil.updateAgentStatus(agent, 0);
+            } else {
+                configUtil.afterRequestApi(path, result, agent);
+            }
+        }
     }
 
     /**
@@ -486,7 +549,6 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             // 下发失败,更新 prom 状态，造成conf_event 变更，下个周期继续下发配置
             if (result == null) {
                 configUtil.updateAgentStatus(agent, 0);
-                continue;
             } else {
                 configUtil.afterRequestApi(path, result, agent);
             }
@@ -583,7 +645,6 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             
             if (result == null) {
                 configUtil.updateAgentStatus(agent, 0);
-                continue;
             } else {
                 configUtil.afterRequestApi(path, result, agent);
             }
