@@ -3,6 +3,8 @@ package com.nis.modules.vsys.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.Tool;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -71,4 +73,8 @@ public class VsysResult implements Serializable {
      */
     private Long ts;
 
+    public void setMsg(String msg) {
+        // 超长截断
+        this.msg = Tool.StrUtil.subWithLength(msg, 0, Constant.MYSQL_TEXT_MAXLENGTH);
+    }
 }

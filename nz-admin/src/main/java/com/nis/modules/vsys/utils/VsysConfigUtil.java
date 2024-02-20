@@ -107,49 +107,15 @@ public class VsysConfigUtil {
     }
 
     /**
-     * POST 请求
+     * 指定 HttpMethod，不对URL进行编码
      *
      * @param host
      * @param path
+     * @param httpMethod
      * @param body
      * @return
      */
-    public static Map<Object, Object> requestPost(String host, String path, Map<Object, Object> body) {
-        // build HttpEntity
-        HttpEntity httpEntity = VsysConfigUtil.buildHttpEntity(body);
-
-        // build url
-        String url = VsysConfigUtil.buildUrl(host, path);
-
-        Map<Object, Object> resultMp = Tool.MapUtil.builder().build();
-        try {
-            ResponseEntity<String> exchange = restTemplate.exchange(url, HttpMethod.POST, httpEntity, String.class);
-            int statusCodeValue = exchange.getStatusCodeValue();
-            log.info("request url:{}, responseStatus:{}", url, statusCodeValue);
-
-            resultMp.put("code", statusCodeValue);
-            if (statusCodeValue != HttpStatus.HTTP_CREATED) {
-                // failure
-                log.warn("request url:{}, responseStatus:{}, body:{}", url, statusCodeValue, exchange.getBody());
-                resultMp.put("msg", exchange.getBody());
-            }
-        } catch (Exception e) {
-            log.error(e, "request error,path: {}", url);
-            resultMp.put("code", HttpStatus.HTTP_INTERNAL_ERROR);
-            resultMp.put("msg", e.getMessage());
-        }
-        return resultMp;
-    }
-
-    /**
-     * POST 请求，不对URL进行编码
-     *
-     * @param host
-     * @param path
-     * @param body
-     * @return
-     */
-    public static Map<Object, Object> requestPostWithoutEncodeUrl(String host, String path, Map<Object, Object> body) {
+    public static Map<Object, Object> requestWithoutEncodeUrl(String host, String path, HttpMethod httpMethod, Map<Object, Object> body) {
         // build HttpEntity
         HttpEntity httpEntity = VsysConfigUtil.buildHttpEntity(body);
 
@@ -158,83 +124,12 @@ public class VsysConfigUtil {
 
         Map<Object, Object> resultMp = Tool.MapUtil.builder().build();
         try {
-            ResponseEntity<String> exchange = restTemplate.exchange(url, HttpMethod.POST, httpEntity, String.class);
+            ResponseEntity<String> exchange = restTemplate.exchange(url, httpMethod, httpEntity, String.class);
             int statusCodeValue = exchange.getStatusCodeValue();
             log.info("request url:{}, responseStatus:{}", url, statusCodeValue);
 
             resultMp.put("code", statusCodeValue);
-            if (statusCodeValue != HttpStatus.HTTP_CREATED) {
-                // failure
-                log.warn("request url:{}, responseStatus:{}, body:{}", url, statusCodeValue, exchange.getBody());
-                resultMp.put("msg", exchange.getBody());
-            }
-        } catch (Exception e) {
-            log.error(e, "request error,path: {}", url);
-            resultMp.put("code", HttpStatus.HTTP_INTERNAL_ERROR);
-            resultMp.put("msg", e.getMessage());
-        }
-        return resultMp;
-    }
-
-
-    /**
-     * DEL 请求
-     *
-     * @param host
-     * @param path
-     * @param body
-     * @return
-     */
-    public static Map<Object, Object> requestDelete(String host, String path, Map<Object, Object> body) {
-        // build HttpEntity
-        HttpEntity httpEntity = VsysConfigUtil.buildHttpEntity(body);
-
-        // build url
-        String url = VsysConfigUtil.buildUrl(host, path);
-
-        Map<Object, Object> resultMp = Tool.MapUtil.builder().build();
-        try {
-            ResponseEntity<String> exchange = restTemplate.exchange(url, HttpMethod.DELETE, httpEntity, String.class);
-            int statusCodeValue = exchange.getStatusCodeValue();
-            log.info("request url:{}, responseStatus:{}", url, statusCodeValue);
-
-            resultMp.put("code", statusCodeValue);
-            if (statusCodeValue != HttpStatus.HTTP_NO_CONTENT) {
-                // failure
-                log.warn("request url:{}, responseStatus:{}, body:{}", url, statusCodeValue, exchange.getBody());
-                resultMp.put("msg", exchange.getBody());
-            }
-        } catch (Exception e) {
-            log.error(e, "request error,path: {}", url);
-            resultMp.put("code", HttpStatus.HTTP_INTERNAL_ERROR);
-            resultMp.put("msg", e.getMessage());
-        }
-        return resultMp;
-    }
-
-    /**
-     * DEL 请求 不对URL进行编码
-     *
-     * @param host
-     * @param path
-     * @param body
-     * @return
-     */
-    public static Map<Object, Object> requestDeleteWithoutEncodeUrl(String host, String path, Map<Object, Object> body) {
-        // build HttpEntity
-        HttpEntity httpEntity = VsysConfigUtil.buildHttpEntity(body);
-
-        // build url
-        String url = VsysConfigUtil.buildUrlWithoutEncode(host, path);
-
-        Map<Object, Object> resultMp = Tool.MapUtil.builder().build();
-        try {
-            ResponseEntity<String> exchange = restTemplate.exchange(url, HttpMethod.DELETE, httpEntity, String.class);
-            int statusCodeValue = exchange.getStatusCodeValue();
-            log.info("request url:{}, responseStatus:{}", url, statusCodeValue);
-
-            resultMp.put("code", statusCodeValue);
-            if (statusCodeValue != HttpStatus.HTTP_NO_CONTENT) {
+            if (statusCodeValue != HttpStatus.HTTP_CREATED && statusCodeValue != HttpStatus.HTTP_NO_CONTENT) {
                 // failure
                 log.warn("request url:{}, responseStatus:{}, body:{}", url, statusCodeValue, exchange.getBody());
                 resultMp.put("msg", exchange.getBody());

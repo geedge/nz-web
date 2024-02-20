@@ -69,6 +69,8 @@ public class VsysTask implements Serializable {
 
     /**
      * 配额参数
+     *
+     * @deprecated 未来取消, 后续仅保留 classification rule 配置
      */
     @TableField(exist = false)
     private Map osQuotas;
