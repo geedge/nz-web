@@ -12,7 +12,7 @@ import com.nis.modules.alert.backend.AlertRuleManagerJob;
 import com.nis.modules.alert.backend.AlertSilenceStatusJob;
 import com.nis.modules.alert.backend.RecordManagerJob;
 import com.nis.modules.alert.job.AlertMessageHistoryPartitionManagementJob;
-import com.nis.modules.asset.job.AssetFeatureJob;
+import com.nis.modules.asset.job.AssetMetadataFetcherJob;
 import com.nis.modules.asset.job.AssetPingStatusJob;
 import com.nis.modules.asset.job.AssetTalonStatusJob;
 import com.nis.modules.asset.job.SoftwareLicenseStatusJob;
@@ -64,7 +64,7 @@ public class JobConfig {
     @Value("${nezha.assetTalonJobCron:0 0/1 * * * ? *}")
     private String assetTalonJobCron;
 
-    @Value("${nezha.assetFeatureJobCron:0 0/5 * 1 * ? *}")
+    @Value("${nezha.assetFeatureJobCron:0 0 0/2 * * ?}")
     private String assetFeatureJobCron;
 
     @Value("${nezha.haJobCron:0/5 * * * * ?}")
@@ -160,7 +160,7 @@ public class JobConfig {
 
     @Bean
     public JobDetail assetFeatureCronJobDetail() {
-        return JobBuilder.newJob(AssetFeatureJob.class).withIdentity(JOB_NAME + assetFeatureJobName).storeDurably().build();
+        return JobBuilder.newJob(AssetMetadataFetcherJob.class).withIdentity(JOB_NAME + assetFeatureJobName).storeDurably().build();
     }
 
     @Bean
@@ -269,8 +269,8 @@ public class JobConfig {
         // agent  如果配置文件没有配置定时周期  默认为 30s 执行一次
         createCronScheduleJob(agentJobName, agentCronJobDetail(), StringUtils.isEmpty(agentJobCron) ? "0/30 * * * * ?" : agentJobCron);
 
-        // assetFeatureJob 如果配置文件没有配置定时周期 默认为5分钟执行一次
-        createCronScheduleJob(assetFeatureJobName, assetFeatureCronJobDetail(), StringUtils.isEmpty(assetFeatureJobCron) ? "0 0/5 * 1 * ? *" : assetFeatureJobCron);
+        // assetFeatureJob 如果配置文件没有配置定时周期 默认两小时执行一次
+        createCronScheduleJob(assetFeatureJobName, assetFeatureCronJobDetail(), StringUtils.isEmpty(assetFeatureJobCron) ? "0 0 0/2 * * ?" : assetFeatureJobCron);
 
         // asset pingJob 如果配置文件没有配置定时周期  默认为1分钟执行一次
         createCronScheduleJob(assetPingStatusJobName, assetPingStatusCronJobDetail(), StringUtils.isEmpty(assetPingJobCron) ? "0 0/1 * * * ? *" : assetPingJobCron);
@@ -296,7 +296,7 @@ public class JobConfig {
 
         // terminal clean job 如果配置文件没有配置定时周期  每天凌晨1点执行一次
         createCronScheduleJob(cleanJobCronName, cleanJobDetail(), StringUtils.isEmpty(terminalCleanJobCron) ? "0 0 1 * * ?" : terminalCleanJobCron);
-        
+
         //sys component 状态更新线程
         createCronScheduleJob(sysComponentJobName, sysComponentJobDetail(), StringUtils.isEmpty(sysComponentJobCron) ? "0/30 * * * * ?" : sysComponentJobCron);
 
@@ -308,7 +308,7 @@ public class JobConfig {
 
         // alert message History Partition Management 分区管理
         createCronScheduleJob(alertMessageHistoryPartManJobName, alertMessageHistoryPartManJobDetail(), StringUtils.isEmpty(alertMessageHistoryPartManJobCron) ? "0 0 0 1/1 * ?" : alertMessageHistoryPartManJobCron);
-        
+
         // record rule 配置管理任务
         createCronScheduleJob(recordtRuleManagerJobName, recordtRuleManagerJobDetail(), StringUtils.isEmpty(recordtRuleManagerJobCron) ? "0/10 * * * * ?" : recordtRuleManagerJobCron);
 

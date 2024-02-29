@@ -1,3 +1,4 @@
+/*
 package com.nis.modules.asset.job;
 
 import cn.hutool.core.util.BooleanUtil;
@@ -49,3 +50,4 @@ public class AssetFeatureJob extends QuartzJobBean {
 	}
 
 }
+*/

@@ -71,7 +71,12 @@ public class AssetTypeConf implements Serializable {
     /**
      * 是否开启ssh采集
      */
-    private Integer sshCollect; 
+    private Integer sshCollect;
+
+    /**
+     * 是否开启node_exporter采集
+     */
+    private Integer nodeCollect;
     
     /**
      * ssh自动化采集脚本路径
