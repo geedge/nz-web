@@ -41,7 +41,7 @@ public class AssetMetadataFetcherJob extends QuartzJobBean {
         StopWatch sw = new StopWatch();
         sw.start();
         try {
-            List<AssetAsset> assetList = assetService.list(new LambdaQueryWrapper<AssetAsset>().in(AssetAsset::getId, Tool.ListUtil.of(3107,123)));
+            List<AssetAsset> assetList = assetService.list();
             assetList.forEach(asset -> {
                 Thread.ofVirtual().start(() -> {
                     assetFeatureService.collectAssetBasicInfo(asset.getId());
