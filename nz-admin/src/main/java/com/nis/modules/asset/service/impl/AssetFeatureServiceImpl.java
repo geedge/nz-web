@@ -1,20 +1,15 @@
 package com.nis.modules.asset.service.impl;
 
-import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.lang.Opt;
 import cn.hutool.core.lang.Validator;
-import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.extra.ssh.ChannelType;
-import cn.hutool.extra.ssh.JschUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.Session;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.RCode;
@@ -30,20 +25,16 @@ import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetFeatureService;
 import com.nis.modules.asset.service.AssetTalonStatusService;
 import com.nis.modules.asset.service.TalonApiService;
-import com.nis.modules.asset.util.LoacalLinuxCentralProcessor;
-import com.nis.modules.asset.util.LocalLinuxNetworkIF;
-import com.nis.modules.asset.util.LocalLinuxOperatingSystem;
 import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import oshi.hardware.CentralProcessor;
-import oshi.software.os.OperatingSystem;
-import oshi.util.ParseUtil;
-import oshi.util.tuples.Pair;
 
-import java.nio.charset.Charset;
-import java.util.*;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -120,7 +111,7 @@ public class AssetFeatureServiceImpl extends ServiceImpl<AssetFeatureDao, AssetF
                 log.debug("[collectAssetBasicInfo] [source=SSH] [asset: {}]", assetId);
             }
             source = "SSH";
-            assetBasicInfoMap = this.collectAssetInfoWithSSH(assetId);
+            assetBasicInfoMap = this.collectAssetInfoWithSSH(assetId, typeConf.getSshCollectScript());
         }
 
         // update
@@ -169,7 +160,12 @@ public class AssetFeatureServiceImpl extends ServiceImpl<AssetFeatureDao, AssetF
                 JSONArray diskInfoList = (JSONArray) JSONPath.eval(oshiInfo, "data.disk");
                 JSONArray networkIFInfoList = (JSONArray) JSONPath.eval(oshiInfo, "data.networkIF");
 
-                Map<String, String> assetBasicInfoMap = Tool.MapUtil.builder("os", JSONObject.toJSONString(osInfo)).put("cpu", JSONObject.toJSONString(cpuInfo)).put("memory", JSONObject.toJSONString(memoryInfo)).put("disk", JSONObject.toJSONString(diskInfoList)).put("networkIF", JSONObject.toJSONString(networkIFInfoList)).build();
+                Map<String, String> assetBasicInfoMap = Tool.MapUtil.builder("os", JSONObject.toJSONString(osInfo))
+                        .put("cpu", JSONObject.toJSONString(cpuInfo))
+                        .put("memory", JSONObject.toJSONString(memoryInfo))
+                        .put("disk", JSONObject.toJSONString(diskInfoList))
+                        .put("networkIF", JSONObject.toJSONString(networkIFInfoList))
+                        .build();
                 return assetBasicInfoMap;
             }
         } catch (Exception e) {
@@ -200,7 +196,12 @@ public class AssetFeatureServiceImpl extends ServiceImpl<AssetFeatureDao, AssetF
             List<Map<String, Object>> diskInfoList = this.buildDiskInfoWithNode(assetId);
             List<Map<String, Object>> networkIFInfoList = this.buildNetworkIFInfoWithNode(assetId);
 
-            Map<String, String> assetBasicInfoMap = Tool.MapUtil.builder("os", JSONObject.toJSONString(osInfoMap)).put("cpu", JSONObject.toJSONString(cpuInfoMap)).put("memory", JSONObject.toJSONString(memoryInfoMap)).put("disk", JSONObject.toJSONString(diskInfoList)).put("networkIF", JSONObject.toJSONString(networkIFInfoList)).build();
+            Map<String, String> assetBasicInfoMap = Tool.MapUtil.builder("os", JSONObject.toJSONString(osInfoMap))
+                    .put("cpu", JSONObject.toJSONString(cpuInfoMap))
+                    .put("memory", JSONObject.toJSONString(memoryInfoMap))
+                    .put("disk", JSONObject.toJSONString(diskInfoList))
+                    .put("networkIF", JSONObject.toJSONString(networkIFInfoList))
+                    .build();
             return assetBasicInfoMap;
         } catch (Exception e) {
             log.error(e, "[collectAssetInfoWithNode] [error] [assetId: {}]", assetId);
@@ -217,9 +218,10 @@ public class AssetFeatureServiceImpl extends ServiceImpl<AssetFeatureDao, AssetF
      * collect asset info with ssh
      *
      * @param assetId
+     * @param sshCollectScript
      * @return
      */
-    public Map<String, String> collectAssetInfoWithSSH(Integer assetId) {
+    public Map<String, String> collectAssetInfoWithSSH(Integer assetId, String sshCollectScript) {
         StopWatch sw = new StopWatch();
         sw.start();
         Session session = null;
@@ -227,14 +229,45 @@ public class AssetFeatureServiceImpl extends ServiceImpl<AssetFeatureDao, AssetF
             AssetAsset asset = assetService.getBaseMapper().selectById(assetId);
             session = SshUtil.getSshConnection(asset);
 
-            Map<String, Object> osInfoMap = this.buildOsInfoWithSSH(session, assetId);
-            Map<String, Object> cpuInfoMap = this.buildCpuInfoWithSSH(session, assetId);
-            Map<String, Object> memoryInfoMap = this.buildMemoryInfoWithSSH(session, assetId);
-            List<Map<String, Object>> diskInfoList = this.buildDiskInfoWithSSH(session, assetId);
-            List<Map<String, Object>> networkIFInfoList = this.buildNetworkIFInfoWithSSH(session, assetId);
+            if (StrUtil.isNotEmpty(sshCollectScript)) {
+                String cmd = """
+                        cat > /tmp/device_info_collector.sh  << "EOF" 
+                                          
+                        """;
+                cmd += sshCollectScript;
+                String cmdEnd = """
+                                                
+                        EOF
+                        """;
+                cmd += cmdEnd;
+                // 写入
+                Tool.JschUtil.exec(session, cmd, StandardCharsets.UTF_8);
+                // 执行
+                String result = Tool.JschUtil.exec(session,
+                        "chmod +x /tmp/device_info_collector.sh && /tmp/device_info_collector.sh",
+                        StandardCharsets.UTF_8);
+                result = StrUtil.nullToDefault(result, "");
+                log.info("[collectAssetInfoWithSSH] [script execution result] [size: {}]", result.length());
+                if (StrUtil.isNotEmpty(result)) {
+                    JSONObject jsonObject = JSONObject.parseObject(result);
+                    JSONObject osInfo = (JSONObject) JSONPath.eval(jsonObject, "os");
+                    JSONObject cpuInfo = (JSONObject) JSONPath.eval(jsonObject, "cpu");
+                    JSONObject memoryInfo = (JSONObject) JSONPath.eval(jsonObject, "memory");
+                    JSONArray diskInfoList = (JSONArray) JSONPath.eval(jsonObject, "disk");
+                    JSONArray networkIFInfoList = (JSONArray) JSONPath.eval(jsonObject, "networkIF");
 
-            Map<String, String> assetBasicInfoMap = Tool.MapUtil.builder("os", JSONObject.toJSONString(osInfoMap)).put("cpu", JSONObject.toJSONString(cpuInfoMap)).put("memory", JSONObject.toJSONString(memoryInfoMap)).put("disk", JSONObject.toJSONString(diskInfoList)).put("networkIF", JSONObject.toJSONString(networkIFInfoList)).build();
-            return assetBasicInfoMap;
+                    Map<String, String> assetBasicInfoMap = Tool.MapUtil.builder("os", JSONObject.toJSONString(osInfo))
+                            .put("cpu", JSONObject.toJSONString(cpuInfo))
+                            .put("memory", JSONObject.toJSONString(memoryInfo))
+                            .put("disk", JSONObject.toJSONString(diskInfoList))
+                            .put("networkIF", JSONObject.toJSONString(networkIFInfoList))
+                            .build();
+                    return assetBasicInfoMap;
+                }
+            } else {
+                log.warn("[collectAssetInfoWithSSH] [ssh_collect_script is empty] [asset: {}]", assetId);
+            }
+            return Tool.MapUtil.empty();
         } catch (Exception e) {
             log.error(e, "[collectAssetInfoWithSSH] [error] [asset: {}]", assetId);
         } finally {
@@ -527,266 +560,4 @@ public class AssetFeatureServiceImpl extends ServiceImpl<AssetFeatureDao, AssetF
         }
         return Tool.ListUtil.empty();
     }
-
-
-    /**
-     * build os info with SSH
-     *
-     * @param session
-     * @param assetId
-     * @return
-     */
-    private Map<String, Object> buildOsInfoWithSSH(Session session, Integer assetId) {
-        try {
-            Map<String, Object> os = Tool.MapUtil.newHashMap();
-            os.put("platform", "Linux");
-
-            String machine = JschUtil.exec(session, "uname -m", Charset.forName("UTF-8"));
-            os.put("bitness", StrUtil.contains(machine, "64") ? 64 : 32);
-
-            String hostname = JschUtil.exec(session, "uname -n", Charset.forName("UTF-8"));
-            os.put("hostname", StrUtil.trim(hostname));
-
-            String manufacturer = JschUtil.exec(session, "uname -o", Charset.forName("UTF-8"));
-            os.put("manufacturer", StrUtil.trim(manufacturer));
-
-            LocalLinuxOperatingSystem localLinuxOperatingSystem = new LocalLinuxOperatingSystem(session);
-            Pair<String, OperatingSystem.OSVersionInfo> triplet = localLinuxOperatingSystem.queryFamilyVersionInfo();
-
-            String family = localLinuxOperatingSystem.getFamily(triplet);
-            os.put("family", StrUtil.trim(family));
-
-            OperatingSystem.OSVersionInfo versionInfo = localLinuxOperatingSystem.getVersionInfo(triplet);
-            os.put("versionInfo", versionInfo.toString());
-
-            LocalLinuxOperatingSystem.LocalLinuxNetworkParams localLinuxNetworkParams = new LocalLinuxOperatingSystem.LocalLinuxNetworkParams();
-            String ipv4DefaultGateway = localLinuxNetworkParams.getIpv4DefaultGateway();
-            String ipv6DefaultGateway = localLinuxNetworkParams.getIpv6DefaultGateway();
-            os.put("ipv4DefaultGateway", ipv4DefaultGateway);
-            os.put("ipv6DefaultGateway", ipv6DefaultGateway);
-            return os;
-        } catch (Exception e) {
-            log.error(e, "[buildOsInfoWithSSH] [error] [assetId: {}]", assetId);
-        }
-        return Tool.MapUtil.empty();
-    }
-
-
-    /**
-     * build cpu info with SSH
-     *
-     * @param session
-     * @param assetId
-     * @return
-     */
-    private Map<String, Object> buildCpuInfoWithSSH(Session session, Integer assetId) {
-        try {
-            Map<String, Object> cpu = Tool.MapUtil.newHashMap();
-            LoacalLinuxCentralProcessor processor = new LoacalLinuxCentralProcessor(session);
-
-            cpu.put("physicalPackageCount", processor.getPhysicalPackageCount());
-            cpu.put("physicalProcessorCount", processor.getPhysicalProcessorCount());
-            cpu.put("logicalProcessorCount", processor.getLogicalProcessorCount());
-            cpu.put("contextSwitches", processor.getContextSwitches());
-            cpu.put("interrupts", processor.getInterrupts());
-
-            CentralProcessor.ProcessorIdentifier processorIdentifier = processor.queryProcessorId();
-            cpu.put("family", processorIdentifier.getFamily());
-            cpu.put("identifier", processorIdentifier.getIdentifier());
-            cpu.put("microarchitecture", processorIdentifier.getMicroarchitecture());
-            cpu.put("model", processorIdentifier.getModel());
-            cpu.put("name", processorIdentifier.getName());
-            cpu.put("vendor", processorIdentifier.getVendor());
-            cpu.put("stepping", processorIdentifier.getStepping());
-            cpu.put("cpu64bit", processorIdentifier.isCpu64bit());
-            return cpu;
-        } catch (Exception e) {
-            log.error(e, "[buildCpuInfoWithSSH] [error] [assetId: {}]", assetId);
-        }
-        return Tool.MapUtil.empty();
-    }
-
-    /**
-     * build memory info with SSH
-     *
-     * @param session
-     * @param assetId
-     * @return
-     */
-    private Map<String, Object> buildMemoryInfoWithSSH(Session session, Integer assetId) {
-        try {
-            Map<String, Object> memory = Tool.MapUtil.newHashMap();
-
-            List<String> procMemInfo = Tool.ListUtil.list(true);
-            ChannelExec channel = (ChannelExec) JschUtil.createChannel(session, ChannelType.EXEC);
-            channel.setCommand("cat /proc/meminfo");
-            channel.connect();
-            IoUtil.readLines(channel.getInputStream(), Charset.forName("UTF-8"), procMemInfo);
-            JschUtil.close(channel);
-
-            for (String checkLine : procMemInfo) {
-                String[] memorySplit = ParseUtil.whitespaces.split(checkLine, 2);
-                if (memorySplit.length > 1) {
-                    if (StrUtil.equals("MemTotal:", memorySplit[0])) {
-                        long memTotal = ParseUtil.parseDecimalMemorySizeToBinary(memorySplit[1]);
-                        memory.put("total", memTotal);
-                        break;
-                    }
-                }
-            }
-            for (String checkLine : procMemInfo) {
-                String[] memorySplit = ParseUtil.whitespaces.split(checkLine);
-                if (memorySplit.length > 1) {
-                    if (StrUtil.equals("SwapTotal:", memorySplit[0])) {
-                        long swapTotal = parseMeminfo(memorySplit);
-                        memory.put("swapTotal", swapTotal);
-                    } else if (StrUtil.equals("CommitLimit:", memorySplit[0])) {
-                        long commitLimit = parseMeminfo(memorySplit);
-                        memory.put("virtualMax", commitLimit);
-                    }
-                }
-            }
-            return memory;
-        } catch (Exception e) {
-            log.error(e, "[buildMemoryInfoWithSSH] [error] [assetId: {}]", assetId);
-        }
-        return Tool.MapUtil.empty();
-    }
-
-    /**
-     * build disk info with SSH
-     *
-     * @param session
-     * @param assetId
-     * @return
-     */
-    private List<Map<String, Object>> buildDiskInfoWithSSH(Session session, Integer assetId) {
-        try {
-            List<Map<String, Object>> disk = Tool.ListUtil.list(true);
-
-            String sfdiskStr = JschUtil.exec(session, "sfdisk -s", Charset.forName("UTF-8"));
-            List<String> sfdiskList = StrUtil.split(StrUtil.emptyToDefault(StrUtil.trim(sfdiskStr), null), "\n");
-            for (String item : sfdiskList) {
-                if (StrUtil.startWith(item, "/dev/sd")) {
-                    Map<String, Object> tmap = Tool.MapUtil.newHashMap();
-
-                    String[] split = item.split(":");
-                    String diskName = split[0];
-                    tmap.put("name", diskName);
-
-                    String deviceName = diskName.replaceAll("/dev/", "");
-
-                    String sizeResult = JschUtil.exec(session, "lsblk -o NAME,SIZE -ab", Charset.forName("UTF-8"));
-                    for (String item1 : StrUtil.split(sizeResult, "\n")) {
-                        String[] lsblkFields = item1.split("\\s+");
-                        if (StrUtil.equals(deviceName, ArrayUtil.get(lsblkFields, 0))) {
-                            tmap.put("size", ArrayUtil.get(lsblkFields, 1));
-                            break;
-                        }
-                    }
-
-                    String modelResult = JschUtil.exec(session, "lsblk -o NAME,MODEL -ab", Charset.forName("UTF-8"));
-                    for (String item1 : StrUtil.split(modelResult, "\n")) {
-                        String[] lsblkFields = item1.split("\\s+");
-                        if (StrUtil.equals(deviceName, ArrayUtil.get(lsblkFields, 0))) {
-                            String result = Arrays.stream(lsblkFields, 1, lsblkFields.length).collect(Collectors.joining("_"));
-                            tmap.put("model", result);
-                            break;
-                        }
-                    }
-
-                    String serialResult = JschUtil.exec(session, "lsblk -o NAME,SERIAL -ab", Charset.forName("UTF-8"));
-                    for (String item1 : StrUtil.split(serialResult, "\n")) {
-                        String[] lsblkFields = item1.split("\\s+");
-                        if (StrUtil.equals(deviceName, ArrayUtil.get(lsblkFields, 0))) {
-                            String result = Arrays.stream(lsblkFields, 1, lsblkFields.length).collect(Collectors.joining("_"));
-                            tmap.put("serial", StrUtil.emptyToDefault(result, "unknown"));
-                            break;
-                        }
-                    }
-                    disk.add(tmap);
-                }
-            }
-            return disk;
-        } catch (Exception e) {
-            log.error(e, "[buildDiskInfoWithSSH] [error] [assetId: {}]", assetId);
-        }
-        return Tool.ListUtil.empty();
-    }
-
-    /**
-     * build NetworkIF info with SSH
-     *
-     * @param session
-     * @param assetId
-     * @return
-     */
-    private List<Map<String, Object>> buildNetworkIFInfoWithSSH(Session session, Integer assetId) {
-        try {
-            List<Map<String, Object>> networkIFList = Tool.ListUtil.list(true);
-
-            List<String> iFNameList = Tool.ListUtil.list(true);
-            ChannelExec channel = (ChannelExec) JschUtil.createChannel(session, ChannelType.EXEC);
-            channel.setCommand("ls /sys/class/net");
-            channel.connect();
-            IoUtil.readLines(channel.getInputStream(), Charset.forName("UTF-8"), iFNameList);
-            JschUtil.close(channel);
-
-            for (String ifName : iFNameList) {
-                LocalLinuxNetworkIF networkIF = new LocalLinuxNetworkIF(session, ifName);
-
-                Map<String, Object> networkData = Tool.MapUtil.newHashMap();
-                networkData.put("index", networkIF.getIfIndex());
-                networkData.put("name", networkIF.getName());
-                networkData.put("ifAlias", networkIF.getIfAlias());
-                networkData.put("ifType", networkIF.getIfType());
-                networkData.put("speed", networkIF.getSpeed());
-                networkData.put("mtu", networkIF.getMtu());
-                networkData.put("ifOperStatus", StrUtil.equalsIgnoreCase("up", networkIF.getIfOperStatus()) ? 1 : 2);
-                networkData.put("macaddr", networkIF.getAddress());
-
-                String ipListStr = JschUtil.exec(session, "ifconfig " + ifName + " | grep \"inet\" | awk '{print $2}'", Charset.forName("UTF-8"));
-                if (StrUtil.isNotEmpty(StrUtil.trim(ipListStr))) {
-                    List<String> ipAddressList = StrUtil.split(StrUtil.trim(ipListStr), "\n");
-                    Set<String> iPv4addrList = Tool.CollUtil.set(true);
-                    Set<String> iPv6addrList = Tool.CollUtil.set(true);
-
-                    for (String address : ipAddressList) {
-                        if (Validator.isIpv4(address)) {
-                            iPv4addrList.add(address);
-                        } else if (Validator.isIpv6(address)) {
-                            iPv6addrList.add(address);
-                        }
-                    }
-                    networkData.put("iPv4addr", iPv4addrList);
-                    networkData.put("iPv6addr", iPv6addrList);
-
-                    //  The Internet Protocol (IP) v4 subnet masks.
-                    String subnetMasks = JschUtil.exec(session, "ip addr show " + ifName + " | grep \"inet\\b\" | awk '{print $2}' | cut -d '/' -f 2", Charset.forName("UTF-8"));
-                    networkData.put("subnetMasks", StrUtil.split(StrUtil.emptyToDefault(StrUtil.trim(subnetMasks), null), "\n"));
-                } else {
-                    networkData.put("iPv4addr", Tool.ListUtil.empty());
-                    networkData.put("iPv6addr", Tool.ListUtil.empty());
-                    networkData.put("subnetMasks", Tool.ListUtil.empty());
-                }
-                networkIFList.add(networkData);
-            }
-            return networkIFList;
-        } catch (Exception e) {
-            log.error(e, "[buildNetworkIFInfoWithSSH] [error] [assetId: {}]", assetId);
-        }
-        return Tool.ListUtil.empty();
-    }
-
-    private static long parseMeminfo(String[] memorySplit) {
-        if (memorySplit.length < 2) {
-            return 0L;
-        }
-        long memory = ParseUtil.parseLongOrDefault(memorySplit[1], 0L);
-        if (memorySplit.length > 2 && "kB".equals(memorySplit[2])) {
-            memory *= 1024;
-        }
-        return memory;
-    }
-
 }
