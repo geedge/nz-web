@@ -25,6 +25,8 @@ public interface AssetAssetService extends IService<AssetAsset> {
 
     AssetAsset queryAssetInfo(Integer id);
 
+    AssetAsset queryAssetWithFeatureInfo(Integer id, Integer feature);
+
     PageUtils queryAssetPage(Map<String, Object> params);
 
     Map<String,List> queryAssetGroupBy(Map<String, Object> params);

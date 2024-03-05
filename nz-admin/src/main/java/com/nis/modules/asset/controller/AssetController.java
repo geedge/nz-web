@@ -54,8 +54,8 @@ public class AssetController {
      */
     @GetMapping("/asset/{id}")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.HARDWARE_ASSET)
-    public R queryAssetInfo(@PathVariable("id") Integer id) {
-        return R.ok(assetAssetService.queryAssetInfo(id));
+    public R queryAssetInfo(@PathVariable("id") Integer id, @RequestParam(value = "feature", required = false) Integer feature) {
+        return R.ok(assetAssetService.queryAssetWithFeatureInfo(id, feature));
     }
 
     /**

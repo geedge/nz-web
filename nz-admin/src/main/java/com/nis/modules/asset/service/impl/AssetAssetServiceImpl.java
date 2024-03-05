@@ -263,6 +263,27 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         return asset;
     }
 
+    @SuppressWarnings("unchecked")
+    @Override
+    public AssetAsset queryAssetWithFeatureInfo(Integer id, Integer feature) {
+        AssetAsset assetInfo = this.queryAssetInfo(id);
+        ValidateUtils.is(assetInfo).notNull(RCode.ASSET_NOT_EXIST);
+
+        // feature
+        feature = ObjectUtil.defaultIfNull(feature, 0);
+        if (ObjectUtil.equal(1, feature)) {
+            try {
+                List<AssetFeature> featureList = assetFeatureService.list(new LambdaQueryWrapper<AssetFeature>().eq(AssetFeature::getAssetId, assetInfo.getId()));
+                Map<String, Object> featureMap = featureList.stream().collect(Collectors.toMap(obj -> obj.getItem(), obj -> JSONObject.parse(obj.getValue())));
+                MapUtil.renameKey(featureMap, "networkIF", "interface");
+                assetInfo.setFeature(featureMap);
+            } catch (Exception e) {
+                log.error(e, "[queryAssetWithFeatureInfo] [feature error] [asset: {}]", id);
+            }
+        }
+        return assetInfo;
+    }
+
     private void handleQueryAssetParam(Map<String, Object> params) {
         String ids = (String) params.get("ids");
         if (StrUtil.isNotBlank(ids)) {

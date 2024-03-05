@@ -342,4 +342,11 @@ public class AssetAsset implements Serializable {
      */
     @TableField(exist = false)
     private String modules;
+
+    /**
+     * asset basic info
+     */
+    @TableField(exist = false)
+    private Map<String, Object> feature;
+
 }

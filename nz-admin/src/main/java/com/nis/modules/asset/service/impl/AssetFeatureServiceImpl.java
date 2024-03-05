@@ -230,18 +230,14 @@ public class AssetFeatureServiceImpl extends ServiceImpl<AssetFeatureDao, AssetF
             session = SshUtil.getSshConnection(asset);
 
             if (StrUtil.isNotEmpty(sshCollectScript)) {
-                String cmd = """
+                String writeScriptContentCmd = """
                         cat > /tmp/device_info_collector.sh  << "EOF" 
-                                          
+                        %s
+                        EOF               
                         """;
-                cmd += sshCollectScript;
-                String cmdEnd = """
-                                                
-                        EOF
-                        """;
-                cmd += cmdEnd;
+                writeScriptContentCmd = String.format(writeScriptContentCmd, sshCollectScript);
                 // 写入
-                Tool.JschUtil.exec(session, cmd, StandardCharsets.UTF_8);
+                Tool.JschUtil.exec(session, writeScriptContentCmd, StandardCharsets.UTF_8);
                 // 执行
                 String result = Tool.JschUtil.exec(session,
                         "chmod +x /tmp/device_info_collector.sh && /tmp/device_info_collector.sh",
