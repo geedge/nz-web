@@ -1100,7 +1100,7 @@ public class VisualServiceImpl implements VisualService {
                     if (StrUtil.equals(Constant.CHART_ASSETINFO_TYPE, chart.getType())) {
                         queryParams.put("assetId", visualDashboard.getLink());
                         Map<String, Object> alertMessageTrend = statServiceImpl.queryAlertMessageTrend(queryParams);
-                        AssetAsset asset = assetAssetService.queryAssetInfo(visualDashboard.getLink());
+                        AssetAsset asset = assetAssetService.queryAssetWithFeatureInfo(visualDashboard.getLink(), 1);
                         Map<String, Object> assetDataMap = BeanUtil.beanToMap(asset);
                         assetDataMap.put("alertMessageTrend", alertMessageTrend);
                         r.put("data", assetDataMap);

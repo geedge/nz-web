@@ -952,7 +952,7 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 					VisualDashboard visualDashboard = this.getById(chart.getDashboardId());
 					R ok = R.ok();
 					if (StrUtil.equals("assetInfo", chart.getType())) {
-						ok.put("data", assetAssetService.queryAssetInfo(visualDashboard.getLink()));
+						ok.put("data", assetAssetService.queryAssetWithFeatureInfo(visualDashboard.getLink(), 1));
 					} else if (StrUtil.equals("endpointInfo", chart.getType())) {
 						ok.put("data", monitorEndpointService.queryEndpointEntity(visualDashboard.getLink()));
 					} else {
