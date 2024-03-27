@@ -37,7 +37,7 @@ public class V3_2_DataFormatConversionService implements DataFormatConversionInt
     /**
      * back up table name
      */
-    private static final String BACK_UP_TABLE_NAME = "visual_chart_v3_2";
+    private static final String BACK_UP_TABLE_NAME = "visual_chart_V3_2";
 
     private Connection connection;
 
@@ -141,7 +141,7 @@ public class V3_2_DataFormatConversionService implements DataFormatConversionInt
     private void conversionVisualChartData() throws SQLException {
         log.info("[conversionVisualChartData] [begin]");
 
-        List<Entity> backUpChartList = SqlExecutor.query(this.connection, "SELECT * FROM visual_chart_v3_2 ORDER BY panel_id, group_id, weight, id", new EntityListHandler());
+        List<Entity> backUpChartList = SqlExecutor.query(this.connection, "SELECT * FROM visual_chart_V3_2 ORDER BY panel_id, group_id, weight, id", new EntityListHandler());
         log.info("[conversionVisualChartData] [conversion size: {}]", backUpChartList.size());
 
         // query element list.  name has been processed
