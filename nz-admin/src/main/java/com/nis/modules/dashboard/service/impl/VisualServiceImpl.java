@@ -7,6 +7,8 @@ import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.*;
+import cn.hutool.json.JSON;
+import cn.hutool.json.JSONConfig;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
@@ -226,8 +228,10 @@ public class VisualServiceImpl implements VisualService {
             reader = new BufferedReader(new FileReader(Tool.StrUtil.concat(true, path, File.separator, "snapshot_template.html")));
             String line;
             while ((line = reader.readLine()) != null) {
-                if (Tool.StrUtil.startWith(line, "<script>window.dataJson"))
-                    line = "<script>window.dataJson=" + JSONUtil.toJsonStr(resultMap) + "</script>";
+                if (Tool.StrUtil.startWith(line, "<script>window.dataJson")) {
+                    JSON json = new cn.hutool.json.JSONObject(resultMap, JSONConfig.create().setIgnoreNullValue(false));
+                    line = "<script>window.dataJson=" + json.toJSONString(0) + "</script>";
+                }
                 sbf.append(line + "\n");
             }
         } catch (IOException e) {
