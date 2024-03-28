@@ -116,9 +116,15 @@ public class MetricTypeEndpointStatusJob extends QuartzJobBean {
         List<Agent> allAgentsForScrapeEndpoints = Tool.ListUtil.list(true);
 
         if (StrUtil.equals("0", federationEnabled)) {
-            // 关闭 federation ，Global scrape endpoint jobs
             log.info("[getAgentsForScrapeEndpointsByConfig] [federation is not enabled. get global agents]");
-            allAgentsForScrapeEndpoints = agentService.list(new LambdaQueryWrapper<Agent>().eq(Agent::getType, AgentType.GLOBAL.getValue()));
+            // 关闭 federation ，Global scrape endpoint jobs
+            String replicationMode = sysConfService.getValueOrDefault(Constant.SYSCONFIG_KEY_PROME_REPLICATION_MODE, "0");
+            if (StrUtil.equals("1", replicationMode)) {
+                // 多副本模式 任意获取一个
+                allAgentsForScrapeEndpoints = agentService.list(new LambdaQueryWrapper<Agent>().eq(Agent::getType, AgentType.GLOBAL.getValue()).orderByDesc(Agent::getPriority).last("limit 1"));
+            } else {
+                allAgentsForScrapeEndpoints = agentService.list(new LambdaQueryWrapper<Agent>().eq(Agent::getType, AgentType.GLOBAL.getValue()));
+            }
         } else if (StrUtil.equals("1", federationEnabled)) {
             // 开启 federation ，Per-datacenter scrape endpoint jobs
             log.info("[getAgentsForScrapeEndpointsByConfig] [federation is enabled. get per-datacenter agents]");
