@@ -2,6 +2,7 @@ package com.nis.modules.agent.controller;
 
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.URLUtil;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
 import com.nis.common.smartvalidate.ValidateUtils;
@@ -248,7 +249,9 @@ public class PromProxyController {
                 for (int i = 0; i < result.size(); i++) {
                     //value to values
                     JSONObject jsonObject = (JSONObject) result.get(i);
-                    MapUtil.renameKey(jsonObject, "value", "values");
+                    JSONArray newValuesArr = new JSONArray();
+                    newValuesArr.add(jsonObject.remove("value"));
+                    jsonObject.put("values", newValuesArr);
                 }
                 data.put("result", result);
                 break;
