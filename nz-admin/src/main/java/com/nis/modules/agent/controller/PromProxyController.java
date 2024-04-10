@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -240,18 +239,18 @@ public class PromProxyController {
 
     private JSONObject queryResultToQueryRange(JSONObject resultData) {
         // 获取 resultType
-        String resultType = resultData.getJSONObject("data").getString("resultType");
+        JSONObject data = resultData.getJSONObject("data");
+        String resultType = data.getString("resultType");
         String jsonStr = JSONUtil.toJsonStr(resultData);
         switch (resultType) {
             case "vector":
                 List result = (List) JSONPath.read(jsonStr, "$.data.result");
                 for (int i = 0; i < result.size(); i++) {
                     //value to values
-                    String path = MessageFormat.format("$.data.result[{0}].value", i);
-                    Object value = JSONPath.read(jsonStr, path);
-                    JSONPath.remove(resultData, path);
-                    JSONPath.set(resultData, MessageFormat.format("$.data.result[{0}].values", i), Arrays.asList(value));
+                    JSONObject jsonObject = (JSONObject) result.get(i);
+                    MapUtil.renameKey(jsonObject, "value", "values");
                 }
+                data.put("result", result);
                 break;
             case "string":
             case "scalar": {
