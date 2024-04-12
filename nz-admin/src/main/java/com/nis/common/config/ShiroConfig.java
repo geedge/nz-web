@@ -8,6 +8,7 @@ import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
 import com.nis.modules.metric.dto.NezhaMetrics;
 import com.nis.modules.sys.dao.SysApiKeyDao;
+import com.nis.modules.sys.dao.SysLoginSessionDao;
 import com.nis.modules.sys.service.LicenseService;
 import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.shiro.MariadbSessionDao;
@@ -52,6 +53,9 @@ public class ShiroConfig {
 
 	@Autowired
 	private SysApiKeyDao sysApiKeyDao;
+
+	@Autowired
+	private SysLoginSessionDao loginSessionDao;
 
 	@Autowired
 	private SysConfService sysConfService;
@@ -122,7 +126,7 @@ public class ShiroConfig {
 		Map<String, Filter> cumstomFilterMap = new LinkedHashMap<String, Filter>();
 		LicenseShiroFilter licenseShiroFilter = new LicenseShiroFilter();
 		MetricsShiroFilter metricsShiroFilter = new MetricsShiroFilter();
-		TokenCheckFilter tokenCheckFilter = new TokenCheckFilter(sysApiKeyDao);
+		TokenCheckFilter tokenCheckFilter = new TokenCheckFilter(sysApiKeyDao,loginSessionDao);
 		cumstomFilterMap.put("tokenCheckFilter", tokenCheckFilter);
 		cumstomFilterMap.put("licenseFilter", licenseShiroFilter);
 		cumstomFilterMap.put("metricsFilter", metricsShiroFilter);

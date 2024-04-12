@@ -3,12 +3,16 @@ package com.nis.common.interceptor;
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.utils.*;
 import com.nis.modules.sys.dao.SysApiKeyDao;
+import com.nis.modules.sys.dao.SysLoginSessionDao;
 import com.nis.modules.sys.entity.SysApiKey;
+import com.nis.modules.sys.entity.SysLoginSession;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.shiro.MariadbSession;
+import com.nis.modules.sys.shiro.MariadbSessionDao;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
@@ -30,8 +34,11 @@ public class TokenCheckFilter extends AccessControlFilter {
 
 	private SysApiKeyDao sysApiKeyDao;
 
-	public TokenCheckFilter(SysApiKeyDao sysApiKeyDao) {
+	private SysLoginSessionDao sysLoginSessionDao;
+
+	public TokenCheckFilter(SysApiKeyDao sysApiKeyDao,SysLoginSessionDao sysLoginSessionDao) {
 		this.sysApiKeyDao = sysApiKeyDao;
+		this.sysLoginSessionDao = sysLoginSessionDao;
 	}
 
 	@Override
@@ -46,8 +53,7 @@ public class TokenCheckFilter extends AccessControlFilter {
 			response.getWriter().write(JSON.toJSON(R.error(RCode.SYS_LOGIN_REQUIRED)).toString());
 			return false;
 		}
-		
-		Session session = ShiroUtils.getSessionById(requestToken);
+		SysLoginSession session = sysLoginSessionDao.selectOne(new LambdaQueryWrapper<SysLoginSession>().eq(SysLoginSession::getSessionId, requestToken));
 		if (Tool.ObjectUtil.isNotNull(session)) {
 			SysUserEntity userEntity = ShiroUtils.getUserEntity();
 			if (Tool.ObjectUtil.isNull(userEntity)) {
