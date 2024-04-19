@@ -12,7 +12,8 @@ public enum DcImportEnum {
     PRINCIPAL("principal", 3),
     LONGITUDE("longitude", 4),
     LATITUDE("latitude", 5),
-    STATE("state", 6);
+    STATE("state", 6),
+    REMARK("remark", 7);
 
     private String name;
     private int index;

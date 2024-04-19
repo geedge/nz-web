@@ -16,6 +16,7 @@
         <result property="x" column="x"/>
         <result property="y" column="y"/>
         <result property="state" column="state"/>
+        <result property="remark" column="remark"/>
     </resultMap>
 
     <select id="queryDcList" resultMap="dcDetail">
@@ -60,6 +61,9 @@
             </if>
             <if test="params.starred != null and params.starred != ''">
                 AND IFNULL( sta.starred, 0 ) = #{params.starred}
+            </if>
+            <if test="params.remark != null and params.remark != ''">
+                AND locate(#{params.remark} , dc.remark)
             </if>
         </where>
         <if test="params.orderBy == null or params.orderBy == ''">

@@ -78,7 +78,8 @@ public class DcController {
                 .and(dc.getY()).min(1, RCode.DC_Y_MINIMUM)
                 .and(dc.getX()).min(1, RCode.DC_X_MINIMUM)
                 .and(dc.getLocation()).maxLength(256)
-                .and(dc.getTel()).maxLength(128);
+                .and(dc.getTel()).maxLength(128)
+                .and(dc.getRemark()).maxLength(256);
 
         return R.ok().putData("id", dcService.saveDc(dc));
     }
@@ -99,7 +100,8 @@ public class DcController {
                 .and(dc.getY()).min(1, RCode.DC_Y_MINIMUM)
                 .and(dc.getX()).min(1, RCode.DC_X_MINIMUM)
                 .and(dc.getLocation()).maxLength(256)
-                .and(dc.getTel()).maxLength(128);
+                .and(dc.getTel()).maxLength(128)
+                .and(dc.getRemark()).maxLength(256);
 
         return R.ok().putData("id", dcService.updateDc(dc));
     }

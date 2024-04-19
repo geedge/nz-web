@@ -82,6 +82,11 @@ public class Dc implements Serializable {
     private String state;
 
     /**
+     * 备注
+     */
+    private String remark;
+
+    /**
      * 机房负责人
      */
     @TableField(exist = false)

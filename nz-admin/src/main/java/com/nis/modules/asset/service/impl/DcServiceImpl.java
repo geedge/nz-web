@@ -556,6 +556,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
             if (Tool.CollUtil.isEmpty(errMsgForThisLine)) {
                 String location = dataMap.get(DcImportEnum.LOCATION.getIndex());
                 String tel = dataMap.get(DcImportEnum.TELEPHONE.getIndex());
+                String remark = dataMap.get(DcImportEnum.REMARK.getIndex());
 
                 Dc dc = new Dc();
                 dc.setName(name);
@@ -564,6 +565,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
                 dc.setLongitude(StrUtil.isNotEmpty(longitude) ? Double.valueOf(longitude) : null);
                 dc.setLatitude(StrUtil.isNotEmpty(latitude) ? Double.valueOf(latitude) : null);
                 dc.setState(state);
+                dc.setRemark(remark);
                 if (StrUtil.isNotEmpty(principalName)) {
                     SysUserEntity principalUser = sysUserService.getOne(new LambdaQueryWrapper<SysUserEntity>().eq(SysUserEntity::getName, principalName));
                     dc.setPrincipal(principalUser == null ? null : principalUser.getId().intValue());
@@ -633,7 +635,8 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
                     .set(Dc::getLatitude, dc.getLatitude())
                     .set(Dc::getLongitude, dc.getLongitude())
                     .set(Dc::getLocation, dc.getLocation())
-                    .set(Dc::getTel, dc.getTel());
+                    .set(Dc::getTel, dc.getTel())
+                    .set(Dc::getRemark, dc.getRemark());
             this.update(dc, updateWrapper);
         } else {
             params.put("save", true);
@@ -685,6 +688,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
             tempList.add(ObjectUtil.defaultIfNull(dc.getLongitude(), "").toString());
             tempList.add(ObjectUtil.defaultIfNull(dc.getLatitude(), "").toString());
             tempList.add(dc.getState());
+            tempList.add(ObjectUtil.defaultIfNull(dc.getRemark(), ""));
             exportDataList.add(tempList);
         }
         return exportDataList;
