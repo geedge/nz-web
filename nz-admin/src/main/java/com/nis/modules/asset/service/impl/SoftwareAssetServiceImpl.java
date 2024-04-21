@@ -295,30 +295,32 @@ public class SoftwareAssetServiceImpl extends ServiceImpl<SoftwareAssetDao, Soft
         log.info("[updateLicenseStatus] [license software asset list] [saIds: {}] [size: {}]", saIds, Tool.CollUtil.size(licenseAssetList));
 
         for (SoftwareAsset softwareAsset : licenseAssetList) {
-            SoftwareType type = softwareAsset.getType();
-            Constant.SoftwareLicenseType instance = Constant.SoftwareLicenseType.getInstance(type.getName());
-            switch (instance) {
-                // query ACC service
-                case TSG_OS_STANDALONE:
-                case TSG_OS_CONCENTRATE: {
-                    // TSG License
-                    this.updateTSGLicenseStatus(softwareAsset);
-                    break;
+            Thread.ofVirtual().start(() -> {
+                SoftwareType type = softwareAsset.getType();
+                Constant.SoftwareLicenseType instance = Constant.SoftwareLicenseType.getInstance(type.getName());
+                switch (instance) {
+                    // query ACC service
+                    case TSG_OS_HL_SEATS:
+                    case TSG_OS_HL: {
+                        // TSG License
+                        this.updateTSGLicenseStatus(softwareAsset);
+                        break;
+                    }
+                    // query license service
+                    case CM: {
+                        // CM License
+                        this.updateCMLicenseStatus(softwareAsset);
+                        break;
+                    }
+                    case NZ: {
+                        // NZ License
+                        this.updateNZLicenseStatus(softwareAsset);
+                        break;
+                    }
+                    default:
+                        break;
                 }
-                // query license service
-                case CM: {
-                    // CM License
-                    this.updateCMLicenseStatus(softwareAsset);
-                    break;
-                }
-                case NZ: {
-                    // NZ License
-                    this.updateNZLicenseStatus(softwareAsset);
-                    break;
-                }
-                default:
-                    break;
-            }
+            });
         }
     }
 

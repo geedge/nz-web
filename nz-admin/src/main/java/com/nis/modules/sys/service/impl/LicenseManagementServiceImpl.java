@@ -178,8 +178,8 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
 
         Constant.SoftwareLicenseType instance = Constant.SoftwareLicenseType.getInstance(softwareType.getName());
         switch (instance) {
-            case TSG_OS_STANDALONE:
-            case TSG_OS_CONCENTRATE: {
+            case TSG_OS_HL_SEATS:
+            case TSG_OS_HL: {
                 this.downloadC2VFileFromACC(saId, haspid, response);
                 break;
             }
@@ -365,8 +365,8 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
 
         Constant.SoftwareLicenseType instance = Constant.SoftwareLicenseType.getInstance(softwareType.getName());
         switch (instance) {
-            case TSG_OS_STANDALONE:
-            case TSG_OS_CONCENTRATE: {
+            case TSG_OS_HL_SEATS:
+            case TSG_OS_HL: {
                 this.uploadV2CToACC(saId, multipartFile);
                 break;
             }

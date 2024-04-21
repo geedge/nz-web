@@ -1255,8 +1255,8 @@ public class Constant {
 	 * SoftwareLicenseType
 	 */
 	public enum SoftwareLicenseType {
-		TSG_OS_CONCENTRATE("TSG-OS Concentrate"),
-		TSG_OS_STANDALONE("TSG-OS Stand-alone"),
+		TSG_OS_HL_SEATS("TSG-OS HL Seats"),
+		TSG_OS_HL("TSG-OS HL"),
 		CM("TSG-CM"),
 		NZ("Network Zodiac");
 
