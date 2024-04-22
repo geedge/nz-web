@@ -63,10 +63,16 @@ public interface AssetAssetService extends IService<AssetAsset> {
 
     void bulkEdit(Map<String,Object> params);
     /**
-     * 获取 blackbox 所需 asset 详情信息
+     * blackbox_exporter manage_ip job
      * @return
      */
-    List<AssetAsset> getBlackboxAssetInfoList();
+    List<AssetAsset> getBlackboxMgtIpJobList();
+
+    /**
+     * blackbox_exporter ipmi_ip job
+     * @return
+     */
+    List<AssetAsset> getBlackboxIpmiJobList();
 
     /**
      * 获取 开启 ping 的 asset

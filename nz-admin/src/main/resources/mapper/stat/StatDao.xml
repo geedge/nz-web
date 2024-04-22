@@ -106,7 +106,7 @@
     <select id="selectAssetPingAnalysis" resultMap="statAnalysis">
     	select ap.status,
     	count(distinct(aa.id)) as num
-    	from asset_asset aa left join asset_ping ap on aa.manage_ip = ap.host
+    	from asset_asset aa left join asset_ping ap on aa.manage_ip = ap.host and ap.type = "mgt"
     	<if test="params.projectId != null or params.moduleId != null">
     		left join monitor_endpoint me on aa.id = me.asset_id
     		left join monitor_module mm on me.module_id = mm.id
@@ -520,7 +520,7 @@
 			aa.id AS asset
 		FROM
 			asset_asset aa
-		LEFT JOIN asset_ping ap ON aa.manage_ip = ap.host
+		LEFT JOIN asset_ping ap ON aa.manage_ip = ap.host and ap.type = "mgt"
 		LEFT JOIN alert_message_active am ON aa.id = am.asset_id
 		left join asset_state_conf assc on aa.state_id = assc.id
 		WHERE
@@ -533,7 +533,7 @@
     <select id="selectDcAssetUnhealthy" resultMap="statAnalysis">
     	select aa.dc_id id, 
 		count(DISTINCT aa.id) alarm
-		from asset_asset aa left join asset_ping ap on aa.id = ap.asset_id
+		from asset_asset aa left join asset_ping ap on aa.id = ap.asset_id and ap.type = "mgt"
 		left join asset_state_conf assc on aa.state_id = assc.id 
 		left join alert_message_active ama on aa.id = ama.asset_id 
 		where ((ap.`status`=0 or ap.`status` is null) or ama.state=1) and assc.ping=1
@@ -547,7 +547,7 @@
 		sum(case when mes.state=1 then 1 else 0 end) ok
 		from monitor_endpoint me left join monitor_endpoint_state mes on me.id = mes.endpoint_id
 		left join asset_asset aa  on aa.id = me.asset_id
-		left join asset_ping ap on aa.id = ap.asset_id
+		left join asset_ping ap on aa.id = ap.asset_id and ap.type = "mgt"
 		left join dc  on dc.id = aa.dc_id
 		group by dc.id
     </select>

@@ -298,7 +298,7 @@ public class AssetAsset implements Serializable {
     private String assetPingInterval;
     
     @TableField(exist = false)
-    private AssetPing pingInfo;
+    private List<AssetPing> pingInfo;
 
     @TableField(exist = false)
     private Integer endpointNum;

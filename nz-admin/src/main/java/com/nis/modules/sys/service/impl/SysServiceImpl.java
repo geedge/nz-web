@@ -123,6 +123,7 @@ public class SysServiceImpl extends ServiceImpl<SysDao, SysConfigEntity> impleme
         try {
             ResponseEntity<Map> entity = restTemplate.exchange(new URI(url), HttpMethod.POST, new HttpEntity(requestBody, headers), Map.class);
             HttpStatusCode statusCode = entity.getStatusCode();
+            log.info("[notifySysMessageByComponent] [url: {}] [responseStatus: {}]", url, statusCode.value());
             if (log.isDebugEnabled()) {
                 log.debug("[notifySysMessageByComponent] [url: {}] [responseStatus: {}] [result: {}]", url, statusCode.value(), Tool.JSONUtil.toJsonStr(entity));
             }

@@ -33,6 +33,11 @@ public class AssetPing implements Serializable {
     private Integer status;
 
     /**
+     * mgt,ipmi
+     */
+    private String type;
+
+    /**
      * 传输时间延迟
      */
     @TableField(exist = false)

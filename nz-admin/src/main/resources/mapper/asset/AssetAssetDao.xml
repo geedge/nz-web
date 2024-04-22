@@ -69,15 +69,15 @@
             <result property="tsgAppliance" column="tsg_appliance"/>
         </association>
 
-		<association property="pingInfo" columnPrefix="assp_" javaType="com.nis.modules.asset.entity.AssetPing">
-            <result property="status" column="status"/>
-        </association>
-
         <association property="license" columnPrefix="license_" javaType="java.util.Map">
             <result property="status" column="status"/>
             <result property="dateIssued" column="date_issued"/>
             <result property="dateExpires" column="date_expires"/>
         </association>
+
+        <collection property="pingInfo" columnPrefix="assp_" ofType="com.nis.modules.asset.entity.AssetPing">
+            <result property="status" column="status"/>
+        </collection>
         
     </resultMap>
 
@@ -137,7 +137,7 @@
 			LEFT JOIN asset_model model ON asset.model_id = model.id
 			LEFT JOIN dc dc ON asset.dc_id = dc.id
 			LEFT JOIN cabinet cab ON asset.cabinet_id = cab.id
-			LEFT JOIN asset_ping assp ON asset.id = assp.asset_id
+			LEFT JOIN asset_ping assp ON asset.id = assp.asset_id AND assp.type = "mgt"
 			LEFT JOIN asset_talon_status talon ON asset.id = talon.asset_id
 			LEFT JOIN ( SELECT asset_id, count( 1 ) AS endpointNum, GROUP_CONCAT(DISTINCT module_id ) module_ids FROM monitor_endpoint GROUP BY asset_id ) me ON asset.id = me.asset_id
 			LEFT JOIN ( SELECT asset_id, count( 1 ) AS alertNum FROM alert_message_active WHERE asset_id IS NOT NULL GROUP BY asset_id ) msg ON asset.id = msg.asset_id
@@ -292,6 +292,14 @@
                 AND  accses.status IS NULL THEN 0 ELSE accses.status END ) IN (0,2)
             </if>
 
+            <if test="params.q != null and params.q != ''">
+                AND ( locate(#{params.q} , asset.name) OR locate(#{params.q} , asset.manage_ip) )
+            </if>
+
+            <if test="params.ip != null and params.ip != ''">
+                AND ( locate(#{params.ip} , asset.manage_ip) OR locate(#{params.ip} , asset.ipmi_ip) )
+            </if>
+
          </where>
         <if test="params.orderBy == null or params.orderBy == ''">
             ORDER BY asset.id
@@ -308,7 +316,7 @@
 			count(DISTINCT asset.id) AS num 
 		FROM
 			asset_asset asset
-			LEFT JOIN asset_ping assp ON asset.id = assp.asset_id
+			LEFT JOIN asset_ping assp ON asset.id = assp.asset_id AND assp.type = "mgt"
 			LEFT JOIN asset_field_value fv ON asset.id = fv.asset_id
 			LEFT JOIN (select fv.meta_id,fv.`value` as val,fm.name, fv.asset_id from asset_field_value fv LEFT JOIN asset_field_meta fm on fv.meta_id = fm.id where fm.search = 1 AND fv.value != '' GROUP BY fv.meta_id,fv.`value`,fv.asset_id ) fvm ON asset.id = fvm.asset_id
         <where>

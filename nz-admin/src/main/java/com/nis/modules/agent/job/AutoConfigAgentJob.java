@@ -453,7 +453,8 @@ public class AutoConfigAgentJob extends QuartzJobBean {
      * @param agentList
      */
     private void updatePrometheusReplicationConfig(List<Agent> agentList) {
-        List<AssetAsset> assetPingJobList = assetService.getBlackboxAssetInfoList();
+        List<AssetAsset> blackboxMgtIpJobList = assetService.getBlackboxMgtIpJobList();
+        List<AssetAsset> blackboxIpmiJobList = assetService.getBlackboxIpmiJobList();
         List<MonitorEndpoint> endpointJobList = endpointService.getEnableMetricsEndpointInfoListForAgent();
 
         // update endpoint agent mapping
@@ -463,7 +464,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         for (Agent agent : agentList) {
             Map<String, Object> requestBody = Tool.MapUtil.newHashMap();
 
-            Map prometheusYmlMap = configUtil.generatePrometheusReplicationYml(agent, assetPingJobList, endpointJobList);
+            Map prometheusYmlMap = configUtil.generatePrometheusReplicationYml(agent, blackboxMgtIpJobList, blackboxIpmiJobList, endpointJobList);
             requestBody.put("config", prometheusYmlMap);
 
             Map<String, String> sysCmdLineMap = configUtil.generatePrometheusCmdLine(agent);
@@ -499,16 +500,18 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         boolean fedeEnabled = StrUtil.equals("1", sysConfService.getValue(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED));
 
         List<MonitorEndpoint> endpointList = new ArrayList<>();
-        Map<Integer, Integer> assetAgentMap, endpointAgentMap = new HashMap<>();
-        List<AssetAsset> blackboxAssetInfoList = assetService.getBlackboxAssetInfoList();
+        Map<Integer, Integer> blackboxJobIdToPromIdMap, endpointAgentMap = new HashMap<>();
+
+        List<AssetAsset> blackboxMgtIpJobList = assetService.getBlackboxMgtIpJobList();
+        List<AssetAsset> blackboxIpmiJobList = assetService.getBlackboxIpmiJobList();
         // 开启联邦
         if (fedeEnabled) {
             String assetPingFrom = sysConfService.getValue(Constant.SYSCONFIG_KEY_ASSET_PING_FROM);
             // blackbox 源为 global
-            assetAgentMap = StrUtil.equals("1", assetPingFrom) ? configUtil.consistentHashingAssignAsset(globalPromServers, blackboxAssetInfoList) : new HashMap<>(2);
+            blackboxJobIdToPromIdMap = StrUtil.equals("1", assetPingFrom) ? configUtil.consistentHashingAssignAsset(globalPromServers, blackboxMgtIpJobList) : new HashMap<>(2);
         } else {
             // 联邦关闭；global scrape black_box、endpoint
-            assetAgentMap = configUtil.consistentHashingAssignAsset(globalPromServers, blackboxAssetInfoList);
+            blackboxJobIdToPromIdMap = configUtil.consistentHashingAssignAsset(globalPromServers, blackboxMgtIpJobList);
             endpointList = endpointService.getEnableMetricsEndpointInfoListForAgent();
             // 分配 endpoint
             endpointAgentMap = configUtil.consistentHashingAssignEndpoint(globalPromServers, endpointList);
@@ -520,13 +523,17 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         for (int i = 0; i < globalPromServers.size(); i++) {
             Agent agent = globalPromServers.get(i);
 
-            List<Integer> assetIdListForThisAgent = assetAgentMap.entrySet().stream().filter(entry -> agent.getId().equals(entry.getValue())).map(Map.Entry::getKey).collect(Collectors.toList());
-            List<AssetAsset> assetListForThisAgent = blackboxAssetInfoList.stream().filter(asset -> assetIdListForThisAgent.contains(asset.getId())).collect(Collectors.toList());
+            // blackbox_exporter manage_ip job
+            List<Integer> mgtIpJobAssetIdListForThisAgent = blackboxJobIdToPromIdMap.entrySet().stream().filter(entry -> agent.getId().equals(entry.getValue())).map(Map.Entry::getKey).collect(Collectors.toList());
+            List<AssetAsset> mgtIpJobListForThisAgent = blackboxMgtIpJobList.stream().filter(asset -> mgtIpJobAssetIdListForThisAgent.contains(asset.getId())).collect(Collectors.toList());
+
+            // blackbox_exporter ipmi_ip job
+            List<AssetAsset> ipmiJobListForThisAgent = blackboxIpmiJobList.stream().filter(asset -> mgtIpJobAssetIdListForThisAgent.contains(asset.getId())).collect(Collectors.toList());
 
             List<Integer> endpointIdListForThisAgent = endpointAgentMap.entrySet().stream().filter(entry -> agent.getId().equals(entry.getValue())).map(Map.Entry::getKey).collect(Collectors.toList());
             List<MonitorEndpoint> endpointListForThisAgent = endpointList.stream().filter(endpoint -> endpointIdListForThisAgent.contains(endpoint.getId())).collect(Collectors.toList());
 
-            Map gloablAgentYmlMap = configUtil.generateGlobalYml(agent, globalPromServers, perDataCenterPromServers, assetListForThisAgent, endpointListForThisAgent, false, i == 0);
+            Map gloablAgentYmlMap = configUtil.generateGlobalYml(agent, globalPromServers, perDataCenterPromServers, mgtIpJobListForThisAgent, ipmiJobListForThisAgent, endpointListForThisAgent, false, i == 0);
 
             Map<String, Object> globalConfigBody = new LinkedHashMap(4);
             globalConfigBody.put("config", gloablAgentYmlMap);
@@ -573,8 +580,8 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         // 用于生成配置的 endpoint 信息
         List<MonitorEndpoint> enableEndpointInfoList = endpointService.getEnableMetricsEndpointInfoListForAgent();
 
-        // blackbox 所需 asset 信息
-        List<AssetAsset> blackboxAssetInfoList = assetService.getBlackboxAssetInfoList();
+        List<AssetAsset> blackboxMgtIpJobList = assetService.getBlackboxMgtIpJobList();
+        List<AssetAsset> blackboxIpmiJobList = assetService.getBlackboxIpmiJobList();
 
         Map<Integer, Integer> endpointAgentMap = new LinkedHashMap<>(16);
         for (Map.Entry<Integer, List<Agent>> entry : dcIdAndAgents.entrySet()) {
@@ -585,16 +592,18 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             // 数据中心下 endpoint & agent 关系映射
             Map<Integer, Integer> endpointAgentMapForDc = configUtil.consistentHashingAssignEndpoint(agentList, endpointList);
 
-            // per-datacenter 支持 asset ping job
-            List<AssetAsset> assetList = blackboxAssetInfoList.stream().filter(asset -> dcId.equals(asset.getDcId())).collect(Collectors.toList());
-            Map<Integer, Integer> assetAgentMapForDc = new HashMap<>();
+            // per-datacenter blackbox job
+            List<AssetAsset> blackboxMgtIpJobListForThisDc = blackboxMgtIpJobList.stream().filter(asset -> dcId.equals(asset.getDcId())).collect(Collectors.toList());
+            List<AssetAsset> blackboxIpmiJobListForThisDc = blackboxIpmiJobList.stream().filter(asset -> dcId.equals(asset.getDcId())).collect(Collectors.toList());
+
+            Map<Integer, Integer> blackboxJobIdToPromIdMapForThisDc = new HashMap<>();
             String assetPingFrom = sysConfService.getValue(Constant.SYSCONFIG_KEY_ASSET_PING_FROM);
             if (StrUtil.equals("2", assetPingFrom)) {
-                assetAgentMapForDc = configUtil.consistentHashingAssignAsset(agentList, assetList);
+                blackboxJobIdToPromIdMapForThisDc = configUtil.consistentHashingAssignAsset(agentList, blackboxMgtIpJobListForThisDc);
             }
 
             // 生成 per-datacenter 配置信息,并下发配置
-            this.updatePerDatacenterYml(agentList, endpointList, endpointAgentMapForDc, assetList, assetAgentMapForDc, globalPromServers);
+            this.updatePerDatacenterYml(agentList, endpointList, endpointAgentMapForDc, blackboxMgtIpJobListForThisDc, blackboxIpmiJobListForThisDc, blackboxJobIdToPromIdMapForThisDc, globalPromServers);
 
             endpointAgentMap.putAll(endpointAgentMapForDc);
         }
@@ -608,22 +617,27 @@ public class AutoConfigAgentJob extends QuartzJobBean {
      * @param agents
      * @param endpoints
      * @param endpointIdAndPromIdMap
-     * @param assets
-     * @param assetIdAndPromIdMap
+     * @param blackboxMgtIpJobList
+     * @param blackboxIpmiJobList
+     * @param blackboxJobIdToPromIdMap
      * @param globalPromServers
      */
-    private void updatePerDatacenterYml(List<Agent> agents, List<MonitorEndpoint> endpoints, Map<Integer, Integer> endpointIdAndPromIdMap, List<AssetAsset> assets, Map<Integer, Integer> assetIdAndPromIdMap, List<Agent> globalPromServers) {
+    private void updatePerDatacenterYml(List<Agent> agents, List<MonitorEndpoint> endpoints, Map<Integer, Integer> endpointIdAndPromIdMap, List<AssetAsset> blackboxMgtIpJobList, List<AssetAsset> blackboxIpmiJobList, Map<Integer, Integer> blackboxJobIdToPromIdMap, List<Agent> globalPromServers) {
         for (Agent agent : agents) {
             List<Integer> endpointIdListForThisAgent = endpointIdAndPromIdMap.entrySet().stream().filter(entry -> agent.getId().equals(entry.getValue())).map(Map.Entry::getKey).collect(Collectors.toList());
             List<MonitorEndpoint> endpointListForThisAgent = endpoints.stream().filter(endpoint -> endpointIdListForThisAgent.contains(endpoint.getId())).collect(Collectors.toList());
 
-            List<Integer> assetIdListForThisAgent = assetIdAndPromIdMap.entrySet().stream().filter(entry -> agent.getId().equals(entry.getValue())).map(Map.Entry::getKey).collect(Collectors.toList());
-            List<AssetAsset> assetListForThisAgent = assets.stream().filter(asset -> assetIdListForThisAgent.contains(asset.getId())).collect(Collectors.toList());
+            // blackbox_exporter manage_ip job
+            List<Integer> mgtIpJobAssetIdListForThisAgent = blackboxJobIdToPromIdMap.entrySet().stream().filter(entry -> agent.getId().equals(entry.getValue())).map(Map.Entry::getKey).collect(Collectors.toList());
+            List<AssetAsset> mgtIpJobListForThisAgent = blackboxMgtIpJobList.stream().filter(asset -> mgtIpJobAssetIdListForThisAgent.contains(asset.getId())).collect(Collectors.toList());
+
+            // blackbox_exporter ipmi_ip job
+            List<AssetAsset> ipmiJobListForThisAgent = blackboxIpmiJobList.stream().filter(asset -> mgtIpJobAssetIdListForThisAgent.contains(asset.getId())).collect(Collectors.toList());
 
             Map<String, Object> perDatacenterConfigBody = new HashMap<>(4);
 
             // 生成配置模板
-            Map perdatacenterYmlMap = configUtil.generatePerdatacenterYml(agent, endpointListForThisAgent, assetListForThisAgent, globalPromServers);
+            Map perdatacenterYmlMap = configUtil.generatePerdatacenterYml(agent, endpointListForThisAgent, mgtIpJobListForThisAgent, ipmiJobListForThisAgent, globalPromServers);
             perDatacenterConfigBody.put("config", perdatacenterYmlMap);
 
             Map<String, String> sysCmdLineMap = configUtil.generatePrometheusCmdLine(agent);

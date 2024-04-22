@@ -314,7 +314,7 @@ public class AgentConfigUtil {
 		endpointList = endpointList.stream().sorted(Comparator.comparing(MonitorEndpoint::getId))
 				.collect(Collectors.toList());
 		// 处理 endpoint 配置项 为了适应模板
-		this.handleDataConfigForTmpl(currentAgent, endpointList, Collections.emptyList());
+		this.handleDataConfigForTmpl(currentAgent, endpointList, Collections.emptyList(), Collections.emptyList());
 
 		params.put("endpointList", endpointList);
 
@@ -382,7 +382,7 @@ public class AgentConfigUtil {
 	 * @return
 	 */
 	public Map generatePerdatacenterYml(Agent agent, List<MonitorEndpoint> endpointList,
-			List<AssetAsset> assetList, List<Agent> globalAgents) {
+	           List<AssetAsset> blackboxMgtIpJobList, List<AssetAsset> blackboxIpmiJobList, List<Agent> globalAgents) {
 		log.debug("per-datacenter prometheus.yml 开始生成");
 		Map<String, Object> params = new LinkedHashMap();
 		params.put("scrape_interval", sysConfService.getValue(Constant.SYSCONFIG_KEY_SCRAPEINTERVAL));
@@ -394,7 +394,8 @@ public class AgentConfigUtil {
 		params.put("isGlobal", false);
 		params.put("isLocalStorage", false);
 
-		params.put("assetList", assetList);
+		params.put("blackboxMgtIpJobList", blackboxMgtIpJobList);
+		params.put("blackboxIpmiJobList", blackboxIpmiJobList);
 		List<Map> jobList = new ArrayList<>();
 
 		// prometheus_metric
@@ -413,7 +414,7 @@ public class AgentConfigUtil {
 		params.put("jobList", jobList);
 
 		// 处理 endpoint 配置项 为了适应模板
-		this.handleDataConfigForTmpl(agent, endpointList, assetList);
+		this.handleDataConfigForTmpl(agent, endpointList, blackboxMgtIpJobList, blackboxIpmiJobList);
 
 		params.put("endpointList", endpointList);
 		// remote_write url and token
@@ -518,14 +519,15 @@ public class AgentConfigUtil {
 	 * @param currentAgent
 	 * @param globalAgents
 	 * @param perDataCenterAgents
-	 * @param assetList
+	 * @param blackboxMgtIpJobList
+	 * @param blackboxIpmiJobList
 	 * @param endpointList
 	 * @param isAlert
 	 * @param isSupportSysteMetrics
 	 * @return
 	 */
 	public Map generateGlobalYml(Agent currentAgent, List<Agent> globalAgents,
-			List<Agent> perDataCenterAgents, List<AssetAsset> assetList, List<MonitorEndpoint> endpointList,
+			List<Agent> perDataCenterAgents, List<AssetAsset> blackboxMgtIpJobList, List<AssetAsset> blackboxIpmiJobList, List<MonitorEndpoint> endpointList,
 			Boolean isAlert, Boolean isSupportSysteMetrics) {
 		log.debug("global prometheus.yml 开始生成");
 
@@ -697,9 +699,10 @@ public class AgentConfigUtil {
 		params.put("remoteWriteUrlInfos", remoteWriteUrlInfoMapList);
 
 		// 处理 endpoint 配置项 为了适应模板
-		this.handleDataConfigForTmpl(currentAgent, endpointList, assetList);
+		this.handleDataConfigForTmpl(currentAgent, endpointList, blackboxMgtIpJobList, blackboxIpmiJobList);
 
-		params.put("assetList", assetList);
+		params.put("blackboxMgtIpJobList", blackboxMgtIpJobList);
+		params.put("blackboxIpmiJobList", blackboxIpmiJobList);
 		params.put("endpointList", endpointList);
 
 		params.put("jobList", jobList);
@@ -727,17 +730,23 @@ public class AgentConfigUtil {
 	 *
 	 * @param agent
 	 * @param endpointList
-	 * @param assetList
+	 * @param blackboxMgtIpJobList
+	 * @param blackboxIpmiJobList
 	 */
-	private void handleDataConfigForTmpl(Agent agent, List<MonitorEndpoint> endpointList,
-			List<AssetAsset> assetList) {
-		for (AssetAsset asset : assetList) {
+	private void handleDataConfigForTmpl(Agent agent, List<MonitorEndpoint> endpointList, List<AssetAsset> blackboxMgtIpJobList, List<AssetAsset> blackboxIpmiJobList) {
+		for (AssetAsset asset : blackboxMgtIpJobList) {
 			// dc name 处理
 			Dc dc = asset.getDc();
 			dc.setName(ToolUtil.string2Json(dc.getName()));
 			asset.setDc(dc);
 
 			// nz_agent_id，对应 agent id
+			asset.setAgent(agent);
+		}
+		for (AssetAsset asset : blackboxIpmiJobList) {
+			Dc dc = asset.getDc();
+			dc.setName(ToolUtil.string2Json(dc.getName()));
+			asset.setDc(dc);
 			asset.setAgent(agent);
 		}
 		for (MonitorEndpoint endpoint : endpointList) {
@@ -1192,7 +1201,7 @@ public class AgentConfigUtil {
 		nezhaMetricsStaticConfig.put("targets", nezhaMetricsTargets);
 		Map nezhaLabels = new LinkedHashMap(4);
 		Dc dc = dcService.getById(agent.getDcId());
-		nezhaLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
+		// nezhaLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
 		nezhaLabels.put("application", "nz-web");
 		nezhaLabels.put("agent_name", agent.getName());
 		nezhaLabels.put("nz_agent_id", agent.getId());
@@ -1376,11 +1385,12 @@ public class AgentConfigUtil {
 	 * prometheus replication
 	 *
 	 * @param agent
-	 * @param assetPingJobList
+	 * @param blackboxMgtIpJobList
+	 * @param blackboxIpmiJobList
 	 * @param endpointJobList
 	 * @return
 	 */
-	public Map generatePrometheusReplicationYml(Agent agent, List<AssetAsset> assetPingJobList, List<MonitorEndpoint> endpointJobList) {
+	public Map generatePrometheusReplicationYml(Agent agent, List<AssetAsset> blackboxMgtIpJobList, List<AssetAsset> blackboxIpmiJobList, List<MonitorEndpoint> endpointJobList) {
 		log.debug("[generatePrometheusReplicationYml] [begin] [agentId: {}]", agent.getId());
 		// prometheus_metric
 		Map prometheusMetricJob = this.getPrometheusMetricJob(agent, true);
@@ -1416,9 +1426,10 @@ public class AgentConfigUtil {
 		params.put("isAlert", false);
 
 		// 处理 endpoint 配置项 为了适应模板
-		this.handleDataConfigForTmpl(agent, endpointJobList, assetPingJobList);
+		this.handleDataConfigForTmpl(agent, endpointJobList, blackboxMgtIpJobList, blackboxIpmiJobList);
 
-		params.put("assetList", assetPingJobList);
+		params.put("blackboxMgtIpJobList", blackboxMgtIpJobList);
+		params.put("blackboxIpmiJobList", blackboxIpmiJobList);
 		params.put("endpointList", endpointJobList);
 
 		params.put("jobList", jobList);

@@ -810,7 +810,8 @@ public class Constant {
 	// 配置表中 blackbox 源， 1: global 2: per-datacenter 默认：1
 	public static final String SYSCONFIG_KEY_ASSET_PING_FROM = "asset_ping_from";
 
-	public static final String SYSCONFIG_KEY_ASSET_PING = "asset_ping";
+	public static final String SYSCONFIG_KEY_ASSET_MGT_PING_STATE = "asset_mgt_ping_state";
+	public static final String SYSCONFIG_KEY_ASSET_IPMI_PING_STATE = "asset_ipmi_ping_state";
 
 	// 配置表中 配置prometheus是否开启联邦模式，1：开启，0：关闭（界面禁用 添加选择 per-datacenter agent，所有endpoint
 	// 配置信息 hash 分布到 global prometheus）
@@ -1250,6 +1251,25 @@ public class Constant {
 			return null;
 		}
 	}
+
+	/**
+	 * AssetPingType
+	 */
+	public enum AssetPingType {
+		MGT("mgt"),
+		IPMI("ipmi");
+
+		private String type;
+
+		AssetPingType(String type) {
+			this.type = type;
+		}
+
+		public String getType() {
+			return type;
+		}
+	}
+
 
 	/**
 	 * SoftwareLicenseType

@@ -196,13 +196,23 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         Dc dc = dcService.getById(asset.getDcId());
         asset.setDc(dc);
 
-        AssetPing assetPing = assetPingService.getOne(new QueryWrapper<AssetPing>().lambda().eq(AssetPing::getAssetId, asset.getId()));
-        TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_PING);
+        List<AssetPing> pingInfoList = Tool.ListUtil.list(true);
+
+        AssetPing mgtPingState = assetPingService.getOne(new QueryWrapper<AssetPing>().lambda().eq(AssetPing::getAssetId, asset.getId()).eq(AssetPing::getType, Constant.AssetPingType.MGT.getType()));
+        TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_MGT_PING_STATE);
         Object object = cache.get(asset.getId().toString());
-        if (ToolUtil.isNotEmpty(object)) {
-            assetPing = JSON.parseObject((String) object, AssetPing.class);
+        if (ToolUtil.isNotEmpty(object)) mgtPingState = JSON.parseObject((String) object, AssetPing.class);
+        pingInfoList.add(mgtPingState);
+
+        if(StrUtil.isNotEmpty(asset.getIpmiIp())){
+            AssetPing ipmiPingState = assetPingService.getOne(new QueryWrapper<AssetPing>().lambda().eq(AssetPing::getAssetId, asset.getId()).eq(AssetPing::getType, Constant.AssetPingType.IPMI.getType()));
+            TimedCache<String, Object> ipmiPingStateCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_IPMI_PING_STATE);
+            Object obj = ipmiPingStateCache.get(asset.getId().toString());
+            if (ToolUtil.isNotEmpty(obj)) ipmiPingState = JSON.parseObject((String) obj, AssetPing.class);
+            pingInfoList.add(ipmiPingState);
         }
-        asset.setPingInfo(assetPing);
+        pingInfoList = pingInfoList.stream().filter(Objects::nonNull).toList();
+        asset.setPingInfo(pingInfoList);
 
         if (asset.getCabinetId() != null) {
             Cabinet cabinet = cabinetService.getById(asset.getCabinetId());
@@ -489,9 +499,11 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         List<AssetFieldMeta> metaInfoList = assetFieldMetaService.getAssetFieldMetaListByAssetId(null);
         Map<Integer, List<AssetFieldMeta>> assetIdAndMetaInfoList = metaInfoList.stream().collect(Collectors.groupingBy(AssetFieldMeta::getAssetId));
 
-        TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_PING);
+        TimedCache<String, Object> mgtPingStateCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_MGT_PING_STATE);
+        TimedCache<String, Object> ipmiPingStateCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_IPMI_PING_STATE);
         List<AssetPing> assetPinglist = assetPingService.list();
-        Map<Integer, AssetPing> assetPings = assetPinglist.stream().collect(Collectors.toMap(AssetPing::getAssetId, Function.identity(), (entity1, entity2) -> entity1));
+        Map<Integer, AssetPing> mgtPingMap = assetPinglist.stream().filter(ping -> StrUtil.equals(Constant.AssetPingType.MGT.getType(), ping.getType())).collect(Collectors.toMap(AssetPing::getAssetId, Function.identity(), (entity1, entity2) -> entity1));
+        Map<Integer, AssetPing> ipmiPingMap = assetPinglist.stream().filter(ping -> StrUtil.equals(Constant.AssetPingType.IPMI.getType(), ping.getType())).collect(Collectors.toMap(AssetPing::getAssetId, Function.identity(), (entity1, entity2) -> entity1));
 
         for (AssetAsset asset : assetList) {
             if (ToolUtil.isNotEmpty(asset.getCreateBy())) {
@@ -516,13 +528,23 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 asset.setCabinetEnd(asset.getCabinetEnd() - 1);
             }
 
+            List<AssetPing> pingInfoList = Tool.ListUtil.list(true);
             // 获取缓存中ping状态信息
-            AssetPing assetPing = assetPings.get(asset.getId());
-            Object object = cache.get(asset.getId().toString());
+            AssetPing mgtPingState = mgtPingMap.get(asset.getId());
+            Object object = mgtPingStateCache.get(asset.getId().toString());
             if (ToolUtil.isNotEmpty(object)) {
-                assetPing = JSON.parseObject((String) object, AssetPing.class);
+                mgtPingState = JSON.parseObject((String) object, AssetPing.class);
             }
-            asset.setPingInfo(assetPing);
+            pingInfoList.add(mgtPingState);
+
+            AssetPing ipmiPingState = ipmiPingMap.get(asset.getId());
+            Object obj = ipmiPingStateCache.get(asset.getId().toString());
+            if (ToolUtil.isNotEmpty(obj)) {
+                ipmiPingState = JSON.parseObject((String) obj, AssetPing.class);
+            }
+            pingInfoList.add(ipmiPingState);
+            pingInfoList = pingInfoList.stream().filter(Objects::nonNull).toList();
+            asset.setPingInfo(pingInfoList);
         }
     }
 
@@ -1047,7 +1069,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
      */
     private void afterUpdateAsset(Integer assetId) {
         assetPingService.remove(new QueryWrapper<AssetPing>().lambda().eq(AssetPing::getAssetId, assetId));
-        LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_PING).remove(assetId.toString());
+        LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_MGT_PING_STATE).remove(assetId.toString());
+        LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_IPMI_PING_STATE).remove(assetId.toString());
 
         assetTalonStatusService.removeById(assetId);
         LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.ASSET_TALON_STATE_CACHE_KEY).remove(assetId.toString());
@@ -1152,8 +1175,11 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // asset Ping
         List<String> tempIdListForRemoveCache = removeAssetIdList.stream().map(id -> id.toString()).collect(Collectors.toList());
         assetPingService.remove(new LambdaQueryWrapper<AssetPing>().in(AssetPing::getAssetId, removeAssetIdList));
-        TimedCache<String, Object> assetPingCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_PING);
+        TimedCache<String, Object> assetPingCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_MGT_PING_STATE);
         tempIdListForRemoveCache.parallelStream().forEach(key -> assetPingCache.remove(key));
+
+        TimedCache<String, Object> ipmiPingCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_IPMI_PING_STATE);
+        tempIdListForRemoveCache.parallelStream().forEach(key -> ipmiPingCache.remove(key));
 
         // asset Talon
         assetTalonStatusService.removeByIds(removeAssetIdList);
@@ -1763,7 +1789,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     }
 
     @Override
-    public List<AssetAsset> getBlackboxAssetInfoList() {
+    public List<AssetAsset> getBlackboxMgtIpJobList() {
         // get assets with asset_state_conf ping is enabled
         List<AssetAsset> assetList = this.getOpenPingAssets();
 
@@ -1775,6 +1801,28 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         for (AssetAsset entity : assetList) {
             entity.setDc(dcIdAndNameMap.get(entity.getDcId()));
             entity.setAssetPingInterval(assetPingIntervalInConfig);
+        }
+        return assetList;
+    }
+
+    @Override
+    public List<AssetAsset> getBlackboxIpmiJobList() {
+        // get assets with asset_state_conf ping is enabled
+        List<AssetAsset> assetList = this.getOpenPingAssets();
+
+        // 保留 ipmi_ip 不为空的
+        assetList = assetList.stream().filter(asset -> StrUtil.isNotEmpty(asset.getIpmiIp())).collect(Collectors.toList());
+
+        if (CollUtil.isNotEmpty(assetList)) {
+            List<Dc> dcList = dcService.list();
+            Map<Integer, Dc> dcIdAndNameMap = dcList.stream().collect(Collectors.toMap(Dc::getId, Function.identity()));
+
+            // asset_ping_interval，default = 300
+            String assetPingIntervalInConfig = sysConfService.getValueOrDefault(Constant.SYSCONFIG_KEY_ASSET_PING_INTERVAL, "300");
+            for (AssetAsset entity : assetList) {
+                entity.setDc(dcIdAndNameMap.get(entity.getDcId()));
+                entity.setAssetPingInterval(assetPingIntervalInConfig);
+            }
         }
         return assetList;
     }

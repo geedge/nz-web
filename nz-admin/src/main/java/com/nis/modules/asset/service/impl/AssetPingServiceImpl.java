@@ -26,12 +26,20 @@ public class AssetPingServiceImpl extends ServiceImpl<AssetPingDao, AssetPing> i
     public void syncAssetPingStateCache(String assetPingJsonStr) {
         try {
             // remove
-            LocalCacheManager.removeCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_PING);
+            LocalCacheManager.removeCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_MGT_PING_STATE);
+            LocalCacheManager.removeCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_IPMI_PING_STATE);
+
+            Map<String, Map<String, String>> bean = JSONUtil.toBean(assetPingJsonStr, Map.class);
+
             // add
-            TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_PING);
-            Map<String, String> dataMap = JSONUtil.toBean(assetPingJsonStr, Map.class);
-            for (Map.Entry<String, String> entry : dataMap.entrySet()) {
-                cache.put(entry.getKey(), entry.getValue());
+            TimedCache<String, Object> mgtCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_MGT_PING_STATE);
+            for (Map.Entry<String, String> entry : bean.get(Constant.AssetPingType.MGT.getType()).entrySet()) {
+                mgtCache.put(entry.getKey(), entry.getValue());
+            }
+
+            TimedCache<String, Object> ipmiCache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_IPMI_PING_STATE);
+            for (Map.Entry<String, String> entry : bean.get(Constant.AssetPingType.IPMI.getType()).entrySet()) {
+                ipmiCache.put(entry.getKey(), entry.getValue());
             }
         } catch (Exception e) {
             log.error(e, "[syncAssetPingCache] [error]");

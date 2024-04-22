@@ -153,16 +153,31 @@ public class LocalCacheSyncJob extends QuartzJobBean {
             // sync_cache_asset_ping
             Thread.ofVirtual().start(() -> {
                 log.info("[syncLocalCacheToSlave] [sync_cache_asset_ping] [begin]");
-                TimedCache<String, Object> cache = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_PING);
 
-                Map<String, String> notifyDataMap = Tool.MapUtil.newHashMap();
-                Iterator<CacheObj<String, Object>> iterator = cache.cacheObjIterator();
-                while (iterator.hasNext()) {
-                    CacheObj<String, Object> next = iterator.next();
+                Map<String, Map<String, String>> notifyDataMap = Tool.MapUtil.newHashMap();
+
+                Map<String, String> mgtPingData = Tool.MapUtil.newHashMap();
+                TimedCache<String, Object> mgt = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_MGT_PING_STATE);
+                Iterator<CacheObj<String, Object>> mgtIterator = mgt.cacheObjIterator();
+                while (mgtIterator.hasNext()) {
+                    CacheObj<String, Object> next = mgtIterator.next();
                     String assetId = next.getKey();
                     String assetPingJsonStr = Tool.StrUtil.toString(next.getValue());
-                    notifyDataMap.put(assetId, assetPingJsonStr);
+                    mgtPingData.put(assetId, assetPingJsonStr);
                 }
+
+                Map<String, String> ipmiPingData = Tool.MapUtil.newHashMap();
+                TimedCache<String, Object> ipmi = LocalCacheManager.getTimedCache(Constant.SYS_STATE_CACHE_PREFIX, Constant.SYSCONFIG_KEY_ASSET_IPMI_PING_STATE);
+                Iterator<CacheObj<String, Object>> ipmiIterator = ipmi.cacheObjIterator();
+                while (ipmiIterator.hasNext()) {
+                    CacheObj<String, Object> next = ipmiIterator.next();
+                    String assetId = next.getKey();
+                    String assetPingJsonStr = Tool.StrUtil.toString(next.getValue());
+                    ipmiPingData.put(assetId, assetPingJsonStr);
+                }
+
+                notifyDataMap.put(Constant.AssetPingType.MGT.getType(), mgtPingData);
+                notifyDataMap.put(Constant.AssetPingType.IPMI.getType(), ipmiPingData);
                 sysService.notifySysMessageByComponent(sysComponent, Constant.SysTopicNameEnum.SYNC_CACHE_ASSET_PING.getName(), JSONUtil.toJsonStr(notifyDataMap));
             });
 
