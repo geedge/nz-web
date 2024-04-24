@@ -4,7 +4,9 @@ import org.quartz.JobKey;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.nis.common.utils.LocalCacheManager;
@@ -12,12 +14,17 @@ import com.nis.common.utils.R;
 
 import cn.hutool.log.Log;
 
-@RestController("/debug")
+@RestController
+@RequestMapping("/debug")
 public class DebugController {
 
-	@Autowired
-    private Scheduler scheduler;
+	private Scheduler scheduler;
 	private static final Log log = Log.get();
+
+	@Autowired
+	public DebugController(@Lazy Scheduler scheduler) {
+		this.scheduler = scheduler;
+	}
 
 	@PutMapping("/triggerJob")
 	public R triggerJob(String name) throws SchedulerException {
