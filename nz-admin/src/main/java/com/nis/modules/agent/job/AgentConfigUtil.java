@@ -552,7 +552,7 @@ public class AgentConfigUtil {
 		// prometheus_metric
 		Map prometheusMetricJob = this.getPrometheusMetricJob(currentAgent, true);
 		// nezha_metrics
-		Map nezhaMetricsJob = this.getNezhaMetricsJob(currentAgent, true);
+		// Map nezhaMetricsJob = this.getNezhaMetricsJob(currentAgent, true);
 		// agent metrics
 		Map agentMetricsJob = this.getAgentMetricsJob(currentAgent, true);
 		// snmp exporter metrics
@@ -591,7 +591,7 @@ public class AgentConfigUtil {
 			// 本地存储 ， metrics 数据保存于 Prometheus , 弃用 cortex , global 接收 per-datacenter
 			// 推过来得数据，每一个 global 支持 nzweb 系统指标
 			if (isLocalStorage) {
-				jobList.add(nezhaMetricsJob);
+				// jobList.add(nezhaMetricsJob);
 				// jobList.add(promMetricsMap);
 				// metrics 本地存储，弃用 cortex ，直接采用 prometheus , 根据 sys_config prometheus_fed_mode
 				// 确定 pull/push
@@ -607,13 +607,19 @@ public class AgentConfigUtil {
 				} else if (StrUtil.equals("2", prometheusFedMode)) {
 					// global使用 remote_write 集中收集各个 per-datacenter数据 , 通过 联邦 job 收集其他 global 数据（global 负责任务采集，如 ping prometheus 等）
 					// 只采集 其他 global 即可
-					List<Integer> globalAgentIdList = globalAgents.stream().map(Agent::getId).collect(Collectors.toList());
-					for (Map map : federateMapList) {
-						String jobName = (String) map.get("job_name");
-						Integer serverId = Integer.valueOf(jobName.replaceAll("federate_", ""));
-						if (globalAgentIdList.contains(serverId) && !serverId.equals(currentAgent.getId())) {
-							jobList.add(map);
+					for (Agent agent : globalAgents) {
+						if (Tool.ObjectUtil.equal(agent.getId(), currentAgent.getId())) {
+							continue;
 						}
+						Map<String, Object> remoteWriteMap = Tool.MapUtil.newHashMap(true);
+						String remoteWriteUrl = String.format("http://%s:%s/api/v1/write", agent.getHost(), prometheusDefaultPort);
+						if (isProxyPush) {
+							remoteWriteUrl = String.format("%s://%s:%s%s/prometheus/proxy/api/v1/write", agent.getProtocol(),
+									agent.getHost(), agent.getPort(), sysConfService.getValue(Constant.CONFAGENT_PATH));
+						}
+						remoteWriteMap.put("url", remoteWriteUrl);
+						remoteWriteMap.put("token", agent.getToken());
+						remoteWriteUrlInfoMapList.add(remoteWriteMap);
 					}
 				}
 			} else {
@@ -629,9 +635,9 @@ public class AgentConfigUtil {
 				
 				map.put("token", currentAgent.getToken());
 				remoteWriteUrlInfoMapList.add(map);
-				if (isSupportSysteMetrics) {
-					jobList.add(nezhaMetricsJob);
-				}
+//				if (isSupportSysteMetrics) {
+//					jobList.add(nezhaMetricsJob);
+//				}
 			}
 		} else {
 			// 联邦关闭
@@ -685,9 +691,9 @@ public class AgentConfigUtil {
 				remoteWriteUrlInfoMapList.add(map);
 			}
 			// 不论 本地还是对象存储 ，有一个支持 nzweb 系统指标即可
-			if (isSupportSysteMetrics) {
-				jobList.add(nezhaMetricsJob);
-			}
+//			if (isSupportSysteMetrics) {
+//				jobList.add(nezhaMetricsJob);
+//			}
 		}
 		jobList.add(prometheusMetricJob);
 		jobList.add(agentMetricsJob);
@@ -1182,34 +1188,34 @@ public class AgentConfigUtil {
 	 * @param saveInstanceLabel
 	 * @return
 	 */
-	private Map getNezhaMetricsJob(Agent agent, Boolean saveInstanceLabel) {
-		// nezha_metrics
-		String alertApi = sysConfService.getValue(Constant.SYSCONFIG_KEY_ALERT_API);
-		String scheme = Tool.StrUtil.isBlank(alertApi) ? "http" : alertApi.split("://")[0];
-		String target = Tool.StrUtil.isBlank(alertApi) ? "" : alertApi.replace(scheme + "://", "");
-		Map nezhaMetricsMap = new LinkedHashMap();
-		String[] split = alertApi.split("://");
-		nezhaMetricsMap.put("job_name", "nezha_metrics");
-		nezhaMetricsMap.put("metrics_path", sysConfService.getValue(Constant.SYSCONFIG_KEY_ALERT_PATH_PREFIX) + "/actuator/prometheus");
-		nezhaMetricsMap.put("isFederate", false);
-		nezhaMetricsMap.put("scheme", scheme); // 协议
-		nezhaMetricsMap.put("instanceRelabel", saveInstanceLabel);
-		List nezhaMetricsStaticConfigList = new ArrayList();
-		Map nezhaMetricsStaticConfig = new LinkedHashMap(2);
-		List nezhaMetricsTargets = new ArrayList();
-		nezhaMetricsTargets.add(target); // ip:port
-		nezhaMetricsStaticConfig.put("targets", nezhaMetricsTargets);
-		Map nezhaLabels = new LinkedHashMap(4);
-		Dc dc = dcService.getById(agent.getDcId());
-		// nezhaLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
-		nezhaLabels.put("application", "nz-web");
-		nezhaLabels.put("agent_name", agent.getName());
-		nezhaLabels.put("nz_agent_id", agent.getId());
-		nezhaMetricsStaticConfig.put("labels", nezhaLabels);
-		nezhaMetricsStaticConfigList.add(nezhaMetricsStaticConfig);
-		nezhaMetricsMap.put("staticConfigList", nezhaMetricsStaticConfigList);
-		return nezhaMetricsMap;
-	}
+//	private Map getNezhaMetricsJob(Agent agent, Boolean saveInstanceLabel) {
+//		// nezha_metrics
+//		String alertApi = sysConfService.getValue(Constant.SYSCONFIG_KEY_ALERT_API);
+//		String scheme = Tool.StrUtil.isBlank(alertApi) ? "http" : alertApi.split("://")[0];
+//		String target = Tool.StrUtil.isBlank(alertApi) ? "" : alertApi.replace(scheme + "://", "");
+//		Map nezhaMetricsMap = new LinkedHashMap();
+//		String[] split = alertApi.split("://");
+//		nezhaMetricsMap.put("job_name", "nezha_metrics");
+//		nezhaMetricsMap.put("metrics_path", sysConfService.getValue(Constant.SYSCONFIG_KEY_ALERT_PATH_PREFIX) + "/actuator/prometheus");
+//		nezhaMetricsMap.put("isFederate", false);
+//		nezhaMetricsMap.put("scheme", scheme); // 协议
+//		nezhaMetricsMap.put("instanceRelabel", saveInstanceLabel);
+//		List nezhaMetricsStaticConfigList = new ArrayList();
+//		Map nezhaMetricsStaticConfig = new LinkedHashMap(2);
+//		List nezhaMetricsTargets = new ArrayList();
+//		nezhaMetricsTargets.add(target); // ip:port
+//		nezhaMetricsStaticConfig.put("targets", nezhaMetricsTargets);
+//		Map nezhaLabels = new LinkedHashMap(4);
+//		Dc dc = dcService.getById(agent.getDcId());
+//		// nezhaLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
+//		nezhaLabels.put("application", "nz-web");
+//		nezhaLabels.put("agent_name", agent.getName());
+//		nezhaLabels.put("nz_agent_id", agent.getId());
+//		nezhaMetricsStaticConfig.put("labels", nezhaLabels);
+//		nezhaMetricsStaticConfigList.add(nezhaMetricsStaticConfig);
+//		nezhaMetricsMap.put("staticConfigList", nezhaMetricsStaticConfigList);
+//		return nezhaMetricsMap;
+//	}
 
 	/**
 	 * prometheus agent metrics job
@@ -1395,7 +1401,7 @@ public class AgentConfigUtil {
 		// prometheus_metric
 		Map prometheusMetricJob = this.getPrometheusMetricJob(agent, true);
 		// nezha_metrics
-		Map nezhaMetricsJob = this.getNezhaMetricsJob(agent, true);
+		// Map nezhaMetricsJob = this.getNezhaMetricsJob(agent, true);
 		// agent metrics
 		Map agentMetricsJob = this.getAgentMetricsJob(agent, true);
 		// snmp exporter metrics
@@ -1413,7 +1419,7 @@ public class AgentConfigUtil {
 		jobList.add(snmpExporterMetricsJob);
 		jobList.add(blackboxExporterMetrics);
 
-		jobList.add(nezhaMetricsJob);
+		// jobList.add(nezhaMetricsJob);
 		jobList.add(lokiMetricsJob);
 		jobList.add(cortexMetricsJob);
 

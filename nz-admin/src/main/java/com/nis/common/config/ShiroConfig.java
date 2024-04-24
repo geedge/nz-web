@@ -6,7 +6,6 @@ import com.nis.common.utils.Constant;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
-import com.nis.modules.metric.dto.NezhaMetrics;
 import com.nis.modules.sys.dao.SysApiKeyDao;
 import com.nis.modules.sys.dao.SysLoginSessionDao;
 import com.nis.modules.sys.service.LicenseService;
@@ -15,7 +14,6 @@ import com.nis.modules.sys.shiro.MariadbSessionDao;
 import com.nis.modules.sys.shiro.MariadbSessionFactory;
 import com.nis.modules.sys.shiro.MariadbSessionManager;
 import com.nis.modules.sys.shiro.UserRealm;
-import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.Filter;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
@@ -64,11 +62,11 @@ public class ShiroConfig {
 	private String compileType;
 	@Value("${vendorCode}")
 	private String vendorCode;
-	@Autowired
-	private NezhaMetrics nezhaMetrics;
 
-	@Autowired
-	private MeterRegistry meterRegistry;
+//	@Autowired
+//	private NezhaMetrics nezhaMetrics;
+//	@Autowired
+//	private MeterRegistry meterRegistry;
 
 	@Autowired
 	private LicenseService licenseService;
@@ -119,17 +117,17 @@ public class ShiroConfig {
 		/*
 		 * 自定义 过滤器
 		 */
-		filterMap.put("/actuator/prometheus", "metricsFilter"); // prometheus metrics
+//		filterMap.put("/actuator/prometheus", "metricsFilter"); // prometheus metrics
 		filterMap.put("/actuator/**", "anon"); // 诊断接口
 		filterMap.put("/**", "tokenCheckFilter,licenseFilter");
 
 		Map<String, Filter> cumstomFilterMap = new LinkedHashMap<String, Filter>();
 		LicenseShiroFilter licenseShiroFilter = new LicenseShiroFilter();
-		MetricsShiroFilter metricsShiroFilter = new MetricsShiroFilter();
+//		MetricsShiroFilter metricsShiroFilter = new MetricsShiroFilter();
 		TokenCheckFilter tokenCheckFilter = new TokenCheckFilter(sysApiKeyDao,loginSessionDao);
 		cumstomFilterMap.put("tokenCheckFilter", tokenCheckFilter);
 		cumstomFilterMap.put("licenseFilter", licenseShiroFilter);
-		cumstomFilterMap.put("metricsFilter", metricsShiroFilter);
+//		cumstomFilterMap.put("metricsFilter", metricsShiroFilter);
 		shiroFilter.setFilters(cumstomFilterMap);
 		shiroFilter.setFilterChainDefinitionMap(filterMap);
 
@@ -165,19 +163,19 @@ public class ShiroConfig {
 
 	}
 
-	public class MetricsShiroFilter extends AccessControlFilter {
-		@Override
-		protected boolean isAccessAllowed(ServletRequest servletRequest, ServletResponse servletResponse, Object o)
-				throws Exception {
-			nezhaMetrics.bindTo(meterRegistry);
-			return true;
-		}
-
-		@Override
-		protected boolean onAccessDenied(ServletRequest request, ServletResponse response) throws Exception {
-			return false;
-		}
-	}
+//	public class MetricsShiroFilter extends AccessControlFilter {
+//		@Override
+//		protected boolean isAccessAllowed(ServletRequest servletRequest, ServletResponse servletResponse, Object o)
+//				throws Exception {
+//			nezhaMetrics.bindTo(meterRegistry);
+//			return true;
+//		}
+//
+//		@Override
+//		protected boolean onAccessDenied(ServletRequest request, ServletResponse response) throws Exception {
+//			return false;
+//		}
+//	}
 
 	@Bean
 	@ConditionalOnExpression("${nezha.shiroPermisSupport:true}")

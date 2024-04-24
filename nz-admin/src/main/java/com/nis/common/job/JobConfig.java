@@ -3,10 +3,7 @@ package com.nis.common.job;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.nis.common.utils.Tool;
-import com.nis.modules.agent.job.AgentHealthCheckJob;
-import com.nis.modules.agent.job.AutoConfigAgentJob;
-import com.nis.modules.agent.job.CortexHistoryDataDelJob;
-import com.nis.modules.agent.job.LokiHistoryDataDelJob;
+import com.nis.modules.agent.job.*;
 import com.nis.modules.alert.backend.AlertMessageExpiredJob;
 import com.nis.modules.alert.backend.AlertRuleManagerJob;
 import com.nis.modules.alert.backend.AlertSilenceStatusJob;
@@ -112,6 +109,9 @@ public class JobConfig {
     @Value("${nezha.localCacheSyncJobCron:0/10 * * * * ?}")
     private String localCacheSyncJobCron;
 
+    @Value("${nezha.agentStatusMetricsUpdaterJobCron:0 0/1 * * * ? *}")
+    private String agentStatusMetricsUpdaterJobCron;
+
     @Autowired
     private Scheduler scheduler;
     @Autowired
@@ -142,6 +142,7 @@ public class JobConfig {
     private String sysLoginSessionCleanJob = "SYS_LOGIN_SESSION_CLEAN_JOB";
     private String softwareLicenseStatusJobName = "SOFTWARE_LICENSE_STATUS_JOB";
     private String localCacheSyncJobName = "LOCAL_CACHE_SYNC_JOB";
+    private String agentStatusMetricsUpdaterJobName = "AGENT_STATUS_METRICS_UPDATER_JOB";
 
     @Bean
     public JobDetail agentCronJobDetail() {
@@ -258,6 +259,11 @@ public class JobConfig {
         return JobBuilder.newJob(LocalCacheSyncJob.class).withIdentity(JOB_NAME + localCacheSyncJobName).storeDurably().build();
     }
 
+    @Bean
+    public JobDetail agentStatusMetricsUpdaterJobDetail() {
+        return JobBuilder.newJob(AgentStatusMetricsUpdaterJob.class).withIdentity(JOB_NAME + agentStatusMetricsUpdaterJobName).storeDurably().build();
+    }
+
     @PostConstruct
     public void init() throws SchedulerException {
         // agent 健康检查定时任务
@@ -328,6 +334,9 @@ public class JobConfig {
 
         // LocalCacheSyncJob
         createCronScheduleJob(localCacheSyncJobName, localCacheSyncJobDetail(), Tool.StrUtil.emptyToDefault(localCacheSyncJobCron, "0/10 * * * * ?"));
+
+        // nz_agent_status metrics 定时更新任务
+        createCronScheduleJob(agentStatusMetricsUpdaterJobName, agentStatusMetricsUpdaterJobDetail(), Tool.StrUtil.emptyToDefault(agentStatusMetricsUpdaterJobCron, "0 0/1 * * * ? *"));
     }
     
     /**
