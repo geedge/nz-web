@@ -301,6 +301,9 @@
             </if>
 
          </where>
+
+            GROUP BY asset.id
+
         <if test="params.orderBy == null or params.orderBy == ''">
             ORDER BY asset.id
         </if>
