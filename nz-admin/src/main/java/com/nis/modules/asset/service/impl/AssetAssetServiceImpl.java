@@ -1829,7 +1829,11 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
     @Override
     public List<AssetAsset> getOpenPingAssets() {
-        List<AssetAsset> assetList = this.list();
+        // dc.state = off
+        List<Dc> disabledDcList = dcService.list(new LambdaQueryWrapper<Dc>().eq(Dc::getState, Constant.SWITCH_CLOSE.toUpperCase()));
+        List<Integer> disabledDcIdList = disabledDcList.stream().map(Dc::getId).toList();
+
+        List<AssetAsset> assetList = this.list(new LambdaQueryWrapper<AssetAsset>().notIn(CollUtil.isNotEmpty(disabledDcIdList), AssetAsset::getDcId, disabledDcIdList));
 
         // 支持 ping 的 state_conf
         List<AssetStateConf> stateConfList = stateConfService.list(new LambdaQueryWrapper<AssetStateConf>().eq(AssetStateConf::getPing, 1));
