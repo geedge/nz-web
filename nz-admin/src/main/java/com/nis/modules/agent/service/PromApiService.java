@@ -181,4 +181,18 @@ public interface PromApiService extends IService<Agent> {
      */
     void promApiProxy(HttpServletRequest request, HttpServletResponse response, String Agent);
 
+
+    /**
+     * GET
+     * URL query parameters:
+     * query=<string>: Prometheus expression query string.
+     * time=<rfc3339 | unix_timestamp>: Evaluation timestamp. Optional.
+     * timeout=<duration>: Evaluation timeout. Optional. Defaults to and is capped by the value of the -query.timeout flag.
+     *
+     * @param queryStr
+     * @param time
+     * @param timeout
+     * @return
+     */
+    JSONObject query_instant(String queryStr, String time, String timeout);
 }

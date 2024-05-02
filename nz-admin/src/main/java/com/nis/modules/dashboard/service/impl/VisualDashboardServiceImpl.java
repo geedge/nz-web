@@ -977,8 +977,13 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 							try {
 								Map<String, Object> globalVariablesValue = visualService.getGlobalVariablesValue(dashboardName, chartName, Long.valueOf(start), Long.valueOf(end));
 								if (StrUtil.equals("metrics", datasource)) {
-									jsonObject = promApiService.query_range(visualService.globalVariablesReplace(globalVariablesValue, expr), start, end, step,
-											ToolUtil.toStr(chartParam.get("nullType"), null), null);
+									String queryExpr = visualService.globalVariablesReplace(globalVariablesValue, expr);
+									String queryType = Tool.MapUtil.getStr(element, "queryType", "1");
+									if (StrUtil.equals("1", queryType)) {
+										jsonObject = promApiService.query_range(queryExpr, start, end, step, ToolUtil.toStr(chartParam.get("nullType"), null), null);
+									} else {
+										jsonObject = promApiService.query_instant(queryExpr, end, null);
+									}
 								} else if (StrUtil.equals("logs", datasource)) {
 									jsonObject = lokiApiService.query_range(visualService.globalVariablesReplace(globalVariablesValue, expr), start, end, limit, step, null,
 											"backward", "1", null);

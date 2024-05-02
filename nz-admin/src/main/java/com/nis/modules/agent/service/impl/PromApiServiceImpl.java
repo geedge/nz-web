@@ -1,18 +1,17 @@
 package com.nis.modules.agent.service.impl;
 
+import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.URLUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.JSONPath;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
+import com.nis.common.utils.*;
 import com.nis.modules.agent.dao.AgentDao;
 import com.nis.modules.agent.entity.Agent;
 import com.nis.modules.agent.service.PromApiService;
@@ -402,6 +401,57 @@ public class PromApiServiceImpl extends ServiceImpl<AgentDao, Agent> implements 
         String url = String.format("%s%s", promPathPrefix, promPath);
 
         AgentUtil.agentApiProxy(server, url, request, response);
+    }
+
+    /**
+     * GET
+     * URL query parameters:
+     * query=<string>: Prometheus expression query string.
+     * time=<rfc3339 | unix_timestamp>: Evaluation timestamp. Optional.
+     * timeout=<duration>: Evaluation timeout. Optional. Defaults to and is capped by the value of the -query.timeout flag.
+     *
+     * @param queryStr
+     * @param time
+     * @param timeout
+     * @return
+     */
+    @Override
+    public JSONObject query_instant(String queryStr, String time, String timeout) {
+        JSONObject resultData = this.query(queryStr, time, timeout);
+        // format conversion
+        resultData = this.queryResultToQueryRange(resultData);
+        return resultData;
+    }
+
+    private JSONObject queryResultToQueryRange(JSONObject resultData) {
+        // 获取 resultType
+        JSONObject data = resultData.getJSONObject("data");
+        String resultType = data.getString("resultType");
+        String jsonStr = JSONUtil.toJsonStr(resultData);
+        switch (resultType) {
+            case "vector":
+                List result = (List) JSONPath.read(jsonStr, "$.data.result");
+                for (int i = 0; i < result.size(); i++) {
+                    //value to values
+                    JSONObject jsonObject = (JSONObject) result.get(i);
+                    JSONArray newValuesArr = new JSONArray();
+                    newValuesArr.add(jsonObject.remove("value"));
+                    jsonObject.put("values", newValuesArr);
+                }
+                data.put("result", result);
+                break;
+            case "string":
+            case "scalar": {
+                Object value = JSONPath.read(jsonStr, "$.data.result");
+                JSONPath.remove(resultData, "$.data.result");
+                JSONPath.set(resultData, "$.data.result[0].metric", MapUtil.newHashMap());
+                JSONPath.set(resultData, "$.data.result[0].values", Arrays.asList(value));
+                break;
+            }
+            default:
+                break;
+        }
+        return resultData;
     }
 
     /**

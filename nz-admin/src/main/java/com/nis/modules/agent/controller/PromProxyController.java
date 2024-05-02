@@ -225,10 +225,7 @@ public class PromProxyController {
                 String timeout = request.getParameter("timeout");
                 String queryStr = URLUtil.decode(query);
 
-                JSONObject resultData = promApiService.query(queryStr, time, timeout);
-
-                // format conversion
-                resultData = this.queryResultToQueryRange(resultData);
+                JSONObject resultData = promApiService.query_instant(queryStr, time, timeout);
                 return R.ok().put("status", resultData.get("status")).putAllData(resultData);
             }
             default: {
@@ -236,37 +233,6 @@ public class PromProxyController {
                 return null;
             }
         }
-    }
-
-    private JSONObject queryResultToQueryRange(JSONObject resultData) {
-        // 获取 resultType
-        JSONObject data = resultData.getJSONObject("data");
-        String resultType = data.getString("resultType");
-        String jsonStr = JSONUtil.toJsonStr(resultData);
-        switch (resultType) {
-            case "vector":
-                List result = (List) JSONPath.read(jsonStr, "$.data.result");
-                for (int i = 0; i < result.size(); i++) {
-                    //value to values
-                    JSONObject jsonObject = (JSONObject) result.get(i);
-                    JSONArray newValuesArr = new JSONArray();
-                    newValuesArr.add(jsonObject.remove("value"));
-                    jsonObject.put("values", newValuesArr);
-                }
-                data.put("result", result);
-                break;
-            case "string":
-            case "scalar": {
-                Object value = JSONPath.read(jsonStr, "$.data.result");
-                JSONPath.remove(resultData, "$.data.result");
-                JSONPath.set(resultData, "$.data.result[0].metric", MapUtil.newHashMap());
-                JSONPath.set(resultData, "$.data.result[0].values", Arrays.asList(value));
-                break;
-            }
-            default:
-                break;
-        }
-        return resultData;
     }
 
     @RequestMapping(value = "/prom/api/v1/label/{label_name}/values")

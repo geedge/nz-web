@@ -1317,7 +1317,13 @@ public class VisualServiceImpl implements VisualService {
                             String indexStr = StrUtil.toString(eleIndex++);
                             JSONObject jsonObject = new JSONObject();
                             if (StrUtil.equals(Constant.ChartDatasourceType.METRICS.getValue(), datasource)) {
-                                jsonObject = promApiService.query_range(globalVariablesReplace(this.globalVariablesValue, Tool.MapUtil.getStr(element, "expression", "")), start, end, step, nullType, null);
+                                String queryExpr = globalVariablesReplace(this.globalVariablesValue, Tool.MapUtil.getStr(element, "expression", ""));
+                                String queryType = Tool.MapUtil.getStr(element, "queryType", "1");
+                                if (StrUtil.equals("1", queryType)) {
+                                    jsonObject = promApiService.query_range(queryExpr, start, end, step, nullType, null);
+                                } else {
+                                    jsonObject = promApiService.query_instant(queryExpr, end, null);
+                                }
                             } else if (StrUtil.equals(Constant.ChartDatasourceType.LOGS.getValue(), datasource)) {
                                 jsonObject = lokiApiService.query_range(globalVariablesReplace(this.globalVariablesValue, Tool.MapUtil.getStr(element, "expression", "")), start, end, limit, step, null, logsDirection, "1", null);
                             }
