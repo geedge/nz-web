@@ -312,7 +312,10 @@ public class VisualServiceImpl implements VisualService {
 
             ExecutorService taskExecutor = getSnapshotThreadPoolByTid(taskId);
             allChartList.stream().forEach(chart -> {
-                SnapshotRunnable snapshotRunnable = new SnapshotRunnable(taskId, lock, DashboardConstant.DASHBOARD_SNAPSHOT_TYPE, chart, basicQueryParam);
+                // global var
+                Map<String, Object> globalVariablesValue = this.getGlobalVariablesValue(dashboard.getName(), chart.getName(), start, end);
+
+                SnapshotRunnable snapshotRunnable = new SnapshotRunnable(taskId, lock, DashboardConstant.DASHBOARD_SNAPSHOT_TYPE, chart, basicQueryParam, globalVariablesValue);
                 // submit
                 taskExecutor.submit(snapshotRunnable);
             });
@@ -517,7 +520,10 @@ public class VisualServiceImpl implements VisualService {
 
             ExecutorService taskExecutor = getSnapshotThreadPoolByTid(taskId);
             allChartList.stream().forEach(chart -> {
-                SnapshotRunnable snapshotRunnable = new SnapshotRunnable(taskId, lock, DashboardConstant.NOTEBOOK_SNAPSHOT_TYPE, chart, basicQueryParam);
+                // global var
+                Map<String, Object> globalVariablesValue = this.getGlobalVariablesValue(notebook.getName(), chart.getName(), start, end);
+
+                SnapshotRunnable snapshotRunnable = new SnapshotRunnable(taskId, lock, DashboardConstant.NOTEBOOK_SNAPSHOT_TYPE, chart, basicQueryParam, globalVariablesValue);
                 // submit
                 taskExecutor.submit(snapshotRunnable);
             });
@@ -952,6 +958,171 @@ public class VisualServiceImpl implements VisualService {
         return dashboard.getId();
     }
 
+    @Override
+    public Map<String, Object> getGlobalVariablesValue(String dashboardName, String chartName, Long startTimeInSeconds, Long endTimeInSeconds) {
+        Map<String, Object> globalVariables = Tool.MapUtil.builder("$G.dashboard.name", null)
+                .put("$G.from.ms", null)        // 选定时间开始时间，单位ms
+                .put("$G.from.s", null)         // 选定时间开始时间，单位s
+                .put("$G.to.ms", null)          // 选定时间结束时间，单位ms
+                .put("$G.to.s", null)           // 选定时间结束时间，单位s
+                .put("$G.from.date", null)      // 选定时间开始时间，根据系统设定时间格式显示
+                .put("$G.to.date", null)        // 选定时间结束时间，根据系统设定时间格式显示
+                .put("$G.range.ms", null)       // to - from ，单位ms
+                .put("$G.range.s", null)        // to - from，单位s
+                .put("$G.range.text", null)     // to - from ,文字显示，如：1h24min
+                .put("$G.chart.name", null)     // chart 名称
+                .put("$G.interval.ms", null)    // 计算的step参数值，单位ms
+                .put("$G.interval.s", null)     // 计算的step参数值，单位s
+                .map();
+
+        String dateFormat = sysConfService.getValueOrDefault("date_format", "YYYY-MM-DD HH:mm:ss");
+        dateFormat = dateFormat.replaceAll("DD", "dd");
+
+        TimezoneController.Timezone sysTimezone = TimezoneController.queryTimezoneByName(sysConfService.getValue("timezone"));
+        DateFormat dateformat = CommonUtils.getDateFormatByOffset(sysTimezone.getOffset(), dateFormat);
+        for (Map.Entry<String, Object> entry : globalVariables.entrySet()) {
+            String key = entry.getKey();
+            switch (key) {
+                case "$G.dashboard.name": {
+                    globalVariables.put("$G.dashboard.name", dashboardName);
+                    break;
+                }
+                case "$G.chart.name": {
+                    globalVariables.put("$G.chart.name", chartName);
+                    break;
+                }
+                case "$G.interval.ms": {
+                    String step = this.getStep(startTimeInSeconds, endTimeInSeconds);
+                    String unit = step.substring(step.length() - 1);
+                    if ("s".equals(unit)) {
+                        globalVariables.put("$G.interval.ms", NumberUtil.parseInt(step) * 1000);
+                    } else if ("m".equals(unit)) {
+                        globalVariables.put("$G.interval.ms", NumberUtil.parseInt(step) * 1000 * 60);
+                    } else if ("h".equals(unit)) {
+                        globalVariables.put("$G.interval.ms", NumberUtil.parseInt(step) * 1000 * 60 * 60);
+                    }
+                    break;
+                }
+                case "$G.interval.s": {
+                    String step = this.getStep(startTimeInSeconds, endTimeInSeconds);
+                    String unit = step.substring(step.length() - 1);
+                    if ("s".equals(unit)) {
+                        globalVariables.put("$G.interval.s", NumberUtil.parseInt(step));
+                    } else if ("m".equals(unit)) {
+                        globalVariables.put("$G.interval.s", NumberUtil.parseInt(step) * 60);
+                    } else if ("h".equals(unit)) {
+                        globalVariables.put("$G.interval.s", NumberUtil.parseInt(step) * 60 * 60);
+                    }
+                    break;
+                }
+                case "$G.from.ms": {
+                    globalVariables.put("$G.from.ms", startTimeInSeconds * 1000);
+                    break;
+                }
+                case "$G.from.s": {
+                    globalVariables.put("$G.from.s", startTimeInSeconds);
+                    break;
+                }
+                case "$G.to.ms": {
+                    globalVariables.put("$G.to.ms", endTimeInSeconds * 1000);
+                    break;
+                }
+                case "$G.to.s": {
+                    globalVariables.put("$G.to.s", endTimeInSeconds);
+                    break;
+                }
+                case "$G.from.date": {
+                    globalVariables.put("$G.from.date", dateformat.format(startTimeInSeconds * 1000));
+                    break;
+                }
+                case "$G.to.date": {
+                    globalVariables.put("$G.to.date", dateformat.format(endTimeInSeconds * 1000));
+                    break;
+                }
+                case "$G.range.ms": {
+                    globalVariables.put("$G.range.ms", (endTimeInSeconds - startTimeInSeconds) * 1000);
+                    break;
+                }
+                case "$G.range.s": {
+                    globalVariables.put("$G.range.s", (endTimeInSeconds - startTimeInSeconds));
+                    break;
+                }
+                case "$G.range.text": {
+                    long range = endTimeInSeconds - startTimeInSeconds;
+                    String time = range + "s";
+                    if (range > 60) {
+                        long second = range % 60;
+                        long min = range / 60;
+                        time = min + "m" + (second != 0 ? (second + "s") : "");
+
+                        if (min >= 60) {
+                            min = (range / 60) % 60;
+                            long hour = (range / 60 / 60);
+                            time = hour + "h" + (min != 0 ? (min + "m") : "");
+
+                            if (hour >= 24) {
+                                hour = (range / 60 / 60) % 24;
+                                long day = (range / 60 / 60 / 24);
+                                time = day + "d" + (hour != 0 ? (hour + "h") : "");
+                            }
+                        }
+                    }
+                    globalVariables.put("$G.range.text", time);
+                    break;
+                }
+            }
+        }
+        return globalVariables;
+    }
+
+    private String getStep(Long startTimeInSeconds, Long endTimeInSeconds) {
+        String step = "15s";
+        Long numInterval = (endTimeInSeconds - startTimeInSeconds) * 1000;
+        Long oneDay = 86400000L;
+        Long sevenDay = 604800000L;
+        Long thirtyDay = 2592000000L;
+        if (numInterval < oneDay / 2) { // 小于12小时
+            step = "15s";
+        } else if (numInterval < oneDay) { // 小于1天，step为15s
+            step = "30s";
+        } else if (numInterval < oneDay * 2) { // 小于2天，step为15s
+            step = "1m";
+        } else if (numInterval < sevenDay) { // 小于7天，step为5m
+            step = "5m";
+        } else if (numInterval < thirtyDay) { // 小于30天，step为10m
+            step = "30m";
+        } else if (numInterval < thirtyDay * 2) {
+            step = "45m";
+        } else if (numInterval < thirtyDay * 3) {
+            step = "1h";
+        } else if (numInterval < thirtyDay * 6) {
+            step = "3h";
+        } else if (numInterval < thirtyDay * 12) {
+            step = "5h";
+        } else {
+            step = "24h";
+        }
+        return step;
+    }
+
+    /**
+     * global variables replace
+     *
+     * @param globalVariablesValueMap
+     * @param expression
+     * @return
+     */
+    @Override
+    public String globalVariablesReplace(Map<String, Object> globalVariablesValueMap, String expression) {
+        if (StrUtil.isEmpty(expression)) return expression;
+        for (Map.Entry<String, Object> entry : globalVariablesValueMap.entrySet()) {
+            if (ObjectUtil.isNotEmpty(entry.getValue())) {
+                expression = expression.replace("{{" + entry.getKey() + "}}", StrUtil.toString(entry.getValue()));
+            }
+        }
+        return expression;
+    }
+
     /**
      * perform Sync dashboard
      *
@@ -1052,18 +1223,20 @@ public class VisualServiceImpl implements VisualService {
 
         private VisualChart chart;
         private Map<String, String> basicQueryParam;
+        private Map<String, Object> globalVariablesValue;
         private String tid;
         private Lock lock;
 
         // dashboard or notebook
         private String type;
 
-        public SnapshotRunnable(String tid, Lock lock, String type, VisualChart chart, Map<String, String> basicQueryParam) {
+        public SnapshotRunnable(String tid, Lock lock, String type, VisualChart chart, Map<String, String> basicQueryParam, Map<String, Object> globalVariablesValue) {
             this.tid = tid;
             this.lock = lock;
             this.type = type;
             this.chart = chart;
             this.basicQueryParam = basicQueryParam;
+            this.globalVariablesValue = globalVariablesValue;
         }
 
         @Override
@@ -1144,9 +1317,9 @@ public class VisualServiceImpl implements VisualService {
                             String indexStr = StrUtil.toString(eleIndex++);
                             JSONObject jsonObject = new JSONObject();
                             if (StrUtil.equals(Constant.ChartDatasourceType.METRICS.getValue(), datasource)) {
-                                jsonObject = promApiService.query_range(Tool.MapUtil.getStr(element, "expression", ""), start, end, step, nullType, null);
+                                jsonObject = promApiService.query_range(globalVariablesReplace(this.globalVariablesValue, Tool.MapUtil.getStr(element, "expression", "")), start, end, step, nullType, null);
                             } else if (StrUtil.equals(Constant.ChartDatasourceType.LOGS.getValue(), datasource)) {
-                                jsonObject = lokiApiService.query_range(Tool.MapUtil.getStr(element, "expression", ""), start, end, limit, step, null, logsDirection, "1", null);
+                                jsonObject = lokiApiService.query_range(globalVariablesReplace(this.globalVariablesValue, Tool.MapUtil.getStr(element, "expression", "")), start, end, limit, step, null, logsDirection, "1", null);
                             }
                             jsonObject.put("eleIndex", indexStr);
                             jsonObject.put("chartId", chart.getId());

@@ -830,7 +830,7 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 					: Tool.ListUtil.empty();
 
 			// 将chartsData获取任务装入futureList
-			List<CompletableFuture<Map>> futureList = this.recursionChartsData(chartsList, resultMap, varList);
+			List<CompletableFuture<Map>> futureList = this.recursionChartsData(dashboard.getName(), chartsList, resultMap, varList);
 			Map chartsDataMap = new HashMap();
 			try {
 				CompletableFuture completableFuture = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0]));
@@ -926,8 +926,7 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 		return expr;
 	}
 
-	private List<CompletableFuture<Map>> recursionChartsData(List<VisualChart> chartsList,
-			Map<String, Object> basicQueryParam, List<Map> varList) {
+	private List<CompletableFuture<Map>> recursionChartsData(String dashboardName, List<VisualChart> chartsList, Map<String, Object> basicQueryParam, List<Map> varList) {
 		String start = StrUtil.toString(basicQueryParam.get("start"));
 		String end = StrUtil.toString(basicQueryParam.get("end"));
 		String step = StrUtil.toString(basicQueryParam.get("step"));
@@ -939,8 +938,7 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 			String datasource = chart.getDatasource();
 			if (StrUtil.equals("misc", datasource)) {
 				if (Tool.CollUtil.isNotEmpty(chart.getChildren())) {
-					List<CompletableFuture<Map>> callables = this.recursionChartsData(chart.getChildren(),
-							basicQueryParam, varList);
+					List<CompletableFuture<Map>> callables = this.recursionChartsData(dashboardName, chart.getChildren(), basicQueryParam, varList);
 					if (Tool.CollUtil.isNotEmpty(callables))
 						futureList.addAll(callables);
 				}
@@ -977,11 +975,12 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 						futureList.add(CompletableFuture.supplyAsync(() -> {
 							JSONObject jsonObject = null;
 							try {
+								Map<String, Object> globalVariablesValue = visualService.getGlobalVariablesValue(dashboardName, chartName, Long.valueOf(start), Long.valueOf(end));
 								if (StrUtil.equals("metrics", datasource)) {
-									jsonObject = promApiService.query_range(expr, start, end, step,
+									jsonObject = promApiService.query_range(visualService.globalVariablesReplace(globalVariablesValue, expr), start, end, step,
 											ToolUtil.toStr(chartParam.get("nullType"), null), null);
 								} else if (StrUtil.equals("logs", datasource)) {
-									jsonObject = lokiApiService.query_range(expr, start, end, limit, step, null,
+									jsonObject = lokiApiService.query_range(visualService.globalVariablesReplace(globalVariablesValue, expr), start, end, limit, step, null,
 											"backward", "1", null);
 								}
 								jsonObject.put("eleIndex", indexStr);

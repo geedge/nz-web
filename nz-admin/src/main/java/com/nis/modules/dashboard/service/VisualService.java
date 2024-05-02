@@ -28,4 +28,8 @@ public interface VisualService {
     void syncTemplateDashboard(Integer id, Integer tmplId, Integer modelId, Integer moduleId);
 
     Integer createDashboardUsingTemplate(String name, String type, String description, Integer tmplId, Integer link);
+
+    Map<String, Object> getGlobalVariablesValue(String dashboardName, String chartName, Long startTimeInSeconds, Long endTimeInSeconds);
+
+    String globalVariablesReplace(Map<String, Object> globalVariablesValueMap, String expression);
 }
