@@ -9,7 +9,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 @RestController
@@ -54,6 +56,15 @@ public class TimezoneController {
     }
 
     static {
+        SYS_TIMEZONE_LIST = Tool.ListUtil.list(true);
+        List<String> availableTimeZoneIDs = Arrays.asList(TimeZone.getAvailableIDs());
+        for (int i = 0; i < availableTimeZoneIDs.size(); i++) {
+            java.util.TimeZone timeZone = TimeZone.getTimeZone(availableTimeZoneIDs.get(i));
+            SYS_TIMEZONE_LIST.add(new Timezone(i + 1, timeZone.getID(), timeZone.getRawOffset()));
+        }
+    }
+
+    /*static {
         SYS_TIMEZONE_LIST = Tool.ListUtil.list(true);
         SYS_TIMEZONE_LIST.add(new Timezone(1, "Africa/Abidjan", 0));
         SYS_TIMEZONE_LIST.add(new Timezone(2, "Africa/Accra", 0));
@@ -678,5 +689,5 @@ public class TimezoneController {
         SYS_TIMEZONE_LIST.add(new Timezone(621, "PST", -28800000));
         SYS_TIMEZONE_LIST.add(new Timezone(622, "SST", 39600000));
         SYS_TIMEZONE_LIST.add(new Timezone(623, "VST", 25200000));
-    }
+    }*/
 }
