@@ -246,6 +246,8 @@ public class AssetTalonStatusJob extends QuartzJobBean {
                 state = 10;
             } else if (dcState && clientEnable.equals(1) && enabled.equals(0)) {
                 state = 12;
+            } else if (!dcState && clientEnable.equals(0) && enabled.equals(0)) {
+                state = 14;
             }
             logStateList.add(new MonitorEndpointState(conf.getEndpointId(), conf.getId(), conf.getType(), state, talonStatus.getVersion(), StrUtil.EMPTY, new Date()));
         }
