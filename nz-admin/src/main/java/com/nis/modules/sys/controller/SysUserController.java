@@ -1,7 +1,6 @@
 package com.nis.modules.sys.controller;
 
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
-import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
@@ -163,29 +162,6 @@ public class SysUserController extends AbstractController {
 	public R delete(String ids) {
 		sysUserService.deleteUsers(ids);
 		return R.ok();
-	}
-
-	/**
-	 * 用户名称校验
-	 * @param params
-	 * @return
-	 */
-	@RequestMapping(value = "nameCheck", method = RequestMethod.GET)
-	public R nameCheck(@RequestParam Map<String, Object> params) {
-		ValidateUtils.is(params.get("name")).notNull();
-		//校验名称重复
-		SysUserEntity queryParam = new SysUserEntity();
-		Object object = params.get("id");
-		if (object != null && !StringUtils.isEmpty(object.toString())) {
-			queryParam.setId(Long.valueOf((String)object));
-		}
-		queryParam.setUsername((String)params.get("name"));
-
-		if (sysUserService.checkName(queryParam)) {
-			throw new NZException(RCode.SYS_USER_DUPLICATENAME);
-		} else {
-			return R.ok();
-		}
 	}
 
 	/**

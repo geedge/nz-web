@@ -43,6 +43,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -148,6 +150,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
         ValidateUtils.is(user.getUsername()).notNull(RCode.SYS_USER_USERNAME_ISNULL).maxLength(64)
         		.and(user.getMobile()).maxLength(64)
                 .and(status).notNull(RCode.SYS_USER_STATUS_ISNULL).and(user.getName()).notNull(RCode.SYS_USER_NAME_ISNULL).maxLength(64);
+
+	    // 校验用户名
+	    this.validateUsername(user.getUsername());
 
         List<SysUserEntity> list = this.list(new QueryWrapper<SysUserEntity>().lambda().eq(SysUserEntity::getName, user.getName()).ne(ObjectUtil.isNotEmpty(user.getId()),SysUserEntity::getId, user.getId()));
         if(ObjectUtil.isNotEmpty(list)) {
@@ -307,21 +312,6 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 					.eq(ToolUtil.isNotEmpty(userId),SysUserEntity::getId, userId)
 					.eq(ToolUtil.isNotEmpty(pin),SysUserEntity::getPin, pin));
     }
-
-	@Override
-	public boolean checkName(SysUserEntity user) {
-		List<SysUserEntity> list = this.list(new LambdaUpdateWrapper<SysUserEntity>()
-				.eq(ToolUtil.isNotEmpty(user.getUsername()), SysUserEntity::getUsername, user.getUsername())
-				.eq(ToolUtil.isNotEmpty(user.getStatus()), SysUserEntity::getStatus, 1));
-		boolean dumpFlag = true; //是否名称重复，true为重复
-
-		//当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
-		if ((list == null || list.size() == 0) ||
-					(list.size() == 1 && list.get(0).getId().longValue() == user.getId().longValue())) {
-			dumpFlag = false;
-		}
-		return dumpFlag;
-	}
 
 	@Override
 	@Transactional(rollbackFor = Exception.class)
@@ -559,6 +549,21 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 			}
 		} else {
 			cache.put(key, "1", TimeUnit.MINUTES.toMillis(5));
+		}
+	}
+
+	@Override
+	public void validateUsername(String username) {
+		if (username.length() > 64 || username.length() < 1) {
+			log.info("[validateUsername] [Username length is invalid] [value: {}]", username);
+			throw new NZException(RCode.SYS_USER_USERNAME_LENGTH_INVALID);
+		}
+		// 判断用户名仅允许字母数字及英文标点符号
+		final String pattern = "^[a-zA-Z0-9!@~\\-=`#\\$%^&\\*\\(\\)\\+\\{\\}\\[\\]\\\\|:;'\"<>,\\./\\?_]*$";
+		final Pattern compole = Pattern.compile(pattern);
+		final Matcher m = compole.matcher(username);
+		if (!m.matches()) {
+			throw new NZException(RCode.SYS_USER_USERNAME_VALIDATION_FAILED);
 		}
 	}
 }

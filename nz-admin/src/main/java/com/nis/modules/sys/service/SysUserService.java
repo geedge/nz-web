@@ -46,13 +46,6 @@ public interface SysUserService extends IService<SysUserEntity> {
 	 */
 	boolean updatePassword(Long userId, String password, String newPassword);
 
-	/**
-	 * 校验用户名是否重复
-	 * @param queryParam
-	 * @return
-	 */
-	boolean checkName(SysUserEntity queryParam);
-
 	void deleteUsers(String userIds);
 
     Map<String, Object> getUserPermissions(HttpServletRequest request);
@@ -63,4 +56,7 @@ public interface SysUserService extends IService<SysUserEntity> {
     void checkPin(SysUserEntity user,boolean isLogin);
     
     void checkCacheRetry(SysUserEntity user);
+
+	void validateUsername(String username);
+
 }

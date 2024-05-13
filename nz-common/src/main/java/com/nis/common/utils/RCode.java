@@ -615,6 +615,9 @@ public enum RCode {
     SYS_USER_QUERY_KEY_ISNULL(511050,"Query key can not be empty"),
     SYS_USER_QUERY_VALUE_ISNULL(511051,"Query value can not be empty"),
     SYS_USER_USERNAME_DUPLICATE(511052,"System user userName duplicate"),
+    SYS_USER_USERNAME_VALIDATION_FAILED(513053,"Only letters, numbers and symbols are allowed for username"),
+    SYS_USER_USERNAME_LENGTH_INVALID(513054, "Username length is invalid"),
+
 
     AGENT_ID_ISNULL(521000, "Agent id can not be empty"),
     AGENT_DCID_ISNULL(521001, "Agent Dc id can not be empty"),
