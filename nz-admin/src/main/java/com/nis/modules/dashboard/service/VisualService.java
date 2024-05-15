@@ -9,7 +9,7 @@ public interface VisualService {
 
     String getTimeStep(Long start, Long end);
 
-    void exploreSnapshot(HttpServletResponse response, String format, Integer type, Long start, Long end, String language, Integer unit, String limit, String direction, String[] expressions) throws IOException;
+    void exploreSnapshot(HttpServletResponse response, String language, Map<String, Object> requestParam) throws IOException;
 
     Map<String, Object> snapshotResultMap(Long start, Long end, String language);
 

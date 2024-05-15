@@ -10,6 +10,7 @@ import cn.hutool.core.util.*;
 import cn.hutool.json.JSON;
 import cn.hutool.json.JSONConfig;
 import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -143,33 +144,47 @@ public class VisualServiceImpl implements VisualService {
     }
 
     @Override
-    public void exploreSnapshot(HttpServletResponse response, String format, Integer type, Long start, Long end, String language, Integer unit, String limit, String direction, String[] expressions) throws IOException {
-        // 计算步长
-        String step = this.getTimeStep(start, end);
-        if(!StrUtil.equals(direction, "forward")){
-            direction = "backward";
-        }
+    public void exploreSnapshot(HttpServletResponse response, String language, Map<String, Object> requestParam) throws IOException {
+        Integer unit = Tool.MapUtil.getInt(requestParam, "unit");
+
+        Integer limit = Tool.MapUtil.getInt(requestParam, "limit", 100);
+        String direction = Tool.MapUtil.getStr(requestParam, "direction", "backward");
+
+        Integer type = Tool.MapUtil.getInt(requestParam, "type");
+        Long start = Tool.MapUtil.getLong(requestParam, "start");
+        Long end = Tool.MapUtil.getLong(requestParam, "end");
+        JSONArray exprArray = Tool.MapUtil.get(requestParam, "expressions", JSONArray.class);
+
+        // 计算步长值
+        String genStepValue = this.getTimeStep(start, end);
 
         List<CompletableFuture<JSONObject>> futureList = new ArrayList<>();
-        for (int i = 0; i < expressions.length; i++) {
-            String expression = URLUtil.decode(expressions[i]);
-            String finalDirection = direction;
+        for (Object object : exprArray) {
+            Map<String, Object> queryParamMap = Tool.BeanUtil.beanToMap(object);
+            Integer step = MapUtil.getInt(queryParamMap, "step");
+            String legend = MapUtil.getStr(queryParamMap, "legend");
+            String expr = URLUtil.decode(MapUtil.getStr(queryParamMap, "expr"));
+
             futureList.add(CompletableFuture.supplyAsync(() -> {
                 JSONObject queryData = null;
+                String queryStep = ObjectUtil.isNotNull(step) ? StrUtil.toString(step) : genStepValue;
+                // metrics
                 if (type == 1) {
-                    JSONObject queryApiResultData = promApiService.query(expression, null, null);
-                    Object queryResultDataType = JSONPath.read(Tool.JSONUtil.toJsonStr(queryApiResultData), "data.resultType");
-                    if (ObjectUtil.equal("matrix", queryResultDataType)) {
-                        queryData = queryApiResultData;
-                        JSONPath.set(queryData, "api", "query");
+                    int queryType = MapUtil.getInt(queryParamMap, "queryType", 1);
+                    if (queryType == 1) {
+                        // query_range
+                        queryData = promApiService.query_range(expr, StrUtil.toString(start), StrUtil.toString(end), queryStep, "null", null);
                     } else {
-                        queryData = promApiService.query_range(expression, StrUtil.toString(start), StrUtil.toString(end), step, "null", null);
-                        JSONPath.set(queryData, "api", "query_range");
+                        // query_instant
+                        queryData = promApiService.query_instant(expr, StrUtil.toString(end), null);
                     }
                 } else if (type == 2) {
-                    queryData = lokiApiService.query_range(expression, StrUtil.toString(start), StrUtil.toString(end), StrUtil.emptyToDefault(limit, "100"), null, null, finalDirection, "1", null);
+                    // log
+                    queryData = lokiApiService.query_range(expr, StrUtil.toString(start), StrUtil.toString(end), StrUtil.toString(limit), queryStep, null, direction, "1", null);
                 }
-                queryData.put("expression", expression);
+                queryData.put("expression", expr);
+                queryData.put("legend", legend);
+                queryData.put("step", step);
                 return queryData;
             }));
         }
@@ -195,7 +210,6 @@ public class VisualServiceImpl implements VisualService {
 
         String snapshotTemplate = this.replaceSnapshotTemplate(resultMap);
         // 目前下载名称由前端控制
-        // String downFileName = String.format("%s-%s.%s", "explore", System.currentTimeMillis(), StrUtil.emptyToDefault(format, "html"));
         ResponseUtil.downloadFile(response, "exploreSnapshot.html", snapshotTemplate.getBytes());
     }
 

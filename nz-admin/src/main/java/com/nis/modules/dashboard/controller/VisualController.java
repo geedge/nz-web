@@ -4,6 +4,7 @@ import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSONArray;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
@@ -11,7 +12,6 @@ import com.nis.common.utils.*;
 import com.nis.modules.dashboard.service.VisualService;
 import com.nis.modules.dashboard.utils.DashboardConstant;
 import com.nis.modules.election.dao.LeaderElectionDao;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -29,19 +29,23 @@ public class VisualController {
 	@Autowired
 	private VisualService visualService;
 
-	/**
-	 * explore 快照
-	 */
-	@GetMapping("/explore/snapshot")
+	@PostMapping("/explore/snapshot")
 	@SysLog(operation = OperationEnum.DOWNLOAD, type = TypeEnum.SNAPSHOT)
-	public void exploreSnapshot(HttpServletResponse response, HttpServletRequest request, String format, Integer type, Long start,
-								Long end, Integer unit, String limit, String direction, @RequestParam(value="expressions[]")String[] expressions) throws IOException {
+	public void exploreSnapshot(HttpServletResponse response,
+	                            @RequestHeader(required = false, defaultValue = "en") String language,
+	                            @RequestBody Map<String, Object> requestParam) throws IOException {
+
+		Integer type = Tool.MapUtil.getInt(requestParam, "type");
+		Long start = Tool.MapUtil.getLong(requestParam, "start");
+		Long end = Tool.MapUtil.getLong(requestParam, "end");
+		JSONArray expressions = Tool.MapUtil.get(requestParam, "expressions", JSONArray.class);
+
 		ValidateUtils.is(type).notNull(RCode.AGENT_TYPE_ISNULL)
 				.and(start).notNull(RCode.AGENT_PARAM_START_ISNULL)
 				.and(end).notNull(RCode.AGENT_PARAM_END_ISNULL)
 				.and(expressions).notNull(RCode.AGENT_PARAM_QUERY_ISNULL);
-		String language = request.getHeader(Constant.LANGUAGE);
-		visualService.exploreSnapshot(response, format, type, start, end, language, unit, limit, direction, expressions);
+
+		visualService.exploreSnapshot(response, language, requestParam);
 	}
 
 
