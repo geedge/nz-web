@@ -1568,6 +1568,9 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 			dashboard.setWeight(oldDashboard.getWeight());
 			this.updateById(dashboard);
 
+			// 覆盖更新,删除原有的 chart，插入导入 chart
+			visualChartService.remove(new LambdaUpdateWrapper<VisualChart>().eq(VisualChart::getDashboardId, dashboard.getId()));
+
 			// update Report Config In Cache
 			this.updateReportConfigInCache(oldDashboard, dashboard);
 		} else {
@@ -1598,8 +1601,17 @@ public class VisualDashboardServiceImpl extends ServiceImpl<VisualDashboardDao, 
 				dashboard.setId(oldDashboard.getId());
 				dashboard.setWeight(oldDashboard.getWeight());
 				this.updateById(dashboard);
+
+				// 覆盖更新,删除原有的 chart，插入导入 chart
+				visualChartService.remove(new LambdaUpdateWrapper<VisualChart>().eq(VisualChart::getDashboardId, dashboard.getId()));
+
+				// update Report Config In Cache
+				this.updateReportConfigInCache(oldDashboard, dashboard);
 			} else {
 				this.save(dashboard);
+
+				// add Report Config In Cache
+				this.addReportConfigInCache(dashboard);
 			}
 			this.importSaveCharts(dashboard.getCharts(), 0, dashboard.getId(), seq);
 		}
