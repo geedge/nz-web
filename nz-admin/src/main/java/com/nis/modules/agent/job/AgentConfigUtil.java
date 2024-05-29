@@ -498,6 +498,10 @@ public class AgentConfigUtil {
 		params.put("systemConfig", sysConfiMap);
 		params.put("currentAgent", agent);
 
+		// pingmesh job
+		List<Map<String, Object>> pingmeshJobList = this.getPingmeshJobList(agent);
+		params.put("pingmeshJobList", pingmeshJobList);
+
 		Map map = null;
 		String content = "";
 		try {
@@ -716,6 +720,10 @@ public class AgentConfigUtil {
 		TimedCache<String, Object> sysConfiMap = LocalCacheManager.getNeverExpireTimedCache(Constant.SYS_CACHE_PREFIX, Constant.SYS_CONFIG_CACHE_KEY);
 		params.put("systemConfig", sysConfiMap);
 		params.put("currentAgent", currentAgent);
+
+		// pingmesh job
+		List<Map<String, Object>> pingmeshJobList = this.getPingmeshJobList(currentAgent);
+		params.put("pingmeshJobList", pingmeshJobList);
 
 		Map map = null;
 		String content = "";
@@ -1445,6 +1453,10 @@ public class AgentConfigUtil {
 		params.put("systemConfig", sysConfiMap);
 		params.put("currentAgent", agent);
 
+		// pingmesh job
+		List<Map<String, Object>> pingmeshJobList = this.getPingmeshJobList(agent);
+		params.put("pingmeshJobList", pingmeshJobList);
+
 		Map map = null;
 		String content = "";
 		try {
@@ -1456,5 +1468,45 @@ public class AgentConfigUtil {
 		}
 		log.debug("[generatePrometheusReplicationYml] [finshed] [agentId: {}]", agent.getId());
 		return map;
+	}
+
+	/**
+	 * pingmesh job list
+	 *
+	 * @param srcAgent
+	 * @return
+	 */
+	private List<Map<String, Object>> getPingmeshJobList(Agent srcAgent) {
+		List<Agent> destAgentList = agentService.list(new LambdaQueryWrapper<Agent>().ne(Agent::getId, srcAgent.getId()));
+
+		List<Dc> dcList = dcService.list();
+		String srcDcName = dcList.stream().filter(dc -> ObjectUtil.equal(dc.getId(), srcAgent.getDcId())).findFirst().get().getName();
+
+		// asset_ping_interval
+		String pingInterval = sysConfService.getValueOrDefault(Constant.SYSCONFIG_KEY_ASSET_PING_INTERVAL, "300");
+
+		List<Map<String, Object>> pmJobList = ListUtil.list(true);
+		for (Agent destAgent : destAgentList) {
+			Map<String, String> labels = Tool.MapUtil.newHashMap();
+			labels.put("type", "pingmesh");
+
+			labels.put("src_dc", srcDcName);
+			labels.put("src_nz_agent", srcAgent.getName());
+			labels.put("src_nz_agent_type", Constant.AgentType.getAgentType(srcAgent.getType()).getName());
+
+			String destDcName = dcList.stream().filter(dc -> ObjectUtil.equal(dc.getId(), destAgent.getDcId())).findFirst().get().getName();
+			labels.put("dest_dc", destDcName);
+			labels.put("dest_nz_agent", destAgent.getName());
+			labels.put("dest_nz_agent_type", Constant.AgentType.getAgentType(destAgent.getType()).getName());
+
+			Map<String, Object> job = Tool.MapUtil.newHashMap();
+			job.put("name", "pingmesh_" + destAgent.getId());
+			job.put("target", destAgent.getHost());
+			job.put("labels", labels);
+
+			job.put("pingInterval", pingInterval);
+			pmJobList.add(job);
+		}
+		return pmJobList;
 	}
 }
