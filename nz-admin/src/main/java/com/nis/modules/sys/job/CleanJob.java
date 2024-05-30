@@ -61,21 +61,6 @@ public class CleanJob extends QuartzJobBean {
 		DateTime now = Tool.DateUtil.date();
 		StopWatch sw = new StopWatch();
 
-		// terminal_*
-//		String terminalRecordLocalRetention = sysConfService.getValue("terminal_record_local_retention");
-//		terminalRecordLocalRetention = Tool.StrUtil.emptyToDefault(terminalRecordLocalRetention, "365");
-//		DateTime startCleanTerminalTime = Tool.DateUtil.offsetDay(now, -Integer.valueOf(terminalRecordLocalRetention));
-//		sw.start();
-//		try {
-//			log.info("start clean terminal data");
-//			terminalSessionService.cleanExpiredDataByTime(startCleanTerminalTime);
-//		} catch (Exception e) {
-//			log.error("clean terminal data error", e);
-//		} finally {
-//			sw.stop();
-//		}
-//		log.info("clean terminal data Run Time: {}", sw.toString());
-
 		// alert_rule_eval_log
 		String ruleEvalLogLocalRetention = sysConfService.getValue("alert_rule_eval_log_local_retention");
 		ruleEvalLogLocalRetention = Tool.StrUtil.emptyToDefault(ruleEvalLogLocalRetention, "30");

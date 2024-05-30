@@ -33,8 +33,6 @@ public interface SysConfService extends IService<SysConfigEntity> {
 
     void saveLdap(Map<String, String> params);
 
-    // void resetConfig(Map<String, Object> param) throws IOException;
-
     void saveMonitor(Map<String, String> params);
 
     Map<String, Object> querySysConfig(String configKey);
@@ -49,5 +47,7 @@ public interface SysConfService extends IService<SysConfigEntity> {
     String getDataBasesVersion();
 
     void reloadSysConfigToCache();
+
+    void saveAuditlog(Map<String, String> params);
 
 }

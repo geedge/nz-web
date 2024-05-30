@@ -9,10 +9,13 @@ import cn.hutool.log.Log;
 import com.amazonaws.SDKGlobalConfiguration;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 import com.nis.modules.election.dao.LeaderElectionDao;
+import com.nis.modules.sys.entity.SysLogEntity;
 import com.nis.modules.sys.service.SysConfService;
+import com.nis.modules.sys.service.SysLogService;
 import com.nis.modules.terminal.service.TerminalRecordService;
 import com.nis.modules.terminal.service.TerminalSessionService;
 import com.nis.modules.terminal.utils.TerminalConstant;
@@ -27,13 +30,16 @@ import java.util.Arrays;
 import java.util.List;
 
 @DisallowConcurrentExecution
-public class CleanExpiredTerminalRecordDataJob extends QuartzJobBean {
+public class CleanExpiredAuditLogDataJob extends QuartzJobBean {
 
     private static final Log log = Log.get();
 
     static {
         System.setProperty(SDKGlobalConfiguration.DISABLE_CERT_CHECKING_SYSTEM_PROPERTY, "true");
     }
+
+    @Autowired
+    private SysLogService sysLogService;
 
     @Autowired
     private SysConfService sysConfService;
@@ -46,21 +52,24 @@ public class CleanExpiredTerminalRecordDataJob extends QuartzJobBean {
 
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
-        Thread.currentThread().setName("CleanExpiredTerminalRecordDataJob");
+        Thread.currentThread().setName("CleanExpiredAuditLogDataJob");
 
         // 检查 HA_LOCK
         LeaderElectionDao dao = LeaderElectionDao.getInstance();
         boolean isLeader = dao.isLeader(Constant.SYS_HA_LOCK, Constant.SERVER_ID);
-        log.info("[CleanExpiredTerminalRecordDataJob] [Get HA_LOCK] [isLeader: {}]", isLeader);
+        log.info("[CleanExpiredAuditLogDataJob] [Get HA_LOCK] [isLeader: {}]", isLeader);
         if (BooleanUtil.negate(isLeader)) return;
 
-        log.info("[CleanExpiredTerminalRecordDataJob] [start cleaning expired data]");
+        log.info("[CleanExpiredAuditLogDataJob] [start cleaning expired data]");
 
-        StopWatch sw = StopWatch.create("CleanExpiredTerminalRecordDataJob");
+        StopWatch sw = StopWatch.create("CleanExpiredAuditLogDataJob");
         sw.start();
 
         try {
-            // clean Expired Terminal Record Data
+            // sys_log
+            this.cleanExpiredOperationLogData();
+
+            // terminal
             this.cleanExpiredTerminalRecordData();
         } catch (Exception e) {
             log.error(e, "[CleanExpiredTerminalRecordDataJob] [failed to clean data]");
@@ -68,7 +77,26 @@ public class CleanExpiredTerminalRecordDataJob extends QuartzJobBean {
             sw.stop();
         }
 
-        log.info("[CleanExpiredTerminalRecordDataJob] [clean data complete] [Run Time: {}]", sw.prettyPrint());
+        log.info("[CleanExpiredAuditLogDataJob] [clean data complete] [Run Time: {}]", sw.prettyPrint());
+    }
+
+    private void cleanExpiredOperationLogData() {
+        // 操作日志保留天数
+        String operationLogRetention = sysConfService.getValueOrDefault("operation_log_retention", "0");
+        log.info("[cleanExpiredOperationLogData] [operation_log_retention] [value: {}]", operationLogRetention);
+
+        if (StrUtil.equals("0", operationLogRetention)) {
+            log.warn("[cleanExpiredOperationLogData] [no clean operation logs]");
+        } else {
+            DateTime now = Tool.DateUtil.date();
+
+            // 过期时间
+            DateTime expireDate = Tool.DateUtil.offsetDay(now, -Integer.valueOf(operationLogRetention));
+            log.info("[cleanExpiredOperationLogData] [clear expired sys_log date in db] [now: {}] [retention days: {}] [expire date: {}]", now, operationLogRetention, expireDate);
+
+            int deleteNum = sysLogService.getBaseMapper().delete(new LambdaQueryWrapper<SysLogEntity>().le(SysLogEntity::getCreateDate, expireDate));
+            log.info("[cleanExpiredOperationLogData] [finshed] [delete num: {}]", deleteNum);
+        }
     }
 
     @Transactional(rollbackFor = Exception.class)

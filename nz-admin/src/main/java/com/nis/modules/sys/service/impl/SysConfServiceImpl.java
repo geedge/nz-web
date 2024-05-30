@@ -88,6 +88,19 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
 
     public static final String[] LDAP_REQUIRED={"ldap_address","ldap_dn","ldap_user_filter","ldap_mapping","ldap_enable","ldap_timeout"};
 
+    public static final String[] AUDITLOG_KEYS = {"operation_log_retention", "terminal_record_local_retention", "terminal_storage_type", "terminal_storage_s3_endpoint", "terminal_storage_s3_bucket", "terminal_storage_s3_access_key", "terminal_storage_s3_secret_access_key"};
+
+    public static final String[] AUDITLOG_REQUIRED = {"operation_log_retention", "terminal_record_local_retention", "terminal_storage_type"};
+
+    public static final String[] AUDITLOG_INTEGER = {"operation_log_retention", "terminal_record_local_retention", "terminal_storage_type"};
+
+    public static final String[][] AUDITLOG_DEPEND = {
+            {"terminal_storage_s3_endpoint", "terminal_storage_type", "2"},
+            {"terminal_storage_s3_bucket", "terminal_storage_type", "2"},
+            {"terminal_storage_s3_access_key", "terminal_storage_type", "2"},
+            {"terminal_storage_s3_secret_access_key", "terminal_storage_type", "2"}
+    };
+
     private static final Log logger = Log.get();
 
     @Autowired
@@ -268,100 +281,6 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
             logger.info("[updateSystemCronJobTimeZoneConf] [timezone conf no change]");
         }
     }
-
-    /**
-     * 系统设置重置
-     * @param param
-     */
-    /*@Override
-    @Transactional(rollbackFor = Exception.class)
-    public void resetConfig(Map<String, Object> param) throws IOException,RuntimeException{
-        String pin = StrUtil.str(param.get(Constant.PIN).toString());
-        List<String> types = (List<String>)param.get("type");
-        try {
-            if(ToolUtil.isEmpty(pin)||ToolUtil.isEmpty(types)){
-                throw new NZException(RCode.SYS_CONFIG_PASSWORDORTYPE_INVALID);
-            }
-            // 当前登录用户
-            SysUserEntity userEntity = ShiroUtils.getUserEntity();
-            // 原加密密码
-            String oriPassword = userEntity.getPin();
-            // 加密盐值
-            String salt = userEntity.getSalt();
-            // 现加密密码
-            String currentPassword = ShiroUtils.sha256(pin,salt);
-            if(!StrUtil.equals(oriPassword,currentPassword)){
-                // 密码不对，禁止重置
-                throw new NZException(RCode.SYS_CONFIG_PASSWORD_ERROR);
-            }
-            for (String type: types){
-                if(!ArrayUtils.contains(Constant.SYSCONFIG_RESET_TYPE,type)){
-                    throw new NZException(RCode.SYS_CONFIG_PASSWORDORTYPE_INVALID);
-                }
-                if("metric".equals(type)){
-                    resetMetric();
-                }else if("alert".equals(type)){
-                    resetAlert();
-                }else {
-                    resetEnterData();
-                }
-            }
-        }catch (IOException | RuntimeException e){
-            throw e;
-        }
-    }*/
-    /**
-     * 重置metric
-     */
-    /*private void resetMetric() throws IOException{
-        String seriesUri = "/api/v1/admin/tsdb/delete_series";
-        String tombstonesUri = "/api/v1/admin/tsdb/clean_tombstones";
-        // 获取正常的监控服务列表
-        List<Agent> agentList = agentService.list(
-                new LambdaQueryWrapper<Agent>().eq(Agent::getStatus,1));
-        if(ToolUtil.isNotEmpty(agentList)){
-            final String key= URLEncoder.encode("{__name__=~'.+'}","UTF-8");
-            agentList.forEach(agent -> {
-            	String result = AgentUtil.request(agent, HttpMethod.POST, seriesUri, String.format("match[]=%s", key), null, String.class);
-            	logger.info("request result: {}",result);
-            	result = AgentUtil.request(agent, HttpMethod.POST, tombstonesUri, null, null, String.class);
-            	logger.info("request result: {}",result);
-            });
-        }
-    }*/
-
-    /**
-     * 重置alert
-     */
-    /*private void resetAlert() throws RuntimeException{
-        alertMessageService.remove(new LambdaQueryWrapper<AlertMessageEntity>());
-    }*/
-
-    /**
-     * 清除用户输入数据
-     */
-    /*@Transactional(rollbackFor = Exception.class)
-    public void resetEnterData() {
-        try {
-            // cache 写入当前用户id
-            Long userId = ShiroUtils.getUserId();
-            cache.set("reset",String.valueOf(userId),expire, TimeUnit.SECONDS);
-            // 删除用户输入的数据
-            String jsonTables = this.getValue(Constant.RESET_TABLE_INFOS);
-            if(StringUtils.isNotEmpty(jsonTables)) {
-                List<String> tables = (List<String>) JSONArray.parse(jsonTables);
-                Arrays.stream(tables.toArray()).forEach(table->{
-                    this.baseMapper.clearData((String)table);
-                });
-            }
-            // 删除cache中key=reset的数据
-            cache.delete("reset");
-            logger.info("nezha reset success");
-        } catch (RuntimeException e) {
-            logger.error("nezha reset fail",e);
-            throw new NZException(RCode.SYS_CONFIG_RESET_FAIL);
-        }
-    }*/
 
     @Override
     public String getValue(String key) {
@@ -811,6 +730,17 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
             logger.error(e, "[reloadSysConfigToCache] [error]");
         }
         logger.info("[reloadSysConfigToCache] [finshed]");
+    }
+
+    @Override
+    public void saveAuditlog(Map<String, String> params) {
+        Map<String, String> result = this.validateKeys(AUDITLOG_KEYS, params);
+
+        this.validateRequired(result, AUDITLOG_REQUIRED, AUDITLOG_DEPEND);
+
+        this.validateInteger(AUDITLOG_INTEGER, result);
+
+        this.saveOrUpdateConfsBatch(result);
     }
 
 }
