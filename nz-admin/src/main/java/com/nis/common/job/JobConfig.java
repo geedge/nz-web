@@ -17,7 +17,7 @@ import com.nis.modules.election.job.HaJob;
 import com.nis.modules.endpoint.job.MetricTypeEndpointStatusJob;
 import com.nis.modules.sys.job.*;
 import com.nis.modules.sys.service.SysConfService;
-import com.nis.modules.terminal.job.CleanExpiredAuditLogDataJob;
+import com.nis.modules.terminal.job.CleanExpiredTerminalRecordDataJob;
 import com.nis.modules.terminal.job.CleanNoRealUseTerminalConnJob;
 import org.apache.commons.lang.StringUtils;
 import org.quartz.*;
@@ -73,8 +73,8 @@ public class JobConfig {
 	@Value("${nezha.sessionTimeOutJobCron:0 0/5 * * * ? *}")
 	private String sessionTimeOutJobCron;
 
-	@Value("${nezha.cleanJobCron:0 0 1 * * ?}")
-	private String cleanJobCron;
+	@Value("${nezha.terminalCleanJobCron:0 0 1 * * ?}")
+	private String terminalCleanJobCron;
 	
 	@Value("${nezha.sysComponentJobCron:0/30 * * * * ?}")
 	private String sysComponentJobCron;
@@ -94,8 +94,8 @@ public class JobConfig {
     @Value("${nezha.cleanNoRealUseTerminalConnJobCron:0 0/5 * * * ? *}")
     private String cleanNoRealUseTerminalConnJobCron;
 
-    @Value("${nezha.cleanExpiredAuditLogDataJobCron:0 0 1 * * ?}")
-    private String cleanExpiredAuditLogDataJobCron;
+    @Value("${nezha.cleanExpiredTerminalRecordDataJobCron:0 0 1 * * ?}")
+    private String cleanExpiredTerminalRecordDataJobCron;
 
     @Value("${nezha.sysBackFileSyncJobCron:0 0 3 * * ?}")
     private String sysBackFileSyncJobCron;
@@ -116,8 +116,9 @@ public class JobConfig {
     private Scheduler scheduler;
     @Autowired
     private SysConfService sysConfService;
-
-    private static final String JOB_NAME = "NZJOB_";
+//    @Qualifier("costomSchedulerFactoryBean")
+    //private SchedulerFactoryBean schedulerFactoryBean;
+    private static final String JOB_NAME = "NZJOB";
     private String agentJobName = "AGENT_JOB";
     private String agentHealthCheckJobName = "AGENTHEALTHY_JOB";
     private String alertSilenceStatusJobName = "ALERTSILENCESTATUS_JOB";
@@ -136,7 +137,7 @@ public class JobConfig {
     private String alertMessageHistoryPartManJobName = "ALERTMESSAGEHISTORYPARTMAN_JOB";
     private String recordtRuleManagerJobName = "RECORDTRULEMANAGER_JOB";
     private String cleanNoRealUseTerminalConnJobName = "CLEANNOREALUSETERMINALCONN_JOB";
-    private String cleanExpiredAuditLogDataJobDetail = "CLEAN_EXPIRED_AUDIT_LOG_DATA_JOB";
+    private String cleanExpiredTerminalRecordDataJob = "CLEAN_EXPIRED_TERMINAL_RECORD_DATA_JOB";
     private String sysBackFileSyncJob = "SYS_BACKUP_SYNC_JOB";
     private String sysLoginSessionCleanJob = "SYS_LOGIN_SESSION_CLEAN_JOB";
     private String softwareLicenseStatusJobName = "SOFTWARE_LICENSE_STATUS_JOB";
@@ -234,8 +235,8 @@ public class JobConfig {
     }
 
     @Bean
-    public JobDetail cleanExpiredAuditLogDataJobDetail() {
-        return JobBuilder.newJob(CleanExpiredAuditLogDataJob.class).withIdentity(JOB_NAME + cleanExpiredAuditLogDataJobDetail).storeDurably().build();
+    public JobDetail cleanExpiredTerminalRecordDataJobDetail() {
+        return JobBuilder.newJob(CleanExpiredTerminalRecordDataJob.class).withIdentity(JOB_NAME + cleanExpiredTerminalRecordDataJob).storeDurably().build();
     }
 
     @Bean
@@ -299,6 +300,9 @@ public class JobConfig {
         // session time out job 如果配置文件没有配置定时周期  默认为5分钟执行一次
         createCronScheduleJob(sessionTimeOutJobName, sessionTimeOutJobDetail(), StringUtils.isEmpty(sessionTimeOutJobCron) ? "0 0/5 * * * ? *" : sessionTimeOutJobCron);
 
+        // terminal clean job 如果配置文件没有配置定时周期  每天凌晨1点执行一次
+        createCronScheduleJob(cleanJobCronName, cleanJobDetail(), StringUtils.isEmpty(terminalCleanJobCron) ? "0 0 1 * * ?" : terminalCleanJobCron);
+
         //sys component 状态更新线程
         createCronScheduleJob(sysComponentJobName, sysComponentJobDetail(), StringUtils.isEmpty(sysComponentJobCron) ? "0/30 * * * * ?" : sysComponentJobCron);
 
@@ -317,6 +321,9 @@ public class JobConfig {
         // 清理没有真实使用的 terminal ssh/telnet 连接，以超过最后数据交互时间 30 分钟为准 （sys_config.session_timeout）
         createCronScheduleJob(cleanNoRealUseTerminalConnJobName, cleanNoRealUseTerminalConnJobDetail(), StringUtils.isEmpty(cleanNoRealUseTerminalConnJobCron) ? "0 0/5 * * * ? *" : cleanNoRealUseTerminalConnJobCron);
 
+        // terminal record expired data clean job
+        createCronScheduleJob(cleanExpiredTerminalRecordDataJob, cleanExpiredTerminalRecordDataJobDetail(), Tool.StrUtil.emptyToDefault(cleanExpiredTerminalRecordDataJobCron, "0 0 1 * * ?"));
+
         // SysBackFileSyncJob
         createCronScheduleJob(sysBackFileSyncJob, sysBackFileSyncJobDetail(), Tool.StrUtil.emptyToDefault(sysBackFileSyncJobCron, "0 0 3 * * ?"));
 
@@ -330,12 +337,6 @@ public class JobConfig {
 
         // nz_agent_status metrics 定时更新任务
         createCronScheduleJob(agentStatusMetricsUpdaterJobName, agentStatusMetricsUpdaterJobDetail(), Tool.StrUtil.emptyToDefault(agentStatusMetricsUpdaterJobCron, "0 0/1 * * * ? *"));
-
-        // system clean job
-        createCronScheduleJob(cleanJobCronName, cleanJobDetail(), Tool.StrUtil.emptyToDefault(cleanJobCron, "0 0 1 * * ?"));
-
-        // 清理过期的审计日志数据任务
-        createCronScheduleJob(cleanExpiredAuditLogDataJobDetail, cleanExpiredAuditLogDataJobDetail(), Tool.StrUtil.emptyToDefault(cleanExpiredAuditLogDataJobCron, "0 0 1 * * ?"));
     }
     
     /**

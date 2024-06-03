@@ -101,26 +101,28 @@ public class SysConfController {
         return R.ok();
     }
 
+    /**
+     * 系统重置
+     * @param param
+     * @return
+     */
+    /*@PutMapping("/reset")
+    @SysLog(operation = OperationEnum.RESET,type = TypeEnum.SYS_CONF)
+    @RequiresPermissions({"sys:config:reset"})
+    public R resetConfig(@RequestBody Map<String, Object> param) throws IOException,RuntimeException{
+        try {
+            sysConfService.resetConfig(param);
+        }catch (IOException | RuntimeException e){
+            throw e;
+        }
+        return R.ok();
+    }*/
+
     @GetMapping("/key/{configKey}")
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYS_CONF)
     public R querySysConfig(@PathVariable("configKey") String configKey){
         Map<String ,Object> result = sysConfService.querySysConfig(configKey);
         return R.ok(result);
-    }
-
-    @GetMapping("/auditlog")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYS_CONF)
-    public R auditlog() {
-        Map<String, String> result = sysConfService.batchQuery(SysConfServiceImpl.AUDITLOG_KEYS);
-        return R.ok(result);
-    }
-
-    @PutMapping("/auditlog")
-    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.SYS_CONF)
-    @RequiresPermissions({"sys:config:update"})
-    public R auditlog(@RequestBody Map<String, String> params) {
-        sysConfService.saveAuditlog(params);
-        return R.ok();
     }
 
 }
