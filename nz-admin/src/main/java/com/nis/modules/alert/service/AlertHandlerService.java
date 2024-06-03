@@ -84,7 +84,6 @@ public interface AlertHandlerService  {
 
 	/**
 	 * 删除告警消息
-	 * @param state
 	 * @param ids
 	 */
 	void removeMessageByIds(Long ...ids);

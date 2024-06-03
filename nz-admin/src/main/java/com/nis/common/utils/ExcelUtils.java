@@ -34,6 +34,7 @@ public class ExcelUtils {
     private final static Log log = Log.get();
 
     private static NumberFormat numberFormat = NumberFormat.getNumberInstance();
+    public static String DEFAULT_SHEETNAME = "Datasheet";
 
     static {
         numberFormat.setGroupingUsed(false);
@@ -132,19 +133,45 @@ public class ExcelUtils {
     }
 
     /**
-     * 创建 excel
+     * create SXSSFWorkbook
      *
      * @param headerInfo 表头信息 结构为 Map  key=cellName,value=cellComment
-     * @param sheetName
-     * @param isComment  是否需要批注信息
      * @return
-     * @throws IOException
      */
-    public static SXSSFWorkbook createExcel07(Map<String, String> headerInfo, String sheetName, boolean isComment) throws IOException {
+    public static SXSSFWorkbook createSXSSFWorkbook(Map<String, String> headerInfo) {
         SXSSFWorkbook wb = new SXSSFWorkbook();
+
+        // sheet & header
+        createSheetWithHeader(wb, headerInfo);
+        return wb;
+    }
+
+    /**
+     * create XSSFWorkbook
+     *
+     * @param headerInfo 表头信息 结构为 Map  key=cellName,value=cellComment
+     * @return
+     */
+    public static XSSFWorkbook createXSSFWorkbook(Map<String, String> headerInfo) {
+        XSSFWorkbook wb = new XSSFWorkbook();
+
+        // sheet & header
+        createSheetWithHeader(wb, headerInfo);
+        return wb;
+    }
+
+    /**
+     * 创建默认 sheet 页
+     * 添加标题行
+     * 添加标题行样式
+     *
+     * @param wb
+     * @param headerInfo
+     */
+    private static void createSheetWithHeader(Workbook wb, Map<String, String> headerInfo) {
         // 标题样式
         CellStyle colStyle = createHeaderStyle(wb);
-        Sheet sheet = wb.createSheet(sheetName);
+        Sheet sheet = wb.createSheet(DEFAULT_SHEETNAME);
         Drawing dp = sheet.createDrawingPatriarch();
         // 设置默认列宽
         sheet.setDefaultColumnWidth(25);
@@ -157,15 +184,12 @@ public class ExcelUtils {
             headerCell.setCellValue(entry.getKey());
             headerCell.setCellStyle(colStyle);
 
-            if (isComment) {
-                cellComment = dp.createCellComment(dp.createAnchor(Units.EMU_PER_POINT * 9, Units.EMU_PER_PIXEL, Units.EMU_PER_CENTIMETER * 4, Units.EMU_PER_POINT * 9, i, 0, i, 4));
-                cellComment.setString(new XSSFRichTextString(entry.getValue()));
-                cellComment.setAuthor("nezha");
-                headerCell.setCellComment(cellComment);
-            }
+            cellComment = dp.createCellComment(dp.createAnchor(Units.EMU_PER_POINT * 9, Units.EMU_PER_PIXEL, Units.EMU_PER_CENTIMETER * 4, Units.EMU_PER_POINT * 9, i, 0, i, 4));
+            cellComment.setString(new XSSFRichTextString(entry.getValue()));
+            cellComment.setAuthor("nezha");
+            headerCell.setCellComment(cellComment);
             i++;
         }
-        return wb;
     }
 
     /**

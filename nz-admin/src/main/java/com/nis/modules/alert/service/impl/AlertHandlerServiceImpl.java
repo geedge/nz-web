@@ -37,15 +37,29 @@ import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfService;
+import com.nis.modules.sys.service.SysI18nService;
 import com.nis.modules.tool.service.FullTextSearchService;
 import com.nis.setup.controller.TimezoneController;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.commons.io.IOUtils;
+import org.apache.poi.ss.SpreadsheetVersion;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.DataConsolidateFunction;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.util.AreaReference;
+import org.apache.poi.ss.util.CellReference;
+import org.apache.poi.xssf.usermodel.XSSFPivotTable;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTPivotField;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.util.*;
@@ -77,6 +91,8 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	private AlertSilenceDao alertSilenceDao;
 	@Autowired
 	private SysConfService sysConfService;
+	@Autowired
+	private SysI18nService sysI18nService;
 	@Autowired
 	private BasicImportAndExportServices basicImportAndExportServices;
 	@Autowired
@@ -563,12 +579,131 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		Map queryBody = JSONUtil.toBean(queryBodyJsonStr, HashMap.class);
 		String alertState = Tool.MapUtil.getStr(queryBody, "state", "1");
 
+		// export data
 		List<List<String>> exportDataList = this.handleExportDataList(list, alertState);
 
-		String sysHeaderJsonStr = sysConfService.getValue("alert_export_header");
-		String fileName = "AlertMessages";
-		String formatStr = params.get("format").toString();
-		basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, formatStr, fileName);
+		String format = StrUtil.toString(params.get("format"));
+		switch (Constant.ImportFileType.getInstanceByValue(StrUtil.toString(params.get("format")))) {
+			case XLS:
+			case XLSX:
+				// alertMessage 导出 excel, sheet1 展示 数据透视表 统计告警信息，sheet2 展示 告警消息数据
+				this.exportAlertMessageExcel(response, exportDataList);
+				break;
+			case CSV:
+			case JSON:
+				String fileName = "AlertMessages";
+				String sysHeaderJsonStr = sysConfService.getValue("alert_export_header");
+				basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, format, fileName);
+				break;
+		}
+	}
+
+	/**
+	 * export alert message excel
+	 *
+	 * @param response
+	 * @param exportDataList
+	 * @throws IOException
+	 */
+	private void exportAlertMessageExcel(HttpServletResponse response, List<List<String>> exportDataList) throws IOException {
+		log.info("[exportAlertMessageExcel] [begin]");
+
+		XSSFWorkbook workbook = null;
+		try {
+			String sysHeaderJsonStr = sysConfService.getValue("alert_export_header");
+			Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
+
+			workbook = ExcelUtils.createXSSFWorkbook(exportHeaderMap);
+
+			// Datasheet
+			Sheet dataSheet = workbook.getSheetAt(0);
+			CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
+			int rowNum = 1;
+			for (List<String> dataList : exportDataList) {
+				Row row = dataSheet.createRow(rowNum++);
+				for (int i = 0; i < dataList.size(); i++) {
+					row.createCell(i).setCellValue(dataList.get(i));
+				}
+				ExcelUtils.setDataCellStyle(dataStyle, row, dataList.size());
+			}
+
+			// PivotSheet
+			if (Tool.CollUtil.isNotEmpty(exportDataList)) {
+				String datasheetName = dataSheet.getSheetName();
+				String pivotSheetName = "Statistic";
+
+				// 创建数据透视表
+				this.createPivotTable(workbook, datasheetName, pivotSheetName);
+
+				// 调整顺序 Statistic - Datasheet
+				workbook.setSheetOrder(datasheetName, 1);
+				workbook.setSheetOrder(pivotSheetName, 0);
+			}
+
+			// response
+			response.setContentType("application/excel");
+			response.setHeader("Content-disposition", "attachment;filename=AlertMessages.xlsx;filename*=utf-8''" + URLEncoder.encode("AlertMessages.xlsx", "UTF-8"));
+			workbook.write(response.getOutputStream());
+		} finally {
+			IOUtils.closeQuietly(workbook);
+		}
+		log.info("[exportAlertMessageExcel] [finshed]");
+	}
+
+	/**
+	 * 创建数据透视表
+	 */
+	private void createPivotTable(XSSFWorkbook xssfWorkbook, String datasheetName, String pivotSheetName) {
+		log.info("[createPivotTable] [begin]");
+		XSSFSheet dataSheet = xssfWorkbook.getSheet(datasheetName);
+		int firstRow = dataSheet.getFirstRowNum();
+		int lastRow = dataSheet.getLastRowNum();
+
+		// source area
+		Row headerRow = dataSheet.getRow(firstRow);
+		int lastCol = headerRow.getLastCellNum() - 1;
+		CellReference topLeft = new CellReference(0, 0);
+		CellReference botRight = new CellReference(lastRow, lastCol);
+		String sourceAreaStr = new AreaReference(topLeft, botRight).formatAsString();
+
+		AreaReference sourceArea = new AreaReference(Tool.StrUtil.concat(true, dataSheet.getSheetName(), "!", sourceAreaStr), SpreadsheetVersion.EXCEL2007);
+		CellReference position = new CellReference(Tool.StrUtil.concat(true, pivotSheetName, "!A1"));
+
+		log.info("[createPivotTable] [sourceArea: {}]", sourceArea.formatAsString());
+		log.info("[createPivotTable] [positionArea:{}]", position.formatAsString());
+
+		XSSFSheet pivotSheet = xssfWorkbook.createSheet(pivotSheetName);
+		XSSFPivotTable pivotTable = pivotSheet.createPivotTable(sourceArea, position);
+
+		pivotTable.addRowLabel(1); // Rule
+		pivotTable.addRowLabel(6); // Asset
+
+		String headercountStr = sysI18nService.queryValue("overall.count");
+		headercountStr = StrUtil.emptyToDefault(headercountStr, "Count");
+		pivotTable.addColumnLabel(DataConsolidateFunction.COUNT, 0, headercountStr); // count by id
+
+		// 布局调整 不勾选 压缩表单
+		CTPivotField[] pivotFieldArray = pivotTable.getCTPivotTableDefinition().getPivotFields().getPivotFieldArray();
+		for (CTPivotField ctPivotField : pivotFieldArray) {
+			ctPivotField.setCompact(false);
+		}
+
+		// 表头、统计 名称 - 国际化
+		String headerRuleStr = sysI18nService.queryValue("alert.rule");
+		headerRuleStr = StrUtil.emptyToDefault(headerRuleStr, "Rule");
+
+		String headerAssetStr = sysI18nService.queryValue("asset.asset");
+		headerAssetStr = StrUtil.emptyToDefault(headerAssetStr, "Asset");
+
+		String headerTotalStr = sysI18nService.queryValue("overall.total");
+		headerTotalStr = StrUtil.emptyToDefault(headerTotalStr, "Total");
+
+		pivotTable.getCTPivotTableDefinition().setRowHeaderCaption(headerRuleStr);
+		pivotTable.getCTPivotTableDefinition().setGrandTotalCaption(headerTotalStr);
+
+		pivotTable.getCTPivotTableDefinition().getPivotFields().getPivotFieldArray(1).setName(headerRuleStr);
+		pivotTable.getCTPivotTableDefinition().getPivotFields().getPivotFieldArray(6).setName(headerAssetStr);
+		log.info("[createPivotTable] [finshed]");
 	}
 
 	private List<List<String>> handleExportDataList(List<AlertMessageEntity> list, String alertState) {

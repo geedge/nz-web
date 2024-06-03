@@ -75,7 +75,7 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
             case XLSX: {
                 SXSSFWorkbook workbook = null;
                 try {
-                    workbook = ExcelUtils.createExcel07(exportHeaderMap, "Datasheet", true);
+                    workbook = ExcelUtils.createSXSSFWorkbook(exportHeaderMap);
                     fileName += ".xlsx";
                     response.setContentType("application/excel");
                     response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
@@ -223,9 +223,8 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
             case XLSX: {
                 SXSSFWorkbook workbook = null;
                 try {
-                    String sheetName = "Datasheet";
-                    workbook = ExcelUtils.createExcel07(exportHeaderMap, sheetName, true);
-                    SXSSFSheet sheet = workbook.getSheet(sheetName);
+                    workbook = ExcelUtils.createSXSSFWorkbook(exportHeaderMap);
+                    SXSSFSheet sheet = workbook.getSheetAt(0);
                     CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
                     int rowNum = 1;
                     for (List<String> dataList : exportDataList) {
@@ -308,9 +307,8 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
             switch (ImportFileType.getInstanceByType(fileExtension)) {
                 case XLS:
                 case XLSX: {
-                    String sheetName = "Datasheet";
-                    SXSSFWorkbook workbook = ExcelUtils.createExcel07(exportHeaderMap, sheetName, true);
-                    SXSSFSheet sheet = workbook.getSheet(sheetName);
+                    SXSSFWorkbook workbook = ExcelUtils.createSXSSFWorkbook(exportHeaderMap);
+                    SXSSFSheet sheet = workbook.getSheetAt(0);
                     CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
                     int rowNum = 1;
                     for (List<String> dataList : list) {
