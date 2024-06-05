@@ -1,18 +1,20 @@
 package com.nis.common.utils;
 
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.util.BooleanUtil;
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.ReUtil;
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.collection.ListUtil;
+import cn.hutool.core.lang.Validator;
+import cn.hutool.core.net.Ipv4Util;
+import cn.hutool.core.util.*;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
+import com.nis.modules.ipam.entity.IpamSubnet;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysI18nService;
 import lombok.Builder;
 import lombok.Data;
 import org.snmp4j.util.SimpleOIDTextFormat;
 
+import java.math.BigDecimal;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -361,6 +363,63 @@ public class ImportValidateUtil {
             }
         }
         return true;
+    }
+
+    /**
+     * 校验关联对象是否重复 单表
+     *
+     */
+    public void validateRelObjDuplicate(String tableName, String colName, String values, int lineNum, int headerIndex) {
+        List<String> valueList = JSONObject.parseArray(values, String.class);
+        List list = basicImportAndExportServices.queryList(tableName, colName, valueList);
+        if (Tool.CollectionUtil.isNotEmpty(list)) {
+            // 不存在
+            String header = headerInfos.get(headerIndex);
+            this.recordImportAttrErr(lineNum, RCode.IMPORT_RELATED_OBJ_EXIST.setParam(header));
+        }
+    }
+
+    /**
+     * 校验 ipv4 addr: single range cidr
+     * @return subnet list
+     */
+    public List validateIpAddr(String subnet, int lineNum, int headerIndex) {
+        List<String> addrList = JSONObject.parseArray(subnet, String.class);
+        List<Boolean> checkResult = ListUtil.list(false);
+        List<IpamSubnet> subnetList = ListUtil.list(false);
+        for (String addr : addrList) {
+            boolean checkIp = false;
+            IpamSubnet ipamSubnet = new IpamSubnet();
+            ipamSubnet.setProtocol(4);
+            ipamSubnet.setAddr(addr);
+            if (Validator.isIpv4(addr)) {
+                ipamSubnet.setType("single");
+                ipamSubnet.setCap("1");
+                checkIp = true;
+            }
+            if (CommonUtils.checkIPv4Range(addr)) {
+                ipamSubnet.setType("range");
+                String[] parts = addr.split("-");
+                ipamSubnet.setCap(String.valueOf(Ipv4Util.countByIpRange(parts[0],parts[1])));
+                checkIp = true;
+            }
+            if (CommonUtils.checkIPv4CIDR(addr)) {
+                ipamSubnet.setType("cidr");
+                String[] parts = addr.split("/");
+                int prefixLength = Integer.parseInt(parts[1]);
+                // 计算子网总容量
+                ipamSubnet.setCap(new BigDecimal(Math.pow(2, 32 - prefixLength)).toString());
+                checkIp = true;
+            }
+            checkResult.add(checkIp);
+            subnetList.add(ipamSubnet);
+        }
+        if (checkResult.contains(false)) {
+            String header = headerInfos.get(headerIndex);
+            this.recordImportAttrErr(lineNum, RCode.IMPORT_DATA_FORMAT_ERROR.setParam(header));
+            return ListUtil.empty();
+        }
+        return subnetList;
     }
 
     /**

@@ -997,6 +997,8 @@ public enum RCode {
     IMPORT_FILE_PARSE_ERROR(820, "Import file resolution failed"),
     IMPORT_FILE_CONTENT_ISNULL(821, "Import file content cannot be empty"),
     IMPORT_FILE_DATA_ISNULL(822, "Import file data cannot be empty"),
+    IMPORT_RELATED_OBJ_EXIST(823, "{0} Related content does already exist"),
+    IMPORT_DATA_FORMAT_ERROR(824, "{0} format error"),
 
 
     /**

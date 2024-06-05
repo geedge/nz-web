@@ -2,7 +2,9 @@ package com.nis.modules.asset.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
+import cn.hutool.core.lang.Validator;
 import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.net.Ipv4Util;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
@@ -31,9 +33,7 @@ import com.nis.modules.asset.service.CabinetService;
 import com.nis.modules.asset.service.DcService;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
-import com.nis.modules.ipam.entity.IpamIp;
 import com.nis.modules.ipam.entity.IpamSubnet;
-import com.nis.modules.ipam.service.IpamIpService;
 import com.nis.modules.ipam.service.IpamSubnetService;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.project.entity.MonitorProject;
@@ -47,12 +47,14 @@ import com.nis.modules.sys.shiro.ShiroUtils;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.net.util.SubnetUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -105,9 +107,6 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
 
     @Autowired
     private IpamSubnetService ipamSubnetService;
-
-    @Autowired
-    private IpamIpService ipamIpService;
     
     @Override
     public Dc queryDcDetails(Integer id) {
@@ -141,6 +140,8 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
                 .last("limit 1")
         );
         dc.setStarred(CollUtil.isEmpty(tUserStatList) ? 0 : 1);
+        List<IpamSubnet> list = ipamSubnetService.list(new LambdaQueryWrapper<IpamSubnet>().eq(IpamSubnet::getDcId, id));
+        dc.setSubnet(list);
         return dc;
     }
 
@@ -169,7 +170,6 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
     private void handleResuleList(List<Dc> dcList) {
         List<SysUserEntity> userEntityList = sysUserService.list();
         Map<Long, SysUserEntity> userIdAndEntityMap = userEntityList.stream().collect(Collectors.toMap(SysUserEntity::getId, Function.identity()));
-
         for (Dc dc : dcList) {
             if (ToolUtil.isNotEmpty(dc.getPrincipal())) {
                 dc.setAdminUser(userIdAndEntityMap.get(dc.getPrincipal().longValue()));
@@ -182,6 +182,9 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
             }
             if (dc.getAlertNum() == null) {
                 dc.setAlertNum(0);
+            }
+            if (dc.getSubnetNum() == null) {
+                dc.setSubnetNum(0);
             }
         }
     }
@@ -258,9 +261,53 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
                 throw new NZException(RCode.DC_LATITUDE_ERROR);
             }
         }
+        //6.校验子网
+        List<IpamSubnet> subnetList = dc.getSubnet();
+        if (CollUtil.isNotEmpty(subnetList)){
+            for (IpamSubnet ipamSubnet : subnetList) {
+                String addr = ipamSubnet.getAddr();
+                ipamSubnet.setProtocol(4);
+                ipamSubnet.setDcId(dc.getId());
+                boolean checkIp = false;
+                if (Validator.isIpv4(addr)) {
+                    ipamSubnet.setType("single");
+                    ipamSubnet.setCap("1");
+                    checkIp = true;
+                }
+                if (CommonUtils.checkIPv4Range(addr)) {
+                    ipamSubnet.setType("range");
+                    String[] parts = addr.split("-");
+                    ipamSubnet.setCap(String.valueOf(Ipv4Util.countByIpRange(parts[0], parts[1])));
+                    checkIp = true;
+                }
+                if (CommonUtils.checkIPv4CIDR(addr)) {
+                    ipamSubnet.setType("cidr");
+                    String[] parts = addr.split("/");
+                    int prefixLength = Integer.parseInt(parts[1]);
+                    // 计算子网总容量
+                    ipamSubnet.setCap(new BigDecimal(Math.pow(2, 32 - prefixLength)).toString());
+                    checkIp = true;
+                }
+                if (!checkIp) {
+                    throw new NZException(RCode.IPAM_SUBNET_ADDR_ERROR);
+                }
+                List<IpamSubnet> ipamSubnetList = ipamSubnetService.list(new QueryWrapper<IpamSubnet>().lambda().eq(IpamSubnet::getAddr, ipamSubnet.getAddr()));
+                flag = false;
+                // 当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
+                if ((ipamSubnetList == null || ipamSubnetList.size() == 0) || (ipamSubnetList != null && ipamSubnetList.size() == 1 && ipamSubnetList.get(0).getId().equals(ipamSubnet.getId()))) {
+                    flag = true;
+                }
+                if (!flag) {
+                    throw new NZException(RCode.IPAM_SUBNET_INTERVAL_ERROR);
+                }
+
+            }
+
+        }
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Integer saveDc(Dc dc) {
         // 校验 dc 相关信息
         dc.setName(StrUtil.trim(dc.getName()));
@@ -274,19 +321,23 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
         if (dc.getX() == null) {
             dc.setX(1);
         }
-
         // 保存
         this.save(dc);
+        //subnet
+        List<IpamSubnet> subnetList = dc.getSubnet().stream().map(ipamSubnet -> {ipamSubnet.setDcId(dc.getId());return ipamSubnet;}).collect(Collectors.toList());
+        ipamSubnetService.saveOrUpdateBatch(subnetList);
         return dc.getId();
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Integer updateDc(Dc dc) {
         // 校验 dc 相关信息
         dc.setName(StrUtil.trim(dc.getName()));
         this.validateDcInfo(dc);
-
         // 保存
+        List<IpamSubnet> subnetList = dc.getSubnet().stream().map(ipamSubnet -> {ipamSubnet.setDcId(dc.getId());return ipamSubnet;}).collect(Collectors.toList());
+        ipamSubnetService.saveOrUpdateBatch(subnetList);
         this.updateById(dc);
         return dc.getId();
     }
@@ -350,7 +401,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
         List<IpamSubnet> ipamSubnetList = ipamSubnetService.list(new LambdaQueryWrapper<IpamSubnet>().in(IpamSubnet::getDcId, idList));
         if (Tool.CollUtil.isNotEmpty(ipamSubnetList)) {
             List<Integer> removeIpamSubnetIdList = ipamSubnetList.stream().map(IpamSubnet::getId).collect(Collectors.toList());
-            ipamSubnetService.delIpamSubnets(1, removeIpamSubnetIdList);
+            ipamSubnetService.removeByIds(removeIpamSubnetIdList);
         }
 
         // starred
@@ -404,26 +455,11 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
         // ipam subnet & ipam ip detail
         List<IpamSubnet> ipamSubnetList = ipamSubnetService.list(new LambdaQueryWrapper<IpamSubnet>().eq(IpamSubnet::getDcId, dc.getId()));
         if (Tool.CollUtil.isNotEmpty(ipamSubnetList)) {
-            List<Integer> ipamSubnetIdList = ipamSubnetList.stream().map(IpamSubnet::getId).collect(Collectors.toList());
-            List<IpamIp> ipamIpList = ipamIpService.list(new LambdaQueryWrapper<IpamIp>().in(IpamIp::getSubnetId, ipamSubnetIdList));
-
             for (IpamSubnet ipamSubnet : ipamSubnetList) {
-                List<IpamIp> ipamIpListBySubnetId = ipamIpList.stream().filter(ipamIp -> ipamSubnet.getId().equals(ipamIp.getSubnetId())).collect(Collectors.toList());
-                List<Map> relList = Tool.ListUtil.list(true);
-                for (IpamIp ipamIp : ipamIpListBySubnetId) {
-                    Map<Object, Object> map = Tool.MapUtil.builder()
-                            .put("id", ipamIp.getId())
-                            .put("name", ipamIp.getName())
-                            .put("type", "ipamIp")
-                            .build();
-                    relList.add(map);
-                }
-
                 Map<Object, Object> map = Tool.MapUtil.builder()
                         .put("id", ipamSubnet.getId())
-                        .put("name", ipamSubnet.getName())
+                        .put("name", ipamSubnet.getAddr())
                         .put("type", "ipamSubnet")
-                        .put("relates", relList)
                         .build();
                 relatesList.add(map);
             }
@@ -517,7 +553,15 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
                 failContentList.add(dataMap);
                 continue;
             }
-
+            String subnet = dataMap.get(DcImportEnum.SUBNET.getIndex());
+            List<IpamSubnet> subnetList = ListUtil.list(false);
+            if (StrUtil.isNotEmpty(subnet)) {
+                boolean b = validateUtil.validateJsonArray(subnet, lineNum, DcImportEnum.SUBNET.getIndex());
+                if (b) {
+                    subnetList = validateUtil.validateIpAddr(subnet, lineNum, DcImportEnum.SUBNET.getIndex());
+                }
+                validateUtil.validateRelObjDuplicate("ipam_subnet", "addr", subnet, lineNum, DcImportEnum.SUBNET.getIndex());
+            }
             String principalName = dataMap.get(DcImportEnum.PRINCIPAL.getIndex());
             if (StrUtil.isNotEmpty(principalName))
                 validateUtil.validateRelObjExits("sys_user", "name", principalName, false, lineNum, DcImportEnum.PRINCIPAL.getIndex());
@@ -571,6 +615,9 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
                     dc.setPrincipal(principalUser == null ? null : principalUser.getId().intValue());
                 } else {
                     dc.setPrincipal(null);
+                }
+                if (CollectionUtils.isNotEmpty(subnetList)){
+                    dc.setSubnet(subnetList);
                 }
                 try {
                     this.saveOrUpdateRowData(dc, params);
@@ -638,6 +685,18 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
                     .set(Dc::getTel, dc.getTel())
                     .set(Dc::getRemark, dc.getRemark());
             this.update(dc, updateWrapper);
+
+            // overview subnet
+            if (CollUtil.isNotEmpty(dc.getSubnet())){
+                List<IpamSubnet> subnetList = dc.getSubnet();
+                subnetList = subnetList.stream().map(ipamSubnet -> {
+                    ipamSubnet.setDcId(oldDc.getId());
+                    ipamSubnet.setSeq(seq);
+                    return ipamSubnet;
+                }).collect(Collectors.toList());
+                ipamSubnetService.remove(new LambdaQueryWrapper<IpamSubnet>().eq(IpamSubnet::getDcId,oldDc.getId()));
+                ipamSubnetService.saveBatch(subnetList);
+            }
         } else {
             params.put("save", true);
             // insert
@@ -645,6 +704,17 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
             dc.setY(1);
             dc.setX(1);
             this.save(dc);
+
+            // save subnet
+            if (CollUtil.isNotEmpty(dc.getSubnet())){
+                List<IpamSubnet> subnetList = dc.getSubnet();
+                subnetList = subnetList.stream().map(ipamSubnet -> {
+                    ipamSubnet.setDcId(dc.getId());
+                    ipamSubnet.setSeq(seq);
+                    return ipamSubnet;
+                }).collect(Collectors.toList());
+                ipamSubnetService.saveBatch(subnetList);
+            }
         }
     }
 
@@ -676,11 +746,20 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
     private List<List<String>> handleExportDataList(List<Dc> list) {
         List<SysUserEntity> userList = sysUserService.list();
         Map<Long, String> userIdAndNameMap = userList.stream().collect(Collectors.toMap(SysUserEntity::getId, SysUserEntity::getName));
+        List<IpamSubnet> ipamSubnetList = ipamSubnetService.list();
+        Map<Integer, List<IpamSubnet>> subnetListMap = ipamSubnetList.stream().collect(Collectors.groupingBy(IpamSubnet::getDcId));
 
         List<List<String>> exportDataList = new ArrayList<>();
         for (Dc dc : list) {
             List<String> tempList = new ArrayList<>();
             tempList.add(dc.getName());
+            List<IpamSubnet> subnetList = subnetListMap.get(dc.getId());
+            if (CollUtil.isNotEmpty(subnetList)){
+                List<String> addrList = subnetList.stream().map(x -> x.getAddr()).collect(Collectors.toList());
+                tempList.add(JSONUtil.toJsonStr(addrList));
+            }else {
+                tempList.add("");
+            }
             tempList.add(ObjectUtil.defaultIfNull(dc.getLocation(), ""));
             tempList.add(ObjectUtil.defaultIfNull(dc.getTel(), ""));
             String principalName = dc.getPrincipal() != null ? userIdAndNameMap.get(dc.getPrincipal().longValue()) : "";

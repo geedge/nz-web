@@ -7,6 +7,18 @@
         SELECT id,name FROM ${tableName} WHERE ${col} = #{value}
     </select>
 
+    <select id="queryList" resultType="java.util.Map">
+        SELECT *  FROM ${tableName}
+        <where>
+            <if test="values != null">
+                ${col} in
+                <foreach item="value" collection="values" separator="," open="(" close=")" index="">
+                    #{value}
+                </foreach>
+            </if>
+        </where>
+    </select>
+
     <select id="selectKeywordsByTableName" resultType="string">
         SELECT
             t.name

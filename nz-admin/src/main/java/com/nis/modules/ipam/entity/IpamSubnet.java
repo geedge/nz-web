@@ -21,14 +21,19 @@ public class IpamSubnet implements Serializable {
     private Integer id;
 
     /**
-     * 子网名称
+     * 数据中心id
      */
-    private String name;
+    private Integer dcId;
 
     /**
-     * ip类型
+     * IP协议
      */
-    private Integer type;
+    private Integer protocol;
+
+    /**
+     * 子网类型
+     */
+    private String type;
 
     /**
      * 子网地址
@@ -36,24 +41,9 @@ public class IpamSubnet implements Serializable {
     private String addr;
 
     /**
-     * 子网掩码
-     */
-    private Integer mask;
-    
-    /**
-     * vlan名称
-     */
-    private String vlan;
-    
-    /**
      * 总容量
      */
     private String cap;
-    
-    /**
-     * 数据中心id
-     */
-    private Integer dcId;
     
     /**
      * 备注
@@ -64,9 +54,6 @@ public class IpamSubnet implements Serializable {
     
     @TableField(exist = false)
     private Dc dc;
-    
-    @TableField(exist = false)
-    private Integer used;
 
     /**
      * 是否收藏 0:未收藏 1:已收藏

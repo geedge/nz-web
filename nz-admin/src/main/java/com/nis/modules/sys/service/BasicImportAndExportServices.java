@@ -28,4 +28,13 @@ public interface BasicImportAndExportServices {
      */
     List<Map<String, Object>> queryList(String tableName, String colName, String value);
 
+    /**
+     * 根据表名、列名、values 值查询列表，是否包含
+     * @param tableName
+     * @param colName
+     * @param values
+     * @return
+     */
+    List<Map<String, Object>> queryList(String tableName, String colName, List values);
+
 }

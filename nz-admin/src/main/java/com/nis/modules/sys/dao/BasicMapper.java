@@ -24,6 +24,18 @@ public interface BasicMapper extends BaseMapper {
      */
     List<Object> selectList(@Param("tableName") String tableName, @Param("col") String col, @Param("value") String value);
 
+
+    /**
+     * 指定表名、字段名、字段值
+     * SELECT * FROM ${tableName} WHERE ${col} = #{value}
+     *
+     * @param tableName
+     * @param col
+     * @param values
+     * @return
+     */
+    List<Object> queryList(@Param("tableName") String tableName, @Param("col") String col, @Param("values") List values);
+
     /**
      * 高级搜索 -> keyword 查询，返回 name list
      *      支持分页

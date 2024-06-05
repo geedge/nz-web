@@ -7,13 +7,14 @@ package com.nis.modules.asset.entity;
 public enum DcImportEnum {
 
     NAME("name", 0),
-    LOCATION("location", 1),
-    TELEPHONE("telephone", 2),
-    PRINCIPAL("principal", 3),
-    LONGITUDE("longitude", 4),
-    LATITUDE("latitude", 5),
-    STATE("state", 6),
-    REMARK("remark", 7);
+    SUBNET("subnet", 1),
+    LOCATION("location", 2),
+    TELEPHONE("telephone", 3),
+    PRINCIPAL("principal", 4),
+    LONGITUDE("longitude", 5),
+    LATITUDE("latitude", 6),
+    STATE("state", 7),
+    REMARK("remark", 8);
 
     private String name;
     private int index;

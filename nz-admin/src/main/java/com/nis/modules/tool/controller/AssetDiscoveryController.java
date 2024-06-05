@@ -4,6 +4,7 @@ import cn.hutool.cache.impl.TimedCache;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.lang.Pair;
+import cn.hutool.core.net.Ipv4Util;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.*;
 import cn.hutool.log.Log;
@@ -138,19 +139,41 @@ public class AssetDiscoveryController {
             ReentrantReadWriteLock.WriteLock lock = readWriteLock.writeLock();
             for (IpamSubnet ipamSubnet : ipamSubnetList) {
                 ThreadUtil.execAsync(() -> {
-                    // 利用 SubnetUtils 计算 ip 范围
-                    SubnetUtils subnetUtils = new SubnetUtils(ipamSubnet.getAddr() + "/" + ipamSubnet.getMask());
-                    subnetUtils.setInclusiveHostCount(true);
-
-                    // 这里不使用SubnetUtils.info 提供的 getAllAddresses 方法，使用内部方法自己生成
-                    int low = ReflectUtil.invoke(subnetUtils.getInfo(), "low");
-                    int high = ReflectUtil.invoke(subnetUtils.getInfo(), "high");
-                    for (int add = low, j = 0; add <= high; ++add, ++j) {
-                        String ip = format(toArray(add));
-                        DiscoveryRunnable discoveryRunnable = new DiscoveryRunnable(tid, lock, ip, ipamSubnet, assetModelList, discoveredAssetList, confParams);
-                        // submit
-                        taskExecutor.submit(discoveryRunnable);
+                    String addr = ipamSubnet.getAddr();
+                    DiscoveryRunnable discoveryRunnable;
+                    switch (ipamSubnet.getType()){
+                        case "single":
+                            discoveryRunnable = new DiscoveryRunnable(tid, lock, addr, ipamSubnet, assetModelList, discoveredAssetList, confParams);
+                            // submit
+                            taskExecutor.submit(discoveryRunnable);
+                            break;
+                        case "range":
+                            String[] split = addr.split("-");
+                            List<String> ipList = Ipv4Util.list(split[0], split[1]);
+                            for (String ip : ipList) {
+                                discoveryRunnable = new DiscoveryRunnable(tid, lock, ip, ipamSubnet, assetModelList, discoveredAssetList, confParams);
+                                // submit
+                                taskExecutor.submit(discoveryRunnable);
+                            }
+                            break;
+                        case "cidr":
+                            // 利用 SubnetUtils 计算 ip 范围
+                            SubnetUtils subnetUtils = new SubnetUtils(addr);
+                            subnetUtils.setInclusiveHostCount(true);
+                            // 这里不使用SubnetUtils.info 提供的 getAllAddresses 方法，使用内部方法自己生成
+                            int low = ReflectUtil.invoke(subnetUtils.getInfo(), "low");
+                            int high = ReflectUtil.invoke(subnetUtils.getInfo(), "high");
+                            for (int add = low, j = 0; add <= high; ++add, ++j) {
+                                String ip = format(toArray(add));
+                                discoveryRunnable = new DiscoveryRunnable(tid, lock, ip, ipamSubnet, assetModelList, discoveredAssetList, confParams);
+                                // submit
+                                taskExecutor.submit(discoveryRunnable);
+                            }
+                            break;
+                        default:
+                            break;
                     }
+
                 });
             }
         });

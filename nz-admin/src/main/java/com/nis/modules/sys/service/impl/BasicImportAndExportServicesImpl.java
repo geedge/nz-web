@@ -386,4 +386,10 @@ public class BasicImportAndExportServicesImpl implements BasicImportAndExportSer
         return objectList;
     }
 
+    @Override
+    public List queryList(String tableName, String colName, List values) {
+        List<Object> objectList = basicMapper.queryList(tableName, colName, values);
+        return objectList;
+    }
+
 }

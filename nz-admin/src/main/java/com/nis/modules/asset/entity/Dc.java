@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.agent.entity.Agent;
+import com.nis.modules.ipam.entity.IpamSubnet;
 import com.nis.modules.sys.entity.SysUserEntity;
 import lombok.Data;
 
@@ -121,5 +122,14 @@ public class Dc implements Serializable {
      */
     @TableField(exist = false)
     private Integer starred;
+
+    @TableField(exist = false)
+    private List<IpamSubnet> subnet;
+
+    /**
+     * subnet 计数
+     */
+    @TableField(exist = false)
+    private Integer subnetNum;
 
 }

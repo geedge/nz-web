@@ -1,6 +1,9 @@
 package com.nis.common.utils;
 
+import cn.hutool.Hutool;
+import cn.hutool.core.net.Ipv4Util;
 import cn.hutool.core.net.NetUtil;
+import org.apache.commons.net.util.SubnetUtils;
 
 import java.io.File;
 import java.net.URL;
@@ -398,6 +401,28 @@ public class CommonUtils {
         }
         return true;
 	}
+
+    // Method to validate IPv4 range
+    public static boolean checkIPv4Range(String ipRange) {
+        try {
+            String[] parts = ipRange.split("-");
+            Ipv4Util.list(parts[0], parts[1]);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    // Method to validate IPv4 CIDR
+    public static boolean checkIPv4CIDR(String cidr) {
+        try {
+            SubnetUtils utils = new SubnetUtils(cidr);
+            utils.getInfo(); // 如果 CIDR 格式不合法，这里会抛出异常
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
 	
 	public static boolean checkDomain(String domain){
         boolean flag = Pattern.matches(DOMAIN_NAME_STR, domain);

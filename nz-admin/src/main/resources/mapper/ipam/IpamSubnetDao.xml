@@ -4,16 +4,13 @@
 <mapper namespace="com.nis.modules.ipam.dao.IpamSubnetDao">
 	<resultMap type="com.nis.modules.ipam.entity.IpamSubnet" id="ipamSubnet">
 		<result property="id" column="id"/>
-		<result property="name" column="name" />
+		<result property="dcId" column="dc_id"/>
+		<result property="protocol" column="protocol"/>
 		<result property="type" column="type" />
 		<result property="addr" column="addr" />
-		<result property="mask" column="mask" />
-		<result property="vlan" column="vlan" />
 		<result property="cap" column="cap" />
-		<result property="dcId" column="dc_id" />
 		<result property="remark" column="remark" />
 		<result property="seq" column="seq" />
-		<result property="used" column="used" />
         <result property="starred" column="starred"/>
 		
 		<association property="dc" columnPrefix="dc_" javaType="com.nis.modules.asset.entity.Dc">
@@ -21,11 +18,11 @@
             <result column="name" property="name"/>
         </association>
 	</resultMap>
-    
+
     <select id="queryPage" resultMap="ipamSubnet">
     	select ipam.*,
-        IFNULL( ip.used, 0 ) as used,
     	dc.name as dc_name,
+    	dc.id as dc_id,
         IFNULL( sta.starred, 0 ) AS starred
     	from ipam_subnet ipam left join dc on ipam.dc_id = dc.id
         LEFT JOIN ( SELECT subnet_id ,COUNT(subnet_id) used FROM ipam_ip GROUP BY subnet_id ) ip ON ip.subnet_id = ipam.id
@@ -37,23 +34,6 @@
                     #{id}
                 </foreach>
             </if>
-
-            <if test="params.name != null and params.name != ''">
-                AND locate(#{params.name} , ipam.name)
-            </if>
-            
-            <if test="params.type != null">
-                AND ipam.type = #{params.type}
-            </if>
-            
-            <if test="params.addr != null and params.addr != ''">
-                AND locate(#{params.addr} , ipam.addr)
-            </if>
-            
-            <if test="params.vlan != null and params.vlan != ''">
-                AND locate(#{params.vlan} , ipam.vlan)
-            </if>
-            
             <if test="params.dcIds != null and params.dcIds.size > 0">
                 AND ipam.dc_id IN
                 <foreach collection="params.dcIds" item="dcId" index="no" open="(" separator="," close=")">
