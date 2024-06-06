@@ -1,40 +1,20 @@
 package com.nis.modules.asset.service.impl;
 
-import java.net.URI;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
-
+import cn.hutool.core.lang.Opt;
+import cn.hutool.core.net.url.UrlBuilder;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONPath;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
+import com.nis.common.utils.*;
 import com.nis.modules.asset.dao.SoftwareAssetDao;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.SoftwareAccSession;
@@ -47,15 +27,17 @@ import com.nis.modules.asset.service.SoftwareTypeService;
 import com.nis.modules.sys.service.LicenseManagementService;
 import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
-import cn.hutool.core.lang.Opt;
-import cn.hutool.core.net.url.UrlBuilder;
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONArray;
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
-import cn.hutool.log.Log;
+import java.net.URI;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Software Asset Service Implement
@@ -70,6 +52,9 @@ public class SoftwareAssetServiceImpl extends ServiceImpl<SoftwareAssetDao, Soft
 
     @Value("${fetureId}")
     private Integer nzFetureId;
+
+    @Value("${cn.fetureId:30000}")
+    private Integer cnFetureId;
 
     @Autowired
     private RestTemplate restTemplate;
@@ -312,8 +297,9 @@ public class SoftwareAssetServiceImpl extends ServiceImpl<SoftwareAssetDao, Soft
                         this.updateCMLicenseStatus(softwareAsset);
                         break;
                     }
-                    case NZ: {
-                        // NZ License
+                    case NZ:
+                    case CN: {
+                        // NZ|CN License
                         this.updateNZLicenseStatus(softwareAsset);
                         break;
                     }
@@ -425,7 +411,12 @@ public class SoftwareAssetServiceImpl extends ServiceImpl<SoftwareAssetDao, Soft
 
         HttpHeaders headers = new HttpHeaders();
         if (StrUtil.isNotEmpty(token)) {
-            headers.add(HttpHeaders.AUTHORIZATION, token);
+            SoftwareType type = softwareAsset.getType();
+            if (StrUtil.equals(type.getName(), Constant.SoftwareLicenseType.CN.getName())) {
+                headers.add(sysConfService.getValueOrDefault("cn_api_token_header_name", "Cn-Authorization"), token);
+            } else {
+                headers.add(HttpHeaders.AUTHORIZATION, token);
+            }
         }
 
         HttpEntity httpEntity = new HttpEntity(headers);
@@ -467,10 +458,23 @@ public class SoftwareAssetServiceImpl extends ServiceImpl<SoftwareAssetDao, Soft
                     String productionDateTimeSec = haspJSONObject.getStr("production_date");
                     softwareAsset.setDateIssued(Tool.NumberUtil.parseLong(productionDateTimeSec) * 1000);
 
-                    JSONArray feature = haspJSONObject.getJSONArray("feature");
-                    List<JSONObject> nzFetureList = feature.stream().map(obj -> com.nis.common.utils.JSONUtil.parseObj(obj))
+                    JSONArray featureArray = new JSONArray();
+                    Object featureObject = haspJSONObject.get("feature");
+                    if (featureObject instanceof JSONObject) {
+                        featureArray.add((JSONObject) featureObject);
+                    } else if (featureObject instanceof JSONArray) {
+                        featureArray = (JSONArray) featureObject;
+                    }
+                    List<JSONObject> nzFetureList = featureArray.stream().map(obj -> com.nis.common.utils.JSONUtil.parseObj(obj))
                             // 根据 feature id 过滤
-                            .filter(jsonObject -> StrUtil.equals(nzFetureId.toString(), jsonObject.getStr("id"))).toList();
+                            .filter(jsonObject -> {
+                                String typeName = softwareAsset.getType().getName();
+                                if (StrUtil.equals(typeName, Constant.SoftwareLicenseType.CN.getName())) {
+                                    return StrUtil.equals(cnFetureId.toString(), jsonObject.getStr("id"));
+                                }
+                                return StrUtil.equals(nzFetureId.toString(), jsonObject.getStr("id"));
+                            })
+                            .toList();
                     // 永久的
                     JSONObject perpetualFeture = nzFetureList.stream().filter(jsonObject -> {
                         JSONObject license = jsonObject.getJSONObject("license");

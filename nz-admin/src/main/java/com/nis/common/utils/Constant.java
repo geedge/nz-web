@@ -1278,7 +1278,8 @@ public class Constant {
 		TSG_OS_HL_SEATS("TSG-OS HL Seats"),
 		TSG_OS_HL("TSG-OS HL"),
 		CM("TSG-CM"),
-		NZ("Network Zodiac");
+		NZ("Network Zodiac"),
+		CN("Cyber Narrator");
 
 		private String name;
 

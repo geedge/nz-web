@@ -184,7 +184,8 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
                 break;
             }
             case CM:
-            case NZ: {
+            case NZ:
+            case CN: {
                 this.downloadC2VFileFromLicenseService(softwareType.getName(), softwareAsset, response);
                 break;
             }
@@ -304,7 +305,11 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
 
         HttpHeaders headers = new HttpHeaders();
         if (StrUtil.isNotEmpty(token)) {
-            headers.add(HttpHeaders.AUTHORIZATION, token);
+            if (StrUtil.equals(typeName, Constant.SoftwareLicenseType.CN.getName())) {
+                headers.add(sysConfService.getValueOrDefault("cn_api_token_header_name", "Cn-Authorization"), token);
+            } else {
+                headers.add(HttpHeaders.AUTHORIZATION, token);
+            }
         }
 
         HttpEntity httpEntity = new HttpEntity(headers);
@@ -319,6 +324,11 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
             // NZ
             UrlBuilder urlBuilder = UrlBuilder.ofHttp(url);
             UrlPath urlPath = UrlPath.of("/sys/license/token", Charset.forName("UTF-8"));
+            urlStr = urlBuilder.setPath(urlPath).toString();
+        } else if (StrUtil.equals(typeName, Constant.SoftwareLicenseType.CN.getName())) {
+            // CN
+            UrlBuilder urlBuilder = UrlBuilder.ofHttp(url);
+            UrlPath urlPath = UrlPath.of("/sys/license/download", Charset.forName("UTF-8"));
             urlStr = urlBuilder.setPath(urlPath).toString();
         }
 
@@ -371,7 +381,8 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
                 break;
             }
             case CM:
-            case NZ: {
+            case NZ:
+            case CN: {
                 this.uploadV2CToLicenseService(softwareType.getName(), softwareAsset, multipartFile);
                 break;
             }
@@ -448,7 +459,11 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
         if (StrUtil.isNotEmpty(token)) {
-            headers.add(HttpHeaders.AUTHORIZATION, token);
+            if (StrUtil.equals(typeName, Constant.SoftwareLicenseType.CN.getName())) {
+                headers.add(sysConfService.getValueOrDefault("cn_api_token_header_name", "Cn-Authorization"), token);
+            } else {
+                headers.add(HttpHeaders.AUTHORIZATION, token);
+            }
         }
 
         String urlStr = "";
@@ -456,8 +471,8 @@ public class LicenseManagementServiceImpl implements LicenseManagementService {
             // CM
             UrlBuilder urlBuilder = UrlBuilder.ofHttp(url);
             urlStr = urlBuilder.toString();
-        } else if (StrUtil.equals(typeName, Constant.SoftwareLicenseType.NZ.getName())) {
-            // NZ
+        } else if (StrUtil.equalsAny(typeName, Constant.SoftwareLicenseType.NZ.getName(), Constant.SoftwareLicenseType.CN.getName())) {
+            // NZ|CN
             UrlBuilder urlBuilder = UrlBuilder.ofHttp(url);
             UrlPath urlPath = UrlPath.of("/sys/license/upload", Charset.forName("UTF-8"));
             urlStr = urlBuilder.setPath(urlPath).toString();
