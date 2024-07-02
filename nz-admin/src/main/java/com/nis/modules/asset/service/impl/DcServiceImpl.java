@@ -337,7 +337,8 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
         this.validateDcInfo(dc);
         // 保存
         List<IpamSubnet> subnetList = dc.getSubnet().stream().map(ipamSubnet -> {ipamSubnet.setDcId(dc.getId());return ipamSubnet;}).collect(Collectors.toList());
-        ipamSubnetService.saveOrUpdateBatch(subnetList);
+        ipamSubnetService.remove(new LambdaQueryWrapper<IpamSubnet>().eq(IpamSubnet::getDcId, dc.getId()));
+        ipamSubnetService.saveBatch(subnetList);
         this.updateById(dc);
         return dc.getId();
     }
