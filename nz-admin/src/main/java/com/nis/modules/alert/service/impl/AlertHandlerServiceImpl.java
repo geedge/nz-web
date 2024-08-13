@@ -42,16 +42,12 @@ import com.nis.modules.tool.service.FullTextSearchService;
 import com.nis.setup.controller.TimezoneController;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.io.IOUtils;
+import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.ss.SpreadsheetVersion;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.DataConsolidateFunction;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.AreaReference;
 import org.apache.poi.ss.util.CellReference;
-import org.apache.poi.xssf.usermodel.XSSFPivotTable;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.usermodel.*;
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTPivotField;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -630,14 +626,14 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			// PivotSheet
 			if (Tool.CollUtil.isNotEmpty(exportDataList)) {
 				String datasheetName = dataSheet.getSheetName();
-				String pivotSheetName = "Statistic";
+				String statSheetName = "Statistics";
 
-				// 创建数据透视表
-				this.createPivotTable(workbook, datasheetName, pivotSheetName);
+				// 创建 Statistic 统计 sheet
+				this.createStatisticSheet(workbook, statSheetName, exportDataList);
 
 				// 调整顺序 Statistic - Datasheet
 				workbook.setSheetOrder(datasheetName, 1);
-				workbook.setSheetOrder(pivotSheetName, 0);
+				workbook.setSheetOrder(statSheetName, 0);
 			}
 
 			// response
@@ -651,8 +647,99 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	}
 
 	/**
+	 * 创建统计表
+	 */
+	private void createStatisticSheet(XSSFWorkbook workbook, String statSheetName, List<List<String>> alertMsgDataList) {
+		log.info("[createStatisticSheet] [begin]");
+		// Rule - Asset
+		Map<String, Map<String, Long>> originalCountMap = alertMsgDataList.parallelStream()
+				.collect(
+						Collectors.groupingBy(
+								record -> record.get(1),
+								Collectors.groupingBy(
+										record -> record.get(6),
+										Collectors.counting()
+								)
+						)
+				);
+
+		// 按名称排序
+		Comparator<String> comparator = (s1, s2) -> {
+			int cmp = s1.toLowerCase().compareTo(s2.toLowerCase());
+			return cmp != 0 ? cmp : s1.compareTo(s2);
+		};
+		Map<String, Map<String, Long>> sortedOuterMap = new TreeMap<>(comparator);
+		sortedOuterMap.putAll(originalCountMap);
+
+		Map<String, Map<String, Long>> ruleAssetCount = new LinkedHashMap<>();
+		for (Map.Entry<String, Map<String, Long>> outerEntry : sortedOuterMap.entrySet()) {
+			Map<String, Long> sortedInnerMap = new TreeMap<>(comparator);
+			sortedInnerMap.putAll(outerEntry.getValue());
+			ruleAssetCount.put(outerEntry.getKey(), sortedInnerMap);
+		}
+
+		// 表头、统计 名称 - 国际化
+		String headerRuleStr = sysI18nService.queryValue("alert.rule");
+		String headerAssetStr = sysI18nService.queryValue("asset.asset");
+		String headercountStr = sysI18nService.queryValue("overall.count");
+		String headerTotalStr = sysI18nService.queryValue("overall.total");
+
+		// header row
+		Font font = workbook.createFont();
+		font.setBold(true);
+
+		XSSFCellStyle hStyle = workbook.createCellStyle();
+		hStyle.setFillForegroundColor(new XSSFColor(new java.awt.Color(221, 235, 247)));
+		hStyle.setFillPattern(HSSFCellStyle.SOLID_FOREGROUND);
+		hStyle.setFont(font);
+
+		Sheet sheet = workbook.createSheet(statSheetName);
+		Row headerRow = sheet.createRow(0);
+		ExcelUtils.setCellValue(headerRow.createCell(0), StrUtil.emptyToDefault(headerRuleStr, "Rule"), hStyle);
+		ExcelUtils.setCellValue(headerRow.createCell(1), StrUtil.emptyToDefault(headerAssetStr, "Asset"), hStyle);
+		ExcelUtils.setCellValue(headerRow.createCell(2), StrUtil.emptyToDefault(headercountStr, "Count"), hStyle);
+
+		// data row
+		XSSFCellStyle rStyle = workbook.createCellStyle();
+		rStyle.setBorderBottom(BorderStyle.THICK);
+		rStyle.setBottomBorderColor(new XSSFColor(new java.awt.Color(221, 235, 247)));
+		rStyle.setFont(font);
+
+		int rowIndex = 1;
+		for (Map.Entry<String, Map<String, Long>> rEntry : ruleAssetCount.entrySet()) {
+			String ruleName = rEntry.getKey();
+			Map<String, Long> assetCount = rEntry.getValue();
+			long ruleAlertNum = assetCount.values().stream().mapToLong(Long::longValue).sum();
+
+			Row ruleRow = sheet.createRow(rowIndex++);
+			ExcelUtils.setCellValue(ruleRow.createCell(0), ruleName, rStyle);
+			ExcelUtils.setCellValue(ruleRow.createCell(1), "", rStyle);
+			ExcelUtils.setCellValue(ruleRow.createCell(2), ruleAlertNum, rStyle);
+
+			for (Map.Entry<String, Long> aEntry : assetCount.entrySet()) {
+				Row assetRow = sheet.createRow(rowIndex++);
+				assetRow.createCell(0).setCellValue("");
+				assetRow.createCell(1).setCellValue(aEntry.getKey());
+				assetRow.createCell(2).setCellValue(aEntry.getValue());
+			}
+		}
+
+		// total row
+		Row totalRow = sheet.createRow(rowIndex++);
+		ExcelUtils.setCellValue(totalRow.createCell(0), StrUtil.emptyToDefault(headerTotalStr, "Total"), hStyle);
+		ExcelUtils.setCellValue(totalRow.createCell(1), "", hStyle);
+		ExcelUtils.setCellValue(totalRow.createCell(2), alertMsgDataList.size(), hStyle);
+
+		// 自动调整列大小
+		sheet.autoSizeColumn(0);
+		sheet.autoSizeColumn(1);
+		log.info("[createStatisticSheet] [finshed]");
+	}
+
+	/**
 	 * 创建数据透视表
 	 */
+	@Deprecated
 	private void createPivotTable(XSSFWorkbook xssfWorkbook, String datasheetName, String pivotSheetName) {
 		log.info("[createPivotTable] [begin]");
 		XSSFSheet dataSheet = xssfWorkbook.getSheet(datasheetName);
