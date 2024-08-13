@@ -5,6 +5,7 @@ import cn.hutool.core.io.FileMagicNumber;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import cn.hutool.poi.excel.cell.setters.CellSetterFactory;
 import com.nis.common.exception.NZException;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
@@ -296,4 +297,12 @@ public class ExcelUtils {
         return work;
     }
 
+    public static void setCellValue(Cell cell, Object value, CellStyle cellStyle) {
+        if (null != cell) {
+            CellSetterFactory.createCellSetter(value).setValue(cell);
+            if (null != cellStyle) {
+                cell.setCellStyle(cellStyle);
+            }
+        }
+    }
 }
