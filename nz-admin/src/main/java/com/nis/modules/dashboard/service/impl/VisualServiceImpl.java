@@ -261,16 +261,35 @@ public class VisualServiceImpl implements VisualService {
      */
     @Override
     public String getTimeStep(Long start, Long end) {
-        Long timeDiff = (end - start) / (24 * 60 * 60);
-        if (timeDiff < 1) {
-            return "15s";
-        } else if (timeDiff < 7) {
-            return "5m";
-        } else if (timeDiff < 30) {
-            return "10m";
+        String step = "15s";
+
+        long oneDay = 86400L;
+        long sevenDay = 604800L;
+        long thirtyDay = 2592000L;
+
+        Long numInterval = end - start;
+        if (numInterval < oneDay / 2) { // 小于12小时
+            step = "15s";
+        } else if (numInterval < oneDay) { // 小于1天，step为15s
+            step = "30s";
+        } else if (numInterval < oneDay * 2) { // 小于2天，step为15s
+            step = "1m";
+        } else if (numInterval < sevenDay) { // 小于7天，step为5m
+            step = "5m";
+        } else if (numInterval < thirtyDay) { // 小于30天，step为10m
+            step = "30m";
+        } else if (numInterval < thirtyDay * 2) {
+            step = "45m";
+        } else if (numInterval < thirtyDay * 3) {
+            step = "1h";
+        } else if (numInterval < thirtyDay * 6) {
+            step = "3h";
+        } else if (numInterval < thirtyDay * 12) {
+            step = "5h";
         } else {
-            return "30m";
+            step = "24h";
         }
+        return step;
     }
 
     @Override
