@@ -1483,7 +1483,7 @@ public class AgentConfigUtil {
 		String srcDcName = dcList.stream().filter(dc -> ObjectUtil.equal(dc.getId(), srcAgent.getDcId())).findFirst().get().getName();
 
 		// asset_ping_interval
-		String pingInterval = sysConfService.getValueOrDefault(Constant.SYSCONFIG_KEY_ASSET_PING_INTERVAL, "300");
+		String pingInterval = sysConfService.getValueOrDefault(Constant.SYSCONFIG_KEY_ASSET_PING_INTERVAL, "180");
 
 		List<Map<String, Object>> pmJobList = ListUtil.list(true);
 		for (Agent destAgent : destAgentList) {

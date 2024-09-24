@@ -1796,8 +1796,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         List<Dc> dcList = dcService.list();
         Map<Integer, Dc> dcIdAndNameMap = dcList.stream().collect(Collectors.toMap(Dc::getId, Function.identity()));
 
-        // asset_ping_interval，default = 300
-        String assetPingIntervalInConfig = sysConfService.getValueOrDefault(Constant.SYSCONFIG_KEY_ASSET_PING_INTERVAL, "300");
+        // asset_ping_interval，default = 180
+        String assetPingIntervalInConfig = sysConfService.getValueOrDefault(Constant.SYSCONFIG_KEY_ASSET_PING_INTERVAL, "180");
         for (AssetAsset entity : assetList) {
             entity.setDc(dcIdAndNameMap.get(entity.getDcId()));
             entity.setAssetPingInterval(assetPingIntervalInConfig);
@@ -1817,8 +1817,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             List<Dc> dcList = dcService.list();
             Map<Integer, Dc> dcIdAndNameMap = dcList.stream().collect(Collectors.toMap(Dc::getId, Function.identity()));
 
-            // asset_ping_interval，default = 300
-            String assetPingIntervalInConfig = sysConfService.getValueOrDefault(Constant.SYSCONFIG_KEY_ASSET_PING_INTERVAL, "300");
+            // asset_ping_interval，default = 180
+            String assetPingIntervalInConfig = sysConfService.getValueOrDefault(Constant.SYSCONFIG_KEY_ASSET_PING_INTERVAL, "180");
             for (AssetAsset entity : assetList) {
                 entity.setDc(dcIdAndNameMap.get(entity.getDcId()));
                 entity.setAssetPingInterval(assetPingIntervalInConfig);
