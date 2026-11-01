@@ -13,14 +13,14 @@
 
 	<properties>
 		<quartz.version>2.3.0</quartz.version>
-		<shiro.version>1.4.0</shiro.version>
+		<shiro.version>2.2.1</shiro.version>
 		<kaptcha.version>0.0.9</kaptcha.version>
 		<qiniu.version>[7.2.0, 7.2.99]</qiniu.version>
 		<aliyun.oss.version>2.5.0</aliyun.oss.version>
 		<qcloud.cos.version>4.4</qcloud.cos.version>
-		<swagger.version>2.7.0</swagger.version>
+		<swagger.version>2.10.0</swagger.version>
 		<commons-lang3.version>3.3.2</commons-lang3.version>
-		<apache.poi.version>3.14</apache.poi.version>
+		<apache.poi.version>4.1.1</apache.poi.version>
 		<jackson.version>2.10.1</jackson.version>
 	</properties>
 
@@ -158,7 +158,7 @@
 		<dependency>
 			<groupId>commons-net</groupId>
 			<artifactId>commons-net</artifactId>
-			<version>3.6</version>
+			<version>3.9.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.yaml</groupId>
