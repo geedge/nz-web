@@ -24,7 +24,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>1.8</java.version>
-		<junit.version>4.12</junit.version>
+		<junit.version>4.13.1</junit.version>
 		<jedis.version>2.9.0</jedis.version>
 		<druid.version>1.1.13</druid.version>
 		<mybatisplus.version>3.0.7.1</mybatisplus.version>
@@ -32,15 +32,15 @@
 		<mssql.version>4.0</mssql.version>
 		<oracle.version>11.2.0.3</oracle.version>
 		<commons.lang.version>2.6</commons.lang.version>
-		<commons.fileupload.version>1.3.1</commons.fileupload.version>
+		<commons.fileupload.version>1.6.0</commons.fileupload.version>
 		<commons.collections.version>3.2.2</commons.collections.version>
-		<commons.beanutils.version>1.9.3</commons.beanutils.version>
-		<commons.io.version>2.5</commons.io.version>
+		<commons.beanutils.version>1.11.0</commons.beanutils.version>
+		<commons.io.version>2.14.0</commons.io.version>
 		<commons.codec.version>1.10</commons.codec.version>
-		<fastjson.version>1.2.45</fastjson.version>
+		<fastjson.version>1.2.84</fastjson.version>
 		<joda.time.version>2.9.9</joda.time.version>
 		<lombok.version>1.18.4</lombok.version>
-		<swagger.version>2.7.0</swagger.version>
+		<swagger.version>2.10.0</swagger.version>
 		<mibble.version>2.9.3</mibble.version>
 	</properties>
 
@@ -193,12 +193,12 @@
 		<dependency>
 			<groupId>cn.hutool</groupId>
 			<artifactId>hutool-all</artifactId>
-			<version>5.5.2</version>
+			<version>5.8.21</version>
 		</dependency>
 		<dependency>
 			<groupId>org.bouncycastle</groupId>
 			<artifactId>bcprov-jdk15to18</artifactId>
-			<version>1.68</version>
+			<version>1.85</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.oshi</groupId>
